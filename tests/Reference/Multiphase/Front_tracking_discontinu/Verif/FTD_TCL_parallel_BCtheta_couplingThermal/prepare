@@ -1,0 +1,33 @@
+#!/bin/bash
+source /volatile/catC/linkai/TRIOCFD/env_TrioCFD.sh
+
+rm -rf RUN_SEQ RUN_PAR
+mkdir -p RUN_SEQ RUN_PAR
+SEQ=FTD_TCL_parallel_BCtheta_couplingThermal
+cp $SEQ.data RUN_SEQ/$SEQ.data
+DEC=FTD_TCL_parallel_BCtheta_couplingThermal_DEC
+sed -e "s/ raccord local/ raccord distant/" \
+    -e '/BEGIN PARTITION/d' \
+    -e '/END PARTITION/d' \
+    $SEQ.data > RUN_PAR/$DEC.data
+PAR=FTD_TCL_parallel_BCtheta_couplingThermal_PAR
+sed -e "s/ raccord local/ raccord distant/" \
+    -e 's/# BEGIN MESH #/# BEGIN MESH /g' \
+    -e 's/# END MESH #/ END MESH #/g' \
+    -e '/BEGIN SCATTER/d' \
+    -e '/END SCATTER/d' \
+    $SEQ.data > RUN_PAR/$PAR.data
+
+echo "running some of the calculations..."
+cd RUN_SEQ
+trust $SEQ 1>$SEQ.out 2>$SEQ.err || exit 1
+echo "End of sequential computation $SEQ"
+cd ..
+cd RUN_PAR
+trust $DEC 1>$DEC.out 2>$DEC.err || exit 2
+echo "End of generation of mesh for parallel computation $DEC"
+trust $PAR 6 1>$PAR.out 2>$PAR.err || exit 3
+echo "End of parallel computation using 6 procs $PAR"
+cd ..
+
+

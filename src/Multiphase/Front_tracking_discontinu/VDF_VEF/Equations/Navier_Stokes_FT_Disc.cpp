@@ -3529,43 +3529,45 @@ DoubleTab& Navier_Stokes_FT_Disc::derivee_en_temps_inco(DoubleTab& vpoint)
           const double coef = jump_inv_rho / Lvap;
           // Correct the secmem2 contribution due to TCL :
           if (!variables_internes().mpoint_inactif)
-            probleme_ft().tcl().corriger_secmem(coef, secmem2);
-
-          const int check_consistency = 1; // local option to check that secmem2 in near-wall cell is actually well calculated
-          if (check_consistency)
             {
-              Cerr << "Verifying Contact line model consistency" << finl;
-              double error = 0.;
-              const int nb_contact_line_contribution = elems_with_CL_contrib.size_array();
-              for (int idx = 0; idx < nb_contact_line_contribution; idx++)
+              probleme_ft().tcl().corriger_secmem(coef, secmem2);
+
+              const int check_consistency = 1 ; // local option to check that secmem2 in near-wall cell is actually well calculated
+              if (check_consistency)
                 {
-                  const int elem = elems_with_CL_contrib[idx];
-                  const double sec = secmem2(elem);
-                  double Q = 0.;
-                  // Go through the list to find all occurences of elem;
-                  for (int idx2 = 0; idx2 < nb_contact_line_contribution; idx2++)
+                  Cerr << "Verifying Contact line model consistency" << finl;
+                  double error = 0.;
+                  const int nb_contact_line_contribution = elems_with_CL_contrib.size_array();
+                  for (int idx = 0; idx < nb_contact_line_contribution; idx++)
                     {
-                      if (elem == elems_with_CL_contrib[idx2])
+                      const int elem = elems_with_CL_contrib[idx];
+                      const double sec = secmem2(elem);
+                      double Q = 0.;
+                      // Go through the list to find all occurences of elem;
+                      for (int idx2 = 0; idx2 < nb_contact_line_contribution; idx2++)
                         {
-                          Q += Q_from_CL[idx2];
+                          if (elem == elems_with_CL_contrib[idx2])
+                            {
+                              Q +=Q_from_CL[idx2];
+                            }
+                        }
+                      const double value = coef*Q;
+
+                      // sec and value should be the same:
+                      error +=fabs(sec - value);
+                      if (fabs(sec - value) > 1.e-12) // changed from 1.e-12 to 1.e-7 ---- for test
+                        {
+                          Cerr << "local difference sec-value=" << sec <<" - " << value << " = " << (sec - value) << finl;
                         }
                     }
-                  const double value = coef * Q;
 
-                  // sec and value should be the same:
-                  error += fabs(sec - value);
-                  if (fabs(sec - value) > 1.e-12) // changed from 1.e-12 to 1.e-7 ---- for test
+                  if (error > 1.e-8)
                     {
-                      Cerr << "local difference sec-value=" << sec << " - " << value << " = " << (sec - value) << finl;
+                      Cerr << "Final error : " << error << " is fatal!" << finl;
+                      Process::exit();
                     }
-                }
 
-              if (error > 1.e-8)
-                {
-                  Cerr << "Final error : " << error << " is fatal!" << finl;
-                  Process::exit();
                 }
-
             }
         }
 #endif

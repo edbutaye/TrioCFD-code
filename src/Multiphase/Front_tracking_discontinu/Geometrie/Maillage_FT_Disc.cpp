@@ -5454,13 +5454,13 @@ void Maillage_FT_Disc::calcul_courbure_sommets(ArrOfDouble& courbure_sommets, co
     }
 #endif
 
-  for (facette = 0; facette < nfaces; facette++)
+  if (!bidim_axi)
     {
-      // Si la facette est reelle, on ajoute la contribution a la differentielle
-      // des deux ou trois sommets
-      if (! facette_virtuelle(facette))
+      for (facette = 0; facette < nfaces; facette++)
         {
-          if (!bidim_axi)
+          // Si la facette est reelle, on ajoute la contribution a la differentielle
+          // des deux ou trois sommets
+          if (! facette_virtuelle(facette))
             {
               int ii;
               const double surface_sur_dim = surface[facette] * inverse_dimension;
@@ -6017,11 +6017,41 @@ void Maillage_FT_Disc::calcul_courbure_sommets(ArrOfDouble& courbure_sommets, co
                     }
                 }
             }
-          else
+        }
+      // On a calcule la contribution de chaque facette reelle aux differents sommets.
+      // Certaines contributions ont ete ajoutees a des sommets virtuels, il
+      // faut recuperer ces contributions sur le sommet reel.
+      desc_sommets().collecter_espace_virtuel(d_volume, MD_Vector_tools::EV_SOMME);
+      desc_sommets().collecter_espace_virtuel(d_surface, MD_Vector_tools::EV_SOMME);
+    }
+
+
+
+
+
+
+
+
+
+  if (bidim_axi)
+    {
+      for (facette = 0; facette < nfaces; facette++)
+        {
+          // LW 05/oc/2023
+          // in all procs: we locate all facette has at least one sommets
+          const int isommet1 = facettes_(facette, 0);
+          const int isommet2 = facettes_(facette, 1);
+          bool no_sommts = (sommet_elem_[isommet1]<0) && (sommet_elem_[isommet2]<0) ;
+          if (!no_sommts)
             {
+
               // Case bidim_axi (calculation for a 1radian angle,
               // As it is a ratio surface/volume, the angle as no effect.
               // Volume differential:
+
+              // LW 05/10/23
+              // compute d_surface at two sides at all inside (virtual and real) sommets
+              // at BC, only count one side the (virtual and real) sommets
 
               const int s1 = facettes_(facette, 0);
               const int s2 = facettes_(facette, 1);
@@ -6045,6 +6075,11 @@ void Maillage_FT_Disc::calcul_courbure_sommets(ArrOfDouble& courbure_sommets, co
               d_surface(s2, 0) += 0.5 * L + 0.5 * (r1 + r2) * (ny);
               d_surface(s2, 1) +=           0.5 * (r1 + r2) * (-nx);
 
+              // LW 05/oc/2023
+              // add d_surface contribution from add another side at BC (only real)
+              // because only for real sommet: face = sommet_face_bord_[som[i2]] is meaningful
+              // at the end, we will do a exchange_espace_virtuelle to update virtual sommet
+
               // GB 09/01/2018. Correction to account for the surface differencial
               // from the boundary face wetted by phase 0
               int som[2];
@@ -6056,7 +6091,7 @@ void Maillage_FT_Disc::calcul_courbure_sommets(ArrOfDouble& courbure_sommets, co
               for (int i2 = 0; i2 < 2; i2++)
                 {
                   const int face = sommet_face_bord_[som[i2]];
-                  if (face < 0) // pas une face de bord
+                  if (face < 0 || (sommet_elem_[som[i2]]<0)) // pas une face de bord or virtual
                     continue;
 
                   double costheta = tab_cos_theta(som[i2], 0);
@@ -6065,7 +6100,7 @@ void Maillage_FT_Disc::calcul_courbure_sommets(ArrOfDouble& courbure_sommets, co
                   // the effect of CL velocity. Stored in tcl.set_theta_app
                   // (but maybe unused there). Value used locally here afterward.
                   // If the TCL model is activated and we're not on a virtual node :
-                  if ((sommet_elem_[som[i2]]>0) && flag_tcl)
+                  if (flag_tcl)
                     {
                       const double t=temps_physique_;
                       int face_loc;
@@ -6146,7 +6181,7 @@ void Maillage_FT_Disc::calcul_courbure_sommets(ArrOfDouble& courbure_sommets, co
                            << " (velocity= " << norm_vit_som1 << " m/s)" << " time= " << t << " theta_app_degree= " << (theta_app/M_PI)*180 << finl;
                     }
 
-                  if (refequation_transport_.non_nul() && (sommet_elem_[som[i2]]>0))
+                  if (refequation_transport_.non_nul())
                     {
                       const Transport_Interfaces_FT_Disc& eq_interfaces = refequation_transport_.valeur();
                       const Probleme_base& pb = eq_interfaces.get_probleme_base();
@@ -6181,13 +6216,13 @@ void Maillage_FT_Disc::calcul_courbure_sommets(ArrOfDouble& courbure_sommets, co
                 }
             }
         }
+
+      // LW 05/10/23 update the virtual sommet
+      desc_sommets().echange_espace_virtuel(d_volume);
+      desc_sommets().echange_espace_virtuel(d_surface);
     }
 
-  // On a calcule la contribution de chaque facette reelle aux differents sommets.
-  // Certaines contributions ont ete ajoutees a des sommets virtuels, il
-  // faut recuperer ces contributions sur le sommet reel.
-  desc_sommets().collecter_espace_virtuel(d_volume, MD_Vector_tools::EV_SOMME);
-  desc_sommets().collecter_espace_virtuel(d_surface, MD_Vector_tools::EV_SOMME);
+
 
   // Calcul de la courbure :
   //   d_surface * d_volume / norme(d_volume)^2
