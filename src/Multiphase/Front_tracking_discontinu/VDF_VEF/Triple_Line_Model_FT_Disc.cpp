@@ -1169,7 +1169,15 @@ void Triple_Line_Model_FT_Disc::compute_TCL_fluxes_in_all_boundary_cells(ArrOfIn
           {
             int index=intersections.index_elem()[elemi]; // index > 0 if Front presents
             if (index < 0)
-              Process::exit( "[TCL]: !!! INDICATTICE and FT are NOT CONSISTENT " );
+              {
+
+                Cerr <<  "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! " << finl;
+                Cerr << "[TCL!!!]: INDICATTICE and FT are NOT CONSISTENT "<< finl;
+                Cerr << "[TCL!!!]: elem number " << elemi<< " | indicatrice " << indica(elemi,0) << finl;
+                Cerr << "[TCL!!!]: index " << index<< " | iteration " << ii << finl;
+                Cerr <<  "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! " << finl;
+                continue;
+              }
             else
               Cerr << "[TCL] FOUND interface cell at #" << elemi <<" with face number #" << num_face << finl;
 
