@@ -30,4 +30,9 @@ trust $PAR 6 1>$PAR.out 2>$PAR.err || exit 3
 echo "End of parallel computation using 6 procs $PAR"
 cd ..
 
+echo "post-processing some of the results..."
+rm -rf SEQ PAR
+mkdir -p SEQ PAR
+python extract_data.py par
+python extract_data.py seq
 

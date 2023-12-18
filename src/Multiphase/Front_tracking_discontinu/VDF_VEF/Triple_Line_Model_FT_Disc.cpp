@@ -58,10 +58,10 @@ Triple_Line_Model_FT_Disc::Triple_Line_Model_FT_Disc() :
   kl_cond_(-1.),  // Invalid
   rhocpl_(-1.),  // Invalid
   read_via_file_(0),
-  nb_colon_tab_(5),
-  num_colon_tem_(0),
-  num_colon_app_(1),
-  num_colon_qtcl_(2),
+  nb_columns_tab_(5),
+  num_column_tem_(0),
+  num_column_theta_(1),
+  num_column_qtcl_(2),
   Rc_tcl_GridN_(4),
   Rc_inject_(8e-05),
   thetaC_tcl_(150.),
@@ -107,7 +107,7 @@ Entree& Triple_Line_Model_FT_Disc::readOn( Entree& is )
 
       Cerr << "Reading of the ascii file : " << Nom_ficher_tcl_ << finl;
 
-      const int nb_colons = nb_colon_tab_; // nb colons in the readed file
+      const int nb_colons = nb_columns_tab_; // nb colons in the readed file
 
       for (int k = 0; k < nb_colons; k++)
         {
@@ -165,11 +165,10 @@ void Triple_Line_Model_FT_Disc::set_param(Param& p)
   p.ajouter_flag("distri_first_facette", &distri_first_facette_); // XD_ADD_P flag This flag determines whether to distribute the Qtcl into all grids occupied by the first facette according to their area proportions. When set, the flux is redistributed into all grids occupied by the first facette based on their area proportions. Default value is 0, the flux is distributed differently: similar to the Meso zone, it is only distributed to grids within the Micro-zone (where the height of the front y is smaller than the size of Micro ym). The distribution of this flux is logarithmically proportional to y between 5.6nm (here interpreted as the value 0 in logarithm) and ym. In practice, in most cases, it will distribute all the flux locally in the first grid.
   p.ajouter("tempC_tcl", &tempC_tcl_); // see in _.h file
   p.ajouter("file_name", &Nom_ficher_tcl_); // XD_ADD_P floattant Input file to set TCL model
-  p.ajouter("nb_colon", &nb_colon_tab_);
-  p.ajouter("num_colon_tem", &num_colon_tem_);
-  // p.ajouter("num_colon_vel", &num_colon_vel_);
-  p.ajouter("num_colon_app", &num_colon_app_);
-  p.ajouter("num_colon_qtcl", &num_colon_qtcl_);
+  p.ajouter("nb_columns", &nb_columns_tab_);
+  p.ajouter("num_column_tem", &num_column_tem_);
+  p.ajouter("num_column_app", &num_column_theta_);
+  p.ajouter("num_column_qtcl", &num_column_qtcl_);
   p.ajouter_flag("enable_energy_correction", &TCL_energy_correction_);
   p.ajouter_flag("capillary_effect_on_theta", &capillary_effect_on_theta_activated_);
   p.ajouter_flag("deactivate", &deactivate_); // XD_ADD_P flag Simple way to disable completely the TCL model contribution
@@ -763,13 +762,7 @@ double Triple_Line_Model_FT_Disc::compute_Qint(const DoubleTab& in_out, const do
   const double ybot = std::fmin(yr,yl);
   // Meso region is between ym_ and ymeso_:
 
-  // for the last meso cell, if Front do not cut the right face of cell, only part of Meso contri is considered
-  // the corresponding flux will be underestimated
-  // we should ONLY consider cells before this last one
-  // To do this, here we put 0 for the this flux, it will then be eliminated in the subsequent part of the compute_tcl_flux.
-  double ln_y = 0.;
-  if (!est_egal(ytop, ymeso_))
-    ln_y = log(std::fmin(ymeso_,std::fmax(ytop,ym_))/std::fmin(ymeso_,std::fmax(ybot,ym_)));
+  double ln_y = log(std::fmin(ymeso_,std::fmax(ytop,ym_))/std::fmin(ymeso_,std::fmax(ybot,ym_)));
 
   assert(kl_cond_>0.);
 //  Cerr << "ln_y = " << ln_y << " time_total = " << temps << " Theta_app_local = " << theta_app_loc
@@ -1610,7 +1603,7 @@ void Triple_Line_Model_FT_Disc::compute_TCL_fluxes_in_all_boundary_cells(ArrOfIn
           instant_Qmicro += Qmicro;
 
           Cerr.precision(16);
-          Cerr << "[TCL: MICRO]:" << " Instantaneous tcl-evaporation = "<< instant_vmicro_evap_ << finl;
+          Cerr << "[TCL: MICRO]:" << " Instantaneous tcl-evaporation = "<< instant_vmicro_evap_ << " time  = " << integration_time_ << finl;
           Cerr << "[TCL: MICRO] time  = " << integration_time_ << " Qmicro= " << Qmicro << " Qint " << Q_int << finl;
           Cerr.precision(7);
 
@@ -1730,9 +1723,9 @@ void Triple_Line_Model_FT_Disc::compute_TCL_fluxes_in_all_boundary_cells(ArrOfIn
             // in_out are real absolute coordinates.
             // We should make the "y" a normal distance to TCL
             const int korient = zvdf.orientation(num_face);
-            const double xwall =zvdf.xv(num_face, korient);
-            in_out(0,korient) -= xwall;
-            in_out(1,korient) -= xwall;
+            const double ywall =zvdf.xv(num_face, korient); // the y coord of the wall y0
+            in_out(0,korient) -= ywall;   // yl -y0
+            in_out(1,korient) -= ywall;   // yr -y0
             //in_out(0,1) += dist;
             //in_out(1,1) += dist;
             if (zvdf.dist_face_elem0(num_face,elem)>0)
@@ -1752,8 +1745,31 @@ void Triple_Line_Model_FT_Disc::compute_TCL_fluxes_in_all_boundary_cells(ArrOfIn
 
           // Cerr << "xl,yl, xr,yr = " << xl << " " <<  yl << " " <<  xr << " " <<  yr << finl;
           double theta_app_loc = compute_local_cos_theta(parcours, num_face, norm_elem);
+
           double Q_meso = 0.;
-          double Q_int = compute_Qint(in_out, theta_app_loc, num_face, Q_meso);
+          double Q_int = 0.;
+
+
+          // for the last meso cell, if Front do not cut the right face of cell, only part of Meso contri is considered
+          // the corresponding flux will be underestimated
+          // we should ONLY consider cells before this last one
+          // To do this, here we put 0 for the this flux, it will then be eliminated in the subsequent part of the compute_tcl_flux.
+          // flux in this cell is compute by the default macro zone
+          const int korient = zvdf.orientation(num_face);
+          const double cell_left = zvdf.xp(elem, 1-korient)-0.5*zvdf.dim_elem(elem, 1-korient); //  in 2D case
+          const double ytop = std::fmax(yr,yl);
+          const double xleft = std::fmin(xr,xl);
+
+          if (est_egal(xleft, cell_left) && est_egal(ytop, ymeso_))
+            {
+              Q_int = 0.;
+            }
+          else
+            {
+              Q_int = compute_Qint(in_out, theta_app_loc, num_face, Q_meso);
+            }
+
+
           //  const double value = jump_inv_rho*Q_int/Lvap;
           //  Cerr << "[TCL-meso] Local source in elem=["  << elem << "] with value= " << value << "[m2.s-1]" << finl;
           //  Cerr << "Qint= " << Q_int << finl;
@@ -1771,7 +1787,7 @@ void Triple_Line_Model_FT_Disc::compute_TCL_fluxes_in_all_boundary_cells(ArrOfIn
           Cerr.precision(16);
           Cerr << "[TCL: MESO] time  = " << integration_time_ << " Qmeso= " << Q_meso << " Qint " << Q_int << finl;
           Cerr.precision(7);
-          // Cerr << "time = " << integration_time_ << " instantaneous mass-meso-evaporation = " << instant_mmeso_evap_ << " instantaneous meso-evaporation = " << instant_vmeso_evap_ << finl;
+          Cerr << "time = " << integration_time_ << " instantaneous mass-meso-evaporation = " << instant_mmeso_evap_ << " instantaneous meso-evaporation = " << instant_vmeso_evap_ << finl;
           elems_with_CL_contrib.append_array(elem);
           //mpoint_from_CL.append_array((Q_meso*surface_tot/v)/Lvap); // VP: replaced Q_int by Q_meso....unit--kg/m^2.s
           double x1=0., y1=0.;
@@ -2054,8 +2070,8 @@ double Triple_Line_Model_FT_Disc:: get_Qtcl(const int num_face)
       const double Twall = ref_eq_temp_.valeur ().get_Twall_at_face (
                              num_face);
 
-      const int num_col = num_colon_qtcl_; // colon number corresponding to Qtcl
-      const int num_tem = num_colon_tem_;
+      const int num_col = num_column_qtcl_; // colon number corresponding to Qtcl
+      const int num_tem = num_column_tem_;
 
       int ind = 0;
       while (ind < tab_Mtcl_.dimension (1) && tab_Mtcl_ (num_tem, ind) < Twall)
@@ -2122,8 +2138,8 @@ double Triple_Line_Model_FT_Disc:: get_theta_app(const int num_face)
       // const double Twall = ref_eq_temp_.valeur ().get_Twall_at_face (
       //                       num_face);
 
-      const int num_col = num_colon_app_; // colon number corresponding to theta_app
-      const int num_tem = num_colon_tem_;
+      const int num_col = num_column_theta_; // colon number corresponding to theta_app
+      const int num_tem = num_column_tem_;
 
       int ind = 0;
       while (ind < tab_Mtcl_.dimension (1) && tab_Mtcl_ (num_tem, ind) < Twall)

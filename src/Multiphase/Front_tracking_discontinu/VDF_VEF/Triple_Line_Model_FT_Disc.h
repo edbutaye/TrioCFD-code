@@ -141,16 +141,14 @@ protected:
   int read_via_file_;
   Nom Nom_ficher_tcl_;
   DoubleTab tab_Mtcl_;
-  // total nb of colons
-  int nb_colon_tab_;
-  // num -colon for temperature
-  int num_colon_tem_;
-  // num -colon for velocity
-  // int num_colon_vel_;
-  // num -colon for theta app
-  int num_colon_app_;
-  // num -colon for Qtcl
-  int num_colon_qtcl_;
+  // total nb of columns
+  int nb_columns_tab_;
+  // num -column for temperature
+  int num_column_tem_;
+  // num column for theta app
+  int num_column_theta_;
+  // num -column for Qtcl
+  int num_column_qtcl_;
 
   // parameters to force numerical breakup
   // Radius of nucleate site; [in number of grids]
