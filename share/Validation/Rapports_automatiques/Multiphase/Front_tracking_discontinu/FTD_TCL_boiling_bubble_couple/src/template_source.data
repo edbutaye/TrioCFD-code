@@ -167,13 +167,6 @@ Lire fluide
     chaleur_latente Champ_Uniforme 1    -2.256e6
 }
 
-Solide sol
-Read sol
-{
-    rho Uniform_Field 1 8500.
-    lambda Champ_Uniforme 1 234.
-    Cp Champ_Uniforme 1 376.
-}
 
 Schema_Euler_explicite  sch
 Lire sch
@@ -196,23 +189,26 @@ Lire sch
     periode_sauvegarde_securite_en_heures 0.5
 }
 
-Triple_Line_Model_FT_Disc TCL
-Read TCL
-{   # TCL #
-    # deactivate TCL #
-    Qtcl 30.450 #  TCL #
-    ym 2.130e-6 # TCL #
-    sm 4.956e-6 # TCL #
-    n_extend_meso 4 # TCL #
-    inout_method approx # TCL #
-    read_via_file 1  # TCL #
-    file_name model.txt # TCL #
+Triple_Line_Model_FT_Disc TCL 
+Read TCL 
+{ # TCL #
+  # deactivate TCL #
+  Qtcl 30.450 #  TCL #
+  ym 2.130e-6 # TCL #
+  sm 4.956e-6 # TCL #
+  n_extend_meso 4 # TCL #
+  inout_method approx # TCL #
+  read_via_file 1  # TCL #
+  file_name model.txt # TCL #
+  reinjection_tcl # TCL #
+  thetaC_tcl @theta@ # TCL #
+  tempC_tcl @tempC@ # TCL #
+  Rc_tcl_GridN 4 # TCL #
 } # TCL #
 
 Champ_Uniforme gravite
 Lire gravite 2 0. -9.81
 Associate fluide gravite
-Associate sol gravite
 
 Navier_stokes_FT_disc                         hydraulique
 Transport_interfaces_FT_disc                  interf
@@ -232,7 +228,6 @@ Associate TCL interf
 Associate pb1 TCL
 
 Associate pb2 dom_solide
-Associate pb2 sol
 
 Probleme_Couple pbc
 Associate pbc pb1
@@ -245,14 +240,13 @@ system "mkdir -p lata slata"
 option_vdf { All_options } # To set the BC of pressure on the Boundary, not at the center of ghost cells! #
 Lire pb1
 {
-
     hydraulique
     {
         # parametre_equation parametre_diffusion_implicite
         {
             solveur petsc gcp { precond block_jacobi_ilu { level 0 } rtol 1.e-13 impr }
         } #
-        modele_turbulence nul
+        modele_turbulence null { }
         solveur_pression GCP { precond ssor { omega 1.5 } seuil 1e-12 impr }
         convection { quick }
         diffusion { }
@@ -389,15 +383,9 @@ Lire pb1
         }
         Probes
         {
-            T_points grav temperature_thermique Periode 1.e-4 point 3 0.25e-3 0.125e-3 0.25e-3 0.25e-3 0.25e-3 0.5e-3
-            T_seg grav temperature_thermique Periode 1.e-4 segment 400 1.8e-3 0 1.8e-3 1.0e-3
-            T_x10 grav temperature_thermique Periode 1.e-4 segment 400 10.e-4 0 10.e-4 1.e-3
-            T_x15 grav temperature_thermique Periode 1.e-4 segment 400 15.e-4 0 15.e-4 1.e-3
-            T_x20 grav temperature_thermique Periode 1.e-4 segment 400 20.e-4 0 20.e-4 1.e-3
-            T_x25 grav temperature_thermique Periode 1.e-4 segment 400 25.e-4 0 25.e-4 1.e-3
-            T_x30 grav temperature_thermique Periode 1.e-4 segment 400 30.e-4 0 30.e-4 1.e-3
-            T_x40 grav temperature_thermique Periode 1.e-4 segment 400 40.e-4 0 40.e-4 1.e-3
-            # velocity_probe grav VitesseX Periode 1.e-4 segment 100 0. 1.875e-5 0.003 1.875e-5 #
+            T_seg_liq grav temperature_thermique Periode 1.e-4 segment 25 1.e-4 0 2.5e-3 0
+            T_seg_vap grav temperature_thermique_vapeur Periode 1.e-4 segment 25 1.e-4 0 2.5e-3 0
+		      Ind_seg grav INDICATRICE_INTERF Periode 1.e-4 segment 25 1.e-4 0 2.5e-3 0
         }
     }
 
@@ -448,35 +436,48 @@ Lire pb1
 
 Read pb2
 {
-    Conduction
-    {
-        diffusion { }
-        boundary_conditions {
-            sleft symetrie
-            sright   PAROI_ADIABATIQUE
-            sbot paroi_flux_impose Champ_front_fonc_xyz 1 @pws@
-            sup  echange_contact_VDF_FT_Disc_solid {
-                autre_probleme pb1
-                autre_bord bot
-                autre_champ_temperature_indic1 temperature_thermique
-                autre_champ_temperature_indic0 temperature_thermique_vapeur
-                autre_champ_indicatrice indicatrice_interf
-                dt_impr_Tw 1.e-4
-            }
+	Solide
+	{
+		gravite champ_uniforme 2 0 -9.81
+		rho Uniform_Field 1 8500.
+		lambda Champ_Uniforme 1 234.    
+		Cp Champ_Uniforme 1 376.
+	}
+	Conduction
+	{
+		diffusion { }
+      sources {
+              Puissance_Thermique Champ_fonc_xyz dom_solide 1 $power*(y_ge_@pdy@)*(x_le_@rmax@)
+      }
+		boundary_conditions {
+			sleft symetrie
+			sright   PAROI_ADIABATIQUE
+			sbot paroi_flux_impose Champ_front_fonc_xyz 1 @pws@*(x_le_@xpsurf@)
+			sup  echange_contact_VDF_FT_Disc_solid {
+				autre_probleme pb1
+				autre_bord bot 
+				autre_champ_temperature_indic1 temperature_thermique
+				autre_champ_temperature_indic0 temperature_thermique_vapeur
+				autre_champ_indicatrice indicatrice_interf
+                               dt_impr_Tw 1.e-4
+			}
 
         }
         CONDITIONS_INITIALES { temperature Champ_Uniforme 1 @dT@ }
     }
-
-    Post_processing
-    {
-        Format lata
-        fichier slata/post
-        fields dt_post 1.0e-4
-        {
-            temperature elem
-        }
-    }
+   Post_processing
+	{
+		Format lata
+		fichier slata/post
+		fields dt_post 1.0e-4
+		{
+		    temperature elem
+		}
+		Probes 
+      {
+        T_seg_sol grav temperature Periode 1.e-4 segment 25 1.e-4 0 2.5e-3 0
+      }
+	}
 
     sauvegarde binaire source_sod.sauv
     sauvegarde xyz source_sod.xyz

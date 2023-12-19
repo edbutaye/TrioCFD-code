@@ -283,7 +283,7 @@ class Case:
 
 
 class Cases:
-    def __init__(self, case, resolution, nmeso, Lx, Ly, ZZ, SurPower, dT, theta, timestep="1e-7", r0=0.0002):
+    def __init__(self, case, resolution, nmeso, Lx, Ly, ZZ, SurPower, xpsurf, dT, theta, tempC, timestep="1e-7", r0=0.0002):
         self.name = case
         self.M = resolution  # in µm
         self.timestep = timestep
@@ -293,16 +293,20 @@ class Cases:
         self.ZZ = ZZ
         self.dT = dT
         self.theta = theta
+        self.tempC = tempC
         self.r0 = r0  # Initial bubble radius
         self.SurPower = SurPower
+        self.xpsurf = xpsurf
         self.dict = {}
         self.dict["rmax"] = Lx
         self.dict["zmax"] = Ly
         self.dict["zsol"] = ZZ
         self.dict["dT"] = dT
         self.dict["theta"] = theta
+        self.dict["tempC"] = tempC
         self.dict["delta_th"] = 0.0005  # m
         self.dict["pws"] = SurPower  # m
+        self.dict["xpsurf"] = xpsurf
         self.dcases = {}
         return
 
@@ -342,16 +346,18 @@ zs = [0.012]
 zssol = [0.001]
 dTs = [8.5]
 thetas = [50.0]
+tempCs = [6.7]
 sMs = [4.9]  # in µm
 hMs = [3.8]  # in µm
 Qmicros = [30.5]
 Ms = ["40"]  # Mesh sizes in µm
-nmesos = ["1"]
+nmesos = ["4"]
 dts = ["1.e-7"]
 tmaxs = 50e-3 * unit
 r0s = [0.00026]  # initial bubble radius
 nb_pas_dt_max = 1000000000 * unit
 pws = ["0."] # power per unit area w/m2 #
+xlimp = ["4.e-3"]
 
 d_all = {}
 for idx, config in enumerate(configurations):
@@ -359,14 +365,16 @@ for idx, config in enumerate(configurations):
     z = zs[idx]
     zz = zssol[idx]
     mpws = pws[idx]
+    xpsurf = xlimp
     theta = thetas[idx]
+    tempC = tempCs[idx]
     dT = dTs[idx]
     M = Ms[idx]
     dt= dts[idx]
     nmeso = nmesos[idx]
     r0=r0s[idx]
     print(f"CONFIGURATION: {config} {r} {z} {M} $dT $theta $sM $hM $Qmicro $eth $r0 $Ntot")
-    cas = Cases(config, resolution=M, nmeso=nmeso, Lx=r, Ly=z, ZZ=zz, SurPower=mpws, dT=dT, theta=theta, r0=r0, timestep=dt)
+    cas = Cases(config, resolution=M, nmeso=nmeso, Lx=r, Ly=z, ZZ=zz, SurPower=mpws,xpsurf=xpsurf, dT=dT, theta=theta, tempC=tempC, r0=r0, timestep=dt)
     ok = cas.createCases(root=runs)
     d_all[config] = cas
     print("CASES CREATED:")

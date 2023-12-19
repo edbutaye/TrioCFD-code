@@ -59,9 +59,10 @@ echo "Visit generating resultat*dat"
 # [ -n "$(module avail visit)" ] && module load visit && echo "Visit Module Loaded"
 #
 [ -f lata/post.lata ] && sed -i "/^??/d" lata/post.lata # Delete weird lines if any.
+[ -f slata/post.lata ] && sed -i "/^??/d" slata/post.lata # Delete weird lines if any.
 visit -nowin -cli -s ./visit_Re_Nu2.py  -val ts_start=0 -val nb_ts=1 &> visit-resultats.log
 echo "Done."
 
 echo "Launching Cleaning"
-./clean && echo "Cleaning ok" || echo "Cleaning failed"
+# ./clean && echo "Cleaning ok" || echo "Cleaning failed"
 echo "End of post_run for $1"
