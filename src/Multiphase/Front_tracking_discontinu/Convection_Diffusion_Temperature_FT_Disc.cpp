@@ -43,6 +43,11 @@
 #include <stat_counters.h>
 #include <TRUST_Ref.h>
 #include <Parametre_implicite.h>
+#include <Connex_components_FT.h> // EB
+#include <communications.h> // EB
+#include <EcritureLectureSpecial.h> // EB
+#include <Statistiques.h> // EB
+#include <sys/stat.h> // EB
 
 static const double TSAT_CONSTANTE = 0.;
 
@@ -73,6 +78,11 @@ Convection_Diffusion_Temperature_FT_Disc::Convection_Diffusion_Temperature_FT_Di
   lost_fluxes_conv_.set_smart_resize(1);
   lost_fluxes_conv_.resize_array(0);
   divergence_free_velocity_extension_=0; // Default set to historical behavior : velocity extension is NOT divergence-free
+
+  flag_correction_flux_thermique_=0;
+  phi_ref_correction_flux_thermique_=0;
+  alpha_correction_flux_thermique_=0;
+  beta_correction_flux_thermique_=0;
 }
 
 Sortie& Convection_Diffusion_Temperature_FT_Disc::printOn(Sortie& os) const
@@ -125,6 +135,7 @@ void Convection_Diffusion_Temperature_FT_Disc::set_param(Param& param)
   param.ajouter_flag("divergence_free_velocity_extension", &divergence_free_velocity_extension_, Param::OPTIONAL);
   param.ajouter_non_std("solveur_pression_fictive",(this),Param::OPTIONAL);
   param.ajouter("bc_opening_pressure",&name_bc_opening_pressure_,Param::OPTIONAL);
+  param.ajouter_non_std("correction_flux_thermique", (this)); // EB
 }
 
 int Convection_Diffusion_Temperature_FT_Disc::lire_motcle_non_standard(const Motcle& mot, Entree& is)
@@ -138,6 +149,8 @@ int Convection_Diffusion_Temperature_FT_Disc::lire_motcle_non_standard(const Mot
         Cerr << " Interface equation for the temperature convection diffusion equation :"
              << nom_eq << finl;
       ref_eq_interface_ = pb.equation_interfaces(nom_eq);
+      ref_eq_interface_.valeur().associer_equation_temp(*this); // EB
+
       return 1;
     }
   else if (mot=="solveur_pression_fictive")
@@ -201,14 +214,121 @@ int Convection_Diffusion_Temperature_FT_Disc::lire_motcle_non_standard(const Mot
       if (Process::je_suis_maitre())
         Cerr << " Navier_stokes equation for the temperature convection diffusion equation :"
              << nom_eq << finl;
-      const Navier_Stokes_std& ns = pb.equation_hydraulique(nom_eq);
+      const Navier_Stokes_FT_Disc& ns = pb.equation_hydraulique(nom_eq); // EB On modifie Navier_Stokes_std pas Navier_Stokes_FT_Disc
       ref_eq_ns_ = ns;
       return 1;
     }
+  // debut EB
+  // correction maillage dependant pour corriger le flux thermique en fonction de la resolution du maillage eulerien (nombre de mailles par diametre de particules)
+  else if (mot=="correction_flux_thermique")
+    {
+      Cerr << "Lecture des parametres de la correction du flux thermique : ";
+      Motcles mots;
+      mots.add("phi_ref"); // Flux de reference en W
+      mots.add("alpha"); // constante correlation
+      mots.add("beta"); // puissance correlation
+      mots.add("discretization"); // 3 modes de discretisation P1, elem_diph, P1_all
+
+      Motcle motbis;
+      Motcle accouverte = "{" , accfermee = "}" ;
+
+      is >> motbis;
+      if (motbis==accouverte)
+        {
+          is >> flag_correction_flux_thermique_;
+          is >> motbis;
+          while (motbis != accfermee)
+            {
+              int rang = mots.search(motbis);
+              switch (rang)
+                {
+                case 0:
+                  {
+                    is >> phi_ref_correction_flux_thermique_;
+                    Cerr << "\tphi_ref = " << phi_ref_correction_flux_thermique_;
+                    break;
+                  }
+                case 1:
+                  {
+                    is >> alpha_correction_flux_thermique_;
+                    Cerr << "\talpha = " << alpha_correction_flux_thermique_;
+                    break;
+                  }
+                case 2:
+                  {
+                    is >> beta_correction_flux_thermique_;
+                    Cerr << "\tbeta = " << beta_correction_flux_thermique_ << finl;
+                    break;
+                  }
+                case 3:
+                  {
+                    Motcles methodes_discr;
+                    methodes_discr.add("P1"); // On discretise la correction sur tous les elements contenant les points P1 des facettes lagrangiennes
+                    methodes_discr.add("elem_diph"); // on discretise la correction sur les elements diphasiques // EB MAJ : -> INUTILE car la temperature est imposee a T_SAT dans les mailles diphasiques
+                    methodes_discr.add("P1_all"); // A PRIVILEGIER. On discretise la correction sur l'ensemble des elements ayant servis a l'interpolation de la temperature en P1. Cela permet d'avoir une coque fermee et plus lisse autour de la particule.
+                    Motcle la_discr;
+                    is >> la_discr;
+                    const int r = methodes_discr.search(la_discr);
+                    switch(r)
+                      {
+                      case 0:
+                        discretization_correction_ = Discretization_correction::P1;
+                        break;
+                      case 1:
+                        discretization_correction_ = Discretization_correction::ELEM_DIPH;
+                        break;
+                      case 2:
+                        discretization_correction_ = Discretization_correction::P1_ALL;
+                        break;
+                      default:
+                        Cerr << "Error " << mots << "was expected whereas " << motbis <<" has been found."<< finl;
+                        barrier();
+                        exit();
+                      }
+
+                    Cerr << "\t discr : " << static_cast<long>(discretization_correction_) << finl;
+                    break;
+                  }
+                default:
+                  Cerr << "Erreur, on attendait " << mots << " On a trouve : " << motbis << finl;
+                  barrier();
+                  exit();
+                }
+              is >> motbis;
+            }
+
+        }
+      else
+        {
+          Cerr << "Erreur, on attendait " << accouverte << "On a trouve : " << motbis << finl;
+          barrier();
+          exit();
+        }
+    }
+  // fin EB
   else
     return Convection_Diffusion_Temperature::lire_motcle_non_standard(mot,is);
+  return 1;
 }
 
+/* EB : cela est utile pour faire une reprise de calcul xyz depuis une simu sans thermique
+int Convection_Diffusion_Temperature_FT_Disc::reprendre(Entree& is)
+{
+  int special= EcritureLectureSpecial::is_lecture_special();
+  if(special)
+    {
+      if (Process::je_suis_maitre())
+        {
+          Entree is_=is;
+          Nom is_end;
+          is_>>is_end;
+          if (is_end=="fin")
+            return 1;
+        }
+    }
+  return Equation_base::reprendre(is);
+}
+*/
 const Champ_base& Convection_Diffusion_Temperature_FT_Disc::vitesse_pour_transport() const
 {
   // return ref_eq_ns_.valeur().vitesse();
@@ -218,6 +338,10 @@ const Champ_base& Convection_Diffusion_Temperature_FT_Disc::vitesse_pour_transpo
   return vitesse_convection_;
 }
 
+const Champ_base& Convection_Diffusion_Temperature_FT_Disc::vitesse_pour_transport_non_const()
+{
+  return ref_eq_ns_.valeur().vitesse();
+}
 void Convection_Diffusion_Temperature_FT_Disc::preparer_pas_de_temps(void)
 {
 }
@@ -351,7 +475,7 @@ static void extrapoler_champ_elem(const Domaine_VF&    domaine_vf,
                                   const double   interfacial_value,
                                   DoubleTab&        champ,
                                   DoubleTab&        gradient,
-                                  const double temps)
+                                  const double temps, const long solid_particle)
 {
   const IntTab& elem_faces = domaine_vf.elem_faces();
   //const IntTab& faces_elem = domaine_vf.face_voisins();
@@ -502,17 +626,270 @@ void Convection_Diffusion_Temperature_FT_Disc::calculer_grad_t()
   Navier_Stokes_FT_Disc& eq_navier_stokes = ref_cast(Navier_Stokes_FT_Disc, ref_eq_ns_.valeur());
   const DoubleTab& div_n = eq_navier_stokes.calculer_div_normale_interface().valeurs();
 
+  static const long solid_particle=eq_interface_.is_solid_particle();
   extrapoler_champ_elem(domaine_vf, indicatrice, distance_interface, normale_interface, div_n,
                         phase_, stencil_width, interfacial_value,
                         temperature,
                         grad_t_.valeur().valeurs(),
-                        temps);
+                        temps, solid_particle);
 }
 
 void Convection_Diffusion_Temperature_FT_Disc::calculer_mpoint()
 {
   calculer_mpoint(mpoint_);
 }
+
+// debut EB
+/*! @brief Supprime les doublons de la liste "liste" et enregistre les elements reels dans list_elem_unique et les elements virtuels dans list_elem_to_send
+*/
+int remove_duplicate(const IntTab& list, ArrOfInt& list_elem_unique, ArrOfInt& list_num_compo_unique, const Domaine& domaine, const Schema_Comm_FT& comm)
+{
+
+  const int nb_elem=domaine.nb_elem();
+  const int nb_elem_init=list.dimension(0);
+
+  // 1. ENVOI/RECEPTION des elements virtuels
+  ArrOfInt list_elem_to_send(0);
+  ArrOfInt list_pe_send(0);
+  ArrOfInt list_num_compo_to_send(0);
+  list_elem_to_send.set_smart_resize(1);
+  list_pe_send.set_smart_resize(1);
+  list_num_compo_to_send.set_smart_resize(1);
+
+  ArrOfIntFT list_elem_recv;
+  ArrOfIntFT list_num_compo_recv;
+  list_elem_recv.set_smart_resize(1);
+
+  const IntTab& elem_virt_pe_num=domaine.elem_virt_pe_num();
+  int nb_elem_to_send=0;
+  int nb_elem_recv=0;
+
+  ArrOfInt list_elem_reels(0);
+  ArrOfInt list_num_compo_reels(0);
+  list_elem_reels.set_smart_resize(1);
+  list_num_compo_reels.set_smart_resize(1);
+  int nb_elems_reels=0;
+
+  // On identifie les elements virtuels a envoyer
+  for (int ind_elem=0; ind_elem<nb_elem_init; ind_elem++)
+    {
+      int elem=list(ind_elem,0);
+
+      if (elem>nb_elem)
+        {
+          const int rang = elem - nb_elem;
+          const int num_pe=elem_virt_pe_num(rang,0);
+          const int num_elem_distant=elem_virt_pe_num(rang,1);
+          list_elem_to_send.append_array(num_elem_distant);
+          list_pe_send.append_array(num_pe);
+          list_num_compo_to_send.append_array(list(ind_elem,1));
+          nb_elem_to_send++;
+        }
+      else
+        {
+          list_elem_reels.append_array(elem);
+          list_num_compo_reels.append_array(list(ind_elem,1));
+          nb_elems_reels++;
+        }
+    }
+
+  list_elem_to_send.set_smart_resize(0);
+  list_pe_send.set_smart_resize(0);
+  list_num_compo_to_send.set_smart_resize(0);
+  list_elem_to_send.resize_array(nb_elem_to_send);
+  list_pe_send.resize_array(nb_elem_to_send);
+  list_num_compo_to_send.resize_array(nb_elem_to_send);
+
+  list_elem_reels.set_smart_resize(0);
+  list_num_compo_reels.set_smart_resize(0);
+  list_elem_reels.resize(nb_elems_reels);
+  list_num_compo_reels.resize(nb_elems_reels);
+
+  //Cerr << "list_pe_send " << list_pe_send << finl;
+
+  ArrOfInt recv_list;
+  comm.begin_comm();
+  for(int i=0; i<nb_elem_to_send; i++)
+    {
+      const int PE_destinataire=list_pe_send(i);
+      const int element_arrive=list_elem_to_send(i);
+      const int num_compo=list_num_compo_to_send(i);
+      assert(PE_destinataire!=Process::me());
+      comm.send_buffer(PE_destinataire) << element_arrive << num_compo;
+    }
+
+  comm.echange_taille_et_messages();
+
+  list_elem_recv.resize_array(0);
+  list_num_compo_recv.resize_array(0);
+
+
+  const ArrOfInt& recv_pe_list = comm.get_recv_pe_list();
+  const int nb_recv_pe = recv_pe_list.size_array();
+  for (int i=0; i<nb_recv_pe; i++)
+    {
+      const int pe_source = recv_pe_list[i];
+      Entree& buffer = comm.recv_buffer(pe_source);
+      while(1)
+        {
+          int elem_recv=-1,num_compo_recv=-1;
+          buffer >> elem_recv >> num_compo_recv;
+          if (buffer.eof())
+            break;
+          if (elem_recv<0 || num_compo_recv<0) Process::exit();
+
+          nb_elem_recv++;
+
+          list_elem_recv.append_array(elem_recv);
+          list_num_compo_recv.append_array(num_compo_recv);
+        }
+    }
+  comm.end_comm();
+
+  /*
+  Cerr << " nb_elems_reels " << nb_elems_reels << " nb_elem_recv " << nb_elem_recv << finl;
+  Cerr << "list_num_compo_recv " << list_num_compo_recv << finl;
+  Cerr << "list_elem_recv " << list_elem_recv << finl;
+  Cerr << "list_elem_reels " << list_elem_reels << finl;
+  Cerr << "list_num_compo_reels " << list_num_compo_reels << finl;
+  Cerr << "list_elem_to_send " << list_elem_to_send << finl;
+  Cerr << "list_num_compo_to_send " << list_num_compo_to_send << finl;
+  Cerr << "list_pe_send " << list_pe_send << finl;
+  */
+
+  list_elem_recv.set_smart_resize(0);
+  list_num_compo_recv.set_smart_resize(0);
+  if (nb_elem_recv>0)
+    {
+      list_elem_recv.resize(nb_elem_recv);
+      list_num_compo_recv.resize(nb_elem_recv);
+    }
+
+  list_elem_unique.set_smart_resize(1);
+  list_num_compo_unique.set_smart_resize(1);
+
+  int nb_elem_unique=0;
+  int elem,num_compo;
+
+
+  // On supprime les doublons
+  for (int ind_elem=0; ind_elem<nb_elems_reels+nb_elem_recv; ind_elem++)
+    {
+      if (ind_elem<nb_elems_reels)
+        {
+          elem = list_elem_reels(ind_elem);
+          num_compo = list_num_compo_reels(ind_elem);
+        }
+      else
+        {
+          elem = list_elem_recv(ind_elem-nb_elems_reels);
+          num_compo = list_num_compo_recv(ind_elem-nb_elems_reels);
+        }
+      if (elem<0) continue;
+      int elem_exist=0;
+      for (int ind=0; ind<list_elem_unique.size_array(); ind++)
+        if (elem==list_elem_unique(ind)) elem_exist=1;
+
+      if (!elem_exist )
+        {
+          list_elem_unique.append_array(elem);
+          list_num_compo_unique.append_array(num_compo);
+          nb_elem_unique++;
+        }
+
+    }
+
+  list_elem_unique.set_smart_resize(0);
+  list_num_compo_unique.set_smart_resize(0);
+  list_elem_unique.resize_array(nb_elem_unique);
+  list_num_compo_unique.resize_array(nb_elem_unique);
+
+  return nb_elem_unique;
+}
+
+// EB
+/*! @brief Calcul de la correction du flux thermique
+ * La correction est du type Phi_c=Phi_ref * alpha/(N^beta)
+ * Phi_ref : Flux thermique recu par la particule en PR-DNS
+ * alpha, beta, coefficients de correlation
+ * N : nombre de mailles euleriennes par diametre de particules
+ */
+void Convection_Diffusion_Temperature_FT_Disc::calculer_correction_flux_thermique(DoubleTab& valeurs_champ, const Navier_Stokes_FT_Disc& eq_ns, Transport_Interfaces_FT_Disc& eq_transport, const Maillage_FT_Disc& maillage)
+{
+  static const Stat_Counter_Id count = statistiques().new_counter(1, "calculer_correction_flux_thermique", 0);
+  statistiques().begin_count(count);
+
+  const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_dis().valeur());
+  const DoubleVect& volume_elem = domaine_vdf.volumes();
+
+  const DoubleVect& rayon_compo=eq_transport.get_rayons_compo();
+
+  const int nb_compo_tot = eq_transport.get_vitesses_compo().dimension(0);
+  DoubleVect correction_flux_thermique(nb_compo_tot);
+
+  const DoubleVect& longueurs = Modele_Collision_FT::get_longueurs();
+  const IntVect& nb_noeuds= Modele_Collision_FT::get_nb_noeuds();
+  const double Phi_ref_Nb_40=phi_ref_correction_flux_thermique_;
+  const double alpha=alpha_correction_flux_thermique_;
+  const double beta=beta_correction_flux_thermique_;
+
+  // bloc non parallele car tous les procs connaissent toutes les particules (positions, vitesses...) mais pas toutes les fa7
+  // meme probleme avec la correction de la trainee et le calcul des forces de collision
+  for (int compo=0; compo<nb_compo_tot; compo++)
+    {
+      const double N=(nb_noeuds(0)-1)/(longueurs(0)/(2.*rayon_compo(compo)));
+      correction_flux_thermique(compo)=Phi_ref_Nb_40*(alpha/pow(N,beta));
+      if (nb_compo_tot==1) Cerr << "correction_flux_thermique " << correction_flux_thermique(compo) << finl;
+    }
+
+  // On supprime les doublons de la liste list_elem_P1 pour ne pas considerer plusieurs fois le meme element lors de la discretisation volumique de la correction
+  ArrOfInt list_elem_unique(0);
+  ArrOfInt list_num_compo_unique(0);
+
+  int nb_elem_unique=0;
+
+  Transport_Interfaces_FT_Disc& eq_interface = ref_eq_interface_.valeur();
+  const Maillage_FT_Disc& maillage_interface = eq_interface.maillage_interface();
+  const Schema_Comm_FT& schema_com= maillage_interface.get_schema_comm_FT();
+
+  if (discretization_correction_==Discretization_correction::P1)
+    {
+      const IntTab& list_elem_P1=eq_ns.get_list_elem_P1();
+      nb_elem_unique=remove_duplicate(list_elem_P1,list_elem_unique,list_num_compo_unique,domaine_vdf.domaine(), schema_com);
+    }
+  else if (discretization_correction_==Discretization_correction::ELEM_DIPH)
+    {
+      const IntTab& list_elem_diph=eq_ns.get_list_elem_diph();
+      nb_elem_unique=remove_duplicate(list_elem_diph,list_elem_unique,list_num_compo_unique,domaine_vdf.domaine(), schema_com);
+    }
+  else if (discretization_correction_==Discretization_correction::P1_ALL)
+    {
+      const IntTab& list_elem_P1_all=eq_ns.get_list_elem_P1_all();
+      nb_elem_unique=remove_duplicate(list_elem_P1_all,list_elem_unique,list_num_compo_unique,domaine_vdf.domaine(), schema_com);
+    }
+  // On discretise ensuite sur le volume forme les elements P1 ou les elements diphasiques. Ces elements forment une coque autour de la particule
+  DoubleVect volume_coque(nb_compo_tot);
+  volume_coque=0;
+  for (int ind_elem=0; ind_elem<nb_elem_unique; ind_elem++)
+    {
+      int elem=list_elem_unique(ind_elem);
+      int num_compo=list_num_compo_unique(ind_elem);
+      valeurs_champ(elem)=volume_elem(elem)*correction_flux_thermique(num_compo);
+      volume_coque(num_compo)+=volume_elem(elem);
+    }
+  mp_sum_for_each_item(volume_coque);
+  for (int ind_elem=0; ind_elem<nb_elem_unique; ind_elem++)
+    {
+      int elem=list_elem_unique(ind_elem);
+      int num_compo=list_num_compo_unique(ind_elem);
+      valeurs_champ(elem)/=volume_coque(num_compo);
+    }
+
+  valeurs_champ.echange_espace_virtuel();
+  statistiques().end_count(count);
+}
+// fin EB
+
 
 void Convection_Diffusion_Temperature_FT_Disc::calculer_mpoint(Champ_base& mpoint)
 {
@@ -1115,6 +1492,13 @@ DoubleTab& Convection_Diffusion_Temperature_FT_Disc::derivee_en_temps_inco(Doubl
   // rhoCp is used for convection.
   // vitesse_convection_ is used for convection.
   DoubleTab& temperature = inconnue().valeur().valeurs();
+  Transport_Interfaces_FT_Disc& eq_interface = ref_eq_interface_.valeur();
+  const Maillage_FT_Disc& maillage_interface = eq_interface.maillage_interface();
+  DoubleTab& terme_correction_flux_thermique =  terme_correction_flux_thermique_.valeur().valeurs();
+  const Navier_Stokes_FT_Disc& ns_const = ref_cast(Navier_Stokes_FT_Disc, ref_eq_ns_.valeur());
+  const int flag_correction_thermique = flag_correction_flux_thermique_;
+  if (flag_correction_thermique) calculer_correction_flux_thermique(terme_correction_flux_thermique, ns_const, eq_interface, maillage_interface); // EB
+
   derivee = 0.;
 
   // STEP 3: Diffusion operator
@@ -1136,6 +1520,7 @@ DoubleTab& Convection_Diffusion_Temperature_FT_Disc::derivee_en_temps_inco(Doubl
       terme_diffusif.ajouter(temperature, derivee);
     }
   //  statistiques().end_count(count2);
+  if (flag_correction_thermique) derivee += terme_correction_flux_thermique; // EB on ajoute la correction a l'equation de l'energie
   const int nb_diffu=mixed_elems_.size_array();
   // const double temps = schema_temps().temps_courant();
   lost_fluxes_diffu_.resize_array(nb_diffu);
@@ -1397,6 +1782,26 @@ void Convection_Diffusion_Temperature_FT_Disc::discretiser()
 
       discretiser_assembleur_pression();
     }
+  // debut EB
+  nom = Nom("terme_correction_flux_thermique");
+  dis.discretiser_champ("temperature", un_domaine_dis, nom, "W", 1 /* composantes */, temps, terme_correction_flux_thermique_);
+  champs_compris.add(terme_correction_flux_thermique_.valeur());
+  champs_compris_.ajoute_champ(terme_correction_flux_thermique_);
+
+  // debut EB
+  // Tout comme schema_comm_zone_, la liste des procs qui communiquent sont tous ceux du maillage eulerien
+  // copie-colle de ce qui est fait dans Maillage_FT_Disc::associer_zone_dis_parcours pour schema_comm_zone_
+  /*
+  ArrOfIntFT pe_list;
+  CONST_LIST_CURSEUR(Joint) curseur(zone_dis().zone().faces_joint());
+  for (; curseur; ++curseur)
+    {
+      const Joint& joint = curseur.valeur();
+      const int pe_voisin = joint.PEvoisin();
+      pe_list.append_array(pe_voisin);
+    }
+  */
+  // fin EB
   Equation_base::discretiser();
 }
 
@@ -1574,7 +1979,7 @@ double Convection_Diffusion_Temperature_FT_Disc::get_flux_to_face(const int num_
   const Nom& bc_name = la_cl.frontiere_dis().le_nom();
   const int ndeb = le_bord.num_premiere_face();
 //  Cerr <<  " BC: " << la_cl.valeur() << " name: " << bc_name << finl;
-//  Cerr << "Dealing with face " << num_face <<  " belonging to BC " << la_cl.valeur();
+//  Cerr << "Dealing with face " << num_face <<  " beinting to BC " << la_cl.valeur();
   if ( sub_type(Neumann_paroi_adiabatique,la_cl.valeur()) )
     {
       Cerr << "paroi_adiabatique" << finl;
@@ -1680,7 +2085,7 @@ void Convection_Diffusion_Temperature_FT_Disc::get_flux_and_Twall(const int num_
   const Nom& bc_name = la_cl.frontiere_dis().le_nom();
   const int ndeb = le_bord.num_premiere_face();
 // Cerr <<  " BC: " << la_cl.valeur() << " name: " << bc_name << finl;
-// Cerr << "Dealing with face " << num_face <<  " belonging to BC " << la_cl.valeur();
+// Cerr << "Dealing with face " << num_face <<  " beinting to BC " << la_cl.valeur();
   if ( sub_type(Neumann_paroi_adiabatique,la_cl.valeur()) )
     {
       Cerr << "paroi_adiabatique" << finl;
@@ -1787,3 +2192,333 @@ double Convection_Diffusion_Temperature_FT_Disc::get_Twall(const int num_face) c
 // Cerr << "We have Twall = "<< Twall << " at face= " << num_face << " elem= " << elem << finl;
   return Twall;
 }
+
+// debut EB
+/*! @brief Calcul le flux thermique recu par la particule.
+ * Pour chaque facette lagrangienne, calcul de (lambda grad (T)) par un schema decentre avant d'ordre 2
+ *
+ */
+void Convection_Diffusion_Temperature_FT_Disc::calcul_flux_interface()
+{
+  Cerr << "Convection_Diffusion_Temperature_FT_Disc::calcul_flux_interface"  <<  finl;
+  // On recupere les equations
+  REF(Transport_Interfaces_FT_Disc) & refeq_transport = ref_eq_interface_;
+  const Transport_Interfaces_FT_Disc& eq_transport = refeq_transport.valeur();
+  REF(Navier_Stokes_FT_Disc) & refeq_ns = ref_eq_ns_;
+  Navier_Stokes_FT_Disc& eq_ns = refeq_ns.valeur();
+
+  const DoubleTab& indicatrice = refeq_transport.valeur().get_update_indicatrice().valeurs();
+  const DoubleTab& temperature = inconnue().valeur().valeurs();
+
+  const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_dis().valeur());
+  const Domaine& domaine = domaine_vdf.domaine();
+
+  // prop du fluide
+  const Fluide_Diphasique& mon_fluide = eq_ns.fluide_diphasique();
+  double lambda_f=mon_fluide.fluide_phase(1).conductivite().valeurs()(0, 0);
+
+  // grandeurs interface
+  const Maillage_FT_Disc& maillage = eq_transport.maillage_interface_pour_post();
+  const int nb_fa7 = maillage.nb_facettes();
+  int nb_fa7_reelle=0;
+  for (int i=0; i<nb_fa7; i++)
+    if (!maillage.facette_virtuelle(i)) nb_fa7_reelle++;
+
+  IntVect compo_connexes_fa7(nb_fa7); // Init a zero
+  int n = search_connex_components_local_FT(maillage, compo_connexes_fa7);
+  int nb_compo_tot=compute_global_connex_components_FT(maillage, compo_connexes_fa7, n);
+
+
+  // init tableau flux conductif tot
+  static int iter=0;
+  DoubleVect& flux_tot_conductif=flux_conductif_tot_interf_;
+  DoubleTab& flux_cond_interf=flux_conductif_interf_;
+  if (iter==0)
+    {
+      flux_tot_conductif.resize(nb_compo_tot);
+      iter++;
+    }
+  flux_tot_conductif=0;
+
+  // distance d'interpolation de la temperature depuis le cg des fa7 lagrangiennes
+  const Postraitement_Forces_Interfaces_FT& les_post_interf=eq_transport.postraitement_forces_interf();
+  const double& dist_interp_T_P1=les_post_interf.get_distance_interpolation_temperature_P1();
+  const double& dist_interp_T_P2=les_post_interf.get_distance_interpolation_temperature_P2();
+
+  DoubleVect& T_P2_moy=get_T_P2_moy();
+  T_P2_moy.resize(nb_compo_tot);
+  T_P2_moy=0;
+
+  //Cerr << "avant process::barrier() 1" << finl;
+  //Process::barrier();
+  //Cerr << "apres process::barrier() 1" << finl;
+
+  IntTab Nb_fa7_ok_prop;
+  Nb_fa7_ok_prop.resize(nb_compo_tot);
+  Nb_fa7_ok_prop=0;
+
+  if (nb_fa7>0)
+    {
+      const ArrOfDouble& les_surfaces_fa7 = maillage.get_update_surface_facettes();
+      const DoubleTab& les_normales_fa7 = maillage.get_update_normale_facettes();
+      if (les_post_interf.calcul_flux_)
+        {
+          flux_cond_interf.resize(nb_fa7);
+          flux_cond_interf=1e15;
+        }
+
+      const DoubleTab& les_cg_fa7=maillage.cg_fa7();
+      DoubleTab coord_voisin_fluide_fa7_T_1(nb_fa7,dimension);
+      DoubleTab coord_voisin_fluide_fa7_T_2(nb_fa7,dimension);
+
+
+      // calcul des coordonnees d'interpolation
+      for (int fa7 =0 ; fa7<nb_fa7 ; fa7++)
+        {
+          if (!maillage.facette_virtuelle(fa7))
+            {
+              DoubleVect normale_fa7(dimension);
+              int elem_diph=domaine.chercher_elements(les_cg_fa7(fa7,0), les_cg_fa7(fa7,1),les_cg_fa7(fa7,2));
+              DoubleVect delta_i(dimension);
+              // On calcule les epaisseurs des mailles euleriennes  dans lesquelles se trouvent les facettes
+              // Si on y a acces, on prend l'epaisseur a l'exterieur de la particule
+              // Sinon, on prend l'epaisseur dans la particule
+              // Cela revient simplement a choisir la maille juxtaposee a la maille diphasique
+              for (int dim=0; dim<dimension; dim++)
+                {
+                  int elem_haut=domaine_vdf.face_voisins_pour_interp(domaine_vdf.elem_faces_pour_interp(elem_diph, dim+dimension),1);
+                  int elem_bas=domaine_vdf.face_voisins_pour_interp(domaine_vdf.elem_faces_pour_interp(elem_diph, dim),0);
+                  if (les_normales_fa7(fa7,dim)>0) delta_i(dim) =  (elem_haut>=0) ? fabs(domaine_vdf.dist_elem(elem_diph,elem_haut, dim)) : fabs(domaine_vdf.dist_elem(elem_diph,elem_bas, dim));
+                  else delta_i(dim) =  (elem_bas>=0) ? fabs(domaine_vdf.dist_elem(elem_diph,elem_bas, dim)) : fabs(domaine_vdf.dist_elem(elem_diph,elem_haut, dim));
+                }
+
+              double epsilon=0;
+              for (int dim=0; dim<dimension; dim++)
+                {
+                  epsilon+= fabs(delta_i(dim)*fabs(les_normales_fa7(fa7,dim))); // la distance d'interpolation varie en fonction du raffinement du maillage
+                }
+              for (int dim=0; dim<dimension; dim++)
+                {
+                  //Cerr <<"marqueur x" << finl;
+                  normale_fa7(dim)=les_normales_fa7(fa7,dim);
+                  //Cerr << "marqeur y" << finl;
+                  coord_voisin_fluide_fa7_T_1(fa7,dim)=les_cg_fa7(fa7,dim)+dist_interp_T_P1*epsilon*normale_fa7(dim);
+                  //Cerr << "marqeur z" << finl;
+                  coord_voisin_fluide_fa7_T_2(fa7,dim)=les_cg_fa7(fa7,dim)+dist_interp_T_P2*epsilon*normale_fa7(dim);
+                  //Cerr << "marqeur zz" << finl;
+                }
+            }
+        }
+
+      DoubleTab temp_P1(nb_fa7);
+      DoubleTab temp_P2(nb_fa7);
+
+      int interp_T_P1_ok=eq_ns.trilinear_interpolation_elem(indicatrice,temperature, coord_voisin_fluide_fa7_T_1,temp_P1);
+      int interp_T_P2_ok=eq_ns.trilinear_interpolation_elem(indicatrice, temperature, coord_voisin_fluide_fa7_T_2,temp_P2);
+
+      if (interp_T_P1_ok &&  interp_T_P2_ok)
+        {
+          for (int fa7=0; fa7<nb_fa7; fa7++)
+            {
+              int compo=compo_connexes_fa7(fa7);
+              if (!maillage.facette_virtuelle(fa7))
+                {
+                  if (temp_P2(fa7)>-1e10)
+                    {
+                      Nb_fa7_ok_prop(compo)+=1;
+                      T_P2_moy(compo)+=temp_P2(fa7);
+                    }
+
+                  // On recalcule delta --> epsilon
+                  int elem_diph=domaine.chercher_elements(les_cg_fa7(fa7,0), les_cg_fa7(fa7,1),les_cg_fa7(fa7,2));
+                  DoubleVect delta_i(dimension);
+                  delta_i(0) = fabs(domaine_vdf.dist_elem(elem_diph, domaine_vdf.face_voisins(domaine_vdf.elem_faces(elem_diph, 0+dimension),1), 0));
+                  delta_i(1) = fabs(domaine_vdf.dist_elem(elem_diph, domaine_vdf.face_voisins(domaine_vdf.elem_faces(elem_diph, 1+dimension),1), 1));
+                  if (les_normales_fa7(fa7,2)>0) delta_i(2) = fabs(domaine_vdf.dist_elem(elem_diph, domaine_vdf.face_voisins(domaine_vdf.elem_faces(elem_diph, 2+dimension),1), 2));
+                  else delta_i(2) = fabs(domaine_vdf.dist_elem(elem_diph, domaine_vdf.face_voisins(domaine_vdf.elem_faces(elem_diph, 2),0), 2));
+                  double epsilon=0;
+                  for (int dim=0; dim<dimension; dim++) epsilon+= fabs(delta_i(dim)*fabs(les_normales_fa7(fa7,dim))); // la distance d'interpolation varie en fonction du raffinement du maillage
+                  flux_cond_interf(fa7)=lambda_f*(-temp_P2(fa7)+4.*temp_P1(fa7)-3.*TSAT_CONSTANTE)/(2.*epsilon)*les_surfaces_fa7(fa7); // schema decentre avant d'ordre 2
+                  flux_tot_conductif(compo)+=flux_cond_interf(fa7);
+                }
+            }
+        }
+      else
+        {
+          for (int compo=0; compo<nb_compo_tot; compo++) flux_tot_conductif(compo)+=0;
+        }
+    }
+
+  mp_sum_for_each_item(flux_tot_conductif);
+  mp_sum_for_each_item(Nb_fa7_ok_prop);
+  mp_sum_for_each_item(T_P2_moy);
+
+  for (int compo=0; compo<nb_compo_tot; compo++)
+    {
+      T_P2_moy(compo)/=Nb_fa7_ok_prop(compo);
+    }
+}
+
+const DoubleTab& Convection_Diffusion_Temperature_FT_Disc::get_flux_conductif_interf() const { return flux_conductif_interf_; }
+DoubleTab& Convection_Diffusion_Temperature_FT_Disc::get_flux_conductif_interf() { return flux_conductif_interf_;}
+const DoubleVect& Convection_Diffusion_Temperature_FT_Disc::get_flux_conductif_tot_interf() const { return flux_conductif_tot_interf_;}
+
+// EB
+/*! @brief renvoie la temperature moyenne aux points P2. Les points P2 pour lesquels l'interpolation n'est
+ * pas possible n'ont simplement pas ete pris en compte dans le calcul de la moyenne.
+ */
+DoubleVect& Convection_Diffusion_Temperature_FT_Disc::get_T_P2_moy() { return T_P2_moy_; }
+const DoubleVect& Convection_Diffusion_Temperature_FT_Disc::get_T_P2_moy() const { return T_P2_moy_; }
+
+// EB
+/*! @brief Initialise le tableau "flux_conductif_interf" contenant les evaluations de lambda grad T pour chaque facette lagrangienne.
+ */
+void Convection_Diffusion_Temperature_FT_Disc::init_champ_flux_conductif_interf()
+{
+  REF(Transport_Interfaces_FT_Disc) &refeq_transport = ref_eq_interface_;
+  const Transport_Interfaces_FT_Disc& eq_transport = refeq_transport.valeur();
+  const Maillage_FT_Disc& maillage = eq_transport.maillage_interface();
+  const int nb_fa7 = maillage.nb_facettes();
+  if (eq_transport.postraitement_forces_interf().calcul_flux_)
+    {
+      flux_conductif_interf_.resize(nb_fa7);
+      flux_conductif_interf_=-1e15;
+    }
+
+}
+// EB
+void ouvrir_fichier(SFichier& os,const Nom& type, const int& flag, const Convection_Diffusion_Temperature_FT_Disc& equation)
+{
+  // flag nul on n'ouvre pas le fichier
+  if (flag==0)
+    return ;
+  Nom fichier=Objet_U::nom_du_cas();
+  if (type=="_Flux_conductif_tot_sur_")
+    fichier+="_Flux_conductif_tot_sur_";
+  else if (type=="_Flux_conductif_tot_Lit_sur_")
+    fichier+="_Flux_conductif_tot_Lit_sur_";
+
+  fichier+=equation.le_nom();
+  fichier+=".out";
+  const Schema_Temps_base& sch=equation.probleme().schema_temps();
+  const int& precision=sch.precision_impr();
+  // On cree le fichier a la premiere impression avec l'en tete ou si le fichier n'existe pas
+
+  struct stat f;
+  if ((stat(fichier,&f) || (sch.nb_impr_fpi()==1 && !equation.probleme().reprise_effectuee())))
+    {
+      os.ouvrir(fichier,ios::app);
+      SFichier& fic=os;
+      Nom espace="\t";
+      if (type=="_Flux_conductif_tot_sur_")
+        {
+          fic << "#########################" << finl;
+          fic << "# Heat flux computation #" << finl;
+          fic << "#########################" << finl;
+          fic << "# Time [s]" << finl;
+          fic << "# Computation of the heat flux received by the particle from the surrounding fluid. [W] (phi)" << finl;
+          fic << finl;
+          fic << "# Time" << espace << "phi" << finl;
+          fic << finl;
+        }
+      else if (type=="_Flux_conductif_tot_Lit_sur_")
+        {
+          fic << "################################################" << finl;
+          fic << "# Heat flux computation in a particle assembly #" << finl;
+          fic << "################################################" << finl;
+          fic << "# Time [s]" << finl;
+          fic << "# Computation of the heat flux received by the particle from the surrounding fluid. [W] (phi_i), where i stands for the particle number." << finl;
+          fic << "# Average temperature of purely fluid cells in P2. [K] (T_i)" << finl;
+          fic << finl;
+          fic << "Time" << espace << "phi_0 T_0 ... phi_N T_N" << finl;
+          fic << finl;
+        }
+    }
+  else
+    {
+      os.ouvrir(fichier,ios::app);
+    }
+
+
+
+  os.precision(precision);
+  os.setf(ios::scientific);
+}
+// EB
+/*: @brief imprime le flux thermique recu par chaque particule.
+ * Si il y a plus de 5 particules dans le domaine, imprime egalement la temperature en P2.
+ */
+int Convection_Diffusion_Temperature_FT_Disc::impr_fpi(Sortie& os) const
+{
+  const REF(Transport_Interfaces_FT_Disc) & refeq_transport = ref_eq_interface_;
+  const Transport_Interfaces_FT_Disc& eq_transport = refeq_transport.valeur();
+  if (eq_transport.is_solid_particle())
+    {
+      const int nb_compo = eq_transport.get_vitesses_compo().dimension(0);
+      const Postraitement_Forces_Interfaces_FT& les_post_interf=eq_transport.postraitement_forces_interf();
+      if (les_post_interf.postraiter_flux())
+        {
+          if (Process::je_suis_maitre())
+            {
+              const DoubleVect& flux_cond_tot=get_flux_conductif_tot_interf();
+
+              int dim_max_impr=5; // on imprime pas les valeurs si il y a plus de 5 particules dans le domaine
+
+
+              Cerr << "Convection_Diffusion_Temperature_FT_Disc::impr_fpi nb_compo " << nb_compo << finl;
+              if (nb_compo<dim_max_impr)
+                {
+                  Nom espace= " ";
+                  SFichier Flux_cond_tot_interf;
+                  ouvrir_fichier(Flux_cond_tot_interf,"_Flux_conductif_tot_sur_",1,*this);
+                  schema_temps().imprimer_temps_courant(Flux_cond_tot_interf);
+                  for (int compo=0; compo<nb_compo; compo++)
+                    {
+                      Flux_cond_tot_interf << espace;
+                      Flux_cond_tot_interf << espace << flux_cond_tot(compo);
+                    }
+                  Flux_cond_tot_interf << finl;
+                }
+              else
+                {
+                  Nom espace= " ";
+                  SFichier Flux_cond_tot_interf;
+                  ouvrir_fichier(Flux_cond_tot_interf,"_Flux_conductif_tot_Lit_sur_",1,*this);
+                  schema_temps().imprimer_temps_courant(Flux_cond_tot_interf);
+                  const DoubleVect& T_P2_moy=get_T_P2_moy();
+
+                  for (int compo=0; compo<nb_compo; compo++)
+                    {
+                      Flux_cond_tot_interf << espace;
+                      Flux_cond_tot_interf << espace << flux_cond_tot(compo) << espace << T_P2_moy(compo);
+                      Flux_cond_tot_interf << finl;
+                    }
+                }
+            }
+        }
+    }
+  return 1;
+}
+
+// EB
+/*! @brief renvoie le type de discretisation pour la correction maillage-dependant du flux thermique.
+ *  0 : P1
+ *  1 : ELEM_DIPH
+ *  2 : P1_ALL
+ */
+int Convection_Diffusion_Temperature_FT_Disc::get_discretization_correction()
+{
+  switch(discretization_correction_)
+    {
+    case Discretization_correction::P1:
+      return 0;
+    case Discretization_correction::ELEM_DIPH:
+      return 1;
+    case Discretization_correction::P1_ALL:
+      return 2;
+    default:
+      return 0;
+    }
+}
+
+// fin EB

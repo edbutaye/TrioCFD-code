@@ -20,6 +20,8 @@
 #include <TRUSTTabFT.h>
 #include <Descripteur_FT.h>
 #include <Intersections_Elem_Facettes_Data.h>
+#include <Intersections_Face_Facettes_Data.h> // EB
+#include <Intersections_Arete_Facettes_Data.h> // EB
 #include <TRUSTTabs_forward.h>
 #include <TRUST_Deriv.h>
 #include <TRUST_Ref.h>
@@ -71,6 +73,7 @@ public:
   // Acces aux elements du maillage
   const DoubleTab& sommets() const;
   int              nb_sommets() const;  // Egal a sommets().dimension(0)
+  const DoubleTab& cg_fa7() const; // EB
   const IntTab&     facettes() const;
   int              nb_facettes() const; // Egal a facettes().dimension(0)
   const ArrOfInt& drapeaux_sommets() const;  // pour postraitement uniquement
@@ -78,6 +81,7 @@ public:
   const ArrOfInt& sommet_num_owner() const;   // pour postraitement uniquement
   void               facette_PE_owner(ArrOfInt& facette_pe) const; // pour postraitement uniquement
   const ArrOfInt& sommet_elem() const;       // pour postraitement uniquement
+  const IntTab& sommet_face() const;       // pour postraitement uniquement // EB
   const ArrOfInt& sommet_face_bord() const;  // pour postraitement uniquement
 
   const Desc_Structure_FT& desc_sommets() const;
@@ -88,9 +92,11 @@ public:
   const ArrOfInt& som_init_util() const;
   // Ces fonctions renvoient 1 si le test est vrai, 0 sinon
   inline int sommet_virtuel(int i) const;
+  inline int sommet_virtuel_face(int i) const; // EB
   inline int sommet_ligne_contact(int i) const;
   inline int sommet_face_bord(int i) const;
   inline int facette_virtuelle(int i) const;
+  inline int facette_virtuelle_face(int i) const; // EB
   int        facettes_voisines(int fa70, int fa71, int& iarete0, int& iarete1) const;
 
   int calculer_voisinage_facettes(IntTab& fa7Voisines,
@@ -106,11 +112,13 @@ public:
   void reset();
   // Amene le maillage dans l'etat PARCOURU
   void parcourir_maillage();
+  void remplir_equation_plan_faces_aretes_internes(Domaine_dis& zone_dis); // EB
   // Amene le maillage dans l'etat COMPLET
   void completer_maillage();
   // Calcul de l'indicatrice de phase
-  void calcul_indicatrice(DoubleVect& indicatrice,
-                          const DoubleVect& indicatrice_precedente);
+  void calcul_indicatrice(DoubleVect& indicatrice, const DoubleVect& indicatrice_precedente);
+  void calcul_indicatrice_face(const DoubleVect& indicatrice, DoubleVect& indicatrice_face, const DoubleVect& indicatrice_face_precedente);
+  void calcul_indicatrice_arete(const DoubleVect& indicatrice, DoubleVect& indicatrice_arete, const DoubleVect& indicatrice_arete_precedente);
   // Deplacement des sommets du maillage selon un vecteur donne
   virtual void transporter(const DoubleTab& deplacement);
 
@@ -170,7 +178,8 @@ public:
                                 DoubleTab& deplacement_restant,
                                 int skip_facettes=0);
 
-
+  void update_sommet_face(); // EB
+  void update_sommet_arete(); // EB
   // Utiliser ces deux fonctions pour recuperer des champs valides apres avoir
   // transporte le maillage :
   void preparer_tableau_avant_transport(ArrOfDouble& tableau,
@@ -195,7 +204,10 @@ public:
   void creer_tableau_sommets(Array_base&, Array_base::Resize_Options opt = Array_base::COPY_INIT) const;
   void creer_tableau_elements(Array_base&, Array_base::Resize_Options opt = Array_base::COPY_INIT) const;
   double calcul_normale_3D(int num_facette, double norme[3]) const;
+  void calcul_cg_fa7(); //EB
   virtual void   calculer_costheta_minmax(DoubleTab& costheta) const;
+  Schema_Comm_FT get_schema_comm_FT() const;
+  void set_is_solid_particle(int is_solid_particle); // EB
 
 protected:
   void pre_lissage_courbure(ArrOfDouble& store_courbure_sommets, const int niter) const;
@@ -257,6 +269,36 @@ protected:
                          ArrOfInt& facettes_recues_numfacettes,
                          ArrOfInt& facettes_recues_numelement);
 
+  void echanger_facettes_face_x(const ArrOfInt& liste_facettes,
+                                const ArrOfInt& liste_face_arrivee,
+                                ArrOfInt& facettes_recues_numfacettes,
+                                ArrOfInt& facettes_recues_numface);
+
+  void echanger_facettes_face_y(const ArrOfInt& liste_facettes,
+                                const ArrOfInt& liste_face_arrivee,
+                                ArrOfInt& facettes_recues_numfacettes,
+                                ArrOfInt& facettes_recues_numface);
+
+  void echanger_facettes_face_z(const ArrOfInt& liste_facettes,
+                                const ArrOfInt& liste_arete_arrivee,
+                                ArrOfInt& facettes_recues_numfacettes,
+                                ArrOfInt& facettes_recues_numarete);
+
+  void echanger_facettes_arete_x(const ArrOfInt& liste_facettes,
+                                 const ArrOfInt& liste_arete_arrivee,
+                                 ArrOfInt& facettes_recues_numfacettes,
+                                 ArrOfInt& facettes_recues_numarete);
+
+  void echanger_facettes_arete_y(const ArrOfInt& liste_facettes,
+                                 const ArrOfInt& liste_arete_arrivee,
+                                 ArrOfInt& facettes_recues_numfacettes,
+                                 ArrOfInt& facettes_recues_numarete);
+
+  void echanger_facettes_arete_z(const ArrOfInt& liste_facettes,
+                                 const ArrOfInt& liste_arete_arrivee,
+                                 ArrOfInt& facettes_recues_numfacettes,
+                                 ArrOfInt& facettes_recues_numface);
+
   void convertir_numero_distant_local(const Desc_Structure_FT& descripteur,
                                       const ArrOfInt& element_num_owner,
                                       const ArrOfInt& numeros_distants,
@@ -301,8 +343,11 @@ protected:
   //             processeurs :
   //             - statut_ (le meme pour tous les processeurs)
   //             - sommets_
+  //		 - cg_fa7_ // EB
   //             - facettes_
   //             - sommet_elem_
+  //		 - sommet_face_ // EB
+  //		 - sommet_arete_ // EB
   //             - sommet_face_bord_
   //             - sommet_PE_owner_
   //             - sommet_num_owner_
@@ -342,6 +387,7 @@ protected:
   // il est virtuel pour tous les autres. Pour les sommets situes a proximite d'un
   // joint (a epsilon pres), le choix du PE proprietaire est arbitraire.
   DoubleTabFT sommets_;
+  DoubleTab sommets2_; // EB est-ce encore utile ???
   // mes_facettes(i,j) = indice du j-ieme sommet de la i-ieme facette du maillage
   //                     En 2D : j=0..1, en 3D j=0..2
   // Conventions :
@@ -362,6 +408,14 @@ protected:
   // Par definition, le sommet m'appartient ssi sommet_elem_ >= 0
   // (si sommet_elem_ < 0, le sommet est virtuel)
   ArrOfIntFT sommet_elem_;
+  // EB : on a besoin d'un sommet_face_ pour le calcul de l'indicatrice aux faces
+  // Pour chaque sommet du maillage, numero de la face euleriene qui
+  // le contient et -1 si le sommet est virtuel.
+  // Par definition, le sommet m'appartient ssi sommet_face_ >= 0
+  // (si sommet_face_ < 0, le sommet est virtuel)
+  IntTabFT sommet_face_;
+  // EB : idem pour les aretes
+  IntTabFT sommet_arete_;
   // Pour chaque sommet du maillage, numero de la face de bord eulerienne
   // ou se trouve le sommet si le sommet est de type "ligne de contact",
   // -1 si le sommet n'est pas sur le bord. Si le sommet est virtuel et sur
@@ -375,7 +429,7 @@ protected:
   ArrOfIntFT sommet_num_owner_;
   // Le numero de la facette sur le proprietaire de celle-ci
   ArrOfIntFT facette_num_owner_;
-
+  DoubleTabFT cg_fa7_; // EB
   // Descripteur d'elements distants et virtuels pour les sommets et les facettes.
   // Definition : on dit que les espaces distant et virtuels sont coherents pour
   // un element (sommet ou facette) si :
@@ -405,8 +459,14 @@ protected:
   // Intersection entre les facettes du maillage lagrangien et les elements
   // euleriens (ce champ est rempli lors du parcours de l'interface)
   //
+  int is_solid_particle_;
   Intersections_Elem_Facettes intersections_elem_facettes_;
-
+  Intersections_Face_Facettes intersections_face_facettes_x_; // EB
+  Intersections_Face_Facettes intersections_face_facettes_y_; // EB
+  Intersections_Face_Facettes intersections_face_facettes_z_; // EB
+  Intersections_Arete_Facettes intersections_arete_facettes_x_; // EB
+  Intersections_Arete_Facettes intersections_arete_facettes_y_; // EB
+  Intersections_Arete_Facettes intersections_arete_facettes_z_; // EB
   // voisins_(i,j)  = indice de la facette voisine de la i-eme facette du
   // maillage par l'arete j.
   IntTabFT    voisins_;
@@ -460,6 +520,14 @@ inline int Maillage_FT_Disc::sommet_virtuel(int i) const
 {
   return (sommet_elem_[i] < 0) ? 1 : 0;
 }
+// debut EB
+// Description :
+//  Renvoie 0 si le sommet m'appartient, 1 sinon.
+//  Si le sommet i m'appartient, alors il se trouve a l'interieur de la face
+//  sommet_face_[i]. On garantit qu'un sommet est reel sur exactement un
+//  processeur et virtuel sur tous les autres.
+inline int Maillage_FT_Disc::sommet_virtuel_face(int i) const { return (sommet_face_[i] < 0) ? 1 : 0 ; }
+// fin EB
 
 // Description :
 //  Renvoie 1 si le sommet se trouve sur un bord du domaine, 0 sinon.
@@ -489,7 +557,16 @@ inline int Maillage_FT_Disc::facette_virtuelle(int i) const
   const int sommet = facettes_(i, 0);
   return (sommet_elem_[sommet] < 0) ? 1 : 0;
 }
-
+// debut EB
+// Description:
+//  Renvoie 0 si la facette m'appartient, 1 sinon.
+//  (le test est "le premier sommet de la facette m'appartient-t-il ?")
+inline int Maillage_FT_Disc::facette_virtuelle_face(int i) const
+{
+  const int sommet = facettes_(i, 0);
+  return (sommet_face_[sommet] < 0) ? 1 : 0;
+}
+// fin EB
 inline int Maillage_FT_Disc::set_niveau_plot(int niv)
 {
   niveau_plot_ = niv;

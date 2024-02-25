@@ -46,7 +46,9 @@
 #endif
 //#define PATCH_HYSTERESIS_V2
 //#define PATCH_HYSTERESIS_V3
-#include<ArrOfBit.h>
+#include <ArrOfBit.h>
+#include <Domaine_VDF.h>
+#include <Domaine.h>
 // //#define DEBUG_HYSTERESIS_V2
 /*
  * define permettant de post-traiter les triangles et leurs elements miroirs autour d'un point sommet s0.
@@ -193,6 +195,7 @@ Maillage_FT_Disc::Maillage_FT_Disc() :
   statut_(RESET),
   mesh_state_tag_(0),
   temps_physique_(0.),
+  is_solid_particle_(0),
   niveau_plot_(-1),
   correction_contact_courbure_coeff_(2.),
   calcul_courbure_iterations_(2),
@@ -230,7 +233,12 @@ void Maillage_FT_Disc::maillage_modifie(Statut_Maillage nouveau_statut)
 {
   //Process::Journal()<<"maillage_modifie de "<<statut_<<" a "<<nouveau_statut<<finl;
   if (nouveau_statut < PARCOURU && statut_ >= PARCOURU)
-    intersections_elem_facettes_.reset();
+    {
+      intersections_elem_facettes_.reset();
+      intersections_face_facettes_x_.reset();
+      intersections_face_facettes_y_.reset();
+      intersections_face_facettes_z_.reset();
+    }
   statut_ = nouveau_statut;
   mesh_state_tag_++;
 }
@@ -418,7 +426,7 @@ Sortie& Maillage_FT_Disc::printSom(int som,Sortie& os) const
         {
           os<<" "<<sommets_(som,2);
         }
-      os<<" elem="<<sommet_elem_[som]<<" faceB="<<sommet_face_bord_[som];
+      os<<" elem="<<sommet_elem_[som]<<" face_x="<<sommet_face_(som,0)<<" face_y="<<sommet_face_(som,1)<<" face_z="<<sommet_face_(som,2)<<" faceB="<<sommet_face_bord_[som]; // EB : rajout sommet_face_[som]
       os<<finl;
     }
 
@@ -617,6 +625,7 @@ void Maillage_FT_Disc::reset()
   facettes_.resize(0,dimension);
   voisins_.resize(0,dimension);
   sommet_elem_.resize_array(0);
+  sommet_face_.resize(0,dimension); // EB /!\ On a 3 indicatrices aux faces. Un sommet appartient a 3 faces
   sommet_face_bord_.resize_array(0);
   sommet_PE_owner_.resize_array(0);
   sommet_num_owner_.resize_array(0);
@@ -624,6 +633,9 @@ void Maillage_FT_Disc::reset()
   desc_facettes_.reset();
   drapeaux_sommets_.resize_array(0);
   intersections_elem_facettes_.reset();
+  intersections_face_facettes_x_.reset();
+  intersections_face_facettes_y_.reset();
+  intersections_face_facettes_z_.reset();
   mesh_data_cache().clear();
 
   maillage_modifie(RESET);
@@ -650,6 +662,7 @@ void Maillage_FT_Disc::recopie(const Maillage_FT_Disc& source, Statut_Maillage n
   facettes_ = source.facettes_;
   voisins_ = source.voisins_;
   sommet_elem_ = source.sommet_elem_;
+  sommet_face_ = source.sommet_face_; // EB
   sommet_face_bord_ = source.sommet_face_bord_;
   sommet_PE_owner_ = source.sommet_PE_owner_;
   sommet_num_owner_ = source.sommet_num_owner_;
@@ -683,6 +696,7 @@ void Maillage_FT_Disc::ajouter_maillage(const Maillage_FT_Disc& maillage_tmp,int
   const DoubleTab& sommets_tmp = maillage_tmp.sommets();
   const IntTab& facettes_tmp = maillage_tmp.facettes();
   const ArrOfInt& sommet_elem_tmp = maillage_tmp.sommet_elem_;
+  const IntTab& sommet_face_tmp = maillage_tmp.sommet_face_; // EB
   const ArrOfInt& sommet_face_bord_tmp = maillage_tmp.sommet_face_bord_;
   const ArrOfInt& sommet_PE_owner_tmp = maillage_tmp.sommet_PE_owner();
   //const ArrOfInt & sommet_num_owner_tmp = maillage_tmp.sommet_num_owner();
@@ -698,6 +712,7 @@ void Maillage_FT_Disc::ajouter_maillage(const Maillage_FT_Disc& maillage_tmp,int
   sommets_.resize(nb_sommets_tot,dimension);
   facettes_.resize(nb_facettes_tot,nb_som_par_facette);
   sommet_elem_.resize_array(nb_sommets_tot);
+  sommet_face_.resize(nb_sommets_tot,dimension); // EB /!\ On a 3 indicatrices aux faces. Un sommet appartient a 3 faces
   sommet_face_bord_.resize_array(nb_sommets_tot);
   sommet_PE_owner_.resize_array(nb_sommets_tot);
   sommet_num_owner_.resize_array(nb_sommets_tot);
@@ -725,6 +740,7 @@ void Maillage_FT_Disc::ajouter_maillage(const Maillage_FT_Disc& maillage_tmp,int
           sommets_(som,k) = sommets_tmp(som_tmp,k);
         }
       sommet_elem_[som]      = sommet_elem_tmp[som_tmp];
+      for (int dim=0; dim<dimension; dim++) sommet_face_(som,dim)      = sommet_face_tmp(som_tmp,dim); // EB
       sommet_face_bord_[som] = sommet_face_bord_tmp[som_tmp];
       sommet_PE_owner_[som]  = sommet_PE_owner_tmp[som_tmp];
       sommet_num_owner_[som] = som; // Puis echange esp.virt. a la fin
@@ -837,6 +853,15 @@ void Maillage_FT_Disc::parcourir_maillage()
 
 }
 
+// debut EB
+void Maillage_FT_Disc::remplir_equation_plan_faces_aretes_internes(Domaine_dis& domaine_dis)
+{
+  Parcours_interface& p = refparcours_interface_.valeur();
+  p.remplir_equation_plan_faces_aretes_internes(domaine_dis);
+}
+
+// fin EB
+
 /*! @brief Complete les structures de donnees du maillage.
  *
  * Le statut passe a COMPLET.
@@ -878,7 +903,8 @@ void Maillage_FT_Disc::calcul_indicatrice(DoubleVect& indicatrice,
 
   static const Stat_Counter_Id stat_counter = statistiques().new_counter(3, "Calculer_Indicatrice", "FrontTracking");
   statistiques().begin_count(stat_counter);
-
+  const Transport_Interfaces_FT_Disc& eq_interfaces = refequation_transport_.valeur();
+  const int nb_compo_tot=eq_interfaces.get_nb_compo_tot();
   const Domaine_dis& domaine_dis = refdomaine_dis_.valeur();
   const Domaine& ladomaine = domaine_dis.domaine();
   const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis.valeur());
@@ -971,37 +997,39 @@ void Maillage_FT_Disc::calcul_indicatrice(DoubleVect& indicatrice,
   // Calcul de l'indicatrice au voisinage de l'interface a l'aide
   // de la fonction distance.
   // Il reste dans elements_calcules[i] == 0 les voisins de l'interface
-  {
-    const DoubleTab& distance = equation_transport().get_update_distance_interface().valeurs();
-    int i;
-    int error_count = 0;
+  if (!is_solid_particle_ || (is_solid_particle_ && nb_compo_tot==1))
+    {
+      const DoubleTab& distance = equation_transport().get_update_distance_interface().valeurs();
+      int i;
+      int error_count = 0;
 
-    for (i = 0; i < nb_elem; i++)
-      {
+      for (i = 0; i < nb_elem; i++)
+        {
 
-        if (elements_calcules[i] == 0)
-          {
-            double x = distance(i);
-            // La distance a-t-elle ete calculee pour cet element ?
-            if (x > -1e10)
-              {
-                double v = (x > 0.) ? 1. : 0.;
-                indicatrice[i] = v;
-              }
-            else
-              {
-                // Probleme : un element a une indicatrice suspecte et
-                // on ne peut pas l'evaluer avec la fonction distance
-                // (augmenter le nombre d'iterations du calcul de distance ?)
-                error_count++;
-              }
-          }
-      }
-    if (error_count)
-      {
-        Cerr << "[" << me() << "] calcul_indicatrice : error_count = " << error_count << finl;
-      }
-  }
+          if (elements_calcules[i] == 0)
+            {
+              double x = distance(i);
+              // La distance a-t-elle ete calculee pour cet element ?
+              if (x > -1e10)
+                {
+                  double v = (x > 0.) ? 1. : 0.;
+                  indicatrice[i] = v;
+                }
+              else
+                {
+                  // Probleme : un element a une indicatrice suspecte et
+                  // on ne peut pas l'evaluer avec la fonction distance
+                  // (augmenter le nombre d'iterations du calcul de distance ?)
+                  error_count++;
+                }
+            }
+        }
+      if (error_count)
+        {
+          Cerr << "[" << me() << "] calcul_indicatrice : error_count = " << error_count << finl;
+        }
+    }
+
   indicatrice.echange_espace_virtuel();
 
   // Certains elements ont une indicatrice erronee (error_count).
@@ -1082,9 +1110,827 @@ void Maillage_FT_Disc::calcul_indicatrice(DoubleVect& indicatrice,
 
   Debog::verifier("Maillage_FT_Disc::calcul_indicatrice indicatrice=",indicatrice);
   elements_calcules.resize_array(0);
+
+  calcul_cg_fa7(); // EB // EB : a verifier si on doit vraiment mettre ca ici, semble inapproprie
+
+  statistiques().end_count(stat_counter);
+}
+// debut EB
+/*! @brief Calcul de la fonction indicatrice aux faces du maillage eulerien (on suppose que "indicatrice_face" a la structure d'un tableau de valeurs aux faces, on ne remplit
+ *
+ *  que les faces reelles). Pour les faces de joint appartenant a 2 processeur, chaque processeur calcul le taux de controle dans le demi volume de controle lui appartenant.
+ *  On somme ensuite les contributions pour avoir le taux de presence global au volume de controle de la face.
+ *  La fraction volumique de la phase 1 dans les elements traverses par
+ *  une interface est determinee a partir des donnees du parcours dans
+ *   "intersections_face_facettes_".
+ *  Les autres faces sont remplies par une methode heuristique utilisant
+ *  l'indicatrice_precedente.
+ *
+ * Precondition: statut >= PARCOURU
+ *  Attention, l'algorithme est concu de sorte que l'on puisse utiliser le
+ * meme tableau "indicatrice" et "indicatrice_precedente".
+ */void Maillage_FT_Disc::calcul_indicatrice_face(const DoubleVect& indicatrice, DoubleVect& indicatrice_face,
+                                                  const DoubleVect& indicatrice_face_precedente)
+{
+  Cerr << "Maillage_FT_Disc::calcul_indicatrice_face"<< finl;
+
+  assert(statut_ >= PARCOURU);
+  static const Stat_Counter_Id stat_counter = statistiques().new_counter(3, "Calculer_Indicatrice_Face", "FrontTracking");
+  statistiques().begin_count(stat_counter);
+  const Domaine_dis& domaine_dis = refdomaine_dis_.valeur();
+  const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis.valeur());
+  const int nb_face = domaine_vf.nb_faces();
+  const int nb_face_tot = domaine_vf.nb_faces_tot();
+  const IntTab& elem_faces = domaine_vf.elem_faces();
+  static ArrOfBit faces_calculees;
+  faces_calculees.resize_array(nb_face_tot);
+  // On ne recalcule pas l'indicatrice sur la majorite du domaine,
+  // uniquement les faces qui ne sont pas traversees et qui ont
+  // une indicatrice qui n'est pas egale a 0 ou 1.
+  // on recalcule egalement les faces_doubles
+  const DoubleVect& volumes_entrelaces=domaine_vf.volumes_entrelaces();
+  faces_calculees = 1;
+  const ArrOfInt& faces_doubles = domaine_vf.faces_doubles();
+
+  indicatrice_face = indicatrice_face_precedente;
+
+  // Mettre a zero les faces traverses, les faces voisines et les faces dont
+  // l'indicatrice n'est ni a zero ni a un.
+  {
+    const int nb_faces_voisines = elem_faces.dimension(1); // idem que pour les elements
+    // Boucle sur les faces
+    // Si l'indicatrice precedente est differente de 0 ou 1 ou que la face est traversee --> alors on recalcule
+    const ArrOfInt& index_face_x = intersections_face_facettes_x_.index_face();
+    const ArrOfInt& index_face_y = intersections_face_facettes_y_.index_face();
+    const ArrOfInt& index_face_z = intersections_face_facettes_z_.index_face();
+    assert(indicatrice_face.size() == nb_face);
+    int i;
+    DoubleVect check(indicatrice_face);
+    for (i = 0; i < nb_face_tot; i++)
+      {
+        const double x = indicatrice_face_precedente[i];
+        int check_voisins = ( ((x != 0.) && (x != 1.)));
+        if (i < nb_face)
+          {
+            int orientation=domaine_vf.orientation(i);
+            int index;
+            if (orientation==0) index=index_face_x[i];
+            else if (orientation==1) index=index_face_y[i];
+            else if (orientation==2) index=index_face_z[i];
+            else
+              exit();
+            check_voisins |= (index >= 0);
+            check(i) = check_voisins;
+
+          }
+        // if (faces_doubles(i)) check(i)=1; // on recalcule automatiquement pour les faces doubles
+      }
+
+    //MD_Vector_tools::echange_espace_virtuel(check,MD_Vector_tools::EV_MAX);
+    check.echange_espace_virtuel();
+    Debog::verifier("Maillage_FT_Disc::calcul_indicatrice_face check=",check);
+
+    // On identifie les faces voisines pour lesquelles on recalculera l'indicatrice
+    for (i = 0; i < nb_face_tot; i++)
+      {
+        if (check(i))
+          {
+            faces_calculees.clearbit(i);
+            const int elem0=domaine_vf.face_voisins(i,0);
+            const int elem1=domaine_vf.face_voisins(i,1);
+            const int ori=domaine_vf.orientation(i);
+            // Boucle sur les voisins
+            int j;
+            for (j = 0; j < nb_faces_voisines; j++)
+              {
+                // On cherche l'element voisin
+                const int direction = (j>=dimension);
+                int num_elem;
+                int face_voisine;
+                if (j%dimension==ori)
+                  {
+                    num_elem = (direction==0) ? elem0 : elem1;
+                    face_voisine = (num_elem>=0) ? domaine_vf.elem_faces(num_elem, ori+direction*dimension) : -1;
+                  }
+                else
+                  {
+                    const int elem_2 = (elem0>0) ? domaine_vf.face_voisins(domaine_vf.elem_faces(elem0,j),direction) : -1;
+                    const int elem_3 = (elem1>0) ? domaine_vf.face_voisins(domaine_vf.elem_faces(elem1,j),direction) : -1;
+                    num_elem = std::max(elem_2,elem_3);
+                    // S'il n'y a pas de voisin, on est au bord du domaine
+                    if (num_elem >= 0)
+                      face_voisine =  (elem_2>0) ? domaine_vf.elem_faces(elem_2, ori+dimension) : domaine_vf.elem_faces(elem_3, ori);
+                    else
+                      face_voisine = -1;
+                  }
+
+                if (face_voisine >= 0)
+                  faces_calculees.clearbit(face_voisine);
+
+              }
+          }
+      }
+  }
+
+  // Ajout des contributions de volume
+  {
+    const ArrOfInt& index_face_x =
+      intersections_face_facettes_x_.index_face();
+    const ArrOfInt& index_face_y =
+      intersections_face_facettes_y_.index_face();
+    const ArrOfInt& index_face_z =
+      intersections_face_facettes_z_.index_face();
+
+    assert(indicatrice_face.size() == nb_face);
+    // Boucle sur les faces
+    for (int i = 0; i < nb_face; i++)
+      {
+        int orientation=domaine_vf.orientation(i);
+        int index;
+        if (orientation==0)
+          {
+            // Faces de normale x
+            index = index_face_x[i];
+            double somme_contrib = 0.;
+            // Boucle sur les facettes qui traversent cette face
+            while (index >= 0)
+              {
+                const Intersections_Face_Facettes_Data& data = intersections_face_facettes_x_.data_intersection(index);
+                somme_contrib += data.contrib_volume_phase1_;
+                index = data.index_facette_suivante_;
+              };
+            while (somme_contrib > 1.)
+              somme_contrib -= 1.;
+            while (somme_contrib < 0.)
+              somme_contrib += 1.;
+            if (somme_contrib > 0.)
+              {
+                indicatrice_face[i] = somme_contrib;
+                faces_calculees.setbit(i);
+              }
+          }
+        else if (orientation==1)
+          {
+            // Faces de normale y
+            index = index_face_y[i];
+            double somme_contrib = 0.;
+            // Boucle sur les facettes qui traversent cette face
+            while (index >= 0)
+              {
+                const Intersections_Face_Facettes_Data& data = intersections_face_facettes_y_.data_intersection(index);
+                somme_contrib += data.contrib_volume_phase1_;
+                index = data.index_facette_suivante_;
+              };
+            while (somme_contrib > 1.)
+              somme_contrib -= 1.;
+            while (somme_contrib < 0.)
+              somme_contrib += 1.;
+            if (somme_contrib > 0.)
+              {
+                indicatrice_face[i] = somme_contrib;
+                faces_calculees.setbit(i);
+              }
+          }
+        else if (orientation==2)
+          {
+            // Faces de normale z
+            index = index_face_z[i];
+            double somme_contrib = 0.;
+            // Boucle sur les facettes qui traversent cette face
+            while (index >= 0)
+              {
+                const Intersections_Face_Facettes_Data& data = intersections_face_facettes_z_.data_intersection(index);
+                somme_contrib += data.contrib_volume_phase1_;
+                index = data.index_facette_suivante_;
+              };
+            while (somme_contrib > 1.)
+              somme_contrib -= 1.;
+            while (somme_contrib < 0.)
+              somme_contrib += 1.;
+            if (somme_contrib > 0.)
+              {
+                indicatrice_face[i] = somme_contrib;
+                faces_calculees.setbit(i);
+              }
+          }
+        else
+          exit(); // On a rien a faire la
+      }
+  }
+
+
+  // Calcul de l'indicatrice au voisinage de l'interface a l'aide
+  // de la fonction distance.
+
+  {
+    const DoubleTab& distance = equation_transport().get_update_distance_interface_faces().valeurs();
+    int i;
+    int error_count = 0;
+
+    for (i = 0; i < nb_face; i++)
+      {
+
+        if (faces_calculees[i] == 0)
+          {
+            double x = distance(i);
+            // La distance a-t-elle ete calculee pour cette face ?
+            if (x > -1e10)
+              {
+                double v = (x > 0.) ? 1. : 0.;
+                indicatrice_face[i] = v;
+              }
+            else
+              {
+                // Probleme : une face a une indicatrice suspecte et
+                // on ne peut pas l'evaluer avec la fonction distance
+                // (augmenter le nombre d'iterations du calcul de distance ?)
+                error_count++;
+              }
+          }
+        // if (faces_doubles(i) && fabs(domaine_vf.xv(i,0))<0.3e-3 && domaine_vf.xv(i,1)<7.8e-3 && domaine_vf.xv(i,1)>7.2e-3 &&  domaine_vf.xv(i,2)<-1.2e-3 ) Cerr << "Face double - indic " << indicatrice_face(i) << "\t" << domaine_vf.xv(i,0) << " " << domaine_vf.xv(i,1) << " " << domaine_vf.xv(i,2) <<  finl;
+      }
+    if (error_count)
+      {
+        Cerr << "[" << me() << "] calcul_indicatrice_face : error_count = " << error_count << finl;
+      }
+  }
+
+
+  //indicatrice_face.echange_espace_virtuel();
+  int n_proc=Process::nproc();
+  if (n_proc>1)
+    {
+      for (int face=0; face<domaine_vf.nb_faces_tot(); face++)
+        {
+          //double face_monophasique = (indicatrice_face(face) !=0 || indicatrice_face(face)!=1) ? 0.5:1;
+
+          double coeff=0.5;
+          if (faces_doubles(face) && face<nb_face)
+            {
+              indicatrice_face(face) *=volumes_entrelaces(face)*coeff;
+            }
+          if (face>=nb_face) indicatrice_face(face)=0;
+        }
+      MD_Vector_tools::echange_espace_virtuel(indicatrice_face,MD_Vector_tools::EV_SOMME_ECHANGE);
+
+      for (int face=0; face<nb_face; face++)
+        {
+          if (faces_doubles(face))
+            {
+              indicatrice_face(face) /=volumes_entrelaces(face);
+            }
+        }
+    }
+  indicatrice_face.echange_espace_virtuel();
+
+  // Certaines faces ont une indicatrice erronee (error_count).
+  // Deuxieme correction pour tuer les faces isolees qui seraient fausses.
+  // Pour chaque face monophasique (non traversee par une interface)
+  //  calculer la moyenne de l'indicatrice sur les faces monophasiques voisins,
+  //  si moyenne >0.5, mettre a 1 sinon mettre a 0
+  {
+    // Pour que l'algo soit parallele, on met a jour a la fin et non au fur et a mesure
+    // sinon le resultat depend de l'ordre de parcours des faces
+    // Liste des faces a mettre a changer (colonne 0) et valeur a mettre (colonne 1)
+    IntTab faces_to_change(0,2);
+    faces_to_change.set_smart_resize(1);
+    const int nb_faces_face = elem_faces.line_size();
+    const ArrOfInt& index_face_x = intersections_face_facettes_x_.index_face();
+    const ArrOfInt& index_face_y = intersections_face_facettes_y_.index_face();
+    const ArrOfInt& index_face_z = intersections_face_facettes_z_.index_face();
+    for (int face = 0; face < nb_face; face++)
+      {
+        // face non traversee par une interface ?
+        int orientation = domaine_vf.orientation(face);
+        if (orientation==0)
+          {
+            if (index_face_x[face] >= 0)
+              continue;
+          }
+        else if (orientation==1)
+          {
+            if (index_face_y[face] >= 0)
+              continue;
+          }
+        else if (orientation==2)
+          {
+            if (index_face_z[face] >= 0)
+              continue;
+          }
+        else
+          exit();
+
+        double somme = 0.; //somme des indicatrices des faces monophasiques voisins
+        int count = 0; //nombre de faces monophasiques voisines
+        const int elem0=domaine_vf.face_voisins(face,0);
+        const int elem1=domaine_vf.face_voisins(face,1);
+        const int ori=domaine_vf.orientation(face);
+
+        for (int ivoisin = 0; ivoisin < nb_faces_face; ivoisin++)
+          {
+            // On cherche l'element voisin
+            const int direction = (ivoisin>=dimension);
+            int num_elem;
+            int face_voisine;
+
+            if (ivoisin%dimension==ori)
+              {
+                num_elem = (direction==0) ? elem0 : elem1;
+                face_voisine = (num_elem>=0) ? domaine_vf.elem_faces(num_elem, ori+direction*dimension) : -1;
+              }
+            else
+              {
+                const int elem_2 = (elem0>0) ? domaine_vf.face_voisins(domaine_vf.elem_faces(elem0,ivoisin),direction) : -1;
+                const int elem_3 = (elem1>0) ? domaine_vf.face_voisins(domaine_vf.elem_faces(elem1,ivoisin),direction) : -1;
+                num_elem = std::max(elem_2,elem_3);
+                // S'il n'y a pas de voisin, on est au bord du domaine
+                if (num_elem >= 0)
+                  face_voisine =  (elem_2>0) ? domaine_vf.elem_faces(elem_2, ori+dimension) : domaine_vf.elem_faces(elem_3, ori);
+                else
+                  face_voisine = -1;
+              }
+            // face au bord du domaine ?
+            if (face_voisine < 0)
+              continue;
+            // face voisine non monophasique ?
+            if (indicatrice_face[face_voisine] != 0. && indicatrice_face[face_voisine] != 1.)
+              continue;
+            // La face voisine est monophasique
+            somme += indicatrice_face[face_voisine];
+            count++;
+          }
+        // Si count==1 l'algo etait considere non pertinent... pas toujours correction du bug
+        // Correction testee en VDF mais deux cas test VEF ont fait des ecarts
+        if(count == 1)
+          {
+            faces_to_change.append_line(face, (int)std::lrint(somme));
+          }
+        if (count > 1)
+          {
+            int indic;
+            if (indicatrice_face[face] == 1.)
+              indic = 1;
+            else if (indicatrice_face[face] == 0.)
+              indic = 0;
+            else
+              indic = -1;
+            int new_indic = ((somme * 2) > count) ? 1 : 0;
+            // on compare somme/count avec l'indicatrice
+            if (indic != new_indic)
+              {
+                // L'indicatrice de cet element doit etre corrigee
+                faces_to_change.append_line(face, new_indic);
+              }
+          }
+      }
+
+    // Correction du tableau
+    const int n = faces_to_change.dimension(0);
+    for (int i = 0; i < n; i++)
+      {
+        const int face = faces_to_change(i, 0);
+        if (!faces_doubles(face)) indicatrice_face[face] = faces_to_change(i, 1);
+      }
+    if (n > 0)
+      Journal() << "Calcul indicatrice face : correction par voisinage de " << n << " faces" << finl;
+  }
+
+
+  indicatrice_face.echange_espace_virtuel();
+
+  Debog::verifier("Maillage_FT_Disc::calcul_indicatrice_face indicatrice_face=",indicatrice_face);
+  faces_calculees.resize_array(0);
+
   statistiques().end_count(stat_counter);
 }
 
+// EB idem mais aux aretes
+/*! @brief Calcul de la fonction indicatrice aux aretes du maillage eulerien (on suppose que "indicatrice_arete" a la structure d'un tableau de valeurs aux faces, on ne remplit
+ *
+ *  que les aretes reelles). Pour les aretes de joint appartenant a 4 (au max) processeurs, chaque processeur calcul le taux de controle dans le demi volume de controle lui appartenant.
+ *  On somme ensuite les contributions pour avoir le taux de presence global au volume de controle de l'arete.
+ *  ATTENTION : ce calcul n'est valable en parallele que pour les partitionnement "bien ordonnes". C'est a dire, que l'on peut definir le nombre de procs du domaine par Npx * Npy *Npz avec Npx, Npy, Npz, le nombre de procs suivant x,y,z.
+ *  Avec Npx, constant suivant y et z, Npy constant suivant x et z, Npz constant suivant x et y.
+ *  La fraction volumique de la phase 1 dans les elements traverses par
+ *  une interface est determinee a partir des donnees du parcours dans
+ *   "intersections_arete_facettes_".
+ *  Les autres aretes sont remplies par une methode heuristique utilisant
+ *  l'indicatrice_precedente.
+ *
+ * Precondition: statut >= PARCOURU
+ *  Attention, l'algorithme est concu de sorte que l'on puisse utiliser le
+ * meme tableau "indicatrice" et "indicatrice_precedente".
+*/
+void Maillage_FT_Disc::calcul_indicatrice_arete(const DoubleVect& indicatrice, DoubleVect& indicatrice_arete,
+                                                const DoubleVect& indicatrice_arete_precedente)
+{
+  Cerr << "Maillage_FT_Disc::calcul_indicatrice_arete"<< finl;
+  assert(statut_ >= PARCOURU);
+  static const Stat_Counter_Id stat_counter = statistiques().new_counter(3, "Calculer_Indicatrice_Arete", "FrontTracking");
+  statistiques().begin_count(stat_counter);
+  const Domaine_dis& domaine_dis = refdomaine_dis_.valeur();
+  const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_dis.valeur());
+  const int nb_aretes_reelles = domaine_vdf.nb_aretes_reelles();
+  const IntVect& orientation_aretes=domaine_vdf.orientation_aretes();
+  const IntTab& Elem_Aretes=domaine_vdf.domaine().elem_aretes();
+  const IntTab& Qdm=domaine_vdf.Qdm();
+  const IntVect& type_arete=domaine_vdf.type_arete();
+  static ArrOfBit aretes_calculees;
+  const DoubleVect& volumes_aretes=domaine_vdf.volumes_aretes();
+  //const ArrOfInt& aretes_multiples = domaine_vdf.aretes_multiples();
+  aretes_calculees.resize_array(nb_aretes_reelles);
+
+  indicatrice_arete = indicatrice_arete_precedente;
+
+  {
+    const int nb_aretes_voisines = domaine_vdf.elem_faces().dimension(1);
+    // Boucle sur les faces
+    // Si l'indicatrice precedente est differente de 0 ou 1 ou que la face est traversee --> alors on recalcule
+    const ArrOfInt& index_arete_x = intersections_arete_facettes_x_.index_arete();
+    const ArrOfInt& index_arete_y = intersections_arete_facettes_y_.index_arete();
+    const ArrOfInt& index_arete_z = intersections_arete_facettes_z_.index_arete();
+
+    assert(indicatrice_arete.size_array() == nb_aretes_reelles);
+    int i;
+    DoubleVect check(indicatrice_arete);
+    for (i = 0; i < nb_aretes_reelles; i++)
+      {
+        if (type_arete(i)!=2) continue; // on ne calcule que pour les aretes_internes
+        const double x = indicatrice_arete_precedente[i];
+        int check_voisins = ( ((x != 0.) && (x != 1.)));
+
+        int orientation=(dimension-1)-orientation_aretes(i);
+        int index;
+        if (orientation==0) index=index_arete_x[i];
+        else if (orientation==1) index=index_arete_y[i];
+        else if (orientation==2) index=index_arete_z[i];
+        else
+          exit();
+
+        check_voisins |= (index >= 0);
+        check(i) = check_voisins;
+
+      }
+
+    // On identifie les aretes voisines pour lesquelles on recalculera l'indicatrice
+    for (i = 0; i < nb_aretes_reelles; i++)
+      {
+        if (type_arete(i)!=2) continue; // on ne calcule que pour les aretes_internes
+        if (check(i))
+          {
+            aretes_calculees.clearbit(i);
+            const int ori_arete=(dimension-1)-orientation_aretes(i);
+
+            int face1=Qdm(i,0);
+            int face2=Qdm(i,1);
+
+            int elem1=domaine_vdf.face_voisins(face1,0);
+            int elem2=domaine_vdf.face_voisins(face2,0);
+            int elem3=domaine_vdf.face_voisins(face1,1);
+            //int elem4=domaine_vdf.face_voisins(face2,1);
+
+            int face1_av=domaine_vdf.elem_faces(elem1, ori_arete+dimension);
+            int face1_arr=domaine_vdf.elem_faces(elem1, ori_arete);
+
+            int elem_av=domaine_vdf.face_voisins(face1_av,1);
+            int elem_arr=domaine_vdf.face_voisins(face1_arr,0);
+
+            //Cerr << elem1+elem2+elem3+elem_av+elem_arr<< finl;
+
+            // Boucle sur les voisins
+            int j;
+            for (j = 0; j < nb_aretes_voisines; j++)
+              {
+                // On cherche l'element voisin
+                int arete_voisine;
+
+                if (j==ori_arete) arete_voisine=Elem_Aretes(elem_av,orientation_aretes(i)); // voir numerotation Aretes dans Hexaedre.cpp
+                else if (j==ori_arete+dimension) arete_voisine=Elem_Aretes(elem_arr,orientation_aretes(i));
+
+                else if (ori_arete==0) // arete YZ
+                  {
+                    if (j==1) arete_voisine=Elem_Aretes(elem1,11);
+                    else if (j==1+dimension) arete_voisine=Elem_Aretes(elem2,2);
+                    else if (j==2) arete_voisine=Elem_Aretes(elem1,8);
+                    else arete_voisine=Elem_Aretes(elem3,2);
+                  }
+                else if (ori_arete) // arete XZ
+                  {
+                    if (j==0) arete_voisine=Elem_Aretes(elem1,10); // voir numerotation Aretes dans Hexaedre.cpp
+                    else if (j==0+dimension) arete_voisine=Elem_Aretes(elem2,1);
+                    else if (j==2) arete_voisine=Elem_Aretes(elem1,7);
+                    else arete_voisine=Elem_Aretes(elem3,1);
+                  }
+                else // arete XY
+                  {
+                    if (j==0) arete_voisine=Elem_Aretes(elem1,9); // voir numerotation Aretes dans Hexaedre.cpp
+                    else if (j==0+dimension) arete_voisine=Elem_Aretes(elem2,0);
+                    else if (j==1) arete_voisine=Elem_Aretes(elem1,6);
+                    else arete_voisine=Elem_Aretes(elem3,0);
+                  }
+
+                if (arete_voisine >= 0 && arete_voisine<nb_aretes_reelles) aretes_calculees.clearbit(arete_voisine);
+
+              }
+
+          }
+      }
+
+
+  }
+
+  // Ajout des contributions de volume
+  {
+    const ArrOfInt& index_arete_x =
+      intersections_arete_facettes_x_.index_arete();
+    const ArrOfInt& index_arete_y =
+      intersections_arete_facettes_y_.index_arete();
+    const ArrOfInt& index_arete_z =
+      intersections_arete_facettes_z_.index_arete();
+
+    assert(indicatrice_arete.size() == nb_aretes_reelles);
+    // Boucle sur les aretes
+
+    for (int i = 0; i < nb_aretes_reelles; i++)
+      {
+        if (type_arete(i)!=2) continue; // on ne calcule que pour les aretes_internes
+        const int ori_arete=(dimension-1)-orientation_aretes(i);
+        int index;
+        if (ori_arete==0)
+          {
+
+            // Faces de normale x
+            index = index_arete_x[i];
+            double somme_contrib = 0.;
+            // Boucle sur les facettes qui traversent cette face
+            while (index >= 0)
+              {
+                const Intersections_Arete_Facettes_Data& data = intersections_arete_facettes_x_.data_intersection(index);
+                somme_contrib += data.contrib_volume_phase1_;
+                index = data.index_facette_suivante_;
+              };
+            while (somme_contrib > 1.)
+              somme_contrib -= 1.;
+            while (somme_contrib < 0.)
+              somme_contrib += 1.;
+            if (somme_contrib > 0.)
+              {
+                indicatrice_arete[i] = somme_contrib;
+                aretes_calculees.setbit(i);
+              }
+
+          }
+        else if (ori_arete==1)
+          {
+
+            // Faces de normale y
+            index = index_arete_y[i];
+            double somme_contrib = 0.;
+            // Boucle sur les facettes qui traversent cette face
+            while (index >= 0)
+              {
+                const Intersections_Arete_Facettes_Data& data = intersections_arete_facettes_y_.data_intersection(index);
+                somme_contrib += data.contrib_volume_phase1_;
+                index = data.index_facette_suivante_;
+              };
+            while (somme_contrib > 1.)
+              somme_contrib -= 1.;
+            while (somme_contrib < 0.)
+              somme_contrib += 1.;
+            if (somme_contrib > 0.)
+              {
+                indicatrice_arete[i] = somme_contrib;
+                aretes_calculees.setbit(i);
+              }
+          }
+        else if (ori_arete==2)
+          {
+            // Faces de normale z
+            index = index_arete_z[i];
+            double somme_contrib = 0.;
+            // Boucle sur les facettes qui traversent cette face
+            while (index >= 0)
+              {
+                const Intersections_Arete_Facettes_Data& data = intersections_arete_facettes_z_.data_intersection(index);
+                somme_contrib += data.contrib_volume_phase1_;
+                index = data.index_facette_suivante_;
+              };
+            while (somme_contrib > 1.)
+              somme_contrib -= 1.;
+            while (somme_contrib < 0.)
+              somme_contrib += 1.;
+            if (somme_contrib > 0.)
+              {
+                indicatrice_arete[i] = somme_contrib;
+                aretes_calculees.setbit(i);
+              }
+          }
+        else
+          exit(); // On a rien a faire la
+      }
+  }
+
+  // Calcul de l'indicatrice au voisinage de l'interface a l'aide
+  // de la fonction distance.
+  {
+    const DoubleTab& distance = equation_transport().get_update_distance_interface_aretes();
+    int i;
+    int error_count = 0;
+
+    for (i = 0; i < nb_aretes_reelles; i++)
+      {
+        if (type_arete(i)!=2) continue; // on ne calcule que pour les aretes_internes
+        if (aretes_calculees[i] == 0)
+          {
+            double x = distance(i);
+            // La distance a-t-elle ete calculee pour cette face ?
+            if (x > -1e10)
+              {
+                double v = (x > 0.) ? 1. : 0.;
+                indicatrice_arete[i] = v;
+              }
+            else
+              {
+                // Probleme : une face a une indicatrice suspecte et
+                // on ne peut pas l'evaluer avec la fonction distance
+                // (augmenter le nombre d'iterations du calcul de distance ?)
+                error_count++;
+              }
+          }
+        // if (faces_doubles(i) && fabs(domaine_vf.xv(i,0))<0.3e-3 && domaine_vf.xv(i,1)<7.8e-3 && domaine_vf.xv(i,1)>7.2e-3 &&  domaine_vf.xv(i,2)<-1.2e-3 ) Cerr << "Face double - indic " << indicatrice_face(i) << "\t" << domaine_vf.xv(i,0) << " " << domaine_vf.xv(i,1) << " " << domaine_vf.xv(i,2) <<  finl;
+      }
+    if (error_count)
+      {
+        Cerr << "[" << me() << "] calcul_indicatrice_arete : error_count = " << error_count << finl;
+      }
+  }
+  /*
+    for (int arete=0; arete<domaine_vdf.nb_aretes_tot(); arete++)
+      {
+        double coeff=0.5;
+
+  	  if (aretes_multiples(arete)==1) coeff=0.5;
+  	  else if (aretes_multiples(arete)==2) coeff=1/3;
+  	  else if (aretes_multiples(arete)==3) coeff=0.25;
+
+
+        if ((aretes_multiples(arete)>0) && arete<nb_aretes_reelles)
+          {
+            //if (indicatrice_arete(arete)<1 && orientation_aretes(arete)==0) Cerr << "indic " << indicatrice_arete(arete) << "\tcg "
+            //                                                                     << domaine_vdf.xa(arete,0) << " " << domaine_vdf.xa(arete,1) << " " << domaine_vdf.xa(arete,2) << finl;
+            indicatrice_arete(arete) *=volumes_aretes(arete)*coeff;
+          }
+        if (arete>=nb_aretes_reelles) indicatrice_arete(arete)=0;
+      }
+
+    MD_Vector_tools::echange_espace_virtuel(indicatrice_arete,MD_Vector_tools::EV_SOMME_ECHANGE);
+
+    for (int arete=0; arete<nb_aretes_reelles; arete++)
+      {
+        if (aretes_multiples(arete)>0)
+          {
+            indicatrice_arete(arete) /=volumes_aretes(arete);
+          }
+      }
+  */
+  // Certaines aretes ont une indicatrice erronee (error_count).
+  // Deuxieme correction pour tuer les aretes isolees qui seraient fausses.
+  // Pour chaque arete monophasique (non traversee par une interface)
+  //  calculer la moyenne de l'indicatrice sur les aretes monophasiques voisins,
+  //  si moyenne >0.5, mettre a 1 sinon mettre a 0
+  {
+    IntTab aretes_to_change(0,2);
+    aretes_to_change.set_smart_resize(1);
+    const int nb_faces_arete = 2*dimension;
+    const ArrOfInt& index_arete_x = intersections_arete_facettes_x_.index_arete();
+    const ArrOfInt& index_arete_y = intersections_arete_facettes_y_.index_arete();
+    const ArrOfInt& index_arete_z = intersections_arete_facettes_z_.index_arete();
+
+    for (int arete=0; arete<nb_aretes_reelles; arete++)
+      {
+        if (type_arete(arete)!=2) continue; // on ne calcule que pour les aretes_internes
+        // face non traversee par une interface ?
+        const int ori_arete=(dimension-1)-orientation_aretes(arete);
+        if (ori_arete==0)
+          {
+            if (index_arete_x[arete] >= 0)
+              continue;
+          }
+        else if (ori_arete==1)
+          {
+            if (index_arete_y[arete] >= 0)
+              continue;
+          }
+        else if (ori_arete==2)
+          {
+            if (index_arete_z[arete] >= 0)
+              continue;
+          }
+        else
+          exit();
+
+        double somme = 0.; //somme des indicatrices des aretes monophasiques voisines
+        int count = 0; //nombre d'aretes monophasiques voisines
+
+
+        int face1=Qdm(arete,0);
+        int face2=Qdm(arete,1);
+        //int face3=Qdm(arete,2);
+        //int face4=Qdm(arete,3);
+
+        int elem1=domaine_vdf.face_voisins(face1,0);
+        int elem2=domaine_vdf.face_voisins(face2,0);
+        int elem3=domaine_vdf.face_voisins(face1,1);
+        //int elem4=domaine_vdf.face_voisins(face2,1);
+
+        int face1_av=domaine_vdf.elem_faces(elem1, ori_arete+dimension);
+        int face1_arr=domaine_vdf.elem_faces(elem1, ori_arete);
+
+        int elem_av=domaine_vdf.face_voisins(face1_av,1);
+        int elem_arr=domaine_vdf.face_voisins(face1_arr,0);
+
+
+        for (int ivoisin=0; ivoisin<nb_faces_arete; ivoisin++)
+          {
+            int arete_voisine;
+            if (ivoisin==ori_arete) arete_voisine= (elem_av>=0) ? Elem_Aretes(elem_av,orientation_aretes(arete)) : -1; // voir numerotation Aretes dans Hexaedre.cpp
+            else if (ivoisin==ori_arete+dimension) arete_voisine=(elem_arr>=0) ? Elem_Aretes(elem_arr,orientation_aretes(arete)):-1;
+
+            else if (ori_arete==0) // arete YZ
+              {
+                if (ivoisin==1) arete_voisine= (elem1>=0) ? Elem_Aretes(elem1,11) : -1;
+                else if (ivoisin==1+dimension) arete_voisine=(elem2>=0) ? Elem_Aretes(elem2,2) : -1;
+                else if (ivoisin==2) arete_voisine=(elem1>=0) ? Elem_Aretes(elem1,8) : -1;
+                else arete_voisine=(elem3>=0) ? Elem_Aretes(elem3,2) : -1;
+              }
+            else if (ori_arete) // arete XZ
+              {
+                if (ivoisin==0) arete_voisine=(elem1>=0) ? Elem_Aretes(elem1,10) : -1; // voir numerotation Aretes dans Hexaedre.cpp
+                else if (ivoisin==0+dimension) arete_voisine=(elem2>=0) ? Elem_Aretes(elem2,1) : -1;
+                else if (ivoisin==2) arete_voisine=(elem1>=0) ? Elem_Aretes(elem1,7) : -1;
+                else arete_voisine=(elem3>=0) ? Elem_Aretes(elem3,1) : -1;
+              }
+            else // arete XY
+              {
+                if (ivoisin==0) arete_voisine=(elem1>=0) ? Elem_Aretes(elem1,9) : -1; // voir numerotation Aretes dans Hexaedre.cpp
+                else if (ivoisin==0+dimension) arete_voisine=(elem2>=0) ? Elem_Aretes(elem2,0) : -1;
+                else if (ivoisin==1) arete_voisine=(elem1>=0) ? Elem_Aretes(elem1,6) : -1;
+                else arete_voisine=(elem3>=0) ? Elem_Aretes(elem3,0) : -1;
+              }
+
+            // face au bord du domaine ?
+            if (arete_voisine < 0 || arete_voisine>nb_aretes_reelles)
+              continue;
+            // face voisine non monophasique ?
+            if (indicatrice_arete[arete_voisine] != 0. && indicatrice_arete[arete_voisine] != 1.)
+              continue;
+
+
+            somme += indicatrice_arete[arete_voisine];
+            count++;
+          }
+        // Si count==1 l'algo etait considere non pertinent... pas toujours correction du bug
+        // Correction testee en VDF mais deux cas test VEF ont fait des ecarts
+        if(count == 1)
+          {
+            aretes_to_change.append_line(arete, (int)std::lrint(somme));
+          }
+        if (count > 1)
+          {
+            int indic;
+            if (indicatrice_arete[arete] == 1.)
+              indic = 1;
+            else if (indicatrice_arete[arete] == 0.)
+              indic = 0;
+            else
+              indic = -1;
+            int new_indic = ((somme * 2) > count) ? 1 : 0;
+            // on compare somme/count avec l'indicatrice
+            if (indic != new_indic)
+              {
+                // L'indicatrice de cet element doit etre corrigee
+                aretes_to_change.append_line(arete, new_indic);
+              }
+          }
+      }
+
+    // Correction du tableau
+    const int n = aretes_to_change.dimension(0);
+    for (int i = 0; i < n; i++)
+      {
+        const int arete = aretes_to_change(i, 0);
+        if (1) indicatrice_arete[arete] = aretes_to_change(i, 1); // if !faces_doubles(face)
+      }
+    if (n > 0)
+      Journal() << "Calcul indicatrice arete : correction par voisinage de " << n << " aretes" << finl;
+  }
+
+  Debog::verifier("Maillage_FT_Disc::calcul_indicatrice_arete indicatrice_arete=",indicatrice_arete);
+  aretes_calculees.resize_array(0);
+  statistiques().end_count(stat_counter);
+
+}
+// fin EB
 /*! @brief Deplace les sommets de l'interface d'un vecteur "deplacement" fourni, Change eventuellement les sommets de processeur, cree eventuellement
  *
  *   des lignes de contact et detecte les collisions.
@@ -1174,21 +2020,100 @@ void Maillage_FT_Disc::remplir_structure(const DoubleTab& soms)
   //  def_noeud(i,2) = numero_PE (-1 sinon)
   //  def_noeud(i,3) = numero de sommet
   //  def_noeud(i,4) = numero de l element qui contient le sommet (-1 sinon)
-
+  Cerr << "Maillage_FT_Disc::remplir_structure " << finl;
   IntTab def_noeud(0, 4);
   def_noeud.set_smart_resize(1);
 
   reset();
-  construire_noeuds(def_noeud,soms);
+  construire_noeuds(def_noeud,soms); // ici on a pas encore rempli def_noeud(i,5), def_noeud(i,6) et def_noeud(i,7)
 
   Descripteur_FT& espace_distant = desc_sommets_.espace_distant();
   Descripteur_FT& espace_virtuel = desc_sommets_.espace_virtuel();
+  //int nb_som_tot=def_noeud.dimension(0);
+  //def_noeud.resize(nb_som_tot,8);
+  //  def_noeud(i,5) = numero de la face de normale x qui contient le sommet (-1 sinon) // EB
+  //  def_noeud(i,6) = numero de la face de normale y qui contient le sommet (-1 sinon) // EB
+  //  def_noeud(i,7) = numero de la face de normale z qui contient le sommet (-1 sinon) // EB
+  // debut EB
+  // Maintenant que l'on connait le num des elements qui contiennent les sommets,
+  // on peut construire sommet_face de la maniere suivante :
+  // --------------------------------
+  //	|	 |    !	x |   !   |
+  //	|---e1---|---e2---|---e3--|
+  //	|	 |    !	  |   !   |
+  // ---------------------------------
+  //	| 1  |	2|	  |	   |	y
+  //	|--------|--------|--------|	^
+  //	| 3  |	4|	  |	   |    |
+  // ---------------------------------	---> x
+  // x : sommet lagrangien
+  // representation du volume de controle d'une face eulerienne
+  // !	|  !
+  // !	|  !
+
+
+  // Faces de normale x :
+  // Si x appartient a la zone 2 ou 4, alors le sommet appartient a la face 2 de l'element e2
+  // Si x appartient a la zone 1 ou 3, alors, le sommmet appartient a la face 0 de l'element e2
+  // Faces de normale y :
+  // Si x appartient a la zone 1 ou 2, alors le sommet appartient a la face 4 de l'element e2
+  // Si x appartient a la zone 3 ou 4, alors, le sommmet appartient a la face 1 de l'element e2
+  // Idem avec Z
+
+
+  // Fin EB
+  //const Zone_dis& zone_dis = refzone_dis_.valeur(); // EB
+  //const Zone_VF& zone_vf = ref_cast(Zone_VF, zone_dis.valeur());  // EB
+  //const int nb_faces_reelles=zone_vf.nb_faces(); // EB
 
   int nb_noeuds = def_noeud.dimension(0);
   for (int noeud=0; noeud<nb_noeuds; noeud++)
     {
       def_noeud(noeud,3) =  def_noeud(noeud,4);
       def_noeud(noeud,4) = -1;
+      // debut EB
+      /*
+      def_noeud(noeud,5) = -1;
+      def_noeud(noeud,6) = -1;
+      def_noeud(noeud,7) = -1;
+
+      int mon_elem=def_noeud(noeud, 3);
+      // debut EB
+      int elem_virt=-1;
+      IntVect check_som_in_face(2*dimension);
+      if (mon_elem>=0) check_som_in_face=1;
+      else // Le sommet ne m'appartient pas. Je ne connais pas l'element qui le contient -> je le cherche
+        {
+          elem_virt=zone_vf.zone().chercher_elements(sommets_(noeud,0),sommets_(noeud,1),sommets_(noeud,2)); // element eulerien contenant le sommet virtuel
+          assert(elem_virt>=0);
+          // Si le sommet est dans le volume de controle d'une face double, on met check_som_in_face a 1.
+          check_som_in_face=0;
+          for (int dim=0; dim<2*dimension; dim++) // on parcourt les faces du volume de controle de l'element. Si une des faces est reelles, alors le sommet est dans le volume de controle de la premiere couche de joint
+            {
+              int la_face=zone_vf.elem_faces(elem_virt,dim);
+              if (la_face<nb_faces_reelles)  // la face est reelle mais l'element est virtuel -> face_double
+                {
+                  check_som_in_face(dim)=1;
+                  mon_elem=elem_virt;
+                }
+            }
+        }
+      if (mon_elem>=0)
+        {
+          IntVect faces_elem_eulerien(2*dimension);
+          for (int dim=0; dim<2*dimension; dim++) faces_elem_eulerien(dim) = zone_vf.elem_faces(mon_elem,dim); // on recupere les faces de l'element eulerien
+          double pos_sommet, coord_elem;
+          for (int dim=0; dim<dimension; dim++)
+            {
+              pos_sommet=sommets_(noeud,dim); // on recupere la position du sommet suivant l'axe "dim"
+              coord_elem=zone_vf.xp(mon_elem,dim);
+              if (pos_sommet < coord_elem && check_som_in_face(dim)) def_noeud(noeud,5+dim)=faces_elem_eulerien(dim);
+              else if (pos_sommet >= coord_elem && check_som_in_face(dim+dimension)) def_noeud(noeud,5+dim)=faces_elem_eulerien(dim+dimension);
+              assert(def_noeud(noeud,5+dim)>=0);
+            }
+        }
+      */
+      // fin EB
     }
   espace_distant.calcul_liste_pe_voisins();
   espace_virtuel.calcul_liste_pe_voisins();
@@ -1200,6 +2125,9 @@ void Maillage_FT_Disc::remplir_structure(const DoubleTab& soms)
   //  def_noeud(i,2) = numero_PE (-1 sinon)
   //  def_noeud(i,3) = numero de l'element (-1 sinon)
   //  def_noeud(i,4) = -1 //Pas de noeaud considere sur une face de bord au depart
+  //  def_noeud(i,5) = numero de la face de normale x (-1 sinon) // EB
+  //  def_noeud(i,6) = numero de la face de normale y (-1 sinon) // EB
+  //  def_noeud(i,7) = numero de la face de normale z (-1 sinon) // EB
 
   //Construction de som_init_util pour la structure construite
   som_init_util_.resize_array(nb_noeuds);
@@ -1219,6 +2147,7 @@ void Maillage_FT_Disc::remplir_structure(const DoubleTab& soms)
     sommet_PE_owner_. resize_array(nbsommets);
     sommet_num_owner_.resize_array(nbsommets);
     sommet_elem_.     resize_array(nbsommets);
+    sommet_face_.     resize(nbsommets,dimension); // EB
     sommet_face_bord_.resize_array(nbsommets);
     drapeaux_sommets_.resize_array(nbsommets);
     desc_sommets_.calcul_schema_comm(nbsommets);
@@ -1231,8 +2160,15 @@ void Maillage_FT_Disc::remplir_structure(const DoubleTab& soms)
         sommet_num_owner_[i] = i;
         const int elem = def_noeud(renum(i), 3);
         const int face = def_noeud(renum(i), 4);
+        /*const int face_x = def_noeud(renum(i), 5); // EB
+        const int face_y = def_noeud(renum(i), 6); // EB
+        const int face_z = def_noeud(renum(i), 7); // EB */
         sommet_elem_[i] = elem;
         sommet_face_bord_[i] = face;
+        /*sommet_face_(i,0)=face_x; // EB
+        //Cerr << "face_x : " << face << " cg : " << domaine_vdf.xv(face_x,0) << " " << domaine_vdf.xv(face_x,1) << " " << domaine_vdf.xv(face_x,2)<< finl;
+        sommet_face_(i,1)=face_y; // EB
+        sommet_face_(i,2)=face_z; // EB */
         drapeaux_sommets_[i] = 0;
       }
     desc_sommets_.echange_espace_virtuel(sommet_num_owner_);
@@ -1252,6 +2188,7 @@ void Maillage_FT_Disc::remplir_structure(const DoubleTab& soms)
 //On applique une procedure pour determiner
 // -le processeur a qui appartient un sommet
 // -le numero d element qui contient ce sommet
+// -le numera de la face qui contient ce sommet // EB
 //On remplit ensuite def_noeud
 
 void Maillage_FT_Disc::construire_noeuds(IntTab& def_noeud,const DoubleTab& soms)
@@ -1279,6 +2216,8 @@ void Maillage_FT_Disc::construire_noeuds(IntTab& def_noeud,const DoubleTab& soms
   ArrOfInt tmp2;
   // tmp3 : -1 ou numero du processeur qui garde le sommet.
   ArrOfInt tmp3;
+  // tmp4 : pour chaque sommet, -1 si je ne le garde pas, sinon numero de la face qui contient le sommet // EB
+  ArrOfInt tmp4; // EB
   int i = 0;
 
   nb_som_tot = soms.dimension(0);
@@ -1295,7 +2234,7 @@ void Maillage_FT_Disc::construire_noeuds(IntTab& def_noeud,const DoubleTab& soms
       tmp.resize(n_to_read, dim);
       tmp2.resize_array(n_to_read);
       tmp3.resize_array(n_to_read);
-
+      tmp4.resize_array(n_to_read); // EB
       for (int j = 0; j < n_to_read; j++)
         for (int k = 0; k < dim; k++)
           tmp(j, k) = soms(i+j, k);
@@ -1556,7 +2495,34 @@ const ArrOfDouble& Maillage_FT_Disc::get_update_surface_facettes() const
     }
   return data_cache.surface_facettes_;
 }
-
+// debut EB
+void Maillage_FT_Disc::calcul_cg_fa7()
+{
+  const int nb_fa7=nb_facettes();
+  cg_fa7_.resize(nb_fa7,dimension);
+  for (int fa7=0; fa7<nb_fa7; fa7++)
+    {
+      int s0 = facettes_(fa7,0);
+      int s1 = facettes_(fa7,1);
+      int s2=-1;
+      double x2=1e15,y2=1e15;
+      double z0=1e15,z1=1e15,z2=1e15;
+      if (dimension==3) s2 = facettes_(fa7,2);
+      double x0 = sommets_(s0,0);
+      double y0 = sommets_(s0,1);
+      if (dimension==3) z0 = sommets_(s0,2);
+      double x1 = sommets_(s1,0);
+      double y1 = sommets_(s1,1);
+      if (dimension==3) z1 = sommets_(s1,2);
+      if (dimension==3) x2 = sommets_(s2,0);
+      if (dimension==3) y2 = sommets_(s2,1);
+      if (dimension==3) z2 = sommets_(s2,2);
+      cg_fa7_(fa7,0)=(x0+x1+x2)/dimension;
+      cg_fa7_(fa7,1)=(y0+y1+y2)/dimension;
+      if (dimension==3) cg_fa7_(fa7,2)=(z0+z1+z2)/dimension;
+    }
+}
+// fin EB
 /*! @brief Calcule la grandeur demandee, stocke le resultat dans un tableau interne a la classe et renvoie le resultat.
  *
  * Si le maillage
@@ -1783,7 +2749,12 @@ const DoubleTab& Maillage_FT_Disc::sommets() const
   assert(statut_ >= MINIMAL);
   return sommets_;
 }
-
+// EB
+const DoubleTab& Maillage_FT_Disc::cg_fa7() const
+{
+  assert(statut_ >= MINIMAL);
+  return cg_fa7_;
+}
 /*! @brief renvoie le nombre de sommets (reels et virtuels) (egal a sommets().
  *
  * dimension(0))
@@ -2062,7 +3033,14 @@ const ArrOfInt& Maillage_FT_Disc::sommet_elem() const
   assert(statut_ >= MINIMAL);
   return sommet_elem_;
 }
-
+// debut EB
+// Description: pour postraitement, renvoie sommet_face_
+const IntTab& Maillage_FT_Disc::sommet_face() const
+{
+  assert(statut_ >= MINIMAL);
+  return sommet_face_;
+}
+// fin EB
 /*! @brief pour postraitement, renvoie sommet_face_bord_
  *
  */
@@ -2137,6 +3115,8 @@ int Maillage_FT_Disc::sauvegarder(Sortie& os) const
       bytes += 4 * voisins_.size_array();
       os << sommet_elem_;
       bytes += 4 * sommet_elem_.size_array();
+      os << sommet_face_; // EB
+      bytes += 4 * sommet_face_.size_array(); // EB
       os << sommet_face_bord_;
       bytes += 4 * sommet_face_bord_.size_array();
       os << sommet_PE_owner_;
@@ -2189,6 +3169,7 @@ int Maillage_FT_Disc::reprendre(Entree& is)
       is >> facettes_;
       is >> voisins_;
       is >> sommet_elem_;
+      is >> sommet_face_; // EB
       is >> sommet_face_bord_;
       is >> sommet_PE_owner_;
       is >> sommet_num_owner_;
@@ -2227,6 +3208,7 @@ int Maillage_FT_Disc::copier_sommet(int som)
   //on redimensionne les tableaux
   sommets_.resize(nb_sommets_tot,dimension);
   sommet_elem_.resize_array(nb_sommets_tot);
+  sommet_face_.resize(nb_sommets_tot,dimension); // EB /!\ On a 3 indicatrices aux faces. Un sommet appartient a 3 faces
   sommet_face_bord_.resize_array(nb_sommets_tot);
   sommet_PE_owner_.resize_array(nb_sommets_tot);
   sommet_num_owner_.resize_array(nb_sommets_tot);
@@ -2239,6 +3221,7 @@ int Maillage_FT_Disc::copier_sommet(int som)
       sommets_(NVsom,k)      = sommets_(som,k);
     }
   sommet_elem_[NVsom]      = sommet_elem_[som];
+  for (int dim=0; dim<dimension; dim++) sommet_face_(NVsom,dim)      = sommet_face_(som,dim); // EB
   sommet_face_bord_[NVsom] = sommet_face_bord_[som];
   sommet_PE_owner_[NVsom]  = sommet_PE_owner_[som];
   sommet_num_owner_[NVsom] = NVsom;
@@ -2272,6 +3255,7 @@ int Maillage_FT_Disc::copier_sommet_interne(int som)
  * * desc_sommets_,
  * * drapeaux_sommets_,
  * * sommet_elem_,
+ * * sommet_face_, // EB
  * * sommet_PE_owner_,
  * * sommet_num_owner_
  *
@@ -2347,6 +3331,8 @@ void Maillage_FT_Disc::creer_sommets_virtuels(const ArrOfInt& liste_sommets,
             sommets_.append_line(x, y);
           espace_virtuel.ajoute_element(pe_source, nsom);
           sommet_elem_.append_array(-1); // C'est un sommet virtuel => -1
+          if (dimension==3 && sommet_face_.dimension(0)>0 && sommet_face_.dimension(1)>0) sommet_face_.append_line(-1,-1,-1); // EB : C'est un sommet virtuel => -1. /!\ Si faces doubles
+          else if (dimension==2 && sommet_face_.dimension(0)>0 && sommet_face_.dimension(1)>0) sommet_face_.append_line(-1,-1);
           sommet_face_bord_.append_array(face_bord);
           sommet_PE_owner_.append_array(pe_source);
           sommet_num_owner_.append_array(numero_sur_pe_source);
@@ -2403,7 +3389,7 @@ void Maillage_FT_Disc::creer_sommets_virtuels_numowner(const ArrOfInt& request_s
       }
   }
   // Calcule la send_pe_list en fonction de la recv_pe_list.
-  // C'est long (communication all_to_all) mais c'est le plus simple
+  // C'est int (communication all_to_all) mais c'est le plus simple
   // car les processeurs de la recv_pe_list ne savent pas a priori
   // de quels processeurs ils vont recevoir des messages.
   {
@@ -2495,6 +3481,7 @@ void Maillage_FT_Disc::echanger_sommets_PE(const ArrOfInt& liste_sommets,
                                            DoubleTab& deplacement_restant,
                                            int skip_facettes)
 {
+  //Cerr <<"Maillage_FT_Disc::echanger_sommets_PE" << finl;
 
   if (Comm_Group::check_enabled()) check_mesh(1 /* error is fatal */,
                                                 1 /* do not test facette_owner */,
@@ -2511,6 +3498,8 @@ void Maillage_FT_Disc::echanger_sommets_PE(const ArrOfInt& liste_sommets,
   ArrOfIntFT liste_elem_arrivee(nechange);
   // Numeros des faces ou arrivent les noeuds "ligne de contact"
   ArrOfIntFT liste_face_arrivee(nechange);
+  // EB des faces xyz qui ou arrivent les noeuds 'numero local sur ce proc)
+  IntTabFT liste_faces_xyz(nechange,dimension);
 
   // Creation des noeuds virtuels sur le processeur d'arrivee s'ils n'existent
   // pas encore.
@@ -2597,7 +3586,10 @@ void Maillage_FT_Disc::echanger_sommets_PE(const ArrOfInt& liste_sommets,
   for (i = 0; i < nbsommets; i++)
     {
       if (sommet_PE_owner_[i] != moi)
-        sommet_elem_[i] = -1;
+        {
+          sommet_elem_[i] = -1;
+          //for (int dim=0; dim<dimension; dim++) sommet_face_(i,dim) = -1; // EB
+        }
       else
         assert(sommet_elem_[i] >= 0 && sommet_elem_[i] < nb_elements_reels);
     }
@@ -2665,7 +3657,124 @@ void Maillage_FT_Disc::echanger_sommets_PE(const ArrOfInt& liste_sommets,
                                                 1 /* do not test facette_owner */,
                                                 skip_facettes);
 }
+void Maillage_FT_Disc::update_sommet_face()
+{
+  const Domaine_dis& domaine_dis = refdomaine_dis_.valeur();
+  const Domaine_VF& domaine_vf = ref_cast(Domaine_VF,domaine_dis.valeur());
+  const int nb_som=sommets_.dimension(0);
+  sommet_face_.resize(nb_som,dimension);
 
+  int mon_elem;
+
+  for (int som=0; som<nb_som; som++)
+    {
+      for (int dim=0; dim<dimension; dim++) sommet_face_(som,dim)=-1;
+      mon_elem=sommet_elem_(som);
+
+      if (mon_elem>=0)
+        {
+          IntVect faces_elem_eulerien(2*dimension);
+          for (int dim=0; dim<2*dimension; dim++) faces_elem_eulerien(dim) = domaine_vf.elem_faces(mon_elem,dim); // on recupere les faces de l'element eulerien
+          double pos_sommet, coord_elem;
+          for (int dim=0; dim<dimension; dim++)
+            {
+              pos_sommet=sommets_(som,dim); // on recupere la position du sommet suivant l'axe "dim"
+              coord_elem=domaine_vf.xp(mon_elem,dim);
+              if (pos_sommet < coord_elem ) sommet_face_(som,dim)=faces_elem_eulerien(dim); //&& check_som_in_face(dim)
+              else if (pos_sommet >= coord_elem) sommet_face_(som,dim)=faces_elem_eulerien(dim+dimension); // && check_som_in_face(dim+dimension)
+              assert(sommet_face_(som,dim)>=0);
+            }
+        }
+
+    }
+}
+
+void Maillage_FT_Disc::update_sommet_arete()
+{
+  assert(dimension==3);
+  const Domaine_dis& domaine_dis = refdomaine_dis_.valeur();
+  const Domaine& domaine = domaine_dis.domaine();
+  const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis.valeur());
+  const int nb_som=sommets_.dimension(0);
+  sommet_arete_.resize(nb_som,dimension);
+  int nb_arete_elem=12;
+  int mon_elem;
+  IntVect aretes_elem_eulerien(nb_arete_elem);
+  const IntTab& elem_aretes = domaine.elem_aretes();
+  int arete_bas_gauche,arete_bas_droite,arete_haut_gauche,arete_haut_droite;
+  double cgx,cgy,cgz;
+  double somx,somy,somz;
+  for (int som=0; som<nb_som; som++)
+    {
+      for (int dim=0; dim<dimension; dim++) sommet_arete_(som,dim)=-1;
+      mon_elem=sommet_elem_(som);
+      if (mon_elem>=0)
+        {
+          // cg elem
+          cgx=domaine_vf.xp(mon_elem,0);
+          cgy=domaine_vf.xp(mon_elem,1);
+          cgz=domaine_vf.xp(mon_elem,2);
+
+          // position sommet
+          somx=sommets_(som,0);
+          somy=sommets_(som,1);
+          somz=sommets_(som,2);
+
+          // arete XY
+          arete_bas_gauche=elem_aretes(mon_elem,3);
+          arete_bas_droite=elem_aretes(mon_elem,6);
+          arete_haut_gauche=elem_aretes(mon_elem,9);
+          arete_haut_droite=elem_aretes(mon_elem,0);
+
+          if (somx<cgx)
+            {
+              if (somy<cgy) sommet_arete_(som,2)=arete_bas_gauche;
+              else sommet_arete_(som,2)=arete_haut_gauche;
+            }
+          else
+            {
+              if (somy<cgy) sommet_arete_(som,2)=arete_bas_droite;
+              else sommet_arete_(som,2)=arete_haut_droite;
+            }
+
+          // arete XZ
+          arete_bas_gauche=elem_aretes(mon_elem,4);
+          arete_bas_droite=elem_aretes(mon_elem,7);
+          arete_haut_gauche=elem_aretes(mon_elem,10);
+          arete_haut_droite=elem_aretes(mon_elem,1);
+
+          if (somx<cgx)
+            {
+              if (somz<cgz) sommet_arete_(som,1)=arete_bas_gauche;
+              else sommet_arete_(som,1)=arete_haut_gauche;
+            }
+          else
+            {
+              if (somz<cgz) sommet_arete_(som,1)=arete_bas_droite;
+              else sommet_arete_(som,1)=arete_haut_droite;
+            }
+
+          // arete YZ
+          arete_bas_gauche=elem_aretes(mon_elem,5);
+          arete_bas_droite=elem_aretes(mon_elem,8);
+          arete_haut_gauche=elem_aretes(mon_elem,11);
+          arete_haut_droite=elem_aretes(mon_elem,2);
+
+          if (somy<cgy)
+            {
+              if (somz<cgz) sommet_arete_(som,0)=arete_bas_gauche;
+              else sommet_arete_(som,0)=arete_haut_gauche;
+            }
+          else
+            {
+              if (somz<cgz) sommet_arete_(som,0)=arete_bas_droite;
+              else sommet_arete_(som,0)=arete_haut_droite;
+            }
+
+        }
+
+    }
+}
 static void ordonner_sommets_facettes(IntTab& facettes,
                                       const ArrOfInt& sommet_PE_owner,
                                       const ArrOfInt& sommet_num_owner)
@@ -3301,7 +4410,1697 @@ void Maillage_FT_Disc::echanger_facettes(const ArrOfInt& liste_facettes,
                                  facettes_recues_numfacettes);
   if (Comm_Group::check_enabled()) check_mesh();
 }
+// Description:
+// idem echanger_facettes mais pour les faces
+void Maillage_FT_Disc::echanger_facettes_face_x(const ArrOfInt& liste_facettes,
+                                                const ArrOfInt& liste_face_arrivee,
+                                                ArrOfInt& facettes_recues_numfacettes,
+                                                ArrOfInt& facettes_recues_numface)
+{
+  if (Comm_Group::check_enabled()) check_mesh();
+  const int moi = me();
+  int i=0;
+  int indice=0;
+  int nb_facettes_envoi = liste_facettes.size_array();
+  const int nb_facettes_envoi_init=liste_facettes.size_array();
+  // Numeros des faces euleriennes associes a chaque facette (numero local
+  // de la face sur le pe qui possede cet element)
+  static ArrOfIntFT liste_facex_arrivee_local;
+  ArrOfIntFT la_liste_facettes;
+  la_liste_facettes.resize_array(nb_facettes_envoi);
+  // Pour chaque face d'arrivee, determination du PE destination
+  // et conversion du numero de la face virtuelle en numero local sur ce pe.
+  static ArrOfIntFT liste_pe_dest_x;
+  const Desc_Structure_FT& desc_facettes_const = desc_facettes();
+  const Descripteur_FT& espace_distant = desc_facettes_const.espace_distant();
+  const Domaine_dis& domaine_dis = refdomaine_dis_.valeur();
+  const Domaine_VF& le_domaine_vf = ref_cast(Domaine_VF,domaine_dis.valeur());
+  const ArrOfInt& faces_doubles = le_domaine_vf.faces_doubles();
+  const IntTab& faces_doubles_pe_num = le_domaine_vf.faces_doubles_pe_num();
+  const IntTab& faces_doubles_virt_pe_num = le_domaine_vf.faces_doubles_virt_pe_num();
+  const int nb_face = le_domaine_vf.nb_faces(); // Nombre de faces reelles
+  {
+    liste_pe_dest_x.resize_array(nb_facettes_envoi);
+    liste_facex_arrivee_local.resize_array(nb_facettes_envoi);
 
+    const IntTab& face_virt_pe_num = le_domaine_vf.face_virt_pe_num();
+
+    while (i<nb_facettes_envoi_init)
+      {
+        const int face_voisine = liste_face_arrivee[i];
+        const int face_voisine_double = (faces_doubles_virt_pe_num(face_voisine,0)>0);
+        if (faces_doubles(face_voisine) && face_voisine < nb_face)
+          {
+            liste_pe_dest_x[indice] = faces_doubles_pe_num(face_voisine,0);
+            liste_facex_arrivee_local[indice] = faces_doubles_pe_num(face_voisine,1);
+            la_liste_facettes[indice]=liste_facettes[i];
+            indice++;
+          }
+        else if (face_voisine_double && face_voisine >= nb_face)
+          {
+
+            // si la fa7 n'existe pas, on ne l'envoie pas
+            // on est oblige de faire ca car complique d'identifier le pe auquel on veut envoyer la fa7 dans le cas suivant :
+
+            //			 | a droite de cette zone, proc 2 uniquement  (et proc 1 a gauche)
+            //    proc1  | proc 2
+            //	-----------------------------------------------
+            //	   |  -> |	 /  |     |
+            //	------------/-----------------------------------  en dessous de cette zone : proc 0 uniquement
+            //     |  -->| /    |     |     proc 0
+            //  ------------------------------------------------   / : fa7, --> face parcourue, -> face que l'on veut parcourir
+            // La face "->" que l'on veut parcourir appartient a la fois au proc 1 et au proc 2, c'est une face double
+            // On a simplement l'info que la fa7 traverse cette face, mais on ne sait pas de quel cote ==> on ne sait pas a qui l'envoyer
+            // On doit donc checker si le proc 1 et le proc 2 contiennent la fa7
+            // Lors du parcours des faces ON NE CREE PAS DE NOUVELLES FA7, moralement, on demande simplement au proc de calculer l'intersection entre une fa7 connue
+            // et une de ses faces
+            // Ainsi, dans le cas present, le proc 1 ne connait pas la fa7 et le proc 2 la connait
+            // c'est donc uniquement au proc 2 que l'on envoie la fa7
+
+            const int fa7=liste_facettes[i];
+            const int pe1=faces_doubles_virt_pe_num(face_voisine,0);
+            const int face_1=faces_doubles_virt_pe_num(face_voisine,1);
+            const int pe2=faces_doubles_virt_pe_num(face_voisine,2);
+            const int face_2=faces_doubles_virt_pe_num(face_voisine,3);
+
+            int fa7_reelle_pour_pe1=1;
+            fa7_reelle_pour_pe1 = (sommet_PE_owner_(facettes_(fa7,0))==pe1) ? 1 : 0;
+            int fa7_reelle_pour_pe2=1;
+            fa7_reelle_pour_pe2 = (sommet_PE_owner_(facettes_(fa7,0))==pe2) ? 1 : 0;
+            const int fa7_existante_pour_pe1= fa7_reelle_pour_pe1 || espace_distant.contient_element(pe1, fa7);
+            const int fa7_existante_pour_pe2= fa7_reelle_pour_pe2 || espace_distant.contient_element(pe2, fa7);
+            if (fa7_existante_pour_pe1)
+              {
+                liste_pe_dest_x[indice] = pe1;
+                liste_facex_arrivee_local[indice] = face_1;
+                la_liste_facettes[indice]=fa7;
+                indice++;
+              }
+            i++;
+            if (fa7_existante_pour_pe2)
+              {
+                liste_pe_dest_x[indice] = pe2;
+                liste_facex_arrivee_local[indice] = face_2;
+                la_liste_facettes[indice]=fa7;
+                indice++;
+              }
+          }
+
+        else
+          {
+            // Calcul de l'index de la face dans face_virt_pe_num (l'indice 0
+            // correspond a la premiere face virtuelle, soit la face nb_face)
+            const int index = face_voisine - nb_face;
+            const int pe = face_virt_pe_num(index, 0);
+            const int face_locale = face_virt_pe_num(index, 1);
+            liste_pe_dest_x[indice] = pe;
+            liste_facex_arrivee_local[indice] = face_locale;
+            la_liste_facettes[indice]=liste_facettes[i];
+            indice++;
+          }
+        i++;
+      }
+
+    liste_pe_dest_x.resize_array(indice);
+    liste_facex_arrivee_local.resize_array(indice);
+    la_liste_facettes.resize_array(indice);
+  }
+  nb_facettes_envoi=indice;
+  // =======================================================================
+  //                         Communication A -> B
+  //
+  // Envoi de la liste des facettes a transmettre au processeur proprietaire de la
+  // facette (A envoie les numeros de facettes a B)
+  // On remplit facettes_to_send (liste des facettes que B doit envoyer a C)
+  //            facettes_pe_dest (numero du processeur C a qui il faut envoyer)
+  //            BtoC_send_pe_flags (drapeaux des processeurs a qui on envoie)
+  // Attention : si B=C, on n'envoie pas la facette.
+  static ArrOfIntFT facettes_to_send_x;
+  static ArrOfIntFT facettes_pe_dest_x;
+  // Lors de la communication finale entre les procs B et les procs C,
+  // ces drapeaux indiquent si on recoit des donnees et si on en envoie
+  // a chacun des processeurs.
+  static int nbproc = Process::nproc();
+  static ArrOfIntFT BtoC_send_pe_flags_x(nbproc);
+  static ArrOfIntFT BtoC_recv_pe_flags_x(nbproc);
+  BtoC_send_pe_flags_x = 0;
+  facettes_to_send_x.resize_array(0);
+  facettes_pe_dest_x.resize_array(0);
+  {
+    // A et B sont voisins au sens des espaces distants/virtuels des facettes
+    // (un processeur chez qui la facette est virtuelle envoie des donnees au
+    //  processeur chez qui elle est reelle => schema_comm_inverse)
+    const Schema_Comm_FT& comm = desc_facettes_.schema_comm_inverse();
+    comm.begin_comm();
+    for (i = 0; i < nb_facettes_envoi; i++)
+      {
+        const int facette = la_liste_facettes[i];
+        const int PE_destinataire = liste_pe_dest_x[i];
+        const int premier_sommet = facettes_(facette, 0);
+        const int PE_proprietaire = sommet_PE_owner_[premier_sommet];
+        const int facette_num_owner = facette_num_owner_[facette];
+        if (PE_proprietaire == moi)
+          {
+            facettes_to_send_x.append_array(facette_num_owner);
+            facettes_pe_dest_x.append_array(PE_destinataire);
+            BtoC_send_pe_flags_x[PE_destinataire] = 1;
+          }
+        else
+          {
+            if (PE_destinataire != PE_proprietaire)
+              comm.send_buffer(PE_proprietaire) << facette_num_owner << PE_destinataire;
+          }
+      }
+    comm.echange_taille_et_messages();
+    const ArrOfInt& recv_pe_list = comm.get_recv_pe_list();
+    const int nb_recv_pe = recv_pe_list.size_array();
+    for (i = 0; i < nb_recv_pe; i++)
+      {
+        const int pe_source = recv_pe_list[i];
+        Entree& buffer = comm.recv_buffer(pe_source);
+        while (1)
+          {
+            int facette, PE_destinataire;
+            buffer >> facette >> PE_destinataire;
+            if (buffer.eof())
+              break;
+            facettes_to_send_x.append_array(facette);
+            facettes_pe_dest_x.append_array(PE_destinataire);
+            BtoC_send_pe_flags_x[PE_destinataire] = 1;
+          }
+      }
+    comm.end_comm();
+  }
+  //Cerr << "Fin com A to B" << finl;
+  // =======================================================================
+  //                         Communication A -> C
+  //
+  // A envoie a C la liste la liste des facettes, l'expediteur et le numero
+  // de l'element d'entree.
+  // On remplit facettes_recues_numfacettes (numerotation temporaire)
+  //            facettes_recues_numelement
+  //            BtoC_recv_pe_flags (drapeaux des procs de qui on recoit des facettes).
+  // Attention : si B=C on ne recoit pas de donnees de B
+
+  // Pour chaque facette recue, numero du PE proprietaire de la facette:
+  static ArrOfIntFT nouvelles_facettes_pe_proprietaire_x;
+  {
+    nouvelles_facettes_pe_proprietaire_x.resize_array(0);
+    BtoC_recv_pe_flags_x = 0;
+
+    // A et C sont voisins au sens du maillage eulerien
+    const Schema_Comm_FT& comm = schema_comm_domaine_;
+    comm.begin_comm();
+    for (i = 0; i < nb_facettes_envoi; i++)
+      {
+        const int facette = la_liste_facettes[i];
+        const int PE_destinataire = liste_pe_dest_x[i];
+        const int face_arrivee = liste_facex_arrivee_local[i];
+        const int premier_sommet = facettes_(facette, 0);
+        const int PE_proprietaire = sommet_PE_owner_[premier_sommet];
+        const int facette_num_owner = facette_num_owner_[facette];
+        assert (PE_destinataire != moi);
+        comm.send_buffer(PE_destinataire) << facette_num_owner
+                                          << PE_proprietaire
+                                          << face_arrivee;
+      }
+    comm.echange_taille_et_messages();
+    // On efface facettes_recues_numfacettes et numelement.
+    // Pour le cas ou il y aurait aliasing des parametres, il ne faut plus
+    // utiliser liste_facettes et liste_elem_arrivee.
+    facettes_recues_numfacettes.resize_array(0);
+    facettes_recues_numface.resize_array(0);
+    const ArrOfInt& recv_pe_list = comm.get_recv_pe_list();
+    const int nb_recv_pe = recv_pe_list.size_array();
+    for (i = 0; i < nb_recv_pe; i++)
+      {
+        const int pe_source = recv_pe_list[i];
+        Entree& buffer = comm.recv_buffer(pe_source);
+        while (1)
+          {
+            int facette = -1, PE_proprietaire = -1, face_arrivee = -1;
+            buffer >> facette >> PE_proprietaire >> face_arrivee;
+            if (buffer.eof())
+              break;
+            assert(facette >= 0 && PE_proprietaire >= 0 && face_arrivee >= 0);
+            assert(face_arrivee < nb_face); // Ce doit etre un element reel
+            // Enregistre le numero de la nouvelle facette et l'element d'arrivee.
+            // Pour l'instant c'est le numero de la facette sur le proprietaire.
+            facettes_recues_numfacettes.append_array(facette);
+            nouvelles_facettes_pe_proprietaire_x.append_array(PE_proprietaire);
+            facettes_recues_numface.append_array(face_arrivee);
+            // Enregistre que l'on va recevoir des donnees du PE_proprietaire lors
+            // de la derniere communication B->C
+            if (PE_proprietaire != moi)
+              BtoC_recv_pe_flags_x[PE_proprietaire] = 1;
+          }
+      }
+    comm.end_comm();
+  }
+  //Cerr << "Fin com A to C" << finl;
+  // =====
+  // ==================================================================
+  //                         Communication B -> C
+  //
+  // Construction du schema de communication pour envoyer les facettes reelles
+  // au destinataire (B envoie les facettes a C) : il faut determiner
+  // a qui j'envoie et de qui de recois.
+  {
+    static ArrOfIntFT send_pe_list_x;
+    static ArrOfIntFT recv_pe_list_x;
+    send_pe_list_x.resize_array(0);
+    recv_pe_list_x.resize_array(0);
+    for (i = 0; i < nbproc; i++)
+      if (BtoC_send_pe_flags_x[i])
+        send_pe_list_x.append_array(i);
+    for (i = 0; i < nbproc; i++)
+      if (BtoC_recv_pe_flags_x[i])
+        recv_pe_list_x.append_array(i);
+    // Envoi des facettes
+    creer_facettes_virtuelles(facettes_to_send_x, facettes_pe_dest_x,
+                              send_pe_list_x, recv_pe_list_x);
+  }
+  //Cerr << "Fin com B to C" << finl;
+  // Conversion du numero de la facette en numero local dans facettes_recues_numfacettes
+  convertir_numero_distant_local(desc_facettes_,
+                                 facette_num_owner_,
+                                 facettes_recues_numfacettes,
+                                 nouvelles_facettes_pe_proprietaire_x,
+                                 facettes_recues_numfacettes);
+  if (Comm_Group::check_enabled()) check_mesh();
+}
+
+// Description:
+// idem echanger_facettes mais pour les faces
+void Maillage_FT_Disc::echanger_facettes_face_y(const ArrOfInt& liste_facettes,
+                                                const ArrOfInt& liste_face_arrivee,
+                                                ArrOfInt& facettes_recues_numfacettes,
+                                                ArrOfInt& facettes_recues_numface)
+{
+  if (Comm_Group::check_enabled()) check_mesh();
+  const int moi = me();
+  int i=0;
+  int indice=0;
+  int nb_facettes_envoi = liste_facettes.size_array();
+  const int nb_facettes_envoi_init=liste_facettes.size_array();
+  // Numeros des faces euleriennes associes a chaque facette (numero local
+  // de la face sur le pe qui possede cet element)
+  static ArrOfIntFT liste_facey_arrivee_local;
+  ArrOfIntFT la_liste_facettes;
+  la_liste_facettes.resize_array(nb_facettes_envoi);
+  // Pour chaque face d'arrivee, determination du PE destination
+  // et conversion du numero de la face virtuelle en numero local sur ce pe.
+  static ArrOfIntFT liste_pe_dest_y;
+  const Desc_Structure_FT& desc_facettes_const = desc_facettes();
+  const Descripteur_FT& espace_distant = desc_facettes_const.espace_distant();
+  const Domaine_dis& domaine_dis = refdomaine_dis_.valeur();
+  const Domaine_VF& le_domaine_vf = ref_cast(Domaine_VF, domaine_dis.valeur());
+
+  const ArrOfInt& faces_doubles = le_domaine_vf.faces_doubles();
+  const IntTab& faces_doubles_pe_num = le_domaine_vf.faces_doubles_pe_num();
+  const IntTab& faces_doubles_virt_pe_num = le_domaine_vf.faces_doubles_virt_pe_num();
+
+  const int nb_face = le_domaine_vf.nb_faces(); // Nombre de faces reelles
+  {
+    liste_pe_dest_y.resize_array(nb_facettes_envoi);
+    liste_facey_arrivee_local.resize_array(nb_facettes_envoi);
+
+    const IntTab& face_virt_pe_num = le_domaine_vf.face_virt_pe_num();
+    //Cerr << "liste_face_arrivee.size_array() " << liste_face_arrivee.size_array() << finl;
+    while (i < nb_facettes_envoi_init)
+      {
+        const int face_voisine = liste_face_arrivee[i];
+        const int face_voisine_double = (faces_doubles_virt_pe_num(face_voisine,0)>0);
+        if (faces_doubles(face_voisine) && face_voisine < nb_face)
+          {
+            liste_pe_dest_y[indice] = faces_doubles_pe_num(face_voisine,0);
+            liste_facey_arrivee_local[indice] = faces_doubles_pe_num(face_voisine,1);
+            la_liste_facettes[indice]=liste_facettes[i];
+            indice++;
+          }
+
+        else if (face_voisine_double && face_voisine >= nb_face)
+          {
+            const int fa7=liste_facettes[i];
+            const int pe1=faces_doubles_virt_pe_num(face_voisine,0);
+            const int face_1=faces_doubles_virt_pe_num(face_voisine,1);
+            const int pe2=faces_doubles_virt_pe_num(face_voisine,2);
+            const int face_2=faces_doubles_virt_pe_num(face_voisine,3);
+
+            int fa7_reelle_pour_pe1=1;
+            fa7_reelle_pour_pe1 = (sommet_PE_owner_(facettes_(fa7,0))==pe1) ? 1 : 0;
+            int fa7_reelle_pour_pe2=1;
+            fa7_reelle_pour_pe2 = (sommet_PE_owner_(facettes_(fa7,0))==pe2) ? 1 : 0;
+            const int fa7_existante_pour_pe1= fa7_reelle_pour_pe1 || espace_distant.contient_element(pe1, fa7);
+            const int fa7_existante_pour_pe2= fa7_reelle_pour_pe2 || espace_distant.contient_element(pe2, fa7);
+
+            if (fa7_existante_pour_pe1)
+              {
+                liste_pe_dest_y[indice] = pe1;
+                liste_facey_arrivee_local[indice] = face_1;
+                la_liste_facettes[indice]=fa7;
+                indice++;
+              }
+            i++;
+            if (fa7_existante_pour_pe2)
+              {
+                liste_pe_dest_y[indice] = pe2;
+                liste_facey_arrivee_local[indice] = face_2;
+                la_liste_facettes[indice]=fa7;
+                indice++;
+              }
+
+          }
+
+        else
+          {
+            // Calcul de l'index de la face dans face_virt_pe_num (l'indice 0
+            // correspond a la premiere face virtuelle, soit la face nb_face)
+            const int index = face_voisine - nb_face;
+            // Numero du pe qui possede la face voisine
+            const int pe = face_virt_pe_num(index, 0);
+            // Numero local de la face sur ce pe.
+            const int face_locale = face_virt_pe_num(index, 1);
+            liste_pe_dest_y[indice] = pe;
+            liste_facey_arrivee_local[indice] = face_locale;
+            la_liste_facettes[indice]=liste_facettes[i];
+            indice++;
+          }
+        i++;
+      }
+    liste_pe_dest_y.resize_array(indice);
+    liste_facey_arrivee_local.resize_array(indice);
+    la_liste_facettes.resize_array(indice);
+    //Cerr << "liste_facey_arrivee_local.size_array() " << liste_facey_arrivee_local.size_array() << finl;
+  }
+  nb_facettes_envoi=indice;
+  // ===================================
+  // =======================================================================
+  //                         Communication A -> B
+  //
+  // Envoi de la liste des facettes a transmettre au processeur proprietaire de la
+  // facette (A envoie les numeros de facettes a B)
+  // On remplit facettes_to_send (liste des facettes que B doit envoyer a C)
+  //            facettes_pe_dest (numero du processeur C a qui il faut envoyer)
+  //            BtoC_send_pe_flags (drapeaux des processeurs a qui on envoie)
+  // Attention : si B=C, on n'envoie pas la facette.
+  static ArrOfIntFT facettes_to_send_y;
+  static ArrOfIntFT facettes_pe_dest_y;
+  // Lors de la communication finale entre les procs B et les procs C,
+  // ces drapeaux indiquent si on recoit des donnees et si on en envoie
+  // a chacun des processeurs.
+  static int nbproc = Process::nproc();
+  static ArrOfIntFT BtoC_send_pe_flags_y(nbproc);
+  static ArrOfIntFT BtoC_recv_pe_flags_y(nbproc);
+  BtoC_send_pe_flags_y = 0;
+  facettes_to_send_y.resize_array(0);
+  facettes_pe_dest_y.resize_array(0);
+  {
+    // A et B sont voisins au sens des espaces distants/virtuels des facettes
+    // (un processeur chez qui la facette est virtuelle envoie des donnees au
+    //  processeur chez qui elle est reelle => schema_comm_inverse)
+    const Schema_Comm_FT& comm = desc_facettes_.schema_comm_inverse();
+    comm.begin_comm();
+    for (i = 0; i < nb_facettes_envoi; i++)
+      {
+        const int facette = la_liste_facettes[i];
+        const int PE_destinataire = liste_pe_dest_y[i];
+        const int premier_sommet = facettes_(facette, 0);
+        const int PE_proprietaire = sommet_PE_owner_[premier_sommet];
+        const int facette_num_owner = facette_num_owner_[facette];
+        if (PE_proprietaire == moi)
+          {
+            facettes_to_send_y.append_array(facette_num_owner);
+            facettes_pe_dest_y.append_array(PE_destinataire);
+            BtoC_send_pe_flags_y[PE_destinataire] = 1;
+          }
+        else
+          {
+            if (PE_destinataire != PE_proprietaire)
+              comm.send_buffer(PE_proprietaire) << facette_num_owner << PE_destinataire;
+          }
+      }
+    comm.echange_taille_et_messages();
+    const ArrOfInt& recv_pe_list = comm.get_recv_pe_list();
+    const int nb_recv_pe = recv_pe_list.size_array();
+    for (i = 0; i < nb_recv_pe; i++)
+      {
+        const int pe_source = recv_pe_list[i];
+        Entree& buffer = comm.recv_buffer(pe_source);
+        while (1)
+          {
+            int facette, PE_destinataire;
+            buffer >> facette >> PE_destinataire;
+            if (buffer.eof())
+              break;
+            facettes_to_send_y.append_array(facette);
+            facettes_pe_dest_y.append_array(PE_destinataire);
+            BtoC_send_pe_flags_y[PE_destinataire] = 1;
+          }
+      }
+    comm.end_comm();
+  }
+  // =======================================================================
+  //                         Communication A -> C
+  //
+  // A envoie a C la liste la liste des facettes, l'expediteur et le numero
+  // de l'element d'entree.
+  // On remplit facettes_recues_numfacettes (numerotation temporaire)
+  //            facettes_recues_numelement
+  //            BtoC_recv_pe_flags (drapeaux des procs de qui on recoit des facettes).
+  // Attention : si B=C on ne recoit pas de donnees de B
+
+  // Pour chaque facette recue, numero du PE proprietaire de la facette:
+  static ArrOfIntFT nouvelles_facettes_pe_proprietaire_y;
+  {
+    nouvelles_facettes_pe_proprietaire_y.resize_array(0);
+    BtoC_recv_pe_flags_y = 0;
+
+    // A et C sont voisins au sens du maillage eulerien
+    const Schema_Comm_FT& comm = schema_comm_domaine_;
+    comm.begin_comm();
+    for (i = 0; i < nb_facettes_envoi; i++)
+      {
+        const int facette = la_liste_facettes[i];
+        const int PE_destinataire = liste_pe_dest_y[i];
+        const int face_arrivee = liste_facey_arrivee_local[i];
+        const int premier_sommet = facettes_(facette, 0);
+        const int PE_proprietaire = sommet_PE_owner_[premier_sommet];
+        const int facette_num_owner = facette_num_owner_[facette];
+        assert (PE_destinataire != moi);
+        comm.send_buffer(PE_destinataire) << facette_num_owner
+                                          << PE_proprietaire
+                                          << face_arrivee;
+      }
+    comm.echange_taille_et_messages();
+    // On efface facettes_recues_numfacettes et numelement.
+    // Pour le cas ou il y aurait aliasing des parametres, il ne faut plus
+    // utiliser liste_facettes et liste_elem_arrivee.
+    facettes_recues_numfacettes.resize_array(0);
+    facettes_recues_numface.resize_array(0);
+    const ArrOfInt& recv_pe_list = comm.get_recv_pe_list();
+    const int nb_recv_pe = recv_pe_list.size_array();
+    for (i = 0; i < nb_recv_pe; i++)
+      {
+        const int pe_source = recv_pe_list[i];
+        Entree& buffer = comm.recv_buffer(pe_source);
+        while (1)
+          {
+            int facette = -1, PE_proprietaire = -1, face_arrivee = -1;
+            buffer >> facette >> PE_proprietaire >> face_arrivee;
+            if (buffer.eof())
+              break;
+            assert(facette >= 0 && PE_proprietaire >= 0 && face_arrivee >= 0);
+            assert(face_arrivee < nb_face); // Ce doit etre un element reel
+            // Enregistre le numero de la nouvelle facette et l'element d'arrivee.
+            // Pour l'instant c'est le numero de la facette sur le proprietaire.
+            facettes_recues_numfacettes.append_array(facette);
+            nouvelles_facettes_pe_proprietaire_y.append_array(PE_proprietaire);
+            facettes_recues_numface.append_array(face_arrivee);
+            // Enregistre que l'on va recevoir des donnees du PE_proprietaire lors
+            // de la derniere communication B->C
+            if (PE_proprietaire != moi)
+              BtoC_recv_pe_flags_y[PE_proprietaire] = 1;
+          }
+      }
+    comm.end_comm();
+  }
+  // =======================================================================
+  //                         Communication B -> C
+  //
+  // Construction du schema de communication pour envoyer les facettes reelles
+  // au destinataire (B envoie les facettes a C) : il faut determiner
+  // a qui j'envoie et de qui de recois.
+  {
+    static ArrOfIntFT send_pe_list_y;
+    static ArrOfIntFT recv_pe_list_y;
+    send_pe_list_y.resize_array(0);
+    recv_pe_list_y.resize_array(0);
+    for (i = 0; i < nbproc; i++)
+      if (BtoC_send_pe_flags_y[i])
+        send_pe_list_y.append_array(i);
+    for (i = 0; i < nbproc; i++)
+      if (BtoC_recv_pe_flags_y[i])
+        recv_pe_list_y.append_array(i);
+    // Envoi des facettes
+    creer_facettes_virtuelles(facettes_to_send_y, facettes_pe_dest_y,
+                              send_pe_list_y, recv_pe_list_y);
+  }
+  // Conversion du numero de la facette en numero local dans facettes_recues_numfacettes
+  convertir_numero_distant_local(desc_facettes_,
+                                 facette_num_owner_,
+                                 facettes_recues_numfacettes,
+                                 nouvelles_facettes_pe_proprietaire_y,
+                                 facettes_recues_numfacettes);
+  if (Comm_Group::check_enabled()) check_mesh();
+}
+
+// Description:
+// idem echanger_facettes mais pour les faces
+void Maillage_FT_Disc::echanger_facettes_face_z(const ArrOfInt& liste_facettes,
+                                                const ArrOfInt& liste_face_arrivee,
+                                                ArrOfInt& facettes_recues_numfacettes,
+                                                ArrOfInt& facettes_recues_numface)
+{
+  if (Comm_Group::check_enabled()) check_mesh();
+  const int moi = me();
+  int i=0;
+  int indice=0;
+  int nb_facettes_envoi = liste_facettes.size_array();
+  const int nb_facettes_envoi_init=liste_facettes.size_array();
+  // Numeros des faces euleriennes associes a chaque facette (numero local
+  // de la face sur le pe qui possede cet element)
+  static ArrOfIntFT liste_facez_arrivee_local;
+  ArrOfIntFT la_liste_facettes;
+  la_liste_facettes.resize_array(nb_facettes_envoi);
+  // Pour chaque face d'arrivee, determination du PE destination
+  // et conversion du numero de la face virtuelle en numero local sur ce pe.
+  static ArrOfIntFT liste_pe_dest_z;
+  const Desc_Structure_FT& desc_facettes_const = desc_facettes();
+  const Descripteur_FT& espace_distant = desc_facettes_const.espace_distant();
+  const Domaine_dis& domaine_dis = refdomaine_dis_.valeur();
+  const Domaine_VF& le_domaine_vf = ref_cast(Domaine_VF,domaine_dis.valeur());
+
+  const ArrOfInt& faces_doubles = le_domaine_vf.faces_doubles();
+  const IntTab& faces_doubles_pe_num = le_domaine_vf.faces_doubles_pe_num();
+  const IntTab& faces_doubles_virt_pe_num = le_domaine_vf.faces_doubles_virt_pe_num();
+
+  const int nb_face = le_domaine_vf.nb_faces(); // Nombre de faces reelles
+  {
+    liste_pe_dest_z.resize_array(nb_facettes_envoi);
+    liste_facez_arrivee_local.resize_array(nb_facettes_envoi);
+
+    const IntTab& face_virt_pe_num = le_domaine_vf.face_virt_pe_num();
+    while (i < nb_facettes_envoi_init)
+      {
+        const int face_voisine = liste_face_arrivee[i];
+        const int face_voisine_double = (faces_doubles_virt_pe_num(face_voisine,0)>0);
+        if (faces_doubles(face_voisine) && face_voisine < nb_face)
+          {
+            //Cerr << "face_double " << le_domaine_vf.xv(face_voisine,0) << " " << le_domaine_vf.xv(face_voisine,1) << " " << le_domaine_vf.xv(face_voisine,2) << finl;
+            liste_pe_dest_z[indice] = faces_doubles_pe_num(face_voisine,0);
+            liste_facez_arrivee_local[indice] = faces_doubles_pe_num(face_voisine,1);
+            la_liste_facettes[indice]=liste_facettes[i];
+            indice++;
+          }
+
+        else if (face_voisine_double && face_voisine >= nb_face)
+          {
+            const int fa7=liste_facettes[i];
+            const int pe1=faces_doubles_virt_pe_num(face_voisine,0);
+            const int face_1=faces_doubles_virt_pe_num(face_voisine,1);
+            const int pe2=faces_doubles_virt_pe_num(face_voisine,2);
+            const int face_2=faces_doubles_virt_pe_num(face_voisine,3);
+
+            int fa7_reelle_pour_pe1=1;
+            fa7_reelle_pour_pe1 = (sommet_PE_owner_(facettes_(fa7,0))==pe1) ? 1 : 0;
+            int fa7_reelle_pour_pe2=1;
+            fa7_reelle_pour_pe2 = (sommet_PE_owner_(facettes_(fa7,0))==pe2) ? 1 : 0;
+            const int fa7_existante_pour_pe1= fa7_reelle_pour_pe1 || espace_distant.contient_element(pe1, fa7);
+            const int fa7_existante_pour_pe2= fa7_reelle_pour_pe2 || espace_distant.contient_element(pe2, fa7);
+
+            if (fa7_existante_pour_pe1)
+              {
+                liste_pe_dest_z[indice] = pe1;
+                liste_facez_arrivee_local[indice] = face_1;
+                la_liste_facettes[indice]=fa7;
+                indice++;
+              }
+            i++;
+            if (fa7_existante_pour_pe2)
+              {
+                liste_pe_dest_z[indice] = pe2;
+                liste_facez_arrivee_local[indice] = face_2;
+                la_liste_facettes[indice]=fa7;
+                indice++;
+              }
+          }
+        else
+          {
+            // Calcul de l'index de la face dans face_virt_pe_num (l'indice 0
+            // correspond a la premiere face virtuelle, soit la face nb_face)
+            const int index = face_voisine - nb_face;
+            // Numero du pe qui possede la face voisine
+            const int pe = face_virt_pe_num(index, 0);
+            // Numero local de la face sur ce pe.
+            const int face_locale = face_virt_pe_num(index, 1);
+            liste_pe_dest_z[indice] = pe;
+            liste_facez_arrivee_local[indice] = face_locale;
+            la_liste_facettes[indice]=liste_facettes[i];
+            indice++;
+          }
+        i++;
+      }
+
+    liste_pe_dest_z.resize_array(indice);
+    liste_facez_arrivee_local.resize_array(indice);
+    la_liste_facettes.resize_array(indice);
+  }
+  nb_facettes_envoi=indice;
+  // =======================================================================
+  //                         Communication A -> B
+  //
+  // Envoi de la liste des facettes a transmettre au processeur proprietaire de la
+  // facette (A envoie les numeros de facettes a B)
+  // On remplit facettes_to_send (liste des facettes que B doit envoyer a C)
+  //            facettes_pe_dest (numero du processeur C a qui il faut envoyer)
+  //            BtoC_send_pe_flags (drapeaux des processeurs a qui on envoie)
+  // Attention : si B=C, on n'envoie pas la facette.
+  static ArrOfIntFT facettes_to_send_z;
+  static ArrOfIntFT facettes_pe_dest_z;
+  // Lors de la communication finale entre les procs B et les procs C,
+  // ces drapeaux indiquent si on recoit des donnees et si on en envoie
+  // a chacun des processeurs.
+  static int nbproc = Process::nproc();
+  static ArrOfIntFT BtoC_send_pe_flags_z(nbproc);
+  static ArrOfIntFT BtoC_recv_pe_flags_z(nbproc);
+  BtoC_send_pe_flags_z = 0;
+  facettes_to_send_z.resize_array(0);
+  facettes_pe_dest_z.resize_array(0);
+  {
+    // A et B sont voisins au sens des espaces distants/virtuels des facettes
+    // (un processeur chez qui la facette est virtuelle envoie des donnees au
+    //  processeur chez qui elle est reelle => schema_comm_inverse)
+    const Schema_Comm_FT& comm = desc_facettes_.schema_comm_inverse();
+    comm.begin_comm();
+    for (i = 0; i < nb_facettes_envoi; i++)
+      {
+        const int facette = la_liste_facettes[i];
+        const int PE_destinataire = liste_pe_dest_z[i];
+        const int premier_sommet = facettes_(facette, 0);
+        const int PE_proprietaire = sommet_PE_owner_[premier_sommet];
+        const int facette_num_owner = facette_num_owner_[facette];
+        if (PE_proprietaire == moi)
+          {
+            facettes_to_send_z.append_array(facette_num_owner);
+            facettes_pe_dest_z.append_array(PE_destinataire);
+            BtoC_send_pe_flags_z[PE_destinataire] = 1;
+          }
+        else
+          {
+            if (PE_destinataire != PE_proprietaire)
+              comm.send_buffer(PE_proprietaire) << facette_num_owner << PE_destinataire;
+          }
+      }
+    comm.echange_taille_et_messages();
+    const ArrOfInt& recv_pe_list = comm.get_recv_pe_list();
+    const int nb_recv_pe = recv_pe_list.size_array();
+    for (i = 0; i < nb_recv_pe; i++)
+      {
+        const int pe_source = recv_pe_list[i];
+        Entree& buffer = comm.recv_buffer(pe_source);
+        while (1)
+          {
+            int facette, PE_destinataire;
+            buffer >> facette >> PE_destinataire;
+            if (buffer.eof())
+              break;
+            facettes_to_send_z.append_array(facette);
+            facettes_pe_dest_z.append_array(PE_destinataire);
+            BtoC_send_pe_flags_z[PE_destinataire] = 1;
+          }
+      }
+    comm.end_comm();
+  }
+
+  // =======================================================================
+  //                         Communication A -> C
+  //
+  // A envoie a C la liste la liste des facettes, l'expediteur et le numero
+  // de l'element d'entree.
+  // On remplit facettes_recues_numfacettes (numerotation temporaire)
+  //            facettes_recues_numelement
+  //            BtoC_recv_pe_flags (drapeaux des procs de qui on recoit des facettes).
+  // Attention : si B=C on ne recoit pas de donnees de B
+
+  // Pour chaque facette recue, numero du PE proprietaire de la facette:
+  static ArrOfIntFT nouvelles_facettes_pe_proprietaire_z;
+  {
+    nouvelles_facettes_pe_proprietaire_z.resize_array(0);
+    BtoC_recv_pe_flags_z = 0;
+
+    // A et C sont voisins au sens du maillage eulerien
+    const Schema_Comm_FT& comm = schema_comm_domaine_;
+    comm.begin_comm();
+    for (i = 0; i < nb_facettes_envoi; i++)
+      {
+        const int facette = la_liste_facettes[i];
+        const int PE_destinataire = liste_pe_dest_z[i];
+        const int face_arrivee = liste_facez_arrivee_local[i];
+        const int premier_sommet = facettes_(facette, 0);
+        const int PE_proprietaire = sommet_PE_owner_[premier_sommet];
+        const int facette_num_owner = facette_num_owner_[facette];
+        assert (PE_destinataire != moi);
+        comm.send_buffer(PE_destinataire) << facette_num_owner
+                                          << PE_proprietaire
+                                          << face_arrivee;
+      }
+    comm.echange_taille_et_messages();
+    // On efface facettes_recues_numfacettes et numelement.
+    // Pour le cas ou il y aurait aliasing des parametres, il ne faut plus
+    // utiliser liste_facettes et liste_elem_arrivee.
+    facettes_recues_numfacettes.resize_array(0);
+    facettes_recues_numface.resize_array(0);
+    const ArrOfInt& recv_pe_list = comm.get_recv_pe_list();
+    const int nb_recv_pe = recv_pe_list.size_array();
+    for (i = 0; i < nb_recv_pe; i++)
+      {
+        const int pe_source = recv_pe_list[i];
+        Entree& buffer = comm.recv_buffer(pe_source);
+        while (1)
+          {
+            int facette = -1, PE_proprietaire = -1, face_arrivee = -1;
+            buffer >> facette >> PE_proprietaire >> face_arrivee;
+            if (buffer.eof())
+              break;
+            assert(facette >= 0 && PE_proprietaire >= 0 && face_arrivee >= 0);
+            assert(face_arrivee < nb_face); // Ce doit etre un element reel
+            // Enregistre le numero de la nouvelle facette et l'element d'arrivee.
+            // Pour l'instant c'est le numero de la facette sur le proprietaire.
+            facettes_recues_numfacettes.append_array(facette);
+            nouvelles_facettes_pe_proprietaire_z.append_array(PE_proprietaire);
+            facettes_recues_numface.append_array(face_arrivee);
+            // Enregistre que l'on va recevoir des donnees du PE_proprietaire lors
+            // de la derniere communication B->C
+            if (PE_proprietaire != moi)
+              BtoC_recv_pe_flags_z[PE_proprietaire] = 1;
+          }
+      }
+    comm.end_comm();
+  }
+
+  // =======================================================================
+  //                         Communication B -> C
+  //
+  // Construction du schema de communication pour envoyer les facettes reelles
+  // au destinataire (B envoie les facettes a C) : il faut determiner
+  // a qui j'envoie et de qui de recois.
+  {
+    static ArrOfIntFT send_pe_list_z;
+    static ArrOfIntFT recv_pe_list_z;
+    send_pe_list_z.resize_array(0);
+    recv_pe_list_z.resize_array(0);
+    for (i = 0; i < nbproc; i++)
+      if (BtoC_send_pe_flags_z[i])
+        send_pe_list_z.append_array(i);
+    for (i = 0; i < nbproc; i++)
+      if (BtoC_recv_pe_flags_z[i])
+        recv_pe_list_z.append_array(i);
+    // Envoi des facettes
+    creer_facettes_virtuelles(facettes_to_send_z, facettes_pe_dest_z,
+                              send_pe_list_z, recv_pe_list_z);
+  }
+  // Conversion du numero de la facette en numero local dans facettes_recues_numfacettes
+  convertir_numero_distant_local(desc_facettes_,
+                                 facette_num_owner_,
+                                 facettes_recues_numfacettes,
+                                 nouvelles_facettes_pe_proprietaire_z,
+                                 facettes_recues_numfacettes);
+  if (Comm_Group::check_enabled()) check_mesh();
+}
+
+void Maillage_FT_Disc::echanger_facettes_arete_x(const ArrOfInt& liste_facettes,
+                                                 const ArrOfInt& liste_arete_arrivee,
+                                                 ArrOfInt& facettes_recues_numfacettes,
+                                                 ArrOfInt& facettes_recues_numarete)
+{
+  if (Comm_Group::check_enabled()) check_mesh();
+  const int moi = me();
+  int i=0;
+  int indice=0;
+  int nb_facettes_envoi = liste_facettes.size_array();
+  const int nb_facettes_envoi_init=liste_facettes.size_array();
+  // Numeros des faces euleriennes associes a chaque facette (numero local
+  // de la face sur le pe qui possede cet element)
+  static ArrOfIntFT liste_aretex_arrivee_local;
+  ArrOfIntFT la_liste_facettes;
+  la_liste_facettes.resize_array(nb_facettes_envoi);
+  // Pour chaque face d'arrivee, determination du PE destination
+  // et conversion du numero de la face virtuelle en numero local sur ce pe.
+  static ArrOfIntFT liste_pe_dest_aretex;
+  const Desc_Structure_FT& desc_facettes_const = desc_facettes();
+  const Descripteur_FT& espace_distant = desc_facettes_const.espace_distant();
+  const Domaine_dis& domaine_dis = refdomaine_dis_.valeur();
+  const Domaine_VF& le_domaine_vf = ref_cast(Domaine_VF,domaine_dis.valeur());
+  const IntVect& aretes_multiples = le_domaine_vf.aretes_multiples();
+  const IntTab& arete_virt_pe_num = le_domaine_vf.arete_virt_pe_num();
+  //const IntTab& aretes_multiples_pe_num = le_domaine_vf.aretes_multiples_pe_num();
+  const IntTab& aretes_multiples_virt_pe_num = le_domaine_vf.aretes_multiples_virt_pe_num();
+
+  const int nb_aretes_reelles = le_domaine_vf.domaine().nb_aretes(); // Nombre de faces reelles
+  {
+    liste_pe_dest_aretex.resize_array(nb_facettes_envoi);
+    liste_aretex_arrivee_local.resize_array(nb_facettes_envoi);
+
+    while (i<nb_facettes_envoi_init)
+      {
+        const int arete_voisine = liste_arete_arrivee[i];
+        const int arete_voisine_multiple = (aretes_multiples(arete_voisine)>0);
+        const int arete_mult=aretes_multiples(arete_voisine);
+
+        if (arete_voisine_multiple)
+          {
+            const int fa7=liste_facettes[i];
+            const int pe1=aretes_multiples_virt_pe_num(arete_voisine,0);
+            const int arete_1=aretes_multiples_virt_pe_num(arete_voisine,1);
+            const int pe2=aretes_multiples_virt_pe_num(arete_voisine,2);
+            const int arete_2=aretes_multiples_virt_pe_num(arete_voisine,3);
+            const int pe3=aretes_multiples_virt_pe_num(arete_voisine,4);
+            const int arete_3=aretes_multiples_virt_pe_num(arete_voisine,5);
+            const int pe4=aretes_multiples_virt_pe_num(arete_voisine,6);
+            const int arete_4=aretes_multiples_virt_pe_num(arete_voisine,7);
+            int fa7_reelle_pour_pe1=1;
+            fa7_reelle_pour_pe1 = (sommet_PE_owner_(facettes_(fa7,0))==pe1) ? 1 : 0;
+            int fa7_reelle_pour_pe2=1;
+            fa7_reelle_pour_pe2 = (sommet_PE_owner_(facettes_(fa7,0))==pe2) ? 1 : 0;
+            int fa7_reelle_pour_pe3=1;
+            fa7_reelle_pour_pe3 = (sommet_PE_owner_(facettes_(fa7,0))==pe3) ? 1 : 0;
+            int fa7_reelle_pour_pe4=1;
+            fa7_reelle_pour_pe4 = (sommet_PE_owner_(facettes_(fa7,0))==pe4) ? 1 : 0;
+
+            const int fa7_existante_pour_pe1= (pe1>=0) ? (fa7_reelle_pour_pe1 || espace_distant.contient_element(pe1, fa7)) : 0;
+            const int fa7_existante_pour_pe2= (pe2>=0) ? (fa7_reelle_pour_pe2 || espace_distant.contient_element(pe2, fa7)) : 0;
+            const int fa7_existante_pour_pe3= (pe3>=0) ? (fa7_reelle_pour_pe3 || espace_distant.contient_element(pe3, fa7)) : 0;
+            const int fa7_existante_pour_pe4= (pe4>=0) ? (fa7_reelle_pour_pe4 || espace_distant.contient_element(pe4, fa7)) : 0;
+
+            if (fa7_existante_pour_pe1 && pe1!=moi)
+              {
+                liste_pe_dest_aretex[indice] = pe1;
+                liste_aretex_arrivee_local[indice] = arete_1;
+                la_liste_facettes[indice]=fa7;
+                indice++;
+              }
+            if (arete_mult>1)
+              {
+                i++;
+                if (fa7_existante_pour_pe2 && pe2!=moi)
+                  {
+                    liste_pe_dest_aretex[indice] = pe2;
+                    liste_aretex_arrivee_local[indice] = arete_2;
+                    la_liste_facettes[indice]=fa7;
+                    indice++;
+                  }
+              }
+            if (arete_mult>2)
+              {
+                i++;
+                if (fa7_existante_pour_pe3 && pe3!=moi)
+                  {
+                    liste_pe_dest_aretex[indice] = pe3;
+                    liste_aretex_arrivee_local[indice] = arete_3;
+                    la_liste_facettes[indice]=fa7;
+                    indice++;
+                  }
+              }
+            if (1)
+              {
+                i++;
+                if (fa7_existante_pour_pe4 && pe4!=moi)
+                  {
+                    liste_pe_dest_aretex[indice] = pe4;
+                    liste_aretex_arrivee_local[indice] = arete_4;
+                    la_liste_facettes[indice]=fa7;
+                    indice++;
+                  }
+              }
+          }
+        else
+          {
+            const int index = arete_voisine - nb_aretes_reelles;
+            const int pe = arete_virt_pe_num(index, 0);
+            const int arete_locale = arete_virt_pe_num(index, 1);
+            liste_pe_dest_aretex[indice] = pe;
+            liste_aretex_arrivee_local[indice] = arete_locale;
+            la_liste_facettes[indice]=liste_facettes[i];
+            indice++;
+
+          }
+
+        i++;
+      }
+
+    liste_pe_dest_aretex.resize_array(indice);
+    liste_aretex_arrivee_local.resize_array(indice);
+    la_liste_facettes.resize_array(indice);
+  }
+  nb_facettes_envoi=indice;
+
+  // =======================================================================
+  //                         Communication A -> B
+  //
+  // Envoi de la liste des facettes a transmettre au processeur proprietaire de la
+  // facette (A envoie les numeros de facettes a B)
+  // On remplit facettes_to_send (liste des facettes que B doit envoyer a C)
+  //            facettes_pe_dest (numero du processeur C a qui il faut envoyer)
+  //            BtoC_send_pe_flags (drapeaux des processeurs a qui on envoie)
+  // Attention : si B=C, on n'envoie pas la facette.
+  static ArrOfIntFT facettes_to_send_aretex;
+  static ArrOfIntFT facettes_pe_dest_aretex;
+  // Lors de la communication finale entre les procs B et les procs C,
+  // ces drapeaux indiquent si on recoit des donnees et si on en envoie
+  // a chacun des processeurs.
+  static int nbproc = Process::nproc();
+  static ArrOfIntFT BtoC_send_pe_flags_x(nbproc);
+  static ArrOfIntFT BtoC_recv_pe_flags_x(nbproc);
+  BtoC_send_pe_flags_x = 0;
+  facettes_to_send_aretex.resize_array(0);
+  facettes_pe_dest_aretex.resize_array(0);
+  {
+    // A et B sont voisins au sens des espaces distants/virtuels des facettes
+    // (un processeur chez qui la facette est virtuelle envoie des donnees au
+    //  processeur chez qui elle est reelle => schema_comm_inverse)
+    const Schema_Comm_FT& comm = desc_facettes_.schema_comm_inverse();
+    comm.begin_comm();
+    for (i = 0; i < nb_facettes_envoi; i++)
+      {
+        const int facette = la_liste_facettes[i];
+        const int PE_destinataire = liste_pe_dest_aretex[i];
+        const int premier_sommet = facettes_(facette, 0);
+        const int PE_proprietaire = sommet_PE_owner_[premier_sommet];
+        const int facette_num_owner = facette_num_owner_[facette];
+        if (PE_proprietaire == moi)
+          {
+            facettes_to_send_aretex.append_array(facette_num_owner);
+            facettes_pe_dest_aretex.append_array(PE_destinataire);
+            BtoC_send_pe_flags_x[PE_destinataire] = 1;
+          }
+        else
+          {
+            if (PE_destinataire != PE_proprietaire)
+              comm.send_buffer(PE_proprietaire) << facette_num_owner << PE_destinataire;
+          }
+      }
+    comm.echange_taille_et_messages();
+    const ArrOfInt& recv_pe_list = comm.get_recv_pe_list();
+    const int nb_recv_pe = recv_pe_list.size_array();
+    for (i = 0; i < nb_recv_pe; i++)
+      {
+        const int pe_source = recv_pe_list[i];
+        Entree& buffer = comm.recv_buffer(pe_source);
+        while (1)
+          {
+            int facette, PE_destinataire;
+            buffer >> facette >> PE_destinataire;
+            if (buffer.eof())
+              break;
+            facettes_to_send_aretex.append_array(facette);
+            facettes_pe_dest_aretex.append_array(PE_destinataire);
+            BtoC_send_pe_flags_x[PE_destinataire] = 1;
+          }
+      }
+    comm.end_comm();
+  }
+  //Cerr << "Fin com A to B" << finl;
+  // =======================================================================
+  //                         Communication A -> C
+  //
+  // A envoie a C la liste la liste des facettes, l'expediteur et le numero
+  // de l'element d'entree.
+  // On remplit facettes_recues_numfacettes (numerotation temporaire)
+  //            facettes_recues_numelement
+  //            BtoC_recv_pe_flags (drapeaux des procs de qui on recoit des facettes).
+  // Attention : si B=C on ne recoit pas de donnees de B
+
+  // Pour chaque facette recue, numero du PE proprietaire de la facette:
+  static ArrOfIntFT nouvelles_facettes_pe_proprietaire_aretex;
+  {
+    nouvelles_facettes_pe_proprietaire_aretex.resize_array(0);
+    BtoC_recv_pe_flags_x = 0;
+
+    // A et C sont voisins au sens du maillage eulerien
+    const Schema_Comm_FT& comm = schema_comm_domaine_;
+    comm.begin_comm();
+    for (i = 0; i < nb_facettes_envoi; i++)
+      {
+        const int facette = la_liste_facettes[i];
+        const int PE_destinataire = liste_pe_dest_aretex[i];
+        const int arete_arrivee = liste_aretex_arrivee_local[i];
+        const int premier_sommet = facettes_(facette, 0);
+        const int PE_proprietaire = sommet_PE_owner_[premier_sommet];
+        const int facette_num_owner = facette_num_owner_[facette];
+        assert (PE_destinataire != moi);
+        comm.send_buffer(PE_destinataire) << facette_num_owner
+                                          << PE_proprietaire
+                                          << arete_arrivee;
+      }
+    comm.echange_taille_et_messages();
+    // On efface facettes_recues_numfacettes et numelement.
+    // Pour le cas ou il y aurait aliasing des parametres, il ne faut plus
+    // utiliser liste_facettes et liste_elem_arrivee.
+    facettes_recues_numfacettes.resize_array(0);
+    facettes_recues_numarete.resize_array(0);
+    const ArrOfInt& recv_pe_list = comm.get_recv_pe_list();
+    const int nb_recv_pe = recv_pe_list.size_array();
+    for (i = 0; i < nb_recv_pe; i++)
+      {
+        const int pe_source = recv_pe_list[i];
+        Entree& buffer = comm.recv_buffer(pe_source);
+        while (1)
+          {
+            int facette = -1, PE_proprietaire = -1, arete_arrivee = -1;
+            buffer >> facette >> PE_proprietaire >> arete_arrivee;
+            if (buffer.eof())
+              break;
+            assert(facette >= 0 && PE_proprietaire >= 0 && arete_arrivee >= 0);
+            // assert(arete_arrivee < nb_aretes_reelles); // Ce doit etre un element reel
+            // Enregistre le numero de la nouvelle facette et l'element d'arrivee.
+            // Pour l'instant c'est le numero de la facette sur le proprietaire.
+            facettes_recues_numfacettes.append_array(facette);
+            nouvelles_facettes_pe_proprietaire_aretex.append_array(PE_proprietaire);
+            facettes_recues_numarete.append_array(arete_arrivee);
+            // Enregistre que l'on va recevoir des donnees du PE_proprietaire lors
+            // de la derniere communication B->C
+            if (PE_proprietaire != moi)
+              BtoC_recv_pe_flags_x[PE_proprietaire] = 1;
+          }
+      }
+    comm.end_comm();
+  }
+  //Cerr << "Fin com A to C" << finl;
+  // =====
+  // ==================================================================
+  //                         Communication B -> C
+  //
+  // Construction du schema de communication pour envoyer les facettes reelles
+  // au destinataire (B envoie les facettes a C) : il faut determiner
+  // a qui j'envoie et de qui de recois.
+  {
+    static ArrOfIntFT send_pe_list_x;
+    static ArrOfIntFT recv_pe_list_x;
+    send_pe_list_x.resize_array(0);
+    recv_pe_list_x.resize_array(0);
+    for (i = 0; i < nbproc; i++)
+      if (BtoC_send_pe_flags_x[i])
+        send_pe_list_x.append_array(i);
+    for (i = 0; i < nbproc; i++)
+      if (BtoC_recv_pe_flags_x[i])
+        recv_pe_list_x.append_array(i);
+    // Envoi des facettes
+    creer_facettes_virtuelles(facettes_to_send_aretex, facettes_pe_dest_aretex,
+                              send_pe_list_x, recv_pe_list_x);
+  }
+  //Cerr << "Fin com B to C" << finl;
+  // Conversion du numero de la facette en numero local dans facettes_recues_numfacettes
+  convertir_numero_distant_local(desc_facettes_,
+                                 facette_num_owner_,
+                                 facettes_recues_numfacettes,
+                                 nouvelles_facettes_pe_proprietaire_aretex,
+                                 facettes_recues_numfacettes);
+  if (Comm_Group::check_enabled()) check_mesh();
+}
+void Maillage_FT_Disc::echanger_facettes_arete_y(const ArrOfInt& liste_facettes,
+                                                 const ArrOfInt& liste_arete_arrivee,
+                                                 ArrOfInt& facettes_recues_numfacettes,
+                                                 ArrOfInt& facettes_recues_numarete)
+{
+  if (Comm_Group::check_enabled()) check_mesh();
+  const int moi = me();
+  int i=0;
+  int indice=0;
+  int nb_facettes_envoi = liste_facettes.size_array();
+  const int nb_facettes_envoi_init=liste_facettes.size_array();
+
+  // Numeros des faces euleriennes associes a chaque facette (numero local
+  // de la face sur le pe qui possede cet element)
+  static ArrOfIntFT liste_aretey_arrivee_local;
+  ArrOfIntFT la_liste_facettes;
+  la_liste_facettes.resize_array(nb_facettes_envoi);
+  // Pour chaque face d'arrivee, determination du PE destination
+  // et conversion du numero de la face virtuelle en numero local sur ce pe.
+  static ArrOfIntFT liste_pe_dest_aretey;
+  const Desc_Structure_FT& desc_facettes_const = desc_facettes();
+  const Descripteur_FT& espace_distant = desc_facettes_const.espace_distant();
+  const Domaine_dis& domaine_dis = refdomaine_dis_.valeur();
+  const Domaine_VF& le_domaine_vf = ref_cast(Domaine_VF,domaine_dis.valeur());
+  const IntVect& aretes_multiples = le_domaine_vf.aretes_multiples();
+  const IntTab& arete_virt_pe_num = le_domaine_vf.arete_virt_pe_num();
+  //const IntTab& aretes_multiples_pe_num = le_domaine_vf.aretes_multiples_pe_num();
+  const IntTab& aretes_multiples_virt_pe_num = le_domaine_vf.aretes_multiples_virt_pe_num();
+  const int nb_aretes_reelles = le_domaine_vf.domaine().nb_aretes(); // Nombre de faces reelles
+  {
+    liste_pe_dest_aretey.resize_array(nb_facettes_envoi);
+    liste_aretey_arrivee_local.resize_array(nb_facettes_envoi);
+
+    while (i<nb_facettes_envoi_init)
+      {
+        const int arete_voisine = liste_arete_arrivee[i];
+        const int arete_voisine_multiple = (aretes_multiples(arete_voisine)>0);
+        const int arete_mult=aretes_multiples(arete_voisine);
+
+        if (arete_voisine_multiple)
+          {
+            const int fa7=liste_facettes[i];
+            const int pe1=aretes_multiples_virt_pe_num(arete_voisine,0);
+            const int arete_1=aretes_multiples_virt_pe_num(arete_voisine,1);
+            const int pe2=aretes_multiples_virt_pe_num(arete_voisine,2);
+            const int arete_2=aretes_multiples_virt_pe_num(arete_voisine,3);
+            const int pe3=aretes_multiples_virt_pe_num(arete_voisine,4);
+            const int arete_3=aretes_multiples_virt_pe_num(arete_voisine,5);
+            const int pe4=aretes_multiples_virt_pe_num(arete_voisine,6);
+            const int arete_4=aretes_multiples_virt_pe_num(arete_voisine,7);
+            int fa7_reelle_pour_pe1=1;
+            fa7_reelle_pour_pe1 = (sommet_PE_owner_(facettes_(fa7,0))==pe1) ? 1 : 0;
+            int fa7_reelle_pour_pe2=1;
+            fa7_reelle_pour_pe2 = (sommet_PE_owner_(facettes_(fa7,0))==pe2) ? 1 : 0;
+            int fa7_reelle_pour_pe3=1;
+            fa7_reelle_pour_pe3 = (sommet_PE_owner_(facettes_(fa7,0))==pe3) ? 1 : 0;
+            int fa7_reelle_pour_pe4=1;
+            fa7_reelle_pour_pe4 = (sommet_PE_owner_(facettes_(fa7,0))==pe4) ? 1 : 0;
+
+            const int fa7_existante_pour_pe1= (pe1>=0) ? fa7_reelle_pour_pe1 || espace_distant.contient_element(pe1, fa7) : 0;
+            const int fa7_existante_pour_pe2= (pe2>=0) ? fa7_reelle_pour_pe2 || espace_distant.contient_element(pe2, fa7) : 0;
+            const int fa7_existante_pour_pe3= (pe3>=0) ? fa7_reelle_pour_pe3 || espace_distant.contient_element(pe3, fa7) : 0;
+            const int fa7_existante_pour_pe4= (pe4>=0) ? fa7_reelle_pour_pe4 || espace_distant.contient_element(pe4, fa7) : 0;
+
+            if (fa7_existante_pour_pe1 && pe1!=moi)
+              {
+                liste_pe_dest_aretey[indice] = pe1;
+                liste_aretey_arrivee_local[indice] = arete_1;
+                la_liste_facettes[indice]=fa7;
+                indice++;
+              }
+            if (arete_mult>1)
+              {
+                i++;
+                if (fa7_existante_pour_pe2 && pe2!=moi)
+                  {
+                    liste_pe_dest_aretey[indice] = pe2;
+                    liste_aretey_arrivee_local[indice] = arete_2;
+                    la_liste_facettes[indice]=fa7;
+                    indice++;
+                  }
+              }
+            if (arete_mult>2)
+              {
+                i++;
+                if (fa7_existante_pour_pe3 && pe3!=moi)
+                  {
+                    liste_pe_dest_aretey[indice] = pe3;
+                    liste_aretey_arrivee_local[indice] = arete_3;
+                    la_liste_facettes[indice]=fa7;
+                    indice++;
+                  }
+              }
+
+            if (1) // (arete_voisine>nb_aretes_reelles)
+              {
+                i++;
+                if (fa7_existante_pour_pe4 && pe4!=moi)
+                  {
+                    liste_pe_dest_aretey[indice] = pe4;
+                    liste_aretey_arrivee_local[indice] = arete_4;
+                    la_liste_facettes[indice]=fa7;
+                    indice++;
+                  }
+              }
+          }
+        else
+          {
+            const int index = arete_voisine - nb_aretes_reelles;
+            const int pe = arete_virt_pe_num(index, 0);
+            const int arete_locale = arete_virt_pe_num(index, 1);
+            liste_pe_dest_aretey[indice] = pe;
+            liste_aretey_arrivee_local[indice] = arete_locale;
+            la_liste_facettes[indice]=liste_facettes[i];
+            indice++;
+          }
+
+        i++;
+      }
+
+    liste_pe_dest_aretey.resize_array(indice);
+    liste_aretey_arrivee_local.resize_array(indice);
+    la_liste_facettes.resize_array(indice);
+  }
+  nb_facettes_envoi=indice;
+
+  // =======================================================================
+  //                         Communication A -> B
+  //
+  // Envoi de la liste des facettes a transmettre au processeur proprietaire de la
+  // facette (A envoie les numeros de facettes a B)
+  // On remplit facettes_to_send (liste des facettes que B doit envoyer a C)
+  //            facettes_pe_dest (numero du processeur C a qui il faut envoyer)
+  //            BtoC_send_pe_flags (drapeaux des processeurs a qui on envoie)
+  // Attention : si B=C, on n'envoie pas la facette.
+  static ArrOfIntFT facettes_to_send_aretey;
+  static ArrOfIntFT facettes_pe_dest_aretey;
+  // Lors de la communication finale entre les procs B et les procs C,
+  // ces drapeaux indiquent si on recoit des donnees et si on en envoie
+  // a chacun des processeurs.
+  static int nbproc = Process::nproc();
+  static ArrOfIntFT BtoC_send_pe_flags_aretey(nbproc);
+  static ArrOfIntFT BtoC_recv_pe_flags_aretey(nbproc);
+  BtoC_send_pe_flags_aretey = 0;
+  facettes_to_send_aretey.resize_array(0);
+  facettes_pe_dest_aretey.resize_array(0);
+  {
+    // A et B sont voisins au sens des espaces distants/virtuels des facettes
+    // (un processeur chez qui la facette est virtuelle envoie des donnees au
+    //  processeur chez qui elle est reelle => schema_comm_inverse)
+    const Schema_Comm_FT& comm = desc_facettes_.schema_comm_inverse();
+    comm.begin_comm();
+    for (i = 0; i < nb_facettes_envoi; i++)
+      {
+        const int facette = la_liste_facettes[i];
+        const int PE_destinataire = liste_pe_dest_aretey[i];
+        const int premier_sommet = facettes_(facette, 0);
+        const int PE_proprietaire = sommet_PE_owner_[premier_sommet];
+        const int facette_num_owner = facette_num_owner_[facette];
+        if (PE_proprietaire == moi)
+          {
+            facettes_to_send_aretey.append_array(facette_num_owner);
+            facettes_pe_dest_aretey.append_array(PE_destinataire);
+            BtoC_send_pe_flags_aretey[PE_destinataire] = 1;
+          }
+        else
+          {
+            if (PE_destinataire != PE_proprietaire)
+              comm.send_buffer(PE_proprietaire) << facette_num_owner << PE_destinataire;
+          }
+      }
+    comm.echange_taille_et_messages();
+    const ArrOfInt& recv_pe_list = comm.get_recv_pe_list();
+    const int nb_recv_pe = recv_pe_list.size_array();
+    for (i = 0; i < nb_recv_pe; i++)
+      {
+        const int pe_source = recv_pe_list[i];
+        Entree& buffer = comm.recv_buffer(pe_source);
+        while (1)
+          {
+            int facette, PE_destinataire;
+            buffer >> facette >> PE_destinataire;
+            if (buffer.eof())
+              break;
+            facettes_to_send_aretey.append_array(facette);
+            facettes_pe_dest_aretey.append_array(PE_destinataire);
+            BtoC_send_pe_flags_aretey[PE_destinataire] = 1;
+          }
+      }
+    comm.end_comm();
+  }
+  //Cerr << "Fin com A to B" << finl;
+  // =======================================================================
+  //                         Communication A -> C
+  //
+  // A envoie a C la liste la liste des facettes, l'expediteur et le numero
+  // de l'element d'entree.
+  // On remplit facettes_recues_numfacettes (numerotation temporaire)
+  //            facettes_recues_numelement
+  //            BtoC_recv_pe_flags (drapeaux des procs de qui on recoit des facettes).
+  // Attention : si B=C on ne recoit pas de donnees de B
+
+  // Pour chaque facette recue, numero du PE proprietaire de la facette:
+  static ArrOfIntFT nouvelles_facettes_pe_proprietaire_y;
+  {
+    nouvelles_facettes_pe_proprietaire_y.resize_array(0);
+    BtoC_recv_pe_flags_aretey = 0;
+
+    // A et C sont voisins au sens du maillage eulerien
+    const Schema_Comm_FT& comm = schema_comm_domaine_;
+    comm.begin_comm();
+    for (i = 0; i < nb_facettes_envoi; i++)
+      {
+        const int facette = la_liste_facettes[i];
+        const int PE_destinataire = liste_pe_dest_aretey[i];
+        const int arete_arrivee = liste_aretey_arrivee_local[i];
+        const int premier_sommet = facettes_(facette, 0);
+        const int PE_proprietaire = sommet_PE_owner_[premier_sommet];
+        const int facette_num_owner = facette_num_owner_[facette];
+        assert (PE_destinataire != moi);
+        comm.send_buffer(PE_destinataire) << facette_num_owner
+                                          << PE_proprietaire
+                                          << arete_arrivee;
+      }
+    comm.echange_taille_et_messages();
+    // On efface facettes_recues_numfacettes et numelement.
+    // Pour le cas ou il y aurait aliasing des parametres, il ne faut plus
+    // utiliser liste_facettes et liste_elem_arrivee.
+    facettes_recues_numfacettes.resize_array(0);
+    facettes_recues_numarete.resize_array(0);
+    const ArrOfInt& recv_pe_list = comm.get_recv_pe_list();
+    const int nb_recv_pe = recv_pe_list.size_array();
+    for (i = 0; i < nb_recv_pe; i++)
+      {
+        const int pe_source = recv_pe_list[i];
+        Entree& buffer = comm.recv_buffer(pe_source);
+        while (1)
+          {
+            int facette = -1, PE_proprietaire = -1, arete_arrivee = -1;
+            buffer >> facette >> PE_proprietaire >> arete_arrivee;
+            if (buffer.eof())
+              break;
+            assert(facette >= 0 && PE_proprietaire >= 0 && arete_arrivee >= 0);
+            // assert(arete_arrivee < nb_aretes_reelles); // Ce doit etre un element reel
+            // Enregistre le numero de la nouvelle facette et l'element d'arrivee.
+            // Pour l'instant c'est le numero de la facette sur le proprietaire.
+            facettes_recues_numfacettes.append_array(facette);
+            nouvelles_facettes_pe_proprietaire_y.append_array(PE_proprietaire);
+            facettes_recues_numarete.append_array(arete_arrivee);
+            // Enregistre que l'on va recevoir des donnees du PE_proprietaire lors
+            // de la derniere communication B->C
+            if (PE_proprietaire != moi)
+              BtoC_recv_pe_flags_aretey[PE_proprietaire] = 1;
+          }
+      }
+    comm.end_comm();
+  }
+  //Cerr << "Fin com A to C" << finl;
+  // =====
+  // ==================================================================
+  //                         Communication B -> C
+  //
+  // Construction du schema de communication pour envoyer les facettes reelles
+  // au destinataire (B envoie les facettes a C) : il faut determiner
+  // a qui j'envoie et de qui de recois.
+  {
+    static ArrOfIntFT send_pe_list_y;
+    static ArrOfIntFT recv_pe_list_y;
+    send_pe_list_y.resize_array(0);
+    recv_pe_list_y.resize_array(0);
+    for (i = 0; i < nbproc; i++)
+      if (BtoC_send_pe_flags_aretey[i])
+        send_pe_list_y.append_array(i);
+    for (i = 0; i < nbproc; i++)
+      if (BtoC_recv_pe_flags_aretey[i])
+        recv_pe_list_y.append_array(i);
+    // Envoi des facettes
+    creer_facettes_virtuelles(facettes_to_send_aretey, facettes_pe_dest_aretey,
+                              send_pe_list_y, recv_pe_list_y);
+  }
+  //Cerr << "Fin com B to C" << finl;
+  // Conversion du numero de la facette en numero local dans facettes_recues_numfacettes
+  convertir_numero_distant_local(desc_facettes_,
+                                 facette_num_owner_,
+                                 facettes_recues_numfacettes,
+                                 nouvelles_facettes_pe_proprietaire_y,
+                                 facettes_recues_numfacettes);
+  if (Comm_Group::check_enabled()) check_mesh();
+}
+void Maillage_FT_Disc::echanger_facettes_arete_z(const ArrOfInt& liste_facettes,
+                                                 const ArrOfInt& liste_arete_arrivee,
+                                                 ArrOfInt& facettes_recues_numfacettes,
+                                                 ArrOfInt& facettes_recues_numarete)
+{
+  if (Comm_Group::check_enabled()) check_mesh();
+  const int moi = me();
+  int i=0;
+  int indice=0;
+  int nb_facettes_envoi = liste_facettes.size_array();
+  const int nb_facettes_envoi_init=liste_facettes.size_array();
+  // Numeros des faces euleriennes associes a chaque facette (numero local
+  // de la face sur le pe qui possede cet element)
+  static ArrOfIntFT liste_aretez_arrivee_local;
+  ArrOfIntFT la_liste_facettes;
+  la_liste_facettes.resize_array(nb_facettes_envoi);
+  // Pour chaque face d'arrivee, determination du PE destination
+  // et conversion du numero de la face virtuelle en numero local sur ce pe.
+  static ArrOfIntFT liste_pe_dest_aretez;
+  const Desc_Structure_FT& desc_facettes_const = desc_facettes();
+  const Descripteur_FT& espace_distant = desc_facettes_const.espace_distant();
+  const Domaine_dis& domaine_dis = refdomaine_dis_.valeur();
+  const Domaine_VF& le_domaine_vf = ref_cast(Domaine_VF,domaine_dis.valeur());
+  const IntVect& aretes_multiples = le_domaine_vf.aretes_multiples();
+  const IntTab& arete_virt_pe_num = le_domaine_vf.arete_virt_pe_num();
+  //const IntTab& aretes_multiples_pe_num = le_domaine_vf.aretes_multiples_pe_num();
+  const IntTab& aretes_multiples_virt_pe_num = le_domaine_vf.aretes_multiples_virt_pe_num();
+  const int nb_aretes_reelles = le_domaine_vf.domaine().nb_aretes(); // Nombre de faces reelles
+  {
+    liste_pe_dest_aretez.resize_array(nb_facettes_envoi);
+    liste_aretez_arrivee_local.resize_array(nb_facettes_envoi);
+
+    while (i<nb_facettes_envoi_init)
+      {
+        const int arete_voisine = liste_arete_arrivee[i];
+        const int arete_voisine_multiple = (aretes_multiples(arete_voisine)>0);
+        const int arete_mult=aretes_multiples(arete_voisine);
+        if (arete_voisine_multiple)
+          {
+            const int fa7=liste_facettes[i];
+            const int pe1=aretes_multiples_virt_pe_num(arete_voisine,0);
+            const int arete_1=aretes_multiples_virt_pe_num(arete_voisine,1);
+            const int pe2=aretes_multiples_virt_pe_num(arete_voisine,2);
+            const int arete_2=aretes_multiples_virt_pe_num(arete_voisine,3);
+            const int pe3=aretes_multiples_virt_pe_num(arete_voisine,4);
+            const int arete_3=aretes_multiples_virt_pe_num(arete_voisine,5);
+            const int pe4=aretes_multiples_virt_pe_num(arete_voisine,6);
+            const int arete_4=aretes_multiples_virt_pe_num(arete_voisine,7);
+
+            int fa7_reelle_pour_pe1=1;
+            fa7_reelle_pour_pe1 = (sommet_PE_owner_(facettes_(fa7,0))==pe1) ? 1 : 0;
+            int fa7_reelle_pour_pe2=1;
+            fa7_reelle_pour_pe2 = (sommet_PE_owner_(facettes_(fa7,0))==pe2) ? 1 : 0;
+            int fa7_reelle_pour_pe3=1;
+            fa7_reelle_pour_pe3 = (sommet_PE_owner_(facettes_(fa7,0))==pe3) ? 1 : 0;
+            int fa7_reelle_pour_pe4=1;
+            fa7_reelle_pour_pe4 = (sommet_PE_owner_(facettes_(fa7,0))==pe4) ? 1 : 0;
+
+            const int fa7_existante_pour_pe1= (pe1>=0) ? fa7_reelle_pour_pe1 || espace_distant.contient_element(pe1, fa7) : 0;
+            const int fa7_existante_pour_pe2= (pe2>=0) ? fa7_reelle_pour_pe2 || espace_distant.contient_element(pe2, fa7) : 0;
+            const int fa7_existante_pour_pe3= (pe3>=0) ? fa7_reelle_pour_pe3 || espace_distant.contient_element(pe3, fa7) : 0;
+            const int fa7_existante_pour_pe4= (pe4>=0) ? fa7_reelle_pour_pe4 || espace_distant.contient_element(pe4, fa7) : 0;
+
+            /*
+            Cerr << "arete_mult " << arete_mult <<
+                 "\tpe_1 " << pe1 << " a_1 " << arete_1 << " " << fa7_reelle_pour_pe1 << " " << fa7_existante_pour_pe1 ;
+            Cerr << "\tpe2 " << pe2 << " a_2 " << arete_2 << " " << fa7_reelle_pour_pe2 << " " << fa7_existante_pour_pe2 ;
+            Cerr << "\tpe3 " << pe3 << " a_3 " << arete_3 << " " << fa7_reelle_pour_pe3 << " " << fa7_existante_pour_pe3;
+            Cerr << "\tpe4 " << pe4 << " a_4 " << arete_4 << " " << fa7_reelle_pour_pe4 << " " << fa7_existante_pour_pe4 <<
+                 "\tcg " << la_zone_vf.xa(arete_voisine,0) << " " << la_zone_vf.xa(arete_voisine,1) << " " << la_zone_vf.xa(arete_voisine,2) <<
+                 "\tfa7 " << cg_fa7_(fa7,0) << " " << cg_fa7_(fa7,1) << " " <<cg_fa7_(fa7,2) << finl;
+
+            */
+            if (fa7_existante_pour_pe1 && pe1!=moi)
+              {
+                liste_pe_dest_aretez[indice] = pe1;
+                liste_aretez_arrivee_local[indice] = arete_1;
+                la_liste_facettes[indice]=fa7;
+                indice++;
+              }
+            if (arete_mult>1)
+              {
+                i++;
+                if (fa7_existante_pour_pe2 && pe2!=moi)
+                  {
+                    liste_pe_dest_aretez[indice] = pe2;
+                    liste_aretez_arrivee_local[indice] = arete_2;
+                    la_liste_facettes[indice]=fa7;
+                    indice++;
+                  }
+              }
+            if (arete_mult>2)
+              {
+                i++;
+                if (fa7_existante_pour_pe3 && pe3!=moi)
+                  {
+                    liste_pe_dest_aretez[indice] = pe3;
+                    liste_aretez_arrivee_local[indice] = arete_3;
+                    la_liste_facettes[indice]=fa7;
+                    indice++;
+                  }
+              }
+            if(1) // (arete_voisine>nb_aretes_reelles)
+              {
+                i++;
+                if (fa7_existante_pour_pe4 && pe4!=moi)
+                  {
+                    liste_pe_dest_aretez[indice] = pe4;
+                    liste_aretez_arrivee_local[indice] = arete_4;
+                    la_liste_facettes[indice]=fa7;
+                    indice++;
+                  }
+              }
+          }
+        else
+          {
+            const int index = arete_voisine - nb_aretes_reelles;
+            const int pe = arete_virt_pe_num(index, 0);
+            const int arete_locale = arete_virt_pe_num(index, 1);
+            liste_pe_dest_aretez[indice] = pe;
+            liste_aretez_arrivee_local[indice] = arete_locale;
+            la_liste_facettes[indice]=liste_facettes[i];
+            indice++;
+
+          }
+
+        i++;
+      }
+
+    liste_pe_dest_aretez.resize_array(indice);
+    liste_aretez_arrivee_local.resize_array(indice);
+    la_liste_facettes.resize_array(indice);
+  }
+  nb_facettes_envoi=indice;
+  /*Cerr << "APRES TRI" << finl;
+  for (i =0; i<liste_aretez_arrivee_local.size_array(); i++)
+    {
+      int arete=liste_aretez_arrivee_local(i);
+      Cerr << "arete " << arete << " pe_dist " << liste_pe_dest_aretez(i) << finl;
+    }
+    */
+  // =======================================================================
+  //                         Communication A -> B
+  //
+  // Envoi de la liste des facettes a transmettre au processeur proprietaire de la
+  // facette (A envoie les numeros de facettes a B)
+  // On remplit facettes_to_send (liste des facettes que B doit envoyer a C)
+  //            facettes_pe_dest (numero du processeur C a qui il faut envoyer)
+  //            BtoC_send_pe_flags (drapeaux des processeurs a qui on envoie)
+  // Attention : si B=C, on n'envoie pas la facette.
+  static ArrOfIntFT facettes_to_send_aretez;
+  static ArrOfIntFT facettes_pe_dest_aretez;
+  // Lors de la communication finale entre les procs B et les procs C,
+  // ces drapeaux indiquent si on recoit des donnees et si on en envoie
+  // a chacun des processeurs.
+  static int nbproc = Process::nproc();
+  static ArrOfIntFT BtoC_send_pe_flags_aretez(nbproc);
+  static ArrOfIntFT BtoC_recv_pe_flags_aretez(nbproc);
+  BtoC_send_pe_flags_aretez = 0;
+  facettes_to_send_aretez.resize_array(0);
+  facettes_pe_dest_aretez.resize_array(0);
+  {
+    // A et B sont voisins au sens des espaces distants/virtuels des facettes
+    // (un processeur chez qui la facette est virtuelle envoie des donnees au
+    //  processeur chez qui elle est reelle => schema_comm_inverse)
+    const Schema_Comm_FT& comm = desc_facettes_.schema_comm_inverse();
+    comm.begin_comm();
+    for (i = 0; i < nb_facettes_envoi; i++)
+      {
+        const int facette = la_liste_facettes[i];
+        const int PE_destinataire = liste_pe_dest_aretez[i];
+        const int premier_sommet = facettes_(facette, 0);
+        const int PE_proprietaire = sommet_PE_owner_[premier_sommet];
+        const int facette_num_owner = facette_num_owner_[facette];
+        if (PE_proprietaire == moi)
+          {
+            facettes_to_send_aretez.append_array(facette_num_owner);
+            facettes_pe_dest_aretez.append_array(PE_destinataire);
+            BtoC_send_pe_flags_aretez[PE_destinataire] = 1;
+          }
+        else
+          {
+            if (PE_destinataire != PE_proprietaire)
+              comm.send_buffer(PE_proprietaire) << facette_num_owner << PE_destinataire;
+          }
+      }
+    comm.echange_taille_et_messages();
+    const ArrOfInt& recv_pe_list = comm.get_recv_pe_list();
+    const int nb_recv_pe = recv_pe_list.size_array();
+    for (i = 0; i < nb_recv_pe; i++)
+      {
+        const int pe_source = recv_pe_list[i];
+        Entree& buffer = comm.recv_buffer(pe_source);
+        while (1)
+          {
+            int facette, PE_destinataire;
+            buffer >> facette >> PE_destinataire;
+            if (buffer.eof())
+              break;
+            facettes_to_send_aretez.append_array(facette);
+            facettes_pe_dest_aretez.append_array(PE_destinataire);
+            BtoC_send_pe_flags_aretez[PE_destinataire] = 1;
+          }
+      }
+    comm.end_comm();
+  }
+  //Cerr << "Fin com A to B" << finl;
+  // =======================================================================
+  //                         Communication A -> C
+  //
+  // A envoie a C la liste la liste des facettes, l'expediteur et le numero
+  // de l'element d'entree.
+  // On remplit facettes_recues_numfacettes (numerotation temporaire)
+  //            facettes_recues_numelement
+  //            BtoC_recv_pe_flags (drapeaux des procs de qui on recoit des facettes).
+  // Attention : si B=C on ne recoit pas de donnees de B
+
+  // Pour chaque facette recue, numero du PE proprietaire de la facette:
+  static ArrOfIntFT nouvelles_facettes_pe_proprietaire_aretez;
+  {
+    nouvelles_facettes_pe_proprietaire_aretez.resize_array(0);
+    BtoC_recv_pe_flags_aretez = 0;
+
+    // A et C sont voisins au sens du maillage eulerien
+    const Schema_Comm_FT& comm = schema_comm_domaine_;
+    comm.begin_comm();
+    for (i = 0; i < nb_facettes_envoi; i++)
+      {
+        const int facette = la_liste_facettes[i];
+        const int PE_destinataire = liste_pe_dest_aretez[i];
+        const int arete_arrivee = liste_aretez_arrivee_local[i];
+        const int premier_sommet = facettes_(facette, 0);
+        const int PE_proprietaire = sommet_PE_owner_[premier_sommet];
+        const int facette_num_owner = facette_num_owner_[facette];
+        assert (PE_destinataire != moi);
+        comm.send_buffer(PE_destinataire) << facette_num_owner
+                                          << PE_proprietaire
+                                          << arete_arrivee;
+      }
+    comm.echange_taille_et_messages();
+    // On efface facettes_recues_numfacettes et numelement.
+    // Pour le cas ou il y aurait aliasing des parametres, il ne faut plus
+    // utiliser liste_facettes et liste_elem_arrivee.
+    facettes_recues_numfacettes.resize_array(0);
+    facettes_recues_numarete.resize_array(0);
+    const ArrOfInt& recv_pe_list = comm.get_recv_pe_list();
+    const int nb_recv_pe = recv_pe_list.size_array();
+    for (i = 0; i < nb_recv_pe; i++)
+      {
+        const int pe_source = recv_pe_list[i];
+        Entree& buffer = comm.recv_buffer(pe_source);
+        while (1)
+          {
+            int facette = -1, PE_proprietaire = -1, arete_arrivee = -1;
+            buffer >> facette >> PE_proprietaire >> arete_arrivee;
+            if (buffer.eof())
+              break;
+            assert(facette >= 0 && PE_proprietaire >= 0 && arete_arrivee >= 0);
+            // assert(arete_arrivee < nb_aretes_reelles); // Ce doit etre un element reel
+            // Enregistre le numero de la nouvelle facette et l'element d'arrivee.
+            // Pour l'instant c'est le numero de la facette sur le proprietaire.
+            facettes_recues_numfacettes.append_array(facette);
+            nouvelles_facettes_pe_proprietaire_aretez.append_array(PE_proprietaire);
+            facettes_recues_numarete.append_array(arete_arrivee);
+            // Enregistre que l'on va recevoir des donnees du PE_proprietaire lors
+            // de la derniere communication B->C
+            if (PE_proprietaire != moi)
+              BtoC_recv_pe_flags_aretez[PE_proprietaire] = 1;
+          }
+      }
+    comm.end_comm();
+  }
+  //Cerr << "Fin com A to C" << finl;
+  // =====
+  // ==================================================================
+  //                         Communication B -> C
+  //
+  // Construction du schema de communication pour envoyer les facettes reelles
+  // au destinataire (B envoie les facettes a C) : il faut determiner
+  // a qui j'envoie et de qui de recois.
+  {
+    static ArrOfIntFT send_pe_list_aretez;
+    static ArrOfIntFT recv_pe_list_aretez;
+    send_pe_list_aretez.resize_array(0);
+    recv_pe_list_aretez.resize_array(0);
+    for (i = 0; i < nbproc; i++)
+      if (BtoC_send_pe_flags_aretez[i])
+        send_pe_list_aretez.append_array(i);
+    for (i = 0; i < nbproc; i++)
+      if (BtoC_recv_pe_flags_aretez[i])
+        recv_pe_list_aretez.append_array(i);
+    // Envoi des facettes
+    creer_facettes_virtuelles(facettes_to_send_aretez, facettes_pe_dest_aretez,
+                              send_pe_list_aretez, recv_pe_list_aretez);
+  }
+  //Cerr << "Fin com B to C" << finl;
+  // Conversion du numero de la facette en numero local dans facettes_recues_numfacettes
+  convertir_numero_distant_local(desc_facettes_,
+                                 facette_num_owner_,
+                                 facettes_recues_numfacettes,
+                                 nouvelles_facettes_pe_proprietaire_aretez,
+                                 facettes_recues_numfacettes);
+  if (Comm_Group::check_enabled()) check_mesh();
+}
 /*! @brief Conversion des couples (numeros_distants, pe) en numeros_locaux.
  *
  * Parametres:
@@ -3608,7 +6407,7 @@ int Maillage_FT_Disc::deplacer_un_sommet(double& x, double& y, double& z,
  *   Si un noeud traverse un joint, il change de proprietaire.
  *   Si un noeud rencontre une paroi, il s'arrete sur la paroi et on le
  *   transforme en noeud "ligne de contact".
- *   Si un noeud est sur une paroi (noeud "ligne de contact"), il longe
+ *   Si un noeud est sur une paroi (noeud "ligne de contact"), il inte
  *   la paroi (on deplace le noeud de face de bord en face de bord en
  *   minimisant la distance entre le noeud et le deplacement demande.
  *
@@ -3632,6 +6431,11 @@ void Maillage_FT_Disc::deplacer_sommets(const ArrOfInt& liste_sommets_initiale,
   const Parcours_interface& parcours = refparcours_interface_.valeur();
   const IntTab& face_voisins = domaine_vf.face_voisins();
 
+  //const ArrOfInt& faces_doubles = zone_vf.faces_doubles();
+  //Cerr << "Maillage_FT_Disc::deplacer_sommets : faces_doubles " << faces_doubles.size_array()<< finl;
+  //Cerr << "nb_sommets : "<<sommets_.dimension(0)<<  "\tnb_sommets_elem : " << sommet_elem_.size_array()<< finl;
+  //Cerr << "sommet_elem_\n" << sommet_elem_<< "\n"<<finl;
+  //Cerr << "sommets_\n" << sommets_<< finl;
   //
   // ALGORITHME :
   // On deplace tous les noeuds jusqu'a ce qu'ils rencontrent un joint.
@@ -3649,8 +6453,11 @@ void Maillage_FT_Disc::deplacer_sommets(const ArrOfInt& liste_sommets_initiale,
   static DoubleTabFT deplacement_restant;
 
   //On reinitialise sommet_face_bord_  a -1 dans le cas des marqueurs (skip_facettes)
-  if (skip_facettes)
+  if (is_solid_particle_) // HMS : suppression des marqueurs de bords // EB : is_solid_particle initialise dans Transport_Interfaces_FT_Disc::discretiser
     sommet_face_bord_ = -1;
+  else if (skip_facettes)
+    sommet_face_bord_ = -1;
+
 
   liste_sommets = liste_sommets_initiale;
   {
@@ -3733,8 +6540,57 @@ void Maillage_FT_Disc::deplacer_sommets(const ArrOfInt& liste_sommets_initiale,
             sommets_(num_sommet, 2) = z0;
           sommet_elem_[num_sommet] = element;
           sommet_face_bord_[num_sommet] = face_bord;
-        }
+          ///////////////////////////////////////////////////////////////////////////
+          //debut  EB
+          /*
+          IntVect check_som_in_face(2*dimension);
+          //const int nb_faces_reelles=zone_vf.nb_faces(); // EB
+          for (int dim=0; dim<dimension; dim++) sommet_face_(num_sommet,dim)=-1;
 
+          int mon_elem=-1;
+          int elem_virt=-1;
+          mon_elem=sommet_elem_(num_sommet); // Si le sommet m'appartient, alors je recupere l'element qui le contient -> je remonte aux faces par rapport a sa position relative au cg de l'element
+          //Cerr << "mon_elem " << mon_elem << finl;
+          if (mon_elem>=0) check_som_in_face=1;
+          else // Le sommet ne m'appartient pas. Je ne connais pas l'element qui le contient -> je le cherche
+            {
+              elem_virt=zone_vf.zone().chercher_elements(sommets_(num_sommet,0),sommets_(num_sommet,1),sommets_(num_sommet,2)); // element eulerien contenant le sommet virtuel
+              assert(elem_virt>=0);
+              // Si le sommet est dans le volume de controle d'une face double, on met check_som_in_face a 1.
+              check_som_in_face=0;
+              for (int dim=0; dim<2*dimension; dim++) // on parcourt les faces du volume de controle de l'element. Si une des faces est reelles, alors le sommet est dans le volume de controle de la premiere couche de joint
+                {
+                  int la_face=zone_vf.elem_faces(elem_virt,dim);
+
+                  if (faces_doubles(la_face))  // la face est reelle mais l'element est virtuel -> face_double
+                    {
+                      check_som_in_face(dim)=1;
+                      mon_elem=elem_virt;
+                    }
+                }
+            }
+          if (mon_elem>=0)
+            {
+
+              IntVect faces_elem_eulerien(2*dimension);
+              for (int dim=0; dim<2*dimension; dim++) faces_elem_eulerien(dim) = zone_vf.elem_faces(mon_elem,dim); // on recupere les faces de l'element eulerien
+              double pos_sommet, coord_elem;
+              for (int dim=0; dim<dimension; dim++)
+                {
+                  pos_sommet=sommets_(num_sommet,dim); // on recupere la position du sommet suivant l'axe "dim"
+                  coord_elem=zone_vf.xp(mon_elem,dim);
+                  if (pos_sommet < coord_elem && check_som_in_face(dim)) sommet_face_(num_sommet,dim)=faces_elem_eulerien(dim);
+                  else if (pos_sommet >= coord_elem && check_som_in_face(dim+dimension)) sommet_face_(num_sommet,dim)=faces_elem_eulerien(dim+dimension);
+                  assert(sommet_face_(num_sommet,dim)>=0);
+                }
+            }
+          */
+          ////////////////////////////////////////////////////////////////////////////
+          // fin EB
+        }
+      //Cerr << "sommet_elem_\n" << sommet_elem_<< "\n"<<finl;
+      //Cerr << "sommets_\n" << sommets_<< finl;
+      //Cerr <<"\n" << finl;
       // Mise a jour des espaces virtuels des coordonnees des sommets
       desc_sommets_.echange_espace_virtuel(sommets_);
       // Mise a jour des espaces virtuels des face_bord (si le sommet est ligne
@@ -3791,6 +6647,7 @@ int Maillage_FT_Disc::check_sommets(int error_is_fatal) const
     {
       int ok = (nb_sommets() == 0);
       ok = ok && (sommet_elem_.size_array() == 0);
+      ok = ok && (sommet_face_.size_array() == 0); // EB
       ok = ok && (sommet_face_bord_.size_array() == 0);
       ok = ok && (sommet_PE_owner_.size_array() == 0);
       ok = ok && (sommet_num_owner_.size_array() == 0);
@@ -3953,6 +6810,8 @@ int Maillage_FT_Disc::check_sommets(int error_is_fatal) const
                 exit();
               }
           }
+        // EB : on se passe de cette verif pour sommet_face car ce tableau est construit a partir de sommet_elem
+        // Et avec les faces doubles, c'est possible d'avoir pe!=moi && num_face >=0 pour un sommet virtuel
         if (pe == moi)
           {
             if (num_element > nb_elements_reels)
@@ -4310,6 +7169,7 @@ void Maillage_FT_Disc::nettoyer_elements_virtuels()
  */
 void Maillage_FT_Disc::nettoyer_maillage()
 {
+  Cerr << "Maillage_FT_Disc::nettoyer_maillage " << finl;
   assert(statut_ >= MINIMAL);
   // Lorsque l'on arrive par Maillage_FT_IJK::nettoyer_maillage et qu'il y a
   // eu un nettoyage preliminaire de compo_connexe_facettes_, l'appel :
@@ -4392,8 +7252,8 @@ void Maillage_FT_Disc::nettoyer_maillage()
       for (int indice_pe = 0; indice_pe < nb_pe_voisins; indice_pe++)
         {
           const int pe = pe_voisins[indice_pe];
-          const ArrOfInt& elements = espace_virtuel.elements(pe);
-          const int nb_elements = elements.size_array();
+          const ArrOfInt& elements = espace_virtuel.elements(pe); // EB : les elements sont les sommets lagrangiens. Voir Descipteur_FT.h
+          const int nb_elements = elements.size_array(); // EB : nb_elements = nombre de sommets distants/virtuels du pe
           Sortie& buffer = comm.send_buffer(pe);
           new_elements.resize_array(0);
           for (int i = 0; i < nb_elements; i++)
@@ -4463,6 +7323,7 @@ void Maillage_FT_Disc::nettoyer_maillage()
   // Mise a jour de :
   //  * sommets_
   //  * sommet_elem_
+  //  * sommet_face_
   //  * sommet_face_bord_
   //  * sommet_PE_owner_
   //  * drapeaux_sommets_
@@ -4485,6 +7346,8 @@ void Maillage_FT_Disc::nettoyer_maillage()
             if (dimension3)
               sommets_(n, 2) = sommets_(i, 2);
             sommet_elem_[n] = sommet_elem_[i];
+            if(i<sommet_face_.dimension(0) && n <sommet_face_.dimension(0))
+              for (int dim=0; dim<dimension; dim++) sommet_face_(n,dim) = sommet_face_(i,dim); // EB
             sommet_face_bord_[n] = sommet_face_bord_[i];
             sommet_PE_owner_[n] = sommet_PE_owner_[i];
             drapeaux_sommets_[n] = drapeaux_sommets_[i];
@@ -4497,6 +7360,7 @@ void Maillage_FT_Disc::nettoyer_maillage()
       }
     sommets_         .resize(n, Objet_U::dimension);
     sommet_elem_     .resize_array(n);
+    sommet_face_     .resize(n,Objet_U::dimension); // EB
     sommet_face_bord_.resize_array(n);
     sommet_PE_owner_ .resize_array(n);
     drapeaux_sommets_.resize_array(n);
@@ -4705,6 +7569,7 @@ void Maillage_FT_Disc::nettoyer_noeuds_virtuels_et_frontieres()
   // Mise a jour de :
   //  * sommets_
   //  * sommet_elem_
+  //  * sommet_face_  // EB : verifier qu'il ne faille pas definir un tableau sommets_utilises_face
   //  * sommet_face_bord_
   //  * sommet_PE_owner_
   //  * drapeaux_sommets_
@@ -4727,6 +7592,8 @@ void Maillage_FT_Disc::nettoyer_noeuds_virtuels_et_frontieres()
             if (dimension3)
               sommets_(n, 2) = sommets_(i, 2);
             sommet_elem_[n] = sommet_elem_[i];
+            if(sommet_face_.dimension(0)>0 && sommet_face_.dimension(1)>0 )
+              for (int dim=0; dim<dimension; dim++) sommet_face_(n,dim) = sommet_face_(i,dim); // EB
             sommet_face_bord_[n] = sommet_face_bord_[i];
             sommet_PE_owner_[n] = sommet_PE_owner_[i];
             drapeaux_sommets_[n] = drapeaux_sommets_[i];
@@ -4739,6 +7606,7 @@ void Maillage_FT_Disc::nettoyer_noeuds_virtuels_et_frontieres()
       }
     sommets_         .resize(n, Objet_U::dimension);
     sommet_elem_     .resize_array(n);
+    sommet_face_     .resize(n, Objet_U::dimension); // EB
     sommet_face_bord_.resize_array(n);
     sommet_PE_owner_ .resize_array(n);
     drapeaux_sommets_.resize_array(n);
@@ -4934,6 +7802,7 @@ void Maillage_FT_Disc::nettoyer_phase(const Nom& nom_eq, const int phase)
             if (dimension3)
               sommets_(n, 2) = sommets_(i, 2);
             sommet_elem_[n] = sommet_elem_[i];
+            for (int dim=0; dim<dimension; dim++) sommet_face_(n,dim) = sommet_face_(i,dim); // EB
             sommet_face_bord_[n] = sommet_face_bord_[i];
             sommet_PE_owner_[n] = sommet_PE_owner_[i];
             drapeaux_sommets_[n] = drapeaux_sommets_[i];
@@ -4946,6 +7815,7 @@ void Maillage_FT_Disc::nettoyer_phase(const Nom& nom_eq, const int phase)
       }
     sommets_         .resize(n, Objet_U::dimension);
     sommet_elem_     .resize_array(n);
+    sommet_face_     .resize(n, Objet_U::dimension); // EB
     sommet_face_bord_.resize_array(n);
     sommet_PE_owner_ .resize_array(n);
     drapeaux_sommets_.resize_array(n);
@@ -6055,7 +8925,7 @@ void Maillage_FT_Disc::calcul_courbure_sommets(ArrOfDouble& courbure_sommets, co
                       double vn = 0.;
                       double v_cl = 0.;
                       double v_comp = 0.;
-                      // Component of the velocity is calculated along the direction of wall as vw = v - (v.n)n where n is the wall face normal
+                      // Component of the velocity is calculated aint the direction of wall as vw = v - (v.n)n where n is the wall face normal
                       // and v is the velocity vector of the node under consideration.
                       for (int k=0 ; k<nb_compo ; k++)
                         {
@@ -6490,4 +9360,13 @@ void Maillage_FT_Disc::creer_tableau_elements(Array_base& x, Array_base::Resize_
 {
   const MD_Vector& md = desc_facettes().get_md_vector();
   MD_Vector_tools::creer_tableau_distribue(md, x, opt);
+}
+
+Schema_Comm_FT Maillage_FT_Disc::get_schema_comm_FT() const
+{
+  return schema_comm_domaine_;
+}
+void Maillage_FT_Disc::set_is_solid_particle(int is_solid_particle)
+{
+  is_solid_particle_=is_solid_particle;
 }

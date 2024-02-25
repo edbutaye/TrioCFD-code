@@ -420,6 +420,7 @@ void Maillage_FT_IJK::lire_maillage_ft_dans_lata(const char *filename_with_path,
       // Creation d'un maillage sur le proc0, tous les sommets a l'origine du maillage
       sommets_.resize(nbsom, 3);
       sommet_elem_.resize_array(nbsom);
+      sommet_face_.resize(nbsom, Objet_U::dimension); // EB
       sommet_face_bord_.resize_array(nbsom);
       sommet_PE_owner_.resize_array(nbsom);
       sommet_num_owner_.resize_array(nbsom);
@@ -452,6 +453,7 @@ void Maillage_FT_IJK::lire_maillage_ft_dans_lata(const char *filename_with_path,
       const int nbelem= 0;
       sommets_.resize(nbsom, 3);
       sommet_elem_.resize_array(nbsom);
+      sommet_face_.resize(nbsom, Objet_U::dimension); // EB
       sommet_face_bord_.resize_array(nbsom);
       sommet_PE_owner_.resize_array(nbsom);
       sommet_num_owner_.resize_array(nbsom);
@@ -600,6 +602,7 @@ void Maillage_FT_IJK::lire_maillage_ft_dans_lata(const char *filename_with_path,
 // On remplit d'autres structures :
   // Les sommets et facettes sont tous reels et ils ont ete redistribues sur chaque processeurs.
   sommet_elem_.resize_array(nbsom);
+  sommet_face_.resize(nbsom, Objet_U::dimension); // EB
   sommet_face_bord_.resize_array(nbsom);
   sommet_PE_owner_.resize_array(nbsom);
   sommet_num_owner_.resize_array(nbsom);

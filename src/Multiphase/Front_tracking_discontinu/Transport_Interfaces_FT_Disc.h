@@ -38,10 +38,18 @@
 #include <Proprietes_part_vol.h>
 #include <TRUSTTabFT_forward.h>
 #include <TRUST_Ref.h>
-
+// EB
+#include <Modele_Collision_FT.h>
+#include <Particule_Solide.h>
+//#include <Ref_Joint.h> // EB
+#include <Postraitement_Forces_Interfaces_FT.h>
+//#include <Ref_Operateur_Diff.h>
+#include <Convection_Diffusion_Temperature_FT_Disc.h>
+// fin EB
 class Probleme_base;
 class Milieu_base;
 class Navier_Stokes_FT_Disc;
+class Convection_Diffusion_Temperature_FT_Disc; // EB
 class Loi_horaire;
 
 class Transport_Interfaces_FT_Disc_interne;
@@ -50,6 +58,9 @@ using FloatTab = TRUSTTab<float>;
 
 class Transport_Interfaces_FT_Disc : public Transport_Interfaces_base
 {
+
+  friend Convection_Diffusion_Temperature_FT_Disc; // EB
+
   Declare_instanciable_sans_constructeur(Transport_Interfaces_FT_Disc);
 public:
 
@@ -64,13 +75,14 @@ public:
   Operateur&        operateur(int i) override;         // Erreur
   const Champ_Inc& inconnue(void) const override;         // C'est l'indicatrice
   Champ_Inc&        inconnue(void) override;
+  Champ_Inc&        inconnue_face(void); // EB
   //
   // Methodes surchargees de Equation_base
   //
   void                associer_milieu_base(const Milieu_base& milieu) override;
 
   void                 associer_equation_ns(const Navier_Stokes_FT_Disc& ns);
-
+  void                 associer_equation_temp(const Convection_Diffusion_Temperature_FT_Disc& temp); // EB
   Milieu_base&        milieu() override;       // Erreur
   const Milieu_base& milieu() const override;  // Erreur
   void    associer_pb_base(const Probleme_base& probleme) override;
@@ -85,6 +97,7 @@ public:
   int  sauvegarder(Sortie& ) const override;
   int  reprendre(Entree&) override;
   int impr(Sortie& os) const override;
+  virtual int impr_fpi(Sortie& os) const override; // EB
   void update_critere_statio();
 
   //
@@ -96,7 +109,10 @@ public:
   const Maillage_FT_Disc&                 maillage_interface() const;
   const Champ_base&               get_update_indicatrice() override;
   virtual const Champ_base&               get_indicatrice_faces();
+  virtual const DoubleVect&               get_indicatrice_aretes(); // EB
+  virtual const DoubleVect&               get_indicatrice_aretes() const; // EB
   virtual const Champ_base&               get_compute_indicatrice_faces();
+  virtual const DoubleTab&                get_compute_indicatrice_aretes_internes(); // EB
   virtual const Parcours_interface&       parcours_interface() const;
   virtual const Marching_Cubes&           marching_cubes() const;
   virtual const Algorithmes_Transport_FT_Disc& algorithmes_transport() const;
@@ -106,6 +122,20 @@ public:
   const Topologie_Maillage_FT&            topologie_interface() const;
   virtual double calculer_integrale_indicatrice(const DoubleVect& indicatrice, double& v_ph0) const;
 
+  // debut EB
+  Modele_Collision_FT& collision_interface_particule();
+  const Modele_Collision_FT& collision_interface_particule() const;
+
+
+  Postraitement_Forces_Interfaces_FT& postraitement_forces_interf();
+  const Postraitement_Forces_Interfaces_FT& postraitement_forces_interf() const;
+
+  const double& get_d_to_interf_interp_v() const;
+  // fin EB
+
+
+  virtual DoubleVect calculer_integrale_indicatrice_face(const DoubleVect& indicatrice_face) const; // EB
+  virtual DoubleVect calculer_integrale_indicatrice_arete(const DoubleVect& indicatrice_arete) const; // EB
   const Proprietes_part_vol&           proprietes_particules() const;
   const Maillage_FT_Disc&              maillage_inject() const;
   const Proprietes_part_vol&           proprietes_inject() const;
@@ -170,6 +200,8 @@ public:
                                       DoubleTab& source_val,const int is_explicite,const double eta);
 
   void impr_effort_fluide_interface( DoubleTab& source_val, DoubleTab& pressure_part, DoubleTab& friction_part ) ;
+
+  void impr_profil_compo_rms_vitesse(Sortie&,DoubleTab& forces_solide, DoubleTab& moy, DoubleTab& moy_carre, DoubleTab& rms) ; // EB
 
   //Calcul la vitesse imposee a l interface a partir de expression_vitesse_imposee
   virtual void calcul_vitesse(DoubleTab& vitesse_imp, const DoubleTab& champ_vitesse,
@@ -272,6 +304,8 @@ public:
   virtual const Champ_base& get_update_normale_interface() const;
   // renvoie DoubleTab parce qu'il n'existe pas de champ aux sommets en VDF ! Zut...
   virtual const DoubleTab&   get_update_distance_interface_sommets() const;
+  // idem qu'aux sommets mais au cg des aretes
+  virtual const DoubleTab&   get_update_distance_interface_aretes() const; // EB
   void ramasse_miettes(const Maillage_FT_Disc& maillage,
                        DoubleVect& flux,
                        DoubleVect& valeurs);
@@ -279,9 +313,6 @@ public:
   {
     maillage_interface().nettoyer_maillage();
   };
-
-protected:
-
   virtual void calculer_vmoy_composantes_connexes(const Maillage_FT_Disc& maillage,
                                                   const ArrOfInt& compo_connexes_facettes,
                                                   const int nb_compo_tot,
@@ -289,9 +320,35 @@ protected:
                                                   DoubleTab& vitesses,
                                                   DoubleTab& positions) const;
 
+  DoubleTab& get_vitesses_compo(); // EB
+  DoubleTab& get_positions_compo(); // EB
+  DoubleVect& get_rayons_compo(); // EB
+
+  const DoubleTab& get_vitesses_compo() const; // EB
+  const DoubleTab& get_positions_compo() const; // EB
+  const DoubleVect& get_rayons_compo() const; // EB
+
+  DoubleTab& get_rms_vitesses_compo(); // EB
+  DoubleTab& get_moy_vitesses_compo(); // EB
+  DoubleTab& get_moy_vitesses_carre_compo(); // EB
+
+  const  DoubleTab& get_rms_vitesses_compo() const; // EB
+  const  DoubleTab& get_moy_vitesses_compo() const; // EB
+  const  DoubleTab& get_moy_vitesses_carre_compo() const; // EB
+
+  const int& calcul_precis_indic_faces() const;
+  const int& calcul_precis_indic_aretes() const;
+  const int& postraiter_indicatrice_aretes() const; // EB
+
+  int is_solid_particle(); // EB
+  int is_solid_particle() const; // EB
+  int get_nb_compo_tot() const;
+
+protected:
+
   void ajouter_contribution_saut_vitesse(DoubleTab& deplacement) const;
   virtual void deplacer_maillage_ft_v_fluide(const double temps);
-
+  void permuter_positions_particules();
   virtual void calculer_distance_interface(const Maillage_FT_Disc& maillage,
                                            DoubleTab& distance_elements,
                                            DoubleTab& normale_elements,
@@ -300,7 +357,9 @@ protected:
   virtual void calculer_distance_interface_sommets(const DoubleTab& dist_elem,
                                                    const DoubleTab& normale_elem,
                                                    DoubleTab&        dist_som) const;
-
+  virtual void calculer_distance_interface_aretes(const DoubleTab& dist_elem,
+                                                  const DoubleTab& normale_elem,
+                                                  DoubleTab&        dist_arete) const; // EB
 
   virtual void calculer_vitesse_repere_local(const Maillage_FT_Disc& maillage,
                                              DoubleTab& deplacement,
@@ -318,11 +377,17 @@ protected:
   void calcul_indicatrice_faces(const DoubleTab& indicatrice,
                                 const IntTab& face_voisins);
 
+  void calcul_indicatrice_aretes(const DoubleTab& indicatrice); // EB
+  void postraiter_forces_interface();  // EB
+
+
+
   REF(Probleme_base) probleme_base_;
   REF(Navier_Stokes_FT_Disc) equation_ns_;
   // L'inconnue du probleme
   Champ_Inc indicatrice_;
   Champ_Inc indicatrice_faces_;
+  DoubleTab indicatrice_arete_; // EB DoubleVect car il n'existe pas de champ aux aretes
   // Utiliser ces accesseurs :
   Maillage_FT_Disc& maillage_interface();
   // Utiliser ces accesseurs :
@@ -347,9 +412,17 @@ protected:
   Nom suppression_interfaces_sous_domaine_;
 
   Champ_Fonc vitesse_imp_interp_;
+  int calcul_precis_indicatrice_face_; // EB
+  int calcul_precis_indicatrice_arete_; // EB
+  int postraiter_indicatrice_arete_; // EB
+  int get_radius_; // EB
+
 
 
 private:
+
+  void init_positions_vitesses_FT();
+  void set_nb_compo_tot(const int nb_compo);
   // Variables internes a la methode de transport
   Transport_Interfaces_FT_Disc_interne *variables_internes_;
 
@@ -357,8 +430,9 @@ private:
   double temps_debut_;
 
   REF(Milieu_base) ref_milieu_;
-
+  REF(Joint) joint_; // EB
   int interpolation_repere_local_;
+  int transport_vitesse_cg_HMS_;
   ArrOfDouble force_;
   ArrOfDouble moment_;
 };
@@ -369,6 +443,10 @@ class Transport_Interfaces_FT_Disc_interne : public Objet_U
 public:
   Transport_Interfaces_FT_Disc_interne() :
     indicatrice_cache_tag(-1),
+    indicatrice_face_cache_tag(-1),
+    indicatrice_arete_cache_tag(-1),
+    fichier_reprise_collision_FT_(""),
+    is_solid_particle_(0),
     iterations_correction_volume(0),
     VOFlike_correction_volume(0),
     nb_lissage_correction_volume(0),
@@ -379,8 +457,12 @@ public:
     distance_normale_cache_tag(-1),
     distance_sommets_cache_tag(-1),
     distance_faces_cache_tag(-1),
+    distance_aretes_cache_tag(-1),
     methode_transport(INDEFINI),
     methode_interpolation_v(VALEUR_A_ELEM),
+    d_to_interf_interp_v_(0.5),
+    statut_calcul_forces_(0),
+    statut_calcul_flux_thermique_(0),
     injection_interfaces_last_time_(0.),
     interpolation_champ_face(BASE),
     vf_explicite(0),
@@ -397,9 +479,9 @@ public:
     type_vitesse_imposee(UNIFORME),
     type_distance_calculee(DIST_INITIALE),
     type_projete_calcule(PROJETE_INITIAL),
-    expression_vitesse_imposee(Objet_U::dimension)
-
-
+    expression_vitesse_imposee(Objet_U::dimension),
+    precision_impr_(0), // EB
+    nb_compo_tot_(0) // EB
   {};
   ~Transport_Interfaces_FT_Disc_interne() override
   {};
@@ -418,12 +500,21 @@ public:
   // Les membres suivantes sont sauvegardes et repris:
   Champ_Inc        indicatrice_cache;     // L'indicatrice calculee par get_update_indicatrice
   int           indicatrice_cache_tag; // Le tag du maillage correspondant
+  Champ_Inc        indicatrice_face_cache; // EB
+  int 			indicatrice_face_cache_tag; // EB
+  DoubleTab        indicatrice_arete_cache; // EB
+  int 			indicatrice_arete_cache_tag; // EB
   Maillage_FT_Disc maillage_interface;          // Objet qui peut se reduire a un ensemble de sommets
   // quand il represente les positions de particules
   Remaillage_FT    remaillage_interface_;
   // Fin des membres sauvegardes / repris
 
   Proprietes_part_vol proprietes_particules_; //Proprietes physiques de particules
+  Nom fichier_reprise_collision_FT_; // EB
+  int is_solid_particle_; // EB
+  Modele_Collision_FT collision_interface_particule_; // EB
+
+  Postraitement_Forces_Interfaces_FT postraitement_forces_interf_; // EB
 
   Maillage_FT_Disc maillage_inject_;              //Ensemble de particules a injecter periodiquement
   Proprietes_part_vol proprietes_inject_;     //Proprietes physiques des particules injectees
@@ -470,6 +561,7 @@ public:
   Champ_Fonc tmp_flux;           // Tableau temporaire pour le ramasse-miettes
   Champ_Fonc distance_interface_faces; // CF : Distance a l'interface (aux faces)
   DoubleTab  distance_interface_sommets; // Distance a l'interface (aux sommets)
+  DoubleTab  distance_interface_aretes; // Distance a l'interface (aux sommets) // EB
   Champ_Fonc distance_interface_faces_corrigee; // CI : Distance a l'interface corrigee (aux faces)
   Champ_Fonc distance_interface_faces_difference; // CI : Distance a l'interface corrigee - Distance a l'interface calculee (aux faces)
   Champ_Fonc index_element; // CI : indexation des elements
@@ -481,6 +573,7 @@ public:
   int     distance_normale_cache_tag;
   int     distance_sommets_cache_tag;
   int     distance_faces_cache_tag;
+  int     distance_aretes_cache_tag; // EB
   // Le maillage postraite n'est pas forcement le maillage
   Maillage_FT_Disc maillage_pour_post;
   DoubleTabFT   deplacement_sommets;
@@ -488,10 +581,13 @@ public:
   enum Methode_transport { INDEFINI, VITESSE_IMPOSEE, LOI_HORAIRE, VITESSE_INTERPOLEE };
   Methode_transport      methode_transport;
   REF(Navier_Stokes_std) refequation_vitesse_transport;
-
-  enum Methode_interpolation_v { VALEUR_A_ELEM, VDF_LINEAIRE };
+  REF(Convection_Diffusion_Temperature_FT_Disc) refequation_temperature_;
+  enum Methode_interpolation_v { VALEUR_A_ELEM, VDF_LINEAIRE, VITESSE_SOLIDE_MOYENNE, VITESSE_SOLIDE_SOMMETS }; // EB : rajout de VITESSE_SOLIDE_MOYENNE et VITESSE_SOLIDE_SOMMETS
   Methode_interpolation_v methode_interpolation_v;
 
+  double d_to_interf_interp_v_; // EB : distance a l'interface pour l'interpolation de la vitesse DANS la particule, en nombre de rayon de la particule  0 on calcul, 1 on ne calcule pas
+  int statut_calcul_forces_; // EB : indique si il faut recalculer les forces hydrodynamiques sur les facettes du maillage lagrangien : 0 on calcul, 1 on ne calcule pas
+  int statut_calcul_flux_thermique_; // EB idem pour le flux
 
   // Injecteur d'interfaces au cours du temps
   ArrOfDouble injection_interfaces_temps_;
@@ -538,5 +634,20 @@ public:
   Topologie_Maillage_FT   topologie_interface_;
   // Cet objet est type en fonction de la discretisation:
   DERIV(Algorithmes_Transport_FT_Disc) algorithmes_transport_;
+
+// HMS : variable pour stocker les vitesses et les positions du centre de gravite pour chaque inclusion
+  DoubleTab vitesses_compo;
+  DoubleTab positions_compo;
+  DoubleVect rayons_compo;
+
+
+// EB
+  int precision_impr_;
+  int nb_compo_tot_;
+  DoubleTab rms_vitesse_compo_;
+  DoubleTab moy_vitesse_compo_;
+  DoubleTab moy_vitesse_solide_carre_;
+
+
 };
 #endif

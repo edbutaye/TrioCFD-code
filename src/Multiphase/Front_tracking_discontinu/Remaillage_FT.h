@@ -85,6 +85,7 @@ public:
   {
     return nb_iter_bary_volume_seul_;
   };
+  void set_is_solid_particle(int is_solid_particle);
 #if DEBUG_CONSERV_VOLUME
   double calculer_volume_mesh(const Maillage_FT_Disc& mesh) const;
   double calculer_somme_dvolume(const Maillage_FT_Disc&, const ArrOfDouble&) const;
@@ -176,6 +177,7 @@ protected:
   int lissage_courbure_iterations_old_;
   // Critere local de declenchement du lissage:
   double lissage_critere_;
+  int is_solid_particle_; // EB initialiser dans Transport_Interfaces_FT_Disc::discretiser
 };
 
 

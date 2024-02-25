@@ -577,7 +577,7 @@ void Triple_Line_Model_FT_Disc::get_in_out_coords(const Domaine_VDF& zvdf, const
                   xint[nint] = coord_sommet[0];
                   yint[nint] = coord_sommet[1];
                   nint += 1;
-                  Cerr<< "Intersection found at node " << node_number << " belonging to " <<fa7 << finl;
+                  Cerr<< "Intersection found at node " << node_number << " beinting to " <<fa7 << finl;
                 }
             }
           // Cerr<< "nint = "<< nint << finl;
@@ -1259,7 +1259,7 @@ void Triple_Line_Model_FT_Disc::compute_TCL_fluxes_in_all_boundary_cells(ArrOfIn
             // "-nwall " because we want to go to the wall
 
             int a = (-nwall[korient] < 0) ? 0 : Objet_U::dimension;
-            int b = korient; // if the normal is along y, korient=1 and we want 1 for x
+            int b = korient; // if the normal is aint y, korient=1 and we want 1 for x
             int iface = a + b;
 
 

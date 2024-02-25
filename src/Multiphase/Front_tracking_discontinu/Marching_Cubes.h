@@ -50,12 +50,28 @@ public:
                      const Maillage_FT_Disc::AjoutPhase phase,
                      int ignorer_collision = 0) const;
 
+  int construire_iso(const DoubleVect& valeurs_sommets,
+                     double isovaleur,
+                     Maillage_FT_Disc& maillage,
+                     DoubleVect& indicatrice_approchee,
+                     DoubleVect& indicatrice_face_approchee,
+                     const Maillage_FT_Disc::AjoutPhase phase,
+                     int ignorer_collision = 0) const;
+
   int construire_iso(const Nom& expression, double isovaleur,
                      Maillage_FT_Disc& maillage,
                      DoubleVect& indicatrice_approchee,
                      const Maillage_FT_Disc::AjoutPhase phase,
                      DoubleTab& eval_expression_sommets,
                      int ignorer_collision = 0) const;
+
+  int construire_iso(const Nom& expression, double isovaleur,
+                     Maillage_FT_Disc& maillage,
+                     DoubleVect& indicatrice_approchee,
+                     DoubleVect& indicatrice_face_approchee,
+                     const Maillage_FT_Disc::AjoutPhase phase,
+                     DoubleTab& eval_expression_sommets,
+                     int ignorer_collision = 0) const; // EB
 
 protected:
   void remplir_data_marching_cubes(const Domaine& domaine);
@@ -74,6 +90,13 @@ protected:
                                     IntTab& facettes,
                                     DoubleVect& indicatrice_approchee,
                                     const Maillage_FT_Disc::AjoutPhase phase) const;
+  int construire_noeuds_et_facettes(const ArrOfBit& signe,
+                                    IntTab& def_noeud,
+                                    IntTab& facettes,
+                                    DoubleVect& indicatrice_approchee,
+                                    DoubleVect& indicatrice_face_approchee,
+                                    const Maillage_FT_Disc::AjoutPhase phase) const;
+
 
   void construire_noeuds_liste_faces(const ArrOfBit& signe,
                                      const IntTab& faces_sommets,

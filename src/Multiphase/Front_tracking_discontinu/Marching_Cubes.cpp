@@ -210,6 +210,7 @@ int Marching_Cubes::construire_iso(const DoubleVect& valeurs_sommets,
         maillage.sommet_PE_owner_. resize_array(nb_sommets);
         maillage.sommet_num_owner_.resize_array(nb_sommets);
         maillage.sommet_elem_.     resize_array(nb_sommets);
+        maillage.sommet_face_.     resize(nb_sommets,dimension); // EB
         maillage.sommet_face_bord_.resize_array(nb_sommets);
         maillage.drapeaux_sommets_.resize_array(nb_sommets);
 
@@ -256,6 +257,141 @@ int Marching_Cubes::construire_iso(const DoubleVect& valeurs_sommets,
     }
   return resultat_ok;
 }
+
+// debut EB
+int Marching_Cubes::construire_iso(const DoubleVect& valeurs_sommets,
+                                   double isovaleur,
+                                   Maillage_FT_Disc& maillage,
+                                   DoubleVect& indicatrice_approchee,
+                                   DoubleVect& indicatrice_face_approchee,
+                                   const Maillage_FT_Disc::AjoutPhase phase,
+                                   int ignorer_collision) const
+{
+
+  if (! ref_domaine_vf_.non_nul())
+    {
+      Cerr << "Marching_Cubes::construire_iso : Erreur :" << finl;
+      Cerr << " Aucune zone n'a ete associee a Marching_Cubes" << finl;
+      assert(0);
+      exit();
+    }
+
+  //const Domaine_VF& domaine_vf=ref_domaine_vf_.valeur();
+
+  ArrOfBit signe; // Taille : nombre de sommets euleriens
+  // Estimation de la taille necessaire du tableau
+  // Jusqu'a "construire_noeuds_uniques" la signification de def_noeud
+  // est la suivante:
+  //  def_noeud(i,0) = numero du premier sommet du segment qui porte le noeud
+  //  def_noeud(i,1) = numero du deuxieme sommet
+  //                    (les sommets sont tries: def_noeud(i,1) > def_noeud(i,0))
+  //  Pour un sommet interne (construit a partir d'un element reel)
+  //   def_noeud(i,2) = me()
+  //   def_noeud(i,3) = i
+  //   def_noeud(i,4) = numero de l'element qui a servi a construire le noeud
+  //  Pour un sommet sur une face de joint avec PE_voisin
+  //   def_noeud(i,2) = PE_voisin
+  //   def_noeud(i,3) = i
+  //   def_noeud(i,4) = -1
+  //  Pour un sommet sur une face de bord
+  //   def_noeud(i,2) = nproc()
+  //   def_noeud(i,3) = i
+  //   def_noeud(i,4) = numero de la face de bord dans la zone
+  // Un meme sommet (ie, meme segment) peut figurer plusieurs fois comme sommet
+  // interne, sommet de bord et/ou sommet de joint.
+  IntTab def_noeud;
+  def_noeud.set_smart_resize(1);
+  def_noeud.resize(last_def_noeud_size * 2, 4, Array_base::NOCOPY_NOINIT);
+
+  maillage.reset();
+
+  IntTab& facettes = maillage.facettes_;
+  DoubleTab& coord_noeuds = maillage.sommets_;
+
+  calculer_signe(valeurs_sommets, isovaleur, signe);
+
+  const int resultat_ok = construire_noeuds_et_facettes(signe, def_noeud, facettes,
+                                                        indicatrice_approchee, indicatrice_face_approchee, phase);
+
+  if (resultat_ok || ignorer_collision)
+    {
+      construire_noeuds_joints(signe, def_noeud);
+
+      trier_les_noeuds(def_noeud);
+
+      construire_noeuds_uniques(def_noeud, maillage);
+      // Ici def_noeud a change de definition:
+      //  def_noeud(i,0) = numero du premier sommet du segment qui porte le noeud
+      //  def_noeud(i,1) = numero du deuxieme sommet
+      //                    (les sommets sont tries: def_noeud(i,1) > def_noeud(i,0))
+      //  def_noeud(i,2) = PE proprietaire du noeud pour les noeuds crees en parcourant
+      //                   les elements du domaine.
+      //                   Si le noeud est un duplicata cree sur les faces de bord,
+      //                   alors def_noeud(i,2) == nb_procs.
+      //  def_noeud(i,3) = numero de l'element (-1 si noeud virtuel)
+      //  def_noeud(i,4) = numero de la face de bord (-1 si noeud virtuel)
+
+      correspondance_espaces_distant_virtuel(def_noeud, maillage.desc_sommets_);
+
+      calculer_coord_noeuds(valeurs_sommets, isovaleur,
+                            def_noeud, maillage);
+
+      {
+        int nb_sommets = maillage.sommets_.dimension(0);
+        maillage.sommet_PE_owner_. resize_array(nb_sommets);
+        maillage.sommet_num_owner_.resize_array(nb_sommets);
+        maillage.sommet_elem_.     resize_array(nb_sommets);
+        maillage.sommet_face_.     resize(nb_sommets,dimension); // EB
+        maillage.sommet_face_bord_.resize_array(nb_sommets);
+        maillage.drapeaux_sommets_.resize_array(nb_sommets);
+
+        maillage.desc_sommets_.remplir_element_pe(maillage.sommet_PE_owner_);
+        // Le descripteur des facettes est vide, mais on calcule quand meme
+        // le schema de comm pour qu'il soit valide
+        maillage.desc_facettes_.espace_distant().calcul_liste_pe_voisins();
+        maillage.desc_facettes_.espace_virtuel().calcul_liste_pe_voisins();
+        maillage.desc_facettes_.calcul_schema_comm(maillage.facettes_.dimension(0));
+        const int moi = Process::me();
+
+        for (int i = 0; i < nb_sommets; i++)
+          {
+            maillage.sommet_num_owner_[i] = i;
+            const int pe_owner = maillage.sommet_PE_owner_[i];
+            const int elem = (pe_owner == moi) ? def_noeud(i, 3) : -1;
+            const int face = def_noeud(i, 4);
+            maillage.sommet_elem_[i] = elem;
+            maillage.sommet_face_bord_[i] = face;
+            maillage.drapeaux_sommets_[i] = 0;
+          }
+
+
+
+        maillage.desc_sommets_.echange_espace_virtuel(maillage.sommet_num_owner_);
+        maillage.desc_sommets_.echange_espace_virtuel(maillage.sommet_face_bord_);
+      }
+
+
+      // il faut mettre le statut minimal pour corriger_proprietaire_facettes
+      maillage.statut_ = Maillage_FT_Disc::MINIMAL;
+      maillage.corriger_proprietaires_facettes();
+
+      // On conserve la taille du tableau temporaire pour la prochaine execution.
+      last_def_noeud_size = def_noeud.dimension(0);
+
+      Journal() << "Marching_Cubes::construire_iso" << finl;
+      Journal() << " " << facettes.dimension(0) << " facettes, ";
+      Journal() << coord_noeuds.dimension(0) << " noeuds, ";
+
+      maillage.maillage_modifie(Maillage_FT_Disc::MINIMAL);
+    }
+  else
+    {
+      Journal() << "Marching_Cubes::construire_iso erreur: collision avec une interface existante" << finl;
+      maillage.reset();
+    }
+  return resultat_ok;
+}
+// fin EB
 
 // Construction d'une interface comme l'isovaleur zero d'une fonction
 // dont l'expression est donnee en parametre. L'expression est evaluee
@@ -328,6 +464,83 @@ int Marching_Cubes::construire_iso(const Nom& expression, double isovaleur,
 
   // Construction de l'interface
   const int ok = construire_iso(eval_expression_sommets, isovaleur, maillage, indicatrice_approchee, phase,
+                                ignorer_collision);
+  // l'appel a maillage_modifie() est fait dans construire_iso(valeurs_sommets, ...)
+  return ok;
+}
+
+// Construction d'une interface comme l'isovaleur zero d'une fonction
+// dont l'expression est donnee en parametre. L'expression est evaluee
+// aux sommets du maillage eulerien et l'interface est construite par
+// l'algorithme des marching cubes.
+// Le maillage est reinitialise au debut de l'operation.
+//
+// Parametre: expression
+// Signification: une expression mathematique f(x,y,z) comprise par le parser
+//                exemple : "x+2*y+z*z"
+// Parametre: isovaleur
+// Signification: on va construire le maillage de la surface definie par
+//                f(x,y,z)=isovaleur
+// Parametre: maillage
+// Signification: l'objet Maillage dans lequel on va stocker le resultat
+// Parametre: indicatrice_approchee
+// Signification: voir Marching_Cubes::construire_iso
+// Parametre: phase
+// Signification: voir Marching_Cubes::construire_iso
+// Parametre: eval_expression_sommets
+// Signification: un tableau a une dimension de taille nb_sommets (euleriens),
+//                et dont les items communs sont correctement initialises
+//                pour pouvoir faire un echange_espace_virtuel de valeurs aux
+//                sommets.
+// Valeur de retour: voir  Marching_Cubes::construire_iso
+int Marching_Cubes::construire_iso(const Nom& expression, double isovaleur,
+                                   Maillage_FT_Disc& maillage,
+                                   DoubleVect& indicatrice_approchee,
+                                   DoubleVect& indicatrice_face_approchee,
+                                   const Maillage_FT_Disc::AjoutPhase phase,
+                                   DoubleTab& eval_expression_sommets,
+                                   int ignorer_collision) const
+{
+  const int dimension3 = (dimension == 3);
+
+  if (! ref_domaine_vf_.non_nul())
+    {
+      Cerr << "Marching_Cubes::construire_iso : Erreur :" << finl;
+      Cerr << " Aucune zone n'a ete associee a Marching_Cubes" << finl;
+      assert(0);
+      exit();
+    }
+
+  std::string expr_chaine(expression);
+  Parser parser(expr_chaine, dimension);
+  parser.addVar("x");
+  parser.addVar("y");
+  if (dimension3)
+    parser.addVar("z");
+  parser.parseString();
+
+  // Construction d'un tableau de valeurs aux sommets euleriens
+  const Domaine& domaine = ref_domaine_vf_.valeur().domaine();
+  const int nb_sommets = domaine.nb_som();
+
+  for (int i = 0; i < nb_sommets; i++)
+    {
+      double x, y, z = 0.;
+      x = domaine.coord(i, 0);
+      y = domaine.coord(i, 1);
+      if (dimension3)
+        z = domaine.coord(i, 2);
+      parser.setVar("x", x);
+      parser.setVar("y", y);
+      if (dimension3)
+        parser.setVar("z", z);
+      double valeur = parser.eval();
+      eval_expression_sommets(i) = valeur;
+    }
+  eval_expression_sommets.echange_espace_virtuel();
+
+  // Construction de l'interface
+  const int ok = construire_iso(eval_expression_sommets, isovaleur, maillage, indicatrice_approchee, indicatrice_face_approchee, phase,
                                 ignorer_collision);
   // l'appel a maillage_modifie() est fait dans construire_iso(valeurs_sommets, ...)
   return ok;
@@ -788,7 +1001,217 @@ int Marching_Cubes::construire_noeuds_et_facettes(const ArrOfBit& signe,
   resultat_ok = ::mp_min(resultat_ok);
   return resultat_ok;
 }
+// debut EB
+int Marching_Cubes::construire_noeuds_et_facettes(const ArrOfBit& signe,
+                                                  IntTab& def_noeud,
+                                                  IntTab& facettes,
+                                                  DoubleVect& indicatrice_approchee,
+                                                  DoubleVect& indicatrice_face_approchee,
+                                                  const Maillage_FT_Disc::AjoutPhase phase) const
+{
+  int resultat_ok = 1; // Valeur de retour de la fonction
+  int arete, elem, sommet;
+  const Domaine_VF& domaine_vf=ref_domaine_vf_.valeur();
+  const Domaine& domaine = domaine_vf.domaine();
+  // Pour chaque element virtuel, numero du PE proprietaire :
+  const IntTab& elem_virt_pe_num = domaine.elem_virt_pe_num();
+  // Raccourci vers les numeros des sommets des elements
+  const IntTab& elem_sommets = domaine.les_elems();
+  const int nb_elements_reels = domaine.nb_elem();
+  const int nb_elem_tot = domaine.nb_elem_tot();
+  const int nb_faces_reelles = domaine_vf.nb_faces();
+  const int nb_sommets_reels = domaine.nb_som();
+  // Mon numero de PE
+  const int mon_PE = Process::me();
 
+  // Tableaux de travail :
+  // Numero attribue au noeud cree sur l'arete i de l'element
+  // On initialise a -1 pour assert...
+  ArrOfInt numero_noeud_arete(nb_aretes_element);
+  numero_noeud_arete = -1;
+  // Numero de chaque sommet de l'element en cours de traitement
+  ArrOfInt numero_sommet(nb_sommets_element);
+  // Signe de la fonction sur chaque sommet de l'element
+  ArrOfInt signe_sommet(nb_sommets_element);
+
+  def_noeud.resize(0, 4);
+  facettes.resize(0, nb_sommets_facette);
+  int nb_facettes = 0;
+  int nb_noeuds = 0;
+  const int numero_dernier_cas = (1 << nb_sommets_element) - 1;
+
+  // Boucle sur les elements du maillage.
+  //  Pour les elements reels, on cree des noeuds sur les aretes et on
+  //  cree les faces.
+  //  Pour les elements virtuels, on cree seulement les noeuds sur les
+  //  aretes reelles, et on enregistre ces noeuds comme appartenant
+  //  au processeur voisin.
+
+  for (elem = 0; elem < nb_elem_tot; elem++)
+    {
+
+      int cas_marching_cubes = 0;
+      int facteur = 1;
+      // On recupere les numeros des sommets et le signe en local
+      for (sommet = 0; sommet < nb_sommets_element; sommet++)
+        {
+          const int n = elem_sommets(elem, sommet);
+          numero_sommet[sommet] = n;
+          int s;
+          if (n < nb_sommets_reels)   /* Est-ce un sommet reel ? */
+            {
+              s = signe[n];
+              // Calcul du numero du "cas marching_cubes"
+              // C'est une suite de bits 0 ou 1 selon le signe de la fonction
+              cas_marching_cubes += s * facteur;
+              facteur *= 2;
+            }
+          else
+            {
+              // facteur negatif => le cas marching_cubes sera negatif a la fin.
+              cas_marching_cubes = -1;
+              facteur = -1;
+              s = -1;
+            }
+          signe_sommet[sommet] = s;
+        }
+
+      if (elem < nb_elements_reels)
+        {
+          assert(cas_marching_cubes >= 0);
+          double indic;
+          if (cas_marching_cubes == 0)
+            indic = 0.;
+          else if (cas_marching_cubes == numero_dernier_cas)
+            indic = 1.;
+          else
+            indic = 0.5;
+
+          if (phase == Maillage_FT_Disc::AJOUTE_TOUTES_PHASES)
+            {
+              // On ecrase toutes les interfaces existantes (ce n'est pas un ajout d'une interface)
+              indicatrice_approchee[elem] = indic;
+            }
+          else
+            {
+              if (indic == (1. - phase))
+                {
+                  // Ne rien faire
+                }
+              else if (indicatrice_approchee[elem] != (1. - phase))
+                {
+                  // Collision !
+                  resultat_ok = 0;
+                }
+              else
+                {
+                  // Je mets une nouvelle interface
+                  indicatrice_approchee[elem] = indic;
+                }
+            }
+        }
+      else
+        {
+          cas_marching_cubes = -1;
+        }
+
+      // Early quit : si l'element ne contient pas de facette, c'est a dire
+      // si tous les sommets ont le meme signe, on se casse
+      if (cas_marching_cubes == 0 || cas_marching_cubes == numero_dernier_cas)
+        continue;
+
+      int numero_element_a_stocker = elem;
+      int PE_element = mon_PE;
+      if (elem >= nb_elements_reels)
+        {
+          // C'est un element virtuel
+          numero_element_a_stocker = -1;
+          PE_element = elem_virt_pe_num(elem - nb_elements_reels,
+                                        0 /* colonne 0=numero du PE */);
+        }
+
+      // Creation des noeuds sur les segments de l'element dont les sommets
+      // sont reels et de signe different.
+
+      // (Idee pour ameliorer : precalculer la liste des noeuds a creer
+      //  en fonction du cas marching cubes comme pour les facettes)
+      // Boucle sur les aretes de l'element, creation des noeuds
+      for (arete = 0; arete < nb_aretes_element; arete++)
+        {
+          numero_noeud_arete[arete] = -1;
+          const int s1 = mcubes_def_aretes(arete, 0);
+          const int s2 = mcubes_def_aretes(arete, 1);
+          const int signe1 = signe_sommet[s1];
+          const int signe2 = signe_sommet[s2];
+          // Si on est sur une arete virtuelle (un des deux sommets est virtuel)
+          // alors on n'ajoute pas de sommet
+          // Un noeud est present si la fonction change de signe
+          if (signe1 != signe2 && signe1 >= 0 && signe2 >= 0)
+            {
+              numero_noeud_arete[arete] = nb_noeuds;
+              int n1 = numero_sommet[s1];
+              int n2 = numero_sommet[s2];
+              if (n1 > n2)
+                {
+                  int n = n1;
+                  n1 = n2;
+                  n2 = n;
+                }
+              // Le noeud est caracterise par les numeros des deux sommets
+              // de l'arete qui le porte.
+              def_noeud.resize(nb_noeuds+1, 5);
+              def_noeud(nb_noeuds, 0) = n1;
+              def_noeud(nb_noeuds, 1) = n2;
+              def_noeud(nb_noeuds, 2) = PE_element;
+              def_noeud(nb_noeuds, 3) = nb_noeuds;
+              def_noeud(nb_noeuds, 4) = numero_element_a_stocker;
+
+              nb_noeuds++;
+            }
+        }
+
+      // Creation des facettes si l'element est reel :
+      if (elem < nb_elements_reels)
+        {
+          // Index dans le tableau de description des facettes a creer
+          int index = mcubes_index_facettes[cas_marching_cubes];
+          const int index_fin = mcubes_index_facettes[cas_marching_cubes+1];
+          const int newsize = nb_facettes + mcubes_nb_facettes[cas_marching_cubes];
+          facettes.resize(newsize, nb_sommets_facette);
+
+          const int dim = Objet_U::dimension;
+
+          for (; index < index_fin; index += nb_sommets_facette)
+            {
+              int j;
+              for (j = 0; j < dim; j++)
+                {
+                  const int larete = mcubes_facettes[index+j];
+                  const int numero_noeud = numero_noeud_arete[larete];
+                  assert(numero_noeud >= 0);
+                  facettes(nb_facettes, j) = numero_noeud;
+                }
+              nb_facettes++;
+            }
+        }
+    }
+  // on initialise avec la moyenne de l'indicatrice des elements voisins
+  DoubleVect indic_approchee_copie(indicatrice_approchee);
+  indic_approchee_copie.echange_espace_virtuel();
+  for (int face=0; face<nb_faces_reelles; face++)
+    {
+      const int elem0=domaine_vf.face_voisins(face, 0);
+      const int elem1=domaine_vf.face_voisins(face, 1);
+      if ( (elem0<0) || (elem1<0)) indicatrice_face_approchee(face)= (elem0>=0) ? indic_approchee_copie(elem0) : indic_approchee_copie(elem1);
+      else indicatrice_face_approchee(face) = (indic_approchee_copie(elem0)+indic_approchee_copie(elem1))/2;
+      if (indicatrice_face_approchee(face)>0 && indicatrice_face_approchee(face)<1) indicatrice_face_approchee(face) =0.5;
+    }
+
+  // S'il y a une erreur sur un processeur, tout le monde renvoie 0
+  resultat_ok = ::mp_min(resultat_ok);
+  return resultat_ok;
+}
+// fin EB
 /*! @brief Ajout des sommets situes sur des faces (bords ou joints) dans le tableau def_noeud.
  *
  *   Soit faces_sommets est une liste de faces d'un joint, dans ce cas, numero_PE

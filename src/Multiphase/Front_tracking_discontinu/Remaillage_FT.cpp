@@ -67,7 +67,8 @@ Remaillage_FT::Remaillage_FT() :
   lissage_courbure_iterations_systematique_(0),
   lissage_courbure_iterations_si_remaillage_(0),
   lissage_courbure_iterations_old_(-1),
-  lissage_critere_(0) // Default value to 0, when lissage is applied, it is for the whole mesh
+  lissage_critere_(0), // Default value to 0, when lissage is applied, it is for the whole mesh
+  is_solid_particle_(0)
 {
 }
 
@@ -681,11 +682,11 @@ double Remaillage_FT::calculer_variation_volume_facette_3D(int fa7, const Mailla
   // En triant, on s'assure que pour chaque arete du maillage en triangle, le premier sommet choisi comme sommet4
   // est le meme pour les deux triangles adjacents a l'arete (c'est le plus petit en indice global).
   {
-    long long indice_global[3];
+    int int indice_global[3];
     for (int i = 0; i < 3; i++)
       {
         int isom = facette[i];
-        indice_global[i] = ((long long) maillage.sommet_PE_owner_[isom]) << 32;
+        indice_global[i] = ((int int) maillage.sommet_PE_owner_[isom]) << 32;
         indice_global[i] += maillage.sommet_num_owner_[isom];
       }
     // Tri dans l'ordre croissant des indices_globaux (tri a bulles immediat)
@@ -1684,10 +1685,12 @@ int Remaillage_FT::supprimer_facettes_bord(Maillage_FT_Disc& maillage) const
               maillage.printFa7(fa7,0,Process::Journal());
             }
 #endif
-
-          for (isom=1 ; isom<nb_som_par_facette ; isom++)
+          if (!is_solid_particle_)
             {
-              facettes(fa7,isom) = facettes(fa7,0);
+              for (isom=1 ; isom<nb_som_par_facette ; isom++)
+                {
+                  facettes(fa7,isom) = facettes(fa7,0);
+                }
             }
         }
 #else
@@ -2795,7 +2798,7 @@ int Remaillage_FT::chercher_arete_tab(int tmp, const ArrOfInt& tab_index, const 
 }
 
 //Methode qui permet de collecter la liste des aretes marquees.
-// ATTENTION : creation de sommets supplementaires au milieu des aretes trop longues
+// ATTENTION : creation de sommets supplementaires au milieu des aretes trop intues
 //
 //Si drap > 0 : les facettes marquees sont celles qui sont trop grandes,
 //   ie elles ne verifient pas le critere suivant:
@@ -2844,6 +2847,7 @@ int Remaillage_FT::marquer_aretes(Maillage_FT_Disc& maillage, IntTab& tab_aretes
   const IntTab& facettes = maillage.facettes();
   DoubleTab& sommets = maillage.sommets_;
   ArrOfInt& sommet_elem = maillage.sommet_elem_;
+  IntTabFT& sommet_face = maillage.sommet_face_; // EB
   ArrOfInt& sommet_face_bord = maillage.sommet_face_bord_;
   ArrOfInt& sommet_PE_owner = maillage.sommet_PE_owner_;
   ArrOfInt& sommet_num_owner = maillage.sommet_num_owner_;
@@ -3255,6 +3259,7 @@ int Remaillage_FT::marquer_aretes(Maillage_FT_Disc& maillage, IntTab& tab_aretes
                         tmp = NV_nb_sommets+10;
                         sommets.resize(tmp, sommets.dimension(1));
                         sommet_elem.resize_array(tmp);
+                        sommet_face.resize(tmp,dimension); // EB
                         sommet_face_bord.resize_array(tmp);
                         sommet_PE_owner.resize_array(tmp);
                         sommet_num_owner.resize_array(tmp);
@@ -3327,6 +3332,7 @@ int Remaillage_FT::marquer_aretes(Maillage_FT_Disc& maillage, IntTab& tab_aretes
         tmp = NV_nb_sommets;
         sommets.resize(tmp, sommets.dimension(1));
         sommet_elem.resize_array(tmp);
+        sommet_face.resize(tmp,dimension); // EB: on donne la bonne taille a sommet_face mais pas besoin de remplir
         sommet_face_bord.resize_array(tmp);
         sommet_PE_owner.resize_array(tmp);
         sommet_num_owner.resize_array(tmp);
@@ -3576,7 +3582,7 @@ int Remaillage_FT::nettoyer_maillage(Maillage_FT_Disc& maillage) const
 
 /*! @brief Regularise le maillage en deplacant les sommets pour reduire les gradients de courbure.
  *
- *   L'equation d'evolution du maillage est une diffusion de masse le long
+ *   L'equation d'evolution du maillage est une diffusion de masse le int
  *   de l'interface proportionnelle au gradient de courbure.
  *
  */
@@ -3754,4 +3760,8 @@ void Remaillage_FT::regulariser_courbure(Maillage_FT_Disc& maillage,
           dvolume[s] += lost_volume;
     }
   maillage.desc_sommets().echange_espace_virtuel(dvolume);
+}
+void Remaillage_FT::set_is_solid_particle(int is_solid_particle)
+{
+  is_solid_particle_=is_solid_particle;
 }
