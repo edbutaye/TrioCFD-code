@@ -9,6 +9,12 @@ if len(sys.argv) != 1:
 
 coarsening = 0
 
+# properity of fluid
+rho_L =  958.37
+rho_V = 0.597 
+sigma = 5.89e-2
+
+
 cwd = os.path.join(os.getcwd())
 srcdir = cwd
 root = os.path.join(os.getcwd(), "..")
@@ -57,8 +63,12 @@ class Case:
         self.cases = cases
         self.directory = repo
         self.resolution = resolution  # in µm
-        self.timestep = timestep
         self.dx = float(resolution) * 1e-6
+        rho_m = (rho_L + rho_V)/2.
+        tspL= 0.5*sqrt(rho_L*self.dx**3./sigma)   # stability Loric
+        tspM = sqrt(rho_m/pi/sigma*self.dx**3.)   # stability vof 
+        mytsp = min(tspL, tspM)
+        self.timestep = min(timestep, mytsp*0.9)  # factor de relaxation 0.9
         self.dict = copy.deepcopy(cases.dict)
         # 1/3 is regular mesh:
         pre_regu = 1. / 3.
@@ -80,6 +90,8 @@ class Case:
         else:
             self.dict["nprocy"] = math.floor((Ny1+Ny2)/60)
         self.dict["nprocs"] = self.dict["nprocx"]*self.dict["nprocy"]
+        self.dict["pdy"] = -self.dx
+        self.dict["power"] = abs(6.e3/self.dx)
         self.options = []
         return
 
@@ -283,7 +295,7 @@ class Case:
 
 
 class Cases:
-    def __init__(self, case, resolution, nmeso, Lx, Ly, ZZ, SurPower, xpsurf, dT, theta, tempC, timestep="1e-7", r0=0.0002):
+    def __init__(self, case, resolution, nmeso, Lx, Ly, ZZ, SurPower, dT, theta,tempC, timestep="1e-7", r0=0.0002):
         self.name = case
         self.M = resolution  # in µm
         self.timestep = timestep
@@ -296,7 +308,6 @@ class Cases:
         self.tempC = tempC
         self.r0 = r0  # Initial bubble radius
         self.SurPower = SurPower
-        self.xpsurf = xpsurf
         self.dict = {}
         self.dict["rmax"] = Lx
         self.dict["zmax"] = Ly
@@ -306,7 +317,6 @@ class Cases:
         self.dict["tempC"] = tempC
         self.dict["delta_th"] = 0.0005  # m
         self.dict["pws"] = SurPower  # m
-        self.dict["xpsurf"] = xpsurf
         self.dcases = {}
         return
 
@@ -339,25 +349,27 @@ class Cases:
         return st
 
 
-configurations = ["T2"]
+configurations = ["BUCCI"]
 unit = np.ones(len(configurations))
-rs = [0.009]
-zs = [0.012]
+rs = [0.0013]
+zs = [0.0013]
 zssol = [0.001]
-dTs = [8.5]
-thetas = [50.0]
-tempCs = [6.7]
+
+dTs = [0.]
+thetas = [20.0]
+tempCs = [10.8]
+
 sMs = [4.9]  # in µm
 hMs = [3.8]  # in µm
 Qmicros = [30.5]
-Ms = ["40"]  # Mesh sizes in µm
+
+Ms = ["1_0.75_0.5"]  # Mesh sizes in µm
 nmesos = ["4"]
-dts = ["1.e-7"]
+dts = ["1.e-7_1.e-7"]
 tmaxs = 50e-3 * unit
-r0s = [0.00026]  # initial bubble radius
 nb_pas_dt_max = 1000000000 * unit
 pws = ["0."] # power per unit area w/m2 #
-xlimp = ["4.e-3"]
+r0s = [0.000200]  # initial bubble radius
 
 d_all = {}
 for idx, config in enumerate(configurations):
@@ -365,7 +377,6 @@ for idx, config in enumerate(configurations):
     z = zs[idx]
     zz = zssol[idx]
     mpws = pws[idx]
-    xpsurf = xlimp
     theta = thetas[idx]
     tempC = tempCs[idx]
     dT = dTs[idx]
@@ -374,7 +385,7 @@ for idx, config in enumerate(configurations):
     nmeso = nmesos[idx]
     r0=r0s[idx]
     print(f"CONFIGURATION: {config} {r} {z} {M} $dT $theta $sM $hM $Qmicro $eth $r0 $Ntot")
-    cas = Cases(config, resolution=M, nmeso=nmeso, Lx=r, Ly=z, ZZ=zz, SurPower=mpws,xpsurf=xpsurf, dT=dT, theta=theta, tempC=tempC, r0=r0, timestep=dt)
+    cas = Cases(config, resolution=M, nmeso=nmeso, Lx=r, Ly=z, ZZ=zz, SurPower=mpws, dT=dT, theta=theta, tempC=tempC, r0=r0, timestep=dt)
     ok = cas.createCases(root=runs)
     d_all[config] = cas
     print("CASES CREATED:")

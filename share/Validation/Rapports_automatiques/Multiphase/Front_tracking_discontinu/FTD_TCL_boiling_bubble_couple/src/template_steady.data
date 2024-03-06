@@ -162,22 +162,22 @@ Lire fluide
 Schema_Euler_explicite  sch
 Lire sch
 {
-    nb_pas_dt_max 1000000000 # 12 HACK #
-    tinit 0.
-    tmax 15. # 50e-3 #
-    tcpumax 23.75
-    dt_min 1.e-18
-    dt_max 1.e-3
-    # 1e-7 is necessary on coa test otherwise it is unstable at 89.4e-4 with remesh BEST #
-    dt_impr 2.e-6
-    impr_diffusion_implicite 1
-    dt_sauv 0.5
-    facsec 1.
-    seuil_statio 1e-12
-    diffusion_implicite 1
-    dt_start dt_min
-    seuil_diffusion_implicite 1e-6
-    periode_sauvegarde_securite_en_heures 0.5
+   nb_pas_dt_max 1000000000 # 12 HACK #
+   tinit 0.
+   tmax 15. # 50e-3 #
+   tcpumax 23.75
+   dt_min 1.e-18
+   dt_max 1.e-3
+   # 1e-7 is necessary on coa test otherwise it is unstable at 89.4e-4 with remesh BEST #
+   dt_impr 2.e-6
+   impr_diffusion_implicite 1
+   dt_sauv 0.5
+   facsec 1.
+   seuil_statio 1e-12
+   diffusion_implicite 1
+   dt_start dt_min
+   seuil_diffusion_implicite 1e-6
+   periode_sauvegarde_securite_en_heures 0.5
 }
 
 
@@ -415,10 +415,10 @@ Read pb2
    }
 	Conduction
 	{
-		diffusion { }
+	   diffusion { }
       sources {
                  Puissance_Thermique Champ_fonc_xyz dom_solide 1 $power*(y_ge_@pdy@)*(x_le_@rmax@)
-              }
+             }
 		boundary_conditions {
 			sleft symetrie
 			sright   PAROI_ADIABATIQUE
