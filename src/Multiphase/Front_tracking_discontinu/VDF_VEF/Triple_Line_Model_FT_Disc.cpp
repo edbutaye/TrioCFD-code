@@ -777,7 +777,13 @@ double Triple_Line_Model_FT_Disc::compute_Qint(const DoubleTab& in_out, const do
   assert(kl_cond_>0.);
 //  Cerr << "ln_y = " << ln_y << " time_total = " << temps << " Theta_app_local = " << theta_app_loc
 //       <<" delT = "<< Twall << " kl = "<< kl_cond_ << finl;
-  Q_meso = kl_cond_*(Twall/theta_app_loc)*ln_y; // Twall here is (Wall temperature - saturation temperature)..unit of Q_meso is W/m
+  if ((theta_app_loc/3.1415926*180. < thetaC_tcl()) || (theta_app_loc/3.1415926*180. > 90.))
+    {
+      Cerr << "[TCL: MESO:] Micro-Layer detected with slope " << theta_app_loc/3.14159326*180. << " distance to wall "<< (yl+yr)/2. <<finl;
+      Q_meso = kl_cond_*(Twall*2./(yl+yr));
+    }
+  else
+    Q_meso = kl_cond_*(Twall/theta_app_loc)*ln_y; // Twall here is (Wall temperature - saturation temperature)..unit of Q_meso is W/m
 
   double Q_int = Q_meso*circum_dis; // unit of Q_int is W
 //  Cerr << "Q_meso = " << Q_meso << finl;

@@ -914,7 +914,8 @@ void Maillage_FT_Disc::calcul_indicatrice(DoubleVect& indicatrice,
     for (i = 0; i < nb_elem_tot; i++)
       {
         const double x = indicatrice_precedente[i];
-        int check_voisins = ((x != 0.) && (x != 1.));
+        // int check_voisins = ((x != 0.) && (x != 1.));
+        int check_voisins = (!est_egal(x, 0.) && !est_egal(x, 1.));
         if (i < nb_elem)
           {
             int index = index_elem[i];
