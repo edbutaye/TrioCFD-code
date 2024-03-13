@@ -2297,23 +2297,43 @@ double Remaillage_FT::calculer_longueurIdeale2_arete(const Maillage_FT_Disc& mai
             }
           else
             {
-              // On calcul la projection de la diagonale de l'element eulerien
-              // sur l'arete de la facette.  Puis longueur au carre.
-              if (norme2 == 0)
+              // The algo is based on the search of the 3 intersections  (B, A and C) of the line (O, v) with the element faces at (dx, dy, dz).
+              // where O is the local origin in the elem
+              // v is the vector director given by the 'arete'
+              // and dx, dy, dz are the element sizes.
+              // Once the 3 intersections are found, the ideal distance is given by the smallest one among the 3 distances
+              // between the points and the origin. Actually, the 2 other intersections are outside the element faces.
+              const double vz = (dim ==3) ? std::fabs(v[2]) : 0.;
+              const double vz2 = vz*vz;
+              const double dA2 = (std::fabs(v[1]) > (std::fabs(v[0])+vz)/100.) ?  delta_xv[1]*delta_xv[1]*(1+(v[0]*v[0]+vz2)/(v[1]*v[1])) : DMAXFLOAT;
+              const double dB2 = (std::fabs(v[0]) > (std::fabs(v[1])+vz)/100.) ?  delta_xv[0]*delta_xv[0]*(1+(v[1]*v[1]+vz2)/(v[0]*v[0])) : DMAXFLOAT;
+              norme2 = std::min(dA2, dB2);
+              if (dim==3)
                 {
-                  v[0] = 1.;
-                  v[1] = 1.;
-                  v[2] = dim==3 ? 1. : 0.;
-                  norme2 = dim;
-                }
-              double f = 1. / sqrt(norme2);
-              norme2 = 0.;
-              for (k = 0; k < dim; k++)
-                {
-                  v[k] *= f * delta_xv[k];
-                  norme2 += v[k] * v[k];
+                  // The 3rd intersection in the plane (z=dz)
+                  const double dC2 = (std::fabs(v[2]) > (std::fabs(v[1])+std::fabs(v[0]))/100.) ?  delta_xv[2]*delta_xv[2]*(1+(v[1]*v[1]+v[0]*v[0])/(vz2)) : DMAXFLOAT;
+                  norme2 = std::min(norme2, dC2);
                 }
             }
+          // Ci-dessous ancienne version (1.9.3 et avant) incorrecte (voir tuleap TCFD235730)
+          /* {
+            // On calcul la projection de la diagonale de l'element eulerien
+            // sur l'arete de la facette.  Puis longueur au carre.
+            if (norme2 == 0)
+              {
+                v[0] = 1.;
+                v[1] = 1.;
+                v[2] = dim==3 ? 1. : 0.;
+                norme2 = dim;
+              }
+            double f = 1. / sqrt(norme2);
+            norme2 = 0.;
+            for (k = 0; k < dim; k++)
+              {
+                v[k] *= f * delta_xv[k];
+                norme2 += v[k] * v[k];
+              }
+          } */
           lgrId2 = norme2;
 
         }
@@ -3014,7 +3034,11 @@ int Remaillage_FT::marquer_aretes(Maillage_FT_Disc& maillage, IntTab& tab_aretes
             {
               //je suis le proprietaire du sommet 1
               //je dois donc calculer ma longueur ideale
-              lgr_ideale12 = calculer_longueurIdeale2_arete(maillage,numOwner1,tab_criteres(iarete,0),tab_criteres(iarete,1),tab_criteres(iarete,2));
+              const double x0 = sommets(numOwner0,0);
+              const double y0 = sommets(numOwner0,1);
+              const double z0 = (dimension3) ? sommets(numOwner0,2) : 0.;
+              lgr_ideale12 = calculer_longueurIdeale2_arete(maillage,numOwner1,x0, y0, z0);
+              //lgr_ideale12 = calculer_longueurIdeale2_arete(maillage,numOwner1,tab_criteres(iarete,0),tab_criteres(iarete,1),tab_criteres(iarete,2));
             }
         }
       //et on stocke
