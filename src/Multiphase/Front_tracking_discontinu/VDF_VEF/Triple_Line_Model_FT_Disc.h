@@ -64,6 +64,50 @@ public :
   const double& tempC_tcl() const { return tempC_tcl_; }
   const int& tag_tcl() const { return tag_tcl_; }
 
+  const bool& is_read_via_file() const
+  {
+    return read_via_file_;
+  };
+  const bool& Rc_tcl_GridN() const
+  {
+    return Rc_tcl_GridN_;
+  };
+  const double& Rc_inject() const
+  {
+    return Rc_inject_;
+  };
+  const double& thetaC_tcl() const
+  {
+    return thetaC_tcl_;
+  };
+  const bool& reinjection_tcl() const
+  {
+    return reinjection_tcl_;
+  };
+  const bool& adjust_meso_ML() const
+  {
+    return adjust_meso_ML_;
+  };
+  const bool& distri_first_facette() const
+  {
+    return distri_first_facette_;
+  };
+  const bool& ready_inject_tcl() const
+  {
+    return ready_inject_tcl_;
+  };
+  bool& ready_inject_tcl()
+  {
+    return ready_inject_tcl_;
+  };
+  const double& tempC_tcl() const
+  {
+    return tempC_tcl_;
+  };
+  const int& tag_tcl() const
+  {
+    return tag_tcl_;
+  };
   double compute_capillary_number() const;
   int get_any_tcl_face() const;
 
@@ -174,6 +218,10 @@ protected:
 
   // if to distribute the Qtcl into the first facette
   bool distri_first_facette_ = false;
+
+  // if to correct of qmeso in Micro-layer
+  // par default, it should NOT be activated
+  bool adjust_meso_ML_ = false;
 
   // Information on the TCL region :
   // Note that the same elem may appear twice in the list, once for the micro contribution, once for the meso.
