@@ -1,0 +1,242 @@
+dimension 3
+domaine dom
+Probleme_FT_Disc_gen pb
+
+
+# BEGIN MESH #
+Mailler dom
+{
+	Pave Cavite
+		{
+		Origine -4.5e-3  0. -4.5e-3
+	        Nombre_de_Noeuds 31 41 31
+		Longueurs 9e-3 12e-3 9e-3
+		
+		}
+		{
+		Bord Gauche	        X =  -4.5e-3	   	    +0.0e-3 <= Y <= +12e-3 		-4.5e-3 <= Z <= +4.5e-3
+		Bord Haut	        Y =  +12e-3 	        -4.5e-3 <= X <= +4.5e-3	        -4.5e-3 <= Z <= +4.5e-3
+		Bord Bas		Y =  +0e-3 	        -4.5e-3 <= X <= +4.5e-3	        -4.5e-3 <= Z <= +4.5e-3
+		Bord Droit	        X =  +4.5e-3	        +0.0e-3 <= Y <= +12e-3 		-4.5e-3 <= Z <= +4.5e-3
+		Bord Devant	        Z =  -4.5e-3	    	-4.5e-3 <= X <= +4.5e-3	        +0.0e-3 <= Y <= +12e-3
+		Bord Derriere	    	Z =  +4.5e-3	        -4.5e-3 <= X <= +4.5e-3	        +0.0e-3 <= Y <= +12e-3
+		}
+}
+# END MESH #
+
+# BEGIN PARTITION
+Partition dom
+{
+        Partitionneur tranche { tranches 1 2 1 }
+        Larg_joint 3
+        Nom_Zones DOM
+}
+Fin
+END PARTITION #
+
+# BEGIN SCATTER
+Scatter DOM.Zones dom
+END SCATTER #
+
+VDF+ dis
+
+Schema_Euler_explicite sch
+Lire sch
+{
+
+	tinit 0
+	tmax 0.05
+ 	# nb_pas_dt_max 10 #
+
+    	dt_min 1e-7
+	dt_max 3.75e-5
+
+	diffusion_implicite 1
+    	seuil_diffusion_implicite 1e-6
+    	impr_diffusion_implicite 1
+	dt_impr 0.01
+	dt_impr_fpi 1e-11
+	dt_sauv 100
+	seuil_statio -1
+
+}
+system "mkdir -p lata"
+system "rm -f *.txt"
+
+Particule_Solide particule_solide # The use of name "particule_solide" is mandatory. #
+Lire particule_solide
+{
+	mu  Champ_Uniforme 1 10
+ 	rho Champ_Uniforme 1 7800
+    	e_dry 0.97
+    	rayon_frottements 1.5e-3 rayon_collision 1.5e-3
+	monodisperse 1
+}
+
+Fluide_Incompressible fluide
+Lire fluide
+{
+	mu  Champ_Uniforme 1 1e-2
+ 	rho Champ_Uniforme 1 935
+}
+
+Fluide_Diphasique fluide_diph
+Lire fluide_diph
+{
+	fluide0 particule_solide # particule_solide MUST be fluide0 #
+	fluide1 fluide
+	sigma   Champ_Uniforme 1 0
+  	formule_mu harmonic
+}
+
+Champ_Uniforme gravite
+Lire gravite 3 0. -9.81  0.
+Associate fluide_diph gravite
+
+
+
+
+Navier_Stokes_FT_Disc              hydraulique
+Transport_Interfaces_FT_Disc       interf
+
+Associate pb hydraulique
+Associate pb interf
+
+Associate pb dom
+Associate pb sch
+Associate pb fluide_diph
+
+Discretize pb dis
+
+
+Lire pb
+{
+	hydraulique
+	{
+		modele_turbulence sous_maille_wale
+		{
+			Cw               0.
+			turbulence_paroi negligeable
+		}
+		solveur_pression GCP { precond ssor { omega 1.5 } seuil 1.e-8 impr }
+		convection           { centre }
+		diffusion            { }
+		clipping_courbure_interface 100
+		terme_gravite rho_g
+        	conditions_initiales { vitesse champ_uniforme 3 0. 0. 0. }
+		equation_interfaces_proprietes_fluide interf
+		boundary_conditions
+		{
+			Haut	paroi_fixe
+			Bas 	paroi_fixe
+			# Bas paroi_fixe #
+			# Haut	Symetrie #
+			Gauche	paroi_fixe
+			Droit	paroi_fixe
+			Devant	paroi_fixe
+			Derriere paroi_fixe
+		}
+
+	}
+	interf
+	{
+	   	# transport_vitesse_cg 1 # 
+		is_solid_particle 1
+		interpolation_repere_local
+		methode_transport vitesse_interpolee hydraulique
+		conditions_initiales
+		{
+
+		   fonction  (+1*((x)^2+(y-8.88e-3)^2+(z)^2-(1.5e-3)^2))
+
+       		}
+        	iterations_correction_volume 0
+       		n_iterations_distance 3
+		calcul_precis_indicatrice_faces
+		calcul_precis_indicatrice_aretes
+		postraiter_indicatrice_aretes
+        	parcours_interface { correction_parcours_thomas }
+		methode_interpolation_v VDF_lineaire
+
+		remaillage
+		{
+			pas 1e10
+     			nb_iter_barycentrage 1
+     			relax_barycentrage 1.00000000000000000e+00
+     			# critere_arete 3.49999999999999978e-01 #
+     			seuil_dvolume_residuel 0.00000000000000000e+00
+     			nb_iter_correction_volume 6
+     			nb_iter_remaillage 3
+      			facteur_longueur_ideale  1
+   			# equilateral 1 #
+   			pas_lissage 1e10
+     			lissage_courbure_coeff -0.05
+     			lissage_courbure_iterations_systematique 0
+     			lissage_courbure_iterations_si_remaillage 10
+		}
+		modele_collision_particule
+		{
+		    modele_collision hybrid_esi
+		    tau_coll 3e-4
+		    decalage_bords 1
+		    force_sur_elem_diphasiques 1
+		    modele_lubrification 0
+		    detection_collision_Verlet { is_active 0 }
+		}
+		
+		boundary_conditions
+		{
+			Haut	Paroi_FT_disc symetrie
+			Bas 	Paroi_FT_disc symetrie
+			Gauche	Paroi_FT_disc symetrie
+			Droit	Paroi_FT_disc symetrie
+			Devant	Paroi_FT_disc symetrie
+			Derriere Paroi_FT_disc symetrie
+		}
+	}
+
+	Postraitement
+        {
+                Champs dt_post 5e-3
+                {
+                        pression elem
+                        vitesse elem
+                        indicatrice_interf elem
+                }
+        }
+
+     
+	liste_postraitements
+	{
+		Postraitement_ft_lata post2
+		{
+			fichier lata/post_dom
+			format lata_v2
+			champs dt_post 5e-4
+	        	{ 
+				indicatrice_interf elem
+				indicatrice_faces_interf faces
+				vitesse  elem
+				num_compo elem
+				pression elem
+				vitesse faces
+				terme_source_collisions faces
+			}
+			
+			interfaces interf
+            		{
+            			vitesse som
+				courbure som
+				normale_unitaire elem
+				compo_connexe elem
+			}
+		}
+	}
+	sauvegarde_simple formatte backupfile.sauv
+    
+}
+
+
+
+Solve pb
+Fin
