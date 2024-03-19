@@ -1083,6 +1083,436 @@ void Maillage_FT_Disc::calcul_indicatrice(DoubleVect& indicatrice,
   statistiques().end_count(stat_counter);
 }
 
+<<<<<<< HEAD
+=======
+// EB idem mais aux aretes
+/*! @brief Calcul de la fonction indicatrice aux aretes du maillage eulerien (on suppose que "indicatrice_arete" a la structure d'un tableau de valeurs aux faces, on ne remplit
+ *
+ *  que les aretes reelles). Pour les aretes de joint appartenant a 4 (au max) processeurs, chaque processeur calcul le taux de controle dans le demi volume de controle lui appartenant.
+ *  On somme ensuite les contributions pour avoir le taux de presence global au volume de controle de l'arete.
+ *  ATTENTION : ce calcul n'est valable en parallele que pour les partitionnement "bien ordonnes". C'est a dire, que l'on peut definir le nombre de procs du domaine par Npx * Npy *Npz avec Npx, Npy, Npz, le nombre de procs suivant x,y,z.
+ *  Avec Npx, constant suivant y et z, Npy constant suivant x et z, Npz constant suivant x et y.
+ *  La fraction volumique de la phase 1 dans les elements traverses par
+ *  une interface est determinee a partir des donnees du parcours dans
+ *   "intersections_arete_facettes_".
+ *  Les autres aretes sont remplies par une methode heuristique utilisant
+ *  l'indicatrice_precedente.
+ *
+ * Precondition: statut >= PARCOURU
+ *  Attention, l'algorithme est concu de sorte que l'on puisse utiliser le
+ * meme tableau "indicatrice" et "indicatrice_precedente".
+*/
+void Maillage_FT_Disc::calcul_indicatrice_arete(const DoubleVect& indicatrice, DoubleVect& indicatrice_arete,
+                                                const DoubleVect& indicatrice_arete_precedente)
+{
+  Cerr << "Maillage_FT_Disc::calcul_indicatrice_arete"<< finl;
+  assert(statut_ >= PARCOURU);
+  static const Stat_Counter_Id stat_counter = statistiques().new_counter(3, "Calculer_Indicatrice_Arete", "FrontTracking");
+  statistiques().begin_count(stat_counter);
+  const Domaine_dis& domaine_dis = refdomaine_dis_.valeur();
+  const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_dis.valeur());
+  const int nb_aretes_reelles = domaine_vdf.nb_aretes_reelles();
+  const IntVect& orientation_aretes=domaine_vdf.orientation_aretes();
+  const Domaine& domaine=domaine_vdf.domaine();
+  const IntTab& Qdm=domaine_vdf.Qdm();
+  const IntVect& type_arete=domaine_vdf.type_arete();
+  static ArrOfBit aretes_calculees;
+  const DoubleVect& volumes_aretes=domaine_vdf.volumes_aretes();
+  //const ArrOfInt& aretes_multiples = domaine_vdf.aretes_multiples();
+  aretes_calculees.resize_array(nb_aretes_reelles);
+
+  indicatrice_arete = indicatrice_arete_precedente;
+
+  {
+    const int nb_aretes_voisines = domaine_vdf.elem_faces().dimension(1);
+    // Boucle sur les faces
+    // Si l'indicatrice precedente est differente de 0 ou 1 ou que la face est traversee --> alors on recalcule
+    const ArrOfInt& index_arete_x = intersections_arete_facettes_x_.index_arete();
+    const ArrOfInt& index_arete_y = intersections_arete_facettes_y_.index_arete();
+    const ArrOfInt& index_arete_z = intersections_arete_facettes_z_.index_arete();
+
+    assert(indicatrice_arete.size_array() == nb_aretes_reelles);
+    int i;
+    DoubleVect check(indicatrice_arete);
+    for (i = 0; i < nb_aretes_reelles; i++)
+      {
+        if (type_arete(i)!=2) continue; // on ne calcule que pour les aretes_internes
+        const double x = indicatrice_arete_precedente[i];
+        int check_voisins = ( ((x != 0.) && (x != 1.)));
+
+        int orientation=(dimension-1)-orientation_aretes(i);
+        int index;
+        if (orientation==0) index=index_arete_x[i];
+        else if (orientation==1) index=index_arete_y[i];
+        else if (orientation==2) index=index_arete_z[i];
+        else
+          exit();
+
+        check_voisins |= (index >= 0);
+        check(i) = check_voisins;
+
+      }
+
+    // On identifie les aretes voisines pour lesquelles on recalculera l'indicatrice
+    for (i = 0; i < nb_aretes_reelles; i++)
+      {
+        if (type_arete(i)!=2) continue; // on ne calcule que pour les aretes_internes
+        if (check(i))
+          {
+            aretes_calculees.clearbit(i);
+            const int ori_arete=(dimension-1)-orientation_aretes(i);
+
+            int face1=Qdm(i,0);
+            int face2=Qdm(i,1);
+
+            int elem1=domaine_vdf.face_voisins(face1,0);
+            int elem2=domaine_vdf.face_voisins(face2,0);
+            int elem3=domaine_vdf.face_voisins(face1,1);
+            //int elem4=domaine_vdf.face_voisins(face2,1);
+
+            int face1_av=domaine_vdf.elem_faces(elem1, ori_arete+dimension);
+            int face1_arr=domaine_vdf.elem_faces(elem1, ori_arete);
+
+            int elem_av=domaine_vdf.face_voisins(face1_av,1);
+            int elem_arr=domaine_vdf.face_voisins(face1_arr,0);
+
+            //Cerr << elem1+elem2+elem3+elem_av+elem_arr<< finl;
+
+            // Boucle sur les voisins
+            int j;
+            for (j = 0; j < nb_aretes_voisines; j++)
+              {
+                // On cherche l'element voisin
+                int arete_voisine;
+
+                if (j==ori_arete) arete_voisine=domaine.elem_aretes(elem_av,orientation_aretes(i)); // voir numerotation Aretes dans Hexaedre.cpp
+                else if (j==ori_arete+dimension) arete_voisine=domaine.elem_aretes(elem_arr,orientation_aretes(i));
+
+                else if (ori_arete==0) // arete YZ
+                  {
+                    if (j==1) arete_voisine=domaine.elem_aretes(elem1,11);
+                    else if (j==1+dimension) arete_voisine=domaine.elem_aretes(elem2,2);
+                    else if (j==2) arete_voisine=domaine.elem_aretes(elem1,8);
+                    else arete_voisine=domaine.elem_aretes(elem3,2);
+                  }
+                else if (ori_arete) // arete XZ
+                  {
+                    if (j==0) arete_voisine=domaine.elem_aretes(elem1,10); // voir numerotation Aretes dans Hexaedre.cpp
+                    else if (j==0+dimension) arete_voisine=domaine.elem_aretes(elem2,1);
+                    else if (j==2) arete_voisine=domaine.elem_aretes(elem1,7);
+                    else arete_voisine=domaine.elem_aretes(elem3,1);
+                  }
+                else // arete XY
+                  {
+                    if (j==0) arete_voisine=domaine.elem_aretes(elem1,9); // voir numerotation Aretes dans Hexaedre.cpp
+                    else if (j==0+dimension) arete_voisine=domaine.elem_aretes(elem2,0);
+                    else if (j==1) arete_voisine=domaine.elem_aretes(elem1,6);
+                    else arete_voisine=domaine.elem_aretes(elem3,0);
+                  }
+
+                if (arete_voisine >= 0 && arete_voisine<nb_aretes_reelles) aretes_calculees.clearbit(arete_voisine);
+
+              }
+
+          }
+      }
+
+
+  }
+
+  // Ajout des contributions de volume
+  {
+    const ArrOfInt& index_arete_x =
+      intersections_arete_facettes_x_.index_arete();
+    const ArrOfInt& index_arete_y =
+      intersections_arete_facettes_y_.index_arete();
+    const ArrOfInt& index_arete_z =
+      intersections_arete_facettes_z_.index_arete();
+
+    assert(indicatrice_arete.size() == nb_aretes_reelles);
+    // Boucle sur les aretes
+
+    for (int i = 0; i < nb_aretes_reelles; i++)
+      {
+        if (type_arete(i)!=2) continue; // on ne calcule que pour les aretes_internes
+        const int ori_arete=(dimension-1)-orientation_aretes(i);
+        int index;
+        if (ori_arete==0)
+          {
+
+            // Faces de normale x
+            index = index_arete_x[i];
+            double somme_contrib = 0.;
+            // Boucle sur les facettes qui traversent cette face
+            while (index >= 0)
+              {
+                const Intersections_Arete_Facettes_Data& data = intersections_arete_facettes_x_.data_intersection(index);
+                somme_contrib += data.contrib_volume_phase1_;
+                index = data.index_facette_suivante_;
+              };
+            while (somme_contrib > 1.)
+              somme_contrib -= 1.;
+            while (somme_contrib < 0.)
+              somme_contrib += 1.;
+            if (somme_contrib > 0.)
+              {
+                indicatrice_arete[i] = somme_contrib;
+                aretes_calculees.setbit(i);
+              }
+
+          }
+        else if (ori_arete==1)
+          {
+
+            // Faces de normale y
+            index = index_arete_y[i];
+            double somme_contrib = 0.;
+            // Boucle sur les facettes qui traversent cette face
+            while (index >= 0)
+              {
+                const Intersections_Arete_Facettes_Data& data = intersections_arete_facettes_y_.data_intersection(index);
+                somme_contrib += data.contrib_volume_phase1_;
+                index = data.index_facette_suivante_;
+              };
+            while (somme_contrib > 1.)
+              somme_contrib -= 1.;
+            while (somme_contrib < 0.)
+              somme_contrib += 1.;
+            if (somme_contrib > 0.)
+              {
+                indicatrice_arete[i] = somme_contrib;
+                aretes_calculees.setbit(i);
+              }
+          }
+        else if (ori_arete==2)
+          {
+            // Faces de normale z
+            index = index_arete_z[i];
+            double somme_contrib = 0.;
+            // Boucle sur les facettes qui traversent cette face
+            while (index >= 0)
+              {
+                const Intersections_Arete_Facettes_Data& data = intersections_arete_facettes_z_.data_intersection(index);
+                somme_contrib += data.contrib_volume_phase1_;
+                index = data.index_facette_suivante_;
+              };
+            while (somme_contrib > 1.)
+              somme_contrib -= 1.;
+            while (somme_contrib < 0.)
+              somme_contrib += 1.;
+            if (somme_contrib > 0.)
+              {
+                indicatrice_arete[i] = somme_contrib;
+                aretes_calculees.setbit(i);
+              }
+          }
+        else
+          exit(); // On a rien a faire la
+      }
+  }
+
+  // Calcul de l'indicatrice au voisinage de l'interface a l'aide
+  // de la fonction distance.
+  {
+    const DoubleTab& distance = equation_transport().get_update_distance_interface_aretes();
+    int i;
+    int error_count = 0;
+
+    for (i = 0; i < nb_aretes_reelles; i++)
+      {
+        if (type_arete(i)!=2) continue; // on ne calcule que pour les aretes_internes
+        if (aretes_calculees[i] == 0)
+          {
+            double x = distance(i);
+            // La distance a-t-elle ete calculee pour cette face ?
+            if (x > -1e10)
+              {
+                double v = (x > 0.) ? 1. : 0.;
+                indicatrice_arete[i] = v;
+              }
+            else
+              {
+                // Probleme : une face a une indicatrice suspecte et
+                // on ne peut pas l'evaluer avec la fonction distance
+                // (augmenter le nombre d'iterations du calcul de distance ?)
+                error_count++;
+              }
+          }
+        // if (faces_doubles(i) && fabs(domaine_vf.xv(i,0))<0.3e-3 && domaine_vf.xv(i,1)<7.8e-3 && domaine_vf.xv(i,1)>7.2e-3 &&  domaine_vf.xv(i,2)<-1.2e-3 ) Cerr << "Face double - indic " << indicatrice_face(i) << "\t" << domaine_vf.xv(i,0) << " " << domaine_vf.xv(i,1) << " " << domaine_vf.xv(i,2) <<  finl;
+      }
+    if (error_count)
+      {
+        Cerr << "[" << me() << "] calcul_indicatrice_arete : error_count = " << error_count << finl;
+      }
+  }
+  /*
+    for (int arete=0; arete<domaine_vdf.nb_aretes_tot(); arete++)
+      {
+        double coeff=0.5;
+
+  	  if (aretes_multiples(arete)==1) coeff=0.5;
+  	  else if (aretes_multiples(arete)==2) coeff=1/3;
+  	  else if (aretes_multiples(arete)==3) coeff=0.25;
+
+
+        if ((aretes_multiples(arete)>0) && arete<nb_aretes_reelles)
+          {
+            //if (indicatrice_arete(arete)<1 && orientation_aretes(arete)==0) Cerr << "indic " << indicatrice_arete(arete) << "\tcg "
+            //                                                                     << domaine_vdf.xa(arete,0) << " " << domaine_vdf.xa(arete,1) << " " << domaine_vdf.xa(arete,2) << finl;
+            indicatrice_arete(arete) *=volumes_aretes(arete)*coeff;
+          }
+        if (arete>=nb_aretes_reelles) indicatrice_arete(arete)=0;
+      }
+
+    MD_Vector_tools::echange_espace_virtuel(indicatrice_arete,MD_Vector_tools::EV_SOMME_ECHANGE);
+
+    for (int arete=0; arete<nb_aretes_reelles; arete++)
+      {
+        if (aretes_multiples(arete)>0)
+          {
+            indicatrice_arete(arete) /=volumes_aretes(arete);
+          }
+      }
+  */
+  // Certaines aretes ont une indicatrice erronee (error_count).
+  // Deuxieme correction pour tuer les aretes isolees qui seraient fausses.
+  // Pour chaque arete monophasique (non traversee par une interface)
+  //  calculer la moyenne de l'indicatrice sur les aretes monophasiques voisins,
+  //  si moyenne >0.5, mettre a 1 sinon mettre a 0
+  {
+    IntTab aretes_to_change(0,2);
+    aretes_to_change.set_smart_resize(1);
+    const int nb_faces_arete = 2*dimension;
+    const ArrOfInt& index_arete_x = intersections_arete_facettes_x_.index_arete();
+    const ArrOfInt& index_arete_y = intersections_arete_facettes_y_.index_arete();
+    const ArrOfInt& index_arete_z = intersections_arete_facettes_z_.index_arete();
+
+    for (int arete=0; arete<nb_aretes_reelles; arete++)
+      {
+        if (type_arete(arete)!=2) continue; // on ne calcule que pour les aretes_internes
+        // face non traversee par une interface ?
+        const int ori_arete=(dimension-1)-orientation_aretes(arete);
+        if (ori_arete==0)
+          {
+            if (index_arete_x[arete] >= 0)
+              continue;
+          }
+        else if (ori_arete==1)
+          {
+            if (index_arete_y[arete] >= 0)
+              continue;
+          }
+        else if (ori_arete==2)
+          {
+            if (index_arete_z[arete] >= 0)
+              continue;
+          }
+        else
+          exit();
+
+        double somme = 0.; //somme des indicatrices des aretes monophasiques voisines
+        int count = 0; //nombre d'aretes monophasiques voisines
+
+
+        int face1=Qdm(arete,0);
+        int face2=Qdm(arete,1);
+        //int face3=Qdm(arete,2);
+        //int face4=Qdm(arete,3);
+
+        int elem1=domaine_vdf.face_voisins(face1,0);
+        int elem2=domaine_vdf.face_voisins(face2,0);
+        int elem3=domaine_vdf.face_voisins(face1,1);
+        //int elem4=domaine_vdf.face_voisins(face2,1);
+
+        int face1_av=domaine_vdf.elem_faces(elem1, ori_arete+dimension);
+        int face1_arr=domaine_vdf.elem_faces(elem1, ori_arete);
+
+        int elem_av=domaine_vdf.face_voisins(face1_av,1);
+        int elem_arr=domaine_vdf.face_voisins(face1_arr,0);
+
+
+        for (int ivoisin=0; ivoisin<nb_faces_arete; ivoisin++)
+          {
+            int arete_voisine;
+            if (ivoisin==ori_arete) arete_voisine= (elem_av>=0) ? domaine.elem_aretes(elem_av,orientation_aretes(arete)) : -1; // voir numerotation Aretes dans Hexaedre.cpp
+            else if (ivoisin==ori_arete+dimension) arete_voisine=(elem_arr>=0) ? domaine.elem_aretes(elem_arr,orientation_aretes(arete)):-1;
+
+            else if (ori_arete==0) // arete YZ
+              {
+                if (ivoisin==1) arete_voisine= (elem1>=0) ? domaine.elem_aretes(elem1,11) : -1;
+                else if (ivoisin==1+dimension) arete_voisine=(elem2>=0) ? domaine.elem_aretes(elem2,2) : -1;
+                else if (ivoisin==2) arete_voisine=(elem1>=0) ? domaine.elem_aretes(elem1,8) : -1;
+                else arete_voisine=(elem3>=0) ? domaine.elem_aretes(elem3,2) : -1;
+              }
+            else if (ori_arete) // arete XZ
+              {
+                if (ivoisin==0) arete_voisine=(elem1>=0) ? domaine.elem_aretes(elem1,10) : -1; // voir numerotation Aretes dans Hexaedre.cpp
+                else if (ivoisin==0+dimension) arete_voisine=(elem2>=0) ? domaine.elem_aretes(elem2,1) : -1;
+                else if (ivoisin==2) arete_voisine=(elem1>=0) ? domaine.elem_aretes(elem1,7) : -1;
+                else arete_voisine=(elem3>=0) ? domaine.elem_aretes(elem3,1) : -1;
+              }
+            else // arete XY
+              {
+                if (ivoisin==0) arete_voisine=(elem1>=0) ? domaine.elem_aretes(elem1,9) : -1; // voir numerotation Aretes dans Hexaedre.cpp
+                else if (ivoisin==0+dimension) arete_voisine=(elem2>=0) ? domaine.elem_aretes(elem2,0) : -1;
+                else if (ivoisin==1) arete_voisine=(elem1>=0) ? domaine.elem_aretes(elem1,6) : -1;
+                else arete_voisine=(elem3>=0) ? domaine.elem_aretes(elem3,0) : -1;
+              }
+
+            // face au bord du domaine ?
+            if (arete_voisine < 0 || arete_voisine>nb_aretes_reelles)
+              continue;
+            // face voisine non monophasique ?
+            if (indicatrice_arete[arete_voisine] != 0. && indicatrice_arete[arete_voisine] != 1.)
+              continue;
+
+
+            somme += indicatrice_arete[arete_voisine];
+            count++;
+          }
+        // Si count==1 l'algo etait considere non pertinent... pas toujours correction du bug
+        // Correction testee en VDF mais deux cas test VEF ont fait des ecarts
+        if(count == 1)
+          {
+            aretes_to_change.append_line(arete, (int)std::lrint(somme));
+          }
+        if (count > 1)
+          {
+            int indic;
+            if (indicatrice_arete[arete] == 1.)
+              indic = 1;
+            else if (indicatrice_arete[arete] == 0.)
+              indic = 0;
+            else
+              indic = -1;
+            int new_indic = ((somme * 2) > count) ? 1 : 0;
+            // on compare somme/count avec l'indicatrice
+            if (indic != new_indic)
+              {
+                // L'indicatrice de cet element doit etre corrigee
+                aretes_to_change.append_line(arete, new_indic);
+              }
+          }
+      }
+
+    // Correction du tableau
+    const int n = aretes_to_change.dimension(0);
+    for (int i = 0; i < n; i++)
+      {
+        const int arete = aretes_to_change(i, 0);
+        if (1) indicatrice_arete[arete] = aretes_to_change(i, 1); // if !faces_doubles(face)
+      }
+    if (n > 0)
+      Journal() << "Calcul indicatrice arete : correction par voisinage de " << n << " aretes" << finl;
+  }
+
+  Debog::verifier("Maillage_FT_Disc::calcul_indicatrice_arete indicatrice_arete=",indicatrice_arete);
+  aretes_calculees.resize_array(0);
+  statistiques().end_count(stat_counter);
+
+}
+// fin EB
+>>>>>>> fc9eae94b (correction bug indic arete lorsqu'on va chercher un element hors du domaine)
 /*! @brief Deplace les sommets de l'interface d'un vecteur "deplacement" fourni, Change eventuellement les sommets de processeur, cree eventuellement
  *
  *   des lignes de contact et detecte les collisions.
