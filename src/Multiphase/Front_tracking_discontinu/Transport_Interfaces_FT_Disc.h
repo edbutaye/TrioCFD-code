@@ -582,7 +582,7 @@ public:
   Methode_transport      methode_transport;
   REF(Navier_Stokes_std) refequation_vitesse_transport;
   REF(Convection_Diffusion_Temperature_FT_Disc) refequation_temperature_;
-  enum Methode_interpolation_v { VALEUR_A_ELEM, VDF_LINEAIRE, VITESSE_SOLIDE_MOYENNE, VITESSE_SOLIDE_SOMMETS }; // EB : rajout de VITESSE_SOLIDE_MOYENNE et VITESSE_SOLIDE_SOMMETS
+  enum Methode_interpolation_v { VALEUR_A_ELEM, VDF_LINEAIRE, VITESSE_SOLIDE_MOYENNE_FA7, VITESSE_SOLIDE_MOYENNE_SOMMETS, VITESSE_SOLIDE_MOYENNE_ELEM }; // EB : rajout de VITESSE_SOLIDE_MOYENNE et VITESSE_SOLIDE_SOMMETS
   Methode_interpolation_v methode_interpolation_v;
 
   double d_to_interf_interp_v_; // EB : distance a l'interface pour l'interpolation de la vitesse DANS la particule, en nombre de rayon de la particule  0 on calcul, 1 on ne calcule pas

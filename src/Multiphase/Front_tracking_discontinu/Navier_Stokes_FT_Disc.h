@@ -465,7 +465,6 @@ inline double Navier_Stokes_FT_Disc::chercher_elem_voisins(const DoubleTab& indi
           elem_voisins(1)=domaine_vf.face_voisins_pour_interp(domaine_vdf.elem_faces_pour_interp(elem_voisins(0),0+dimension),1);
           elem_voisins(2)=elem_eulerien;
           elem_voisins(3)=domaine_vf.face_voisins_pour_interp(faces_elem_interp(0+dimension),1);
-
         }
     }
   else
@@ -476,7 +475,6 @@ inline double Navier_Stokes_FT_Disc::chercher_elem_voisins(const DoubleTab& indi
           elem_voisins(1)=elem_eulerien;
           elem_voisins(2)=domaine_vf.face_voisins_pour_interp(domaine_vdf.elem_faces_pour_interp(elem_voisins(0),1+dimension),1);
           elem_voisins(3)=domaine_vf.face_voisins_pour_interp(faces_elem_interp(1+dimension),1);
-
         }
       else
         {
@@ -484,7 +482,6 @@ inline double Navier_Stokes_FT_Disc::chercher_elem_voisins(const DoubleTab& indi
           elem_voisins(2)=domaine_vf.face_voisins_pour_interp(faces_elem_interp(0),0);
           elem_voisins(3)=elem_eulerien;
           elem_voisins(0)=domaine_vf.face_voisins_pour_interp(domaine_vdf.elem_faces_pour_interp(elem_voisins(1),0),0);
-
         }
     }
 
