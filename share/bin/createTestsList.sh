@@ -23,6 +23,7 @@ MODULES+="Multiphase/Phase_field "
 MODULES+="Multiphase/CMFD "
 MODULES+="Multiphase/Front_tracking_discontinu "
 MODULES+="Multiphase/Front_tracking_IJK "
+MODULES+="Multiphase/fluid_particle_interaction "
 MODULES+="validation "
 
 mkdir -p ${REPLIST}
