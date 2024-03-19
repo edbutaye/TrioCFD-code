@@ -59,34 +59,34 @@ void Fluide_Diphasique::verifier_coherence_champs(int& err, Nom& msg)
     {
       msg += "Both phases defined in the bloc Fluide_Diphasique must be of type Fluide_Incompressible. \n";
       err = 1;
-		/*
-      Nom nom_objet;
-      is >> nom_objet;
-      const Objet_U& objet = Interprete::objet(nom_objet);
-      // EB
-      if (mot=="fluide0")
-        {
-          is_particule_solide_=0;
-          if (nom_objet=="particule_solide")
-            {
-              const Particule_Solide& fluide = ref_cast(Particule_Solide,objet);
-              phase0_PS_ = fluide;
-              is_particule_solide_=1;
-            }
-          else
-            {
-              const Fluide_Incompressible& fluide = ref_cast(Fluide_Incompressible,objet);
-              phase0_ = fluide;
-            }
-        }
-      else if (mot=="fluide1")
-        {
-          const Fluide_Incompressible& fluide = ref_cast(Fluide_Incompressible,objet);
-          phase1_ = fluide;
-        }
-      // fin EB
-      return 1;
-      */
+      /*
+        Nom nom_objet;
+        is >> nom_objet;
+        const Objet_U& objet = Interprete::objet(nom_objet);
+        // EB
+        if (mot=="fluide0")
+          {
+            is_particule_solide_=0;
+            if (nom_objet=="particule_solide")
+              {
+                const Particule_Solide& fluide = ref_cast(Particule_Solide,objet);
+                phase0_PS_ = fluide;
+                is_particule_solide_=1;
+              }
+            else
+              {
+                const Fluide_Incompressible& fluide = ref_cast(Fluide_Incompressible,objet);
+                phase0_ = fluide;
+              }
+          }
+        else if (mot=="fluide1")
+          {
+            const Fluide_Incompressible& fluide = ref_cast(Fluide_Incompressible,objet);
+            phase1_ = fluide;
+          }
+        // fin EB
+        return 1;
+        */
     }
 
   if (!sub_type(Champ_Uniforme, sigma_.valeur()))
@@ -172,11 +172,11 @@ void Fluide_Diphasique::mettre_a_jour(double temps)
   phase0_->mettre_a_jour(temps);
   phase1_->mettre_a_jour(temps);
   /*
-=======
+  =======
   is_particule_solide_ ? phase0_PS_.mettre_a_jour(temps) : phase0_.mettre_a_jour(temps);
   phase1_.mettre_a_jour(temps);
->>>>>>> fpi194_patch
-*/
+  >>>>>>> fpi194_patch
+  */
 }
 void Fluide_Diphasique::discretiser(const Probleme_base& pb, const Discretisation_base& dis)
 {
