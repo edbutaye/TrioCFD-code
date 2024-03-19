@@ -26,7 +26,6 @@
 #include <Schema_Comm.h>
 #include <MD_Vector_std.h>
 #include <MD_Vector_tools.h>
-#include <Modele_Collision_FT.h> // EB
 #include <Interprete_bloc.h>
 #include <Extraire_surface.h>
 #include <Octree_Double.h>
