@@ -1532,7 +1532,7 @@ void Maillage_FT_Disc::calcul_indicatrice_arete(const DoubleVect& indicatrice, D
   const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_dis.valeur());
   const int nb_aretes_reelles = domaine_vdf.nb_aretes_reelles();
   const IntVect& orientation_aretes=domaine_vdf.orientation_aretes();
-  const IntTab& Elem_Aretes=domaine_vdf.domaine().elem_aretes();
+  const Domaine& domaine=domaine_vdf.domaine();
   const IntTab& Qdm=domaine_vdf.Qdm();
   const IntVect& type_arete=domaine_vdf.type_arete();
   static ArrOfBit aretes_calculees;
@@ -1604,29 +1604,29 @@ void Maillage_FT_Disc::calcul_indicatrice_arete(const DoubleVect& indicatrice, D
                 // On cherche l'element voisin
                 int arete_voisine;
 
-                if (j==ori_arete) arete_voisine=Elem_Aretes(elem_av,orientation_aretes(i)); // voir numerotation Aretes dans Hexaedre.cpp
-                else if (j==ori_arete+dimension) arete_voisine=Elem_Aretes(elem_arr,orientation_aretes(i));
+                if (j==ori_arete) arete_voisine=domaine.elem_aretes(elem_av,orientation_aretes(i)); // voir numerotation Aretes dans Hexaedre.cpp
+                else if (j==ori_arete+dimension) arete_voisine=domaine.elem_aretes(elem_arr,orientation_aretes(i));
 
                 else if (ori_arete==0) // arete YZ
                   {
-                    if (j==1) arete_voisine=Elem_Aretes(elem1,11);
-                    else if (j==1+dimension) arete_voisine=Elem_Aretes(elem2,2);
-                    else if (j==2) arete_voisine=Elem_Aretes(elem1,8);
-                    else arete_voisine=Elem_Aretes(elem3,2);
+                    if (j==1) arete_voisine=domaine.elem_aretes(elem1,11);
+                    else if (j==1+dimension) arete_voisine=domaine.elem_aretes(elem2,2);
+                    else if (j==2) arete_voisine=domaine.elem_aretes(elem1,8);
+                    else arete_voisine=domaine.elem_aretes(elem3,2);
                   }
                 else if (ori_arete) // arete XZ
                   {
-                    if (j==0) arete_voisine=Elem_Aretes(elem1,10); // voir numerotation Aretes dans Hexaedre.cpp
-                    else if (j==0+dimension) arete_voisine=Elem_Aretes(elem2,1);
-                    else if (j==2) arete_voisine=Elem_Aretes(elem1,7);
-                    else arete_voisine=Elem_Aretes(elem3,1);
+                    if (j==0) arete_voisine=domaine.elem_aretes(elem1,10); // voir numerotation Aretes dans Hexaedre.cpp
+                    else if (j==0+dimension) arete_voisine=domaine.elem_aretes(elem2,1);
+                    else if (j==2) arete_voisine=domaine.elem_aretes(elem1,7);
+                    else arete_voisine=domaine.elem_aretes(elem3,1);
                   }
                 else // arete XY
                   {
-                    if (j==0) arete_voisine=Elem_Aretes(elem1,9); // voir numerotation Aretes dans Hexaedre.cpp
-                    else if (j==0+dimension) arete_voisine=Elem_Aretes(elem2,0);
-                    else if (j==1) arete_voisine=Elem_Aretes(elem1,6);
-                    else arete_voisine=Elem_Aretes(elem3,0);
+                    if (j==0) arete_voisine=domaine.elem_aretes(elem1,9); // voir numerotation Aretes dans Hexaedre.cpp
+                    else if (j==0+dimension) arete_voisine=domaine.elem_aretes(elem2,0);
+                    else if (j==1) arete_voisine=domaine.elem_aretes(elem1,6);
+                    else arete_voisine=domaine.elem_aretes(elem3,0);
                   }
 
                 if (arete_voisine >= 0 && arete_voisine<nb_aretes_reelles) aretes_calculees.clearbit(arete_voisine);
@@ -1853,29 +1853,29 @@ void Maillage_FT_Disc::calcul_indicatrice_arete(const DoubleVect& indicatrice, D
         for (int ivoisin=0; ivoisin<nb_faces_arete; ivoisin++)
           {
             int arete_voisine;
-            if (ivoisin==ori_arete) arete_voisine= (elem_av>=0) ? Elem_Aretes(elem_av,orientation_aretes(arete)) : -1; // voir numerotation Aretes dans Hexaedre.cpp
-            else if (ivoisin==ori_arete+dimension) arete_voisine=(elem_arr>=0) ? Elem_Aretes(elem_arr,orientation_aretes(arete)):-1;
+            if (ivoisin==ori_arete) arete_voisine= (elem_av>=0) ? domaine.elem_aretes(elem_av,orientation_aretes(arete)) : -1; // voir numerotation Aretes dans Hexaedre.cpp
+            else if (ivoisin==ori_arete+dimension) arete_voisine=(elem_arr>=0) ? domaine.elem_aretes(elem_arr,orientation_aretes(arete)):-1;
 
             else if (ori_arete==0) // arete YZ
               {
-                if (ivoisin==1) arete_voisine= (elem1>=0) ? Elem_Aretes(elem1,11) : -1;
-                else if (ivoisin==1+dimension) arete_voisine=(elem2>=0) ? Elem_Aretes(elem2,2) : -1;
-                else if (ivoisin==2) arete_voisine=(elem1>=0) ? Elem_Aretes(elem1,8) : -1;
-                else arete_voisine=(elem3>=0) ? Elem_Aretes(elem3,2) : -1;
+                if (ivoisin==1) arete_voisine= (elem1>=0) ? domaine.elem_aretes(elem1,11) : -1;
+                else if (ivoisin==1+dimension) arete_voisine=(elem2>=0) ? domaine.elem_aretes(elem2,2) : -1;
+                else if (ivoisin==2) arete_voisine=(elem1>=0) ? domaine.elem_aretes(elem1,8) : -1;
+                else arete_voisine=(elem3>=0) ? domaine.elem_aretes(elem3,2) : -1;
               }
             else if (ori_arete) // arete XZ
               {
-                if (ivoisin==0) arete_voisine=(elem1>=0) ? Elem_Aretes(elem1,10) : -1; // voir numerotation Aretes dans Hexaedre.cpp
-                else if (ivoisin==0+dimension) arete_voisine=(elem2>=0) ? Elem_Aretes(elem2,1) : -1;
-                else if (ivoisin==2) arete_voisine=(elem1>=0) ? Elem_Aretes(elem1,7) : -1;
-                else arete_voisine=(elem3>=0) ? Elem_Aretes(elem3,1) : -1;
+                if (ivoisin==0) arete_voisine=(elem1>=0) ? domaine.elem_aretes(elem1,10) : -1; // voir numerotation Aretes dans Hexaedre.cpp
+                else if (ivoisin==0+dimension) arete_voisine=(elem2>=0) ? domaine.elem_aretes(elem2,1) : -1;
+                else if (ivoisin==2) arete_voisine=(elem1>=0) ? domaine.elem_aretes(elem1,7) : -1;
+                else arete_voisine=(elem3>=0) ? domaine.elem_aretes(elem3,1) : -1;
               }
             else // arete XY
               {
-                if (ivoisin==0) arete_voisine=(elem1>=0) ? Elem_Aretes(elem1,9) : -1; // voir numerotation Aretes dans Hexaedre.cpp
-                else if (ivoisin==0+dimension) arete_voisine=(elem2>=0) ? Elem_Aretes(elem2,0) : -1;
-                else if (ivoisin==1) arete_voisine=(elem1>=0) ? Elem_Aretes(elem1,6) : -1;
-                else arete_voisine=(elem3>=0) ? Elem_Aretes(elem3,0) : -1;
+                if (ivoisin==0) arete_voisine=(elem1>=0) ? domaine.elem_aretes(elem1,9) : -1; // voir numerotation Aretes dans Hexaedre.cpp
+                else if (ivoisin==0+dimension) arete_voisine=(elem2>=0) ? domaine.elem_aretes(elem2,0) : -1;
+                else if (ivoisin==1) arete_voisine=(elem1>=0) ? domaine.elem_aretes(elem1,6) : -1;
+                else arete_voisine=(elem3>=0) ? domaine.elem_aretes(elem3,0) : -1;
               }
 
             // face au bord du domaine ?

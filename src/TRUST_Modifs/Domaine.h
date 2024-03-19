@@ -891,8 +891,11 @@ inline int Domaine::arete_sommets(int i, int j) const { return aretes_som_(i, j)
 
 /*! @brief renvoie le numero de la jeme arete du ieme element.
  */
-inline int Domaine::elem_aretes(int i, int j) const {  return elem_aretes_(i, j); }
-
+inline int Domaine::elem_aretes(int i, int j) const
+{
+  if (i>-1) return elem_aretes_(i, j);
+  else return -1;
+}
 /*! @brief renvoie le tableau de connectivite aretes/sommets.
  */
 inline const IntTab& Domaine::aretes_som() const {  return aretes_som_; }
