@@ -138,7 +138,7 @@ Lire pb
        		n_iterations_distance 3
 		interpolation_repere_local
         	parcours_interface { correction_parcours_thomas }
-		methode_interpolation_v vitesse_solide_sommets
+		methode_interpolation_v vitesse_solide_moyenne_sommets
 		d_to_interf_interp_v 1e-3
 		remaillage
 		{
