@@ -49,8 +49,7 @@ public:
   const double& sigma() const;
   const double& tau_coll() const;
   const double& delta_n() const;
-  const double& get_raideur_cst() const;
-  const double& get_amortissement_cst() const;
+
 
   void set_s_Verlet(double s_Verlet);
   const int& is_detection_Verlet() const;
@@ -109,8 +108,6 @@ protected:
   int modele_lubrification_;
   double sigma_;
   double delta_n_;
-  double raideur_cst_;
-  double amortissement_cst_;
   double d_act_lub_;
   double d_sat_lub_;
   int nb_compo_tot_;
@@ -148,7 +145,7 @@ private:
   static IntVect Nb_Noeuds_modele_collision;
   static DoubleVect Origine_modele_collision;
 
-  enum Modele_collision { RESSORT_AMORTI_VVA, RESSORT_AMORTI_ESI, RESSORT_AMORTI_EE, MOHAGHEGH, HYBRID_EE, HYBRID_ESI, HYBRID_VVA, BREUGEM };
+  enum Modele_collision { HYBRID_ESI, BREUGEM };
   Modele_collision modele_collision_;
 
 };

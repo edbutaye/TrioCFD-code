@@ -38,8 +38,6 @@ Modele_Collision_FT::Modele_Collision_FT() :
   modele_lubrification_(0),
   sigma_(0),
   delta_n_(0),
-  raideur_cst_(0),
-  amortissement_cst_(0),
   d_act_lub_(0.),
   d_sat_lub_(0.),
   nb_compo_tot_(0),
@@ -86,8 +84,6 @@ void Modele_Collision_FT::set_param(Param& p)
   p.ajouter("modele_lubrification", &modele_lubrification_, Param::REQUIRED); // 1 (True), 0 (False)
   p.ajouter("sigma", &sigma_);
   p.ajouter("delta_n", &delta_n_);
-  p.ajouter("raideur_cst", &raideur_cst_);
-  p.ajouter("amortissement_cst", &amortissement_cst_);
 }
 
 int Modele_Collision_FT::lire_motcle_non_standard(const Motcle& mot, Entree& is)
@@ -96,13 +92,7 @@ int Modele_Collision_FT::lire_motcle_non_standard(const Motcle& mot, Entree& is)
   if (mot=="modele_collision")
     {
       Motcles mots;
-      mots.add("ressort_amorti_esi");
-      mots.add("ressort_amorti_vva");
-      mots.add("ressort_amorti_ee");
-      mots.add("mohaghegh");
       mots.add("hybrid_esi");
-      mots.add("hybrid_ee");
-      mots.add("hybrid_vva");
       mots.add("breugem");
       Motcle motbis;
       is >> motbis;
@@ -111,27 +101,9 @@ int Modele_Collision_FT::lire_motcle_non_standard(const Motcle& mot, Entree& is)
       switch(r)
         {
         case 0:
-          modele_collision_ = Modele_Collision_FT::RESSORT_AMORTI_ESI;
-          break;
-        case 1:
-          modele_collision_ = Modele_Collision_FT::RESSORT_AMORTI_VVA;
-          break;
-        case 2:
-          modele_collision_ = Modele_Collision_FT::RESSORT_AMORTI_EE;
-          break;
-        case 3:
-          modele_collision_ = Modele_Collision_FT::MOHAGHEGH;
-          break;
-        case 4:
           modele_collision_ = Modele_Collision_FT::HYBRID_ESI;
           break;
-        case 5:
-          modele_collision_ = Modele_Collision_FT::HYBRID_EE;
-          break;
-        case 6:
-          modele_collision_ = Modele_Collision_FT::HYBRID_VVA;
-          break;
-        case 7:
+        case 1:
           modele_collision_ = Modele_Collision_FT::BREUGEM;
           break;
         default:
@@ -382,88 +354,6 @@ void  Modele_Collision_FT::calculer_force_contact(DoubleTab& force_contact, int&
 {
   switch (modele_collision_)
     {
-    case Modele_Collision_FT::RESSORT_AMORTI_ESI:
-      {
-        //Cerr << "Modele ressort_amorti. \n" << finl;
-        double raideur = get_raideur_cst();
-        double amortisseur = get_amortissement_cst();
-
-        for (int d = 0; d < dimension; d++)
-          force_contact(d)=-1 * raideur * next_dist_int * norm(d) -1*amortisseur*dUn(d);
-      }
-      break;
-    case Modele_Collision_FT::RESSORT_AMORTI_EE:
-      {
-        //Cerr << "Modele ressort_amorti. \n" << finl;
-        double raideur = get_raideur_cst();
-        double amortisseur = get_amortissement_cst();
-
-        for (int d = 0; d < dimension; d++)
-          force_contact(d)=-1 * raideur * dist_int * norm(d) -1*amortisseur*dUn(d);
-      }
-      break;
-
-    case Modele_Collision_FT::RESSORT_AMORTI_VVA:
-      {
-        //Cerr << "Modele ressort_amorti. \n" << finl;
-
-        double raideur = get_raideur_cst();
-        double amortisseur = get_amortissement_cst();
-
-        for (int d = 0; d < dimension; d++)
-          {
-
-            double F_n = -1 * raideur * dist_int * norm(d) -1*amortisseur*dUn(d);
-            double y_np1 = dist_int + dUn(d) * dt +0.5 * F_n * dt * dt / masse_eff ;
-            double u_np12 = dUn(d) + 0.5 * F_n * dt / masse_eff ;
-            double F_np1 = -1 * raideur * y_np1 * norm(d) -1*amortisseur*u_np12;
-            force_contact(d)=0.5*(F_np1+F_n);
-          }
-      }
-      break;
-
-    case Modele_Collision_FT::MOHAGHEGH:
-      {
-        //Cerr << "Modele Mohagheg. \n" << finl;
-        DoubleTab& raideur=get_raideur();
-        DoubleTab& e_eff=get_e_eff();
-        //int isFirstStepOfCollision = Tool::F_now(compo, voisin) > Tool::F_old(compo, voisin);
-        if (isFirstStepOfCollision)
-          {
-            raideur(compo,voisin)= masse_eff * pow(vitesseRelNorm / sigma_, 2);
-            e_eff(compo,voisin)=Stb > 18 ? ed * (1 - 8.65 * pow(Stb, -0.75)) : 0;
-          }
-        int isPhasePenetration = prod_scal <= 0;
-        double le_e_eff = isPhasePenetration ? 1 : e_eff(compo, voisin);
-        double la_raideur = raideur(compo, voisin);
-
-        for (int d = 0; d < dimension; d++)
-          force_contact(d)=-1 * le_e_eff * le_e_eff * la_raideur * next_dist_int * norm(d);
-      }
-      break;
-    case Modele_Collision_FT::HYBRID_EE:
-      {
-        Cerr << "Modele hybrid. \n" << finl;
-        DoubleTab& raideur=get_raideur();
-        DoubleTab& e_eff=get_e_eff();
-        if (isFirstStepOfCollision)
-          {
-            //double  tau_c = Nc * dt ;
-            e_eff(compo,voisin)=ed * exp(-35 / (Stb + 1e-6));
-            raideur(compo,voisin)=(masse_eff * (pow(M_PI,2) + pow(log(ed), 2))) / pow(tau_coll_, 2);
-            //Tool::e_eff(compo, voisin) = ed * exp(-35 / (Stb + 1e-6));
-            //Tool::raideur(compo, voisin) = (masse_eff * (pow(M_PI,2) + pow(log(ed), 2))) / pow(tau_coll, 2);
-          }
-        int isPhaseCompression = prod_scal <= 0;
-
-        double le_e_eff = isPhaseCompression ? 1 : e_eff(compo, voisin);
-        double la_raideur = raideur(compo, voisin);
-        for (int d = 0; d < dimension; d++)
-          {
-            force_contact(d)=-1 * le_e_eff * le_e_eff * la_raideur * dist_int * norm(d);
-          }
-      }
-      break;
     case Modele_Collision_FT::HYBRID_ESI:
       {
         DoubleTab& raideur=get_raideur();
@@ -488,33 +378,6 @@ void  Modele_Collision_FT::calculer_force_contact(DoubleTab& force_contact, int&
 
       }
       break;
-    case Modele_Collision_FT::HYBRID_VVA:
-      {
-        DoubleTab& raideur=get_raideur();
-        DoubleTab& e_eff=get_e_eff();
-        if (isFirstStepOfCollision)
-          {
-            raideur(compo,voisin)=(masse_eff * (pow(M_PI,2) + pow(log(ed), 2))) / pow(tau_coll_, 2);
-            e_eff(compo,voisin)=ed * exp(-35 / (Stb + 1e-6));
-
-          }
-
-        int isPhaseCompression = prod_scal <= 0;
-        double le_e_eff = isPhaseCompression ? 1 : e_eff(compo, voisin);
-        double la_raideur = raideur(compo, voisin);
-
-        for (int d = 0; d < dimension; d++)
-          {
-            double F_n = -1 * la_raideur * dist_int * norm(d) ;
-            double y_np1 = dist_int + dUn(d) * dt +0.5 * F_n * dt * dt / masse_eff ;
-            double F_np1 = -1 * le_e_eff * le_e_eff*la_raideur * y_np1 * norm(d) ;
-            force_contact(d)=F_np1;
-          }
-      }
-
-      break;
-
-
     case Modele_Collision_FT::BREUGEM:
       {
         double raideur = (masse_eff * (pow(M_PI,2) + pow(log(ed), 2))) / pow(tau_coll_, 2); // tau_coll tel que definit dans le jdd
@@ -692,14 +555,7 @@ const double& Modele_Collision_FT::delta_n() const
 {
   return delta_n_;
 }
-const double& Modele_Collision_FT::get_raideur_cst() const
-{
-  return raideur_cst_;
-}
-const double& Modele_Collision_FT::get_amortissement_cst() const
-{
-  return amortissement_cst_;
-}
+
 DoubleTab& Modele_Collision_FT::get_raideur()
 {
   return raideur_;
