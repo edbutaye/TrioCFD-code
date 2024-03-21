@@ -3034,6 +3034,2111 @@ void Navier_Stokes_FT_Disc::compute_boussinesq_additional_gravity(
 }
 
 
+<<<<<<< HEAD
+=======
+// EB
+/*! @brief Cette fonction calcule les composantes du tenseur gradU aux points P1 pour chaque facette du maillage lagrangien.
+ *  En entree: indicatrice_face, valeurs_champs (tableau de vitesse), coord : coordonnes xyz des points P1 pour chaque facette lagrangienne, resu : composantes
+ *  du tenseur interpole pour chaque facette lagrangienne.
+ *  Boucle sur les facetttes lagrangiennes :
+ *  	Dans un premier temps, identification des 8 faces voisines de normale x (4 en 2D) les plus proches.
+ *  	Ensuite, pour chaque face, calcul du tenseur des contraintes
+ *  	Pour chaque composante du tenseur, interpolation trilineaire au point de coordonnees (coord(fa7,0), coord(fa7,1), cooord(fa7,2)).
+ *
+ */
+int Navier_Stokes_FT_Disc::trilinear_interpolation_gradU_face(const DoubleTab& indicatrice_face, const DoubleTab& valeurs_champ, DoubleTab& coord, DoubleTab& resu)
+{
+  // On identifie l'element dans lequel appartient le point de coordonnees coord
+  const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_dis().valeur());
+  const Domaine& domaine = domaine_vdf.domaine();
+  //const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis().valeur());
+  REF(Transport_Interfaces_FT_Disc) & refeq_transport = variables_internes().ref_eq_interf_proprietes_fluide;
+  const Transport_Interfaces_FT_Disc& eq_transport = refeq_transport.valeur();
+  const Maillage_FT_Disc& maillage = eq_transport.maillage_interface();
+
+
+  IntVect faces_elem_interp(2*dimension);
+  int nb_voisins=8;
+
+  for (int fa7=0; fa7<coord.dimension(0); fa7++)
+    {
+      if (!maillage.facette_virtuelle(fa7))
+        {
+          const int elem=domaine.chercher_elements(coord(fa7,0), coord(fa7,1), coord(fa7,2));
+          for (int dim=0; dim<dimension; dim++)
+            {
+              faces_elem_interp(dim)=domaine_vdf.elem_faces_pour_interp(elem,dim);
+              faces_elem_interp(dimension+dim)=domaine_vdf.elem_faces_pour_interp(elem,dimension+dim);
+              if (faces_elem_interp(dim)<0 || faces_elem_interp(dimension+dim)<0) return 0;
+            }
+
+          DoubleTab coord_face(2*dimension,dimension);
+          for (int i=0; i<2*dimension; i++)
+            {
+              for (int dim=0; dim<dimension; dim++)
+                {
+                  coord_face(i,dim)=domaine_vdf.xv(faces_elem_interp(i),dim);
+                }
+            }
+
+          DoubleVect coord_elem_interp(dimension);
+          for (int dim=0; dim<dimension; dim++) coord_elem_interp(dim)=coord(fa7,dim);
+          IntVect faces_voisines(nb_voisins); // 8 elements voisins au point de coordonnees coord. L'element elem est inclu dedans.
+          chercher_faces_voisines(coord_elem_interp,faces_voisines,0);
+          for (int i=0; i<nb_voisins; i++)
+            {
+              if (faces_voisines(i)<0) return 0;
+            }
+          DoubleTab gradUx(nb_voisins, dimension, dimension); // le x signifie que l'on calcule le tenseur en une facette dont la composante de la vitesse est en x
+          for (int face=0; face<8; face++) //on calcule le tenseur gradient de la vitesse pour chaque face voisine
+            {
+              // 														SCHEMA EN 2D
+              //  										 ---- --- --- --- --- --- --- --- --- --- -
+              // 										|	 |	 |	 |	 |	 |	 |	 |	 |	 |	 |
+              //					 										 3
+              // 										|	 |	 |	 |	 |	 |	 |	 |	 |	 |	 |
+              //  										 ---- --- --- --- -7- -8- --- --- --- --- -
+              // 										|	 |	 |	 |	 |	 |	 |	 |	 |	 |	 |
+              //											  	  	  	 1 	 x 	 2
+              // 										|	 |	 |	 |	 |	 |	 |	 |	 |	 |	 |
+              //  									     ---- --- --- --- -5- -6- --- --- --- --- -	  y
+              // 										|	 |	 |	 |	 |	 |	 |	 |	 |	 |	 |	  ^
+              //					 										 4						  |
+              // 										|	 |	 |	 |	 |	 |	 |	 |	 |	 |	 |	  |
+              //  										 ---- --- --- --- --- --- --- --- --- --- -   o----->x
+              //																					  z
+              // Evaluation du gradient sur les faces de normale x (choix arbitraire mais peut tuer une certaine symetrie)
+              // Les termes + designent les faces juxtaposees selon +z
+              // Les termes - designent les faces juxtaposees selon -z
+              // Les termes 57 et 86 pour w designent les faces de normale z secantes aux faces 5,7 et 8,6
+              // 		   --					   													   	   										   													   --
+              //		   |  u_2-u_1	 		   				  	  u_3-u_4				 						 		  u_x+ - u_x- 	 								   							|
+              //		   | ----------								------------	        								---------------																|
+              //		   | (x_2-x1)			 					(y_3-y_4)												  (z_x+ - z_x-)	  															|
+              //		   |												    																														|
+              //  grad U = | 1    v_7-v_8	 v_5 - v_6    			1	v_5-v_7	  v_6-v_8								  1	  v_7+ - v_7- 	     v_8+ - v_8-	   v_5+ - v_5-	      v_6+ - v_6-		|
+              // 	  	   | - ( --------- + --------- ) 			- ( ------ + -------)								  - ( --------------- + --------------- + --------------- + --------------- )	|
+              //		   | 2    x_7-x_8	 x_5 - x_6   			2	y_5-y_7	  y_6-y_8								  4	  (z_7+ - z_7-)	    (z_8+ - z_8-)	   (z_5+ - z_8-)	  (z_6+ - z_6-)	|
+              //		   |																																											|
+              // 	  	   | 1	 w57+ - w86+	 w57- - w86-		1	w27-w29	 	w28-w30	    w23-w25      w24-w26	  1   w_57+ - w_57-   w_86+ - w_86-												|
+              //		   | - ( ----------- +	 ----------- )		- (	-------- + 	-------- + --------- +  --------- )   - ( ------------ + --------------)	    									|
+              //  		   | 2	 x57+ - x86+	 x57- - x86-		4	y27-y29	 	y28-y30	    y23-y25		 y24-y26 	  2   z_57+ - z_57-   z_86+ - z_86-												|
+              //		   --					   		   									              									   	   													   --
+              //
+              // Pour chaque face, il faut donc 30 faces voisines : 1-8, x+, x-, 5+, 5-, 6+, 6-, 7+, 7-, 8+, 8-, 57+, 57-, 86+, 86-
+              // Pour plus de facilites, on numerote :  x+:9, x-:10, 5+:11, 5-:12, 6+:13, 6-:14, 7+:15, 7-:16, 8+:17, 8-:18, 57+:19, 57-:20, 86+:21, 86-:22
+              // 23-30 : les faces de normales z autour de x. Numerotation de bas en haut, de devant a derriere, de gauche a droite
+              //Cerr << "Debut de la definition des elements voisins " << finl;
+
+              int nb_voisinsx=30;
+              IntVect voisinsx(nb_voisinsx);
+              int num_facex=faces_voisines(face);
+              int elem_gauche=domaine_vdf.face_voisins_pour_interp(num_facex, 0);
+              int elem_droite=domaine_vdf.face_voisins_pour_interp(num_facex, 1);
+              int elem_haut_gauche=domaine_vdf.face_voisins_pour_interp(domaine_vdf.elem_faces_pour_interp(elem_gauche,2+dimension), 1);
+              int elem_haut_droite=domaine_vdf.face_voisins_pour_interp(domaine_vdf.elem_faces_pour_interp(elem_droite,2+dimension), 1);
+              int elem_bas_gauche=domaine_vdf.face_voisins_pour_interp(domaine_vdf.elem_faces_pour_interp(elem_gauche,2), 0);
+              int elem_bas_droite=domaine_vdf.face_voisins_pour_interp(domaine_vdf.elem_faces_pour_interp(elem_droite,2), 0);
+              int elem_avant_gauche=domaine_vdf.face_voisins_pour_interp(domaine_vdf.elem_faces_pour_interp(elem_gauche,1+dimension),1);
+              int elem_avant_droite=domaine_vdf.face_voisins_pour_interp(domaine_vdf.elem_faces_pour_interp(elem_droite,1+dimension),1);
+              int elem_arriere_gauche=domaine_vdf.face_voisins_pour_interp(domaine_vdf.elem_faces_pour_interp(elem_gauche,1),0);
+              int elem_arriere_droite=domaine_vdf.face_voisins_pour_interp(domaine_vdf.elem_faces_pour_interp(elem_droite,1),0);
+
+              voisinsx(0)  = domaine_vdf.elem_faces_pour_interp(elem_gauche,0);
+              voisinsx(1)  = domaine_vdf.elem_faces_pour_interp(elem_droite,0+dimension);
+              voisinsx(2)  = domaine_vdf.elem_faces_pour_interp(elem_avant_gauche,0+dimension);
+              voisinsx(3)  = domaine_vdf.elem_faces_pour_interp(elem_arriere_gauche,0+dimension);
+              voisinsx(4)  = domaine_vdf.elem_faces_pour_interp(elem_gauche,1);
+              voisinsx(5)  = domaine_vdf.elem_faces_pour_interp(elem_droite,1);
+              voisinsx(6)  = domaine_vdf.elem_faces_pour_interp(elem_gauche,1+dimension);
+              voisinsx(7)  = domaine_vdf.elem_faces_pour_interp(elem_droite,1+dimension);
+              voisinsx(8)  = domaine_vdf.elem_faces_pour_interp(elem_haut_gauche,0+dimension);
+              voisinsx(9)  = domaine_vdf.elem_faces_pour_interp(elem_bas_gauche,0+dimension);
+              voisinsx(10) = domaine_vdf.elem_faces_pour_interp(elem_haut_gauche,1);
+              voisinsx(11) = domaine_vdf.elem_faces_pour_interp(elem_bas_gauche,1);
+              voisinsx(12) = domaine_vdf.elem_faces_pour_interp(elem_haut_droite,1);
+              voisinsx(13) = domaine_vdf.elem_faces_pour_interp(elem_bas_droite,1);
+              voisinsx(14) = domaine_vdf.elem_faces_pour_interp(elem_haut_gauche,1+dimension);
+              voisinsx(15) = domaine_vdf.elem_faces_pour_interp(elem_bas_gauche,1+dimension);
+              voisinsx(16) = domaine_vdf.elem_faces_pour_interp(elem_haut_droite,1+dimension);
+              voisinsx(17) = domaine_vdf.elem_faces_pour_interp(elem_bas_droite,1+dimension);
+              voisinsx(18) = domaine_vdf.elem_faces_pour_interp(elem_gauche,2+dimension);
+              voisinsx(19) = domaine_vdf.elem_faces_pour_interp(elem_gauche,2);
+              voisinsx(20) = domaine_vdf.elem_faces_pour_interp(elem_droite,2+dimension);
+              voisinsx(21) = domaine_vdf.elem_faces_pour_interp(elem_droite,2);
+              voisinsx(22) = domaine_vdf.elem_faces_pour_interp(elem_arriere_gauche,2);
+              voisinsx(23) = domaine_vdf.elem_faces_pour_interp(elem_arriere_droite,2);
+              voisinsx(24) = domaine_vdf.elem_faces_pour_interp(elem_avant_gauche,2);
+              voisinsx(25) = domaine_vdf.elem_faces_pour_interp(elem_avant_droite,2);
+              voisinsx(26) = domaine_vdf.elem_faces_pour_interp(elem_arriere_gauche,2+dimension);
+              voisinsx(27) = domaine_vdf.elem_faces_pour_interp(elem_arriere_droite,2+dimension);
+              voisinsx(28) = domaine_vdf.elem_faces_pour_interp(elem_avant_gauche,2+dimension);
+              voisinsx(29) = domaine_vdf.elem_faces_pour_interp(elem_avant_droite,2+dimension);
+              for (int i=0; i<nb_voisinsx; i++)
+                {
+                  if (voisinsx(i)<0) return 0;
+                }
+              gradUx(face,0,0) = 	  (valeurs_champ(voisinsx(1))  - valeurs_champ(voisinsx(0)))  / (domaine_vdf.xv(voisinsx(1),0)  - domaine_vdf.xv(voisinsx(0),0));
+              gradUx(face,0,1) =      (valeurs_champ(voisinsx(2))  - valeurs_champ(voisinsx(3)))  / (domaine_vdf.xv(voisinsx(2),1)  - domaine_vdf.xv(voisinsx(3),1));
+              gradUx(face,0,2) =      (valeurs_champ(voisinsx(8))  - valeurs_champ(voisinsx(9)))  / (domaine_vdf.xv(voisinsx(8),2)  - domaine_vdf.xv(voisinsx(9),2));
+              gradUx(face,1,0) = 1./2.*((valeurs_champ(voisinsx(6))  - valeurs_champ(voisinsx(7)))  / (domaine_vdf.xv(voisinsx(6),0)  - domaine_vdf.xv(voisinsx(7),0))  + (valeurs_champ(voisinsx(4))  - valeurs_champ(voisinsx(5)))  / (domaine_vdf.xv(voisinsx(4),0)  - domaine_vdf.xv(voisinsx(5),0)));
+              gradUx(face,1,1) = 1./2.*((valeurs_champ(voisinsx(4))  - valeurs_champ(voisinsx(6)))  / (domaine_vdf.xv(voisinsx(4),1)  - domaine_vdf.xv(voisinsx(6),1))  + (valeurs_champ(voisinsx(5))  - valeurs_champ(voisinsx(7)))  / (domaine_vdf.xv(voisinsx(5),1)  - domaine_vdf.xv(voisinsx(7),1)));
+              gradUx(face,1,2) = 1./4.*((valeurs_champ(voisinsx(14)) - valeurs_champ(voisinsx(15))) / (domaine_vdf.xv(voisinsx(14),2) - domaine_vdf.xv(voisinsx(15),2)) + (valeurs_champ(voisinsx(16)) - valeurs_champ(voisinsx(17))) / (domaine_vdf.xv(voisinsx(16),2) - domaine_vdf.xv(voisinsx(17),2))  + (valeurs_champ(voisinsx(10)) - valeurs_champ(voisinsx(11))) / (domaine_vdf.xv(voisinsx(10),2) - domaine_vdf.xv(voisinsx(11),2)) + (valeurs_champ(voisinsx(12)) - valeurs_champ(voisinsx(13))) / (domaine_vdf.xv(voisinsx(12),2) - domaine_vdf.xv(voisinsx(13),2)));
+              gradUx(face,2,0) = 1./2.*((valeurs_champ(voisinsx(18)) - valeurs_champ(voisinsx(20))) / (domaine_vdf.xv(voisinsx(18),0) - domaine_vdf.xv(voisinsx(20),0)) + (valeurs_champ(voisinsx(19)) - valeurs_champ(voisinsx(21))) / (domaine_vdf.xv(voisinsx(19),0) - domaine_vdf.xv(voisinsx(21),0)));
+              gradUx(face,2,1) = 1./4.*((valeurs_champ(voisinsx(26)) - valeurs_champ(voisinsx(28))) / (domaine_vdf.xv(voisinsx(26),1) - domaine_vdf.xv(voisinsx(28),1)) + (valeurs_champ(voisinsx(27)) - valeurs_champ(voisinsx(29))) / (domaine_vdf.xv(voisinsx(27),1) - domaine_vdf.xv(voisinsx(29),1))  + (valeurs_champ(voisinsx(22)) - valeurs_champ(voisinsx(24))) / (domaine_vdf.xv(voisinsx(22),1) - domaine_vdf.xv(voisinsx(24),1)) + (valeurs_champ(voisinsx(23)) - valeurs_champ(voisinsx(25))) / (domaine_vdf.xv(voisinsx(23),1) - domaine_vdf.xv(voisinsx(25),1)));
+              gradUx(face,2,2) = 1./2.*((valeurs_champ(voisinsx(18)) - valeurs_champ(voisinsx(19))) / (domaine_vdf.xv(voisinsx(18),2) - domaine_vdf.xv(voisinsx(19),2)) + (valeurs_champ(voisinsx(20)) - valeurs_champ(voisinsx(21))) / (domaine_vdf.xv(voisinsx(20),2) - domaine_vdf.xv(voisinsx(21),2)));
+            }
+
+          double xfact;
+          double yfact;
+          double zfact;
+
+          DoubleTab Delta_x(dimension);
+
+          Delta_x(0)=fabs(domaine_vdf.dist_face(faces_voisines(0),faces_voisines(1),0));
+          Delta_x(1)=fabs(domaine_vdf.dist_face(faces_voisines(0),faces_voisines(2),1));
+          Delta_x(2)=fabs(domaine_vdf.dist_face(faces_voisines(0),faces_voisines(4),2));
+
+          xfact=fabs((coord(fa7,0)-coord_face(0,0))/Delta_x(0));
+          yfact=fabs((coord(fa7,1)-coord_face(0,1))/Delta_x(1));
+          zfact=fabs((coord(fa7,2)-coord_face(0,2))/Delta_x(2));
+
+          for (int i=0; i<dimension; i++)
+            {
+              for (int j=0; j<dimension; j++)
+                {
+                  resu(fa7,i,j)=(1-zfact)*((1-yfact)*((1-xfact)*(gradUx(0,i,j)) + xfact*(gradUx(1,i,j))) +
+                                           yfact*((1-xfact)*(gradUx(2,i,j)) + xfact*(gradUx(3,i,j)))) +
+                                zfact*((1-yfact)*((1-xfact)*(gradUx(4,i,j)) + xfact*(gradUx(5,i,j))) +
+                                       yfact*((1-xfact)*(gradUx(6,i,j)) + xfact*(gradUx(7,i,j))));
+                }
+            }
+        }
+    }
+  return 1;
+}
+// EB
+/*! @brief Cette fonction calcule les composantes du tenseur gradU aux points P1 pour chaque facette du maillage lagrangien.
+ *  En entree: indicatrice_face, indicatrice, valeurs_champs (tableau de vitesse), coord : coordonnes xyz des points P1 pour chaque facette lagrangienne, resu : composantes
+ *  du tenseur interpole pour chaque facette lagrangienne.
+ *  Boucle sur les facetttes lagrangiennes :
+ *  	Dans un premier temps, identification des 8 elements voisins (4 en 2D) les plus proches.
+ *  	Ensuite, pour chaque element, calcul du tenseur des contraintes
+ *  	Pour chaque composante du tenseur, interpolation trilineaire au point de coordonnees (coord(fa7,0), coord(fa7,1), cooord(fa7,2)).
+ *
+ */
+int Navier_Stokes_FT_Disc::trilinear_interpolation_gradU_elem(const DoubleTab& indicatrice_face, const DoubleTab& indicatrice, const DoubleTab& valeurs_champ, DoubleTab& coord, DoubleTab& resu)
+{
+  // On identifie l'element dans lequel appartient le point de coordonnees coord
+  const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_dis().valeur());
+  const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis().valeur());
+  REF(Transport_Interfaces_FT_Disc) & refeq_transport = variables_internes().ref_eq_interf_proprietes_fluide;
+  const Transport_Interfaces_FT_Disc& eq_transport = refeq_transport.valeur();
+  const Maillage_FT_Disc& maillage = eq_transport.maillage_interface();
+  int nb_voisins=8;
+  const double rho_fluide = fluide_diphasique().fluide_phase(1).masse_volumique().valeurs()(0, 0);
+  const double mu_fluide =rho_fluide * fluide_diphasique().fluide_phase(1).viscosite_cinematique().valeur().valeurs()(0, 0);
+
+  for (int fa7=0; fa7<coord.dimension(0); fa7++)
+    {
+      if (!maillage.facette_virtuelle(fa7))
+        {
+          // On recupere les elements 8 voisins ou le tenseur gradient sera calcule
+          DoubleVect coord_elem_interp(dimension);
+          for (int dim=0; dim<dimension; dim++) coord_elem_interp(dim)=coord(fa7,dim);
+          IntVect elem_voisins(nb_voisins);
+          chercher_elem_voisins(indicatrice,coord_elem_interp,elem_voisins);
+
+          for (int i=0; i<nb_voisins; i++)
+            {
+              if (elem_voisins(i)<0) return 0;
+              //if (indicatrice(elem_voisins(i))!=1) Cerr << "L'interpolation du gradient de la vitesse utilise un element diphasique"<< finl;
+            }
+          // On calcule les distances entre mailles voisines dans chaque direction pour calculer les coefficients d'interpolation
+          DoubleVect delta_i(dimension);
+          delta_i(0) = fabs(domaine_vdf.dist_elem(elem_voisins(0), elem_voisins(1), 0));
+          delta_i(1) = fabs(domaine_vdf.dist_elem(elem_voisins(0), elem_voisins(3), 1));
+          delta_i(2) = fabs(domaine_vdf.dist_elem(elem_voisins(0), elem_voisins(5), 2));
+          DoubleVect coord_elem_0(dimension);
+          for (int dim=0; dim<dimension; dim++) coord_elem_0(dim)=domaine_vdf.xp(elem_voisins(0),dim);
+
+          double xfact=fabs((coord_elem_interp(0)-coord_elem_0(0))/delta_i(0));
+          double yfact=fabs((coord_elem_interp(1)-coord_elem_0(1))/delta_i(1));
+          double zfact=fabs((coord_elem_interp(2)-coord_elem_0(2))/delta_i(2));
+
+          //on calcule le tenseur gradient de la vitesse pour chaque element voisin
+          DoubleTab gradU(nb_voisins, dimension, dimension);
+          for (int elem=0; elem<nb_voisins; elem++)
+            {
+
+              // 														SCHEMA EN 2D
+              //  					AVANT				 ---- ---- --- --- --- --- --- --- --- ---   AVANT
+              // 										|	 |	 |	 |	 |	 |	 |	 |	 |	 |
+              //														 9	 10
+              // 										|	 |	 |	 |	 |	 |	 |	 |	 |	 |
+              //  										 ---- --- --- -5- -3- -6- --- --- ---
+              // 										|	 |	 |	 |	 |	 |	 |	 |	 |	 |
+              //	  	  	  	  	GAUCHE  	  	  	  	  	  	     1 x 2              		DROITE
+              // 										|	 |	 |	 |	 |	 |	 |	 |	 |	 |
+              //  									     ---- --- --- -7- -4- -8- --- --- --- 	      			y
+              // 										|	 |	 |	 |	 |	 |	 |	 |	 |	 |	 	  			^
+              //												         11  12									|
+              // 										|	 |	 |	 |	 |	 |	 |	 |	 |	 |	 	  			|
+              //  					ARRIERE					 ---- --- --- --- --- --- --- --- ---    ARRIERE    o----->x
+              //																					 			 z
+              // Evaluation du gradient sur les faces de normale x (choix arbitraire mais peut tuer une certaine symetrie)
+              // Les termes + designent les faces juxtaposees selon +z
+              // Les termes - designent les faces juxtaposees selon -z
+              // Les termes 57 et 86 pour w designent les faces de normale z secantes aux faces 5,7 et 8,6
+              // 		   --					   													   	   									--
+              //		   |   u_2-u_1	 		   				  1	  u_9-u_11	   u_10-u_12		          1   u_1+ - u_1- 	 u_2+ - u_2-	|
+              //		   | ----------							  -	(---------- + ----------- )	        	  -	( -----------  + ----------- )	|
+              //		   |   x_2-x1			 				  2	  y_9-y_11	   y_10-y_12				  2   z_1+ - z_1-	 z_2+ - z_2- 	|
+              //		   |												    																|
+              //  grad U = | 1    v_5-v_6	 v_7 - v_8    			 	v_3-v_4								  1	  v_3+ -v_3-	v_4+ - v_4-     |
+              // 	  	   | - ( --------- + --------- ) 			 	------- 						      - ( ----------- + ----------- )	|
+              //		   | 2    x_5-x_6	 x_7 - x_8   			 	y_3-y_4						     	  2	  z_3+ - z_3-	z_4+ - z_4-		|
+              //		   |																													|
+              // 	  	   | 1	 w57+ - w86+	 w57- - w86-	  1  	w1112+ - w910+    w1112- -w910-  	      w_34+ - w_34-					|
+              //		   | - ( ----------- +	 ----------- )	  - (	-------------- + -------------- )		  -------------	    			|
+              //  		   | 2	 x57+ - x86+	 x57- - x86-  	  2	    y1112+ - y910+	  y1112--y910-	  		  z_34+ - z_34-					|
+              //		   --					   		   									              									   --
+              //
+              // Pour chaque face, il faut donc 30 faces voisines : 1-12, 1+, 1-, 2+, 2-, 3+, 3-, 4+, 4-, 34+, 34-, 57+, 57-, 86+, 86-, 1112+, 1112-, 910+, 910-
+              // Pour plus de facilites, on numerote :  1+:13, 1-:14, 2+:15, 2-:16, 3+:17, 3-:18, 4+:19, 4-:20, 34+:21, 34-:22, 57+:23, 57-:24, 86+:25, 86-:26, 1112+:27, 1112-:28, 910+:29, 910-:30
+
+              // On identifie les faces voisines pour le calcul des composantes du tenseur
+              int nb_faces_voisines=30;
+              IntVect les_faces_voisines(nb_faces_voisines);
+              int elem_=elem_voisins(elem);
+              int elem_gauche = domaine_vdf.face_voisins_pour_interp(domaine_vdf.elem_faces_pour_interp(elem_,0),0);
+              int elem_droite = domaine_vdf.face_voisins_pour_interp(domaine_vdf.elem_faces_pour_interp(elem_,0+dimension),1);
+              int elem_haut=domaine_vdf.face_voisins_pour_interp(domaine_vdf.elem_faces_pour_interp(elem_,2+dimension), 1);
+              int elem_bas=domaine_vdf.face_voisins_pour_interp(domaine_vdf.elem_faces_pour_interp(elem_,2), 0);
+              int elem_avant=domaine_vf.face_voisins_pour_interp(domaine_vdf.elem_faces_pour_interp(elem_,1+dimension),1);
+              int elem_arriere=domaine_vf.face_voisins_pour_interp(domaine_vdf.elem_faces_pour_interp(elem_,1),0);
+
+              les_faces_voisines(0)=domaine_vdf.elem_faces_pour_interp(elem_,0);
+              les_faces_voisines(1)=domaine_vdf.elem_faces_pour_interp(elem_,0+dimension);
+              les_faces_voisines(2)=domaine_vdf.elem_faces_pour_interp(elem_,1);
+              les_faces_voisines(3)=domaine_vdf.elem_faces_pour_interp(elem_,1+dimension);
+              les_faces_voisines(4)=domaine_vdf.elem_faces_pour_interp(elem_gauche,1+dimension);
+              les_faces_voisines(5)=domaine_vdf.elem_faces_pour_interp(elem_droite,1+dimension);
+              les_faces_voisines(6)=domaine_vdf.elem_faces_pour_interp(elem_gauche,1);
+              les_faces_voisines(7)=domaine_vdf.elem_faces_pour_interp(elem_droite,1);
+              les_faces_voisines(8)=domaine_vdf.elem_faces_pour_interp(elem_avant,0);
+              les_faces_voisines(9)=domaine_vdf.elem_faces_pour_interp(elem_avant,0+dimension);
+              les_faces_voisines(10)=domaine_vdf.elem_faces_pour_interp(elem_arriere,0);
+              les_faces_voisines(11)=domaine_vdf.elem_faces_pour_interp(elem_arriere,0+dimension);
+
+              //Cerr << "Elem de coord " << domaine_vdf.xp(elem_,0) << " " << domaine_vdf.xp(elem_,1) << " " << domaine_vdf.xp(elem_,2) << finl;
+              //for (int ii=4; ii<12; ii++) Cerr << "Face voisine " << ii << " de coord " << domaine_vdf.xv(les_faces_voisines(ii),0) << " " << domaine_vdf.xv(les_faces_voisines(ii),1) << " " << domaine_vdf.xv(les_faces_voisines(ii),2) << finl;
+              les_faces_voisines(12)=domaine_vdf.elem_faces_pour_interp(elem_haut,0);
+              les_faces_voisines(13)=domaine_vdf.elem_faces_pour_interp(elem_bas,0);
+              les_faces_voisines(14)=domaine_vdf.elem_faces_pour_interp(elem_haut,0+dimension);
+              les_faces_voisines(15)=domaine_vdf.elem_faces_pour_interp(elem_bas,0+dimension);
+              les_faces_voisines(16)=domaine_vdf.elem_faces_pour_interp(elem_haut,1+dimension);
+              les_faces_voisines(17)=domaine_vdf.elem_faces_pour_interp(elem_bas,1+dimension);
+              les_faces_voisines(18)=domaine_vdf.elem_faces_pour_interp(elem_haut,1);
+              les_faces_voisines(19)=domaine_vdf.elem_faces_pour_interp(elem_bas,1);
+              les_faces_voisines(20)=domaine_vdf.elem_faces_pour_interp(elem_,2);
+              les_faces_voisines(21)=domaine_vdf.elem_faces_pour_interp(elem_,2+dimension);
+              les_faces_voisines(22)=domaine_vdf.elem_faces_pour_interp(elem_gauche,2);
+              les_faces_voisines(23)=domaine_vdf.elem_faces_pour_interp(elem_gauche,2+dimension);
+              les_faces_voisines(24)=domaine_vdf.elem_faces_pour_interp(elem_droite,2);
+              les_faces_voisines(25)=domaine_vdf.elem_faces_pour_interp(elem_droite,2+dimension);
+              les_faces_voisines(26)=domaine_vdf.elem_faces_pour_interp(elem_arriere,2);
+              les_faces_voisines(27)=domaine_vdf.elem_faces_pour_interp(elem_arriere,2+dimension);
+              les_faces_voisines(28)=domaine_vdf.elem_faces_pour_interp(elem_avant,2);
+              les_faces_voisines(29)=domaine_vdf.elem_faces_pour_interp(elem_avant,2+dimension);
+
+              for (int i=0; i<nb_faces_voisines; i++)
+                {
+                  if (les_faces_voisines(i)<0) return 0;
+                  /*if (indicatrice_face(les_faces_voisines(i))<1)
+                    {
+                      if (indicatrice(domaine_vdf.face_voisins_pour_interp(les_faces_voisines(i),0))<1 && indicatrice(domaine_vdf.face_voisins_pour_interp(les_faces_voisines(i),1))) Cerr << "Une des face voisines pour le calcul du gradient est solide, coord : " <<domaine_vdf.xv(les_faces_voisines(i),0) << " " << domaine_vdf.xv(les_faces_voisines(i),1) << " " <<domaine_vdf.xv(les_faces_voisines(i),2)  << finl;
+                    } */
+                }
+              gradU(elem,0,0) = 	    ( (valeurs_champ(les_faces_voisines(1))  - valeurs_champ(les_faces_voisines(0)))  / (domaine_vdf.xv(les_faces_voisines(1),0)  - domaine_vdf.xv(les_faces_voisines(0),0)));
+              gradU(elem,0,1) = 1./2.*( (valeurs_champ(les_faces_voisines(8))  - valeurs_champ(les_faces_voisines(10))) / (domaine_vdf.xv(les_faces_voisines(8),1)  - domaine_vdf.xv(les_faces_voisines(10),1))   + (valeurs_champ(les_faces_voisines(9))  - valeurs_champ(les_faces_voisines(11)))  / (domaine_vdf.xv(les_faces_voisines(9),1)   - domaine_vdf.xv(les_faces_voisines(11),1)));
+              gradU(elem,0,2) = 1./2.*( (valeurs_champ(les_faces_voisines(12)) - valeurs_champ(les_faces_voisines(13))) / (domaine_vdf.xv(les_faces_voisines(12),2) - domaine_vdf.xv(les_faces_voisines(13),2))   + (valeurs_champ(les_faces_voisines(14)) - valeurs_champ(les_faces_voisines(15)))  / (domaine_vdf.xv(les_faces_voisines(14),2)  - domaine_vdf.xv(les_faces_voisines(15),2)));
+              gradU(elem,1,0) = 1./2.*( (valeurs_champ(les_faces_voisines(4))  - valeurs_champ(les_faces_voisines(5)))  / (domaine_vdf.xv(les_faces_voisines(4),0)  - domaine_vdf.xv(les_faces_voisines(5),0))    + (valeurs_champ(les_faces_voisines(6))  - valeurs_champ(les_faces_voisines(7)))   / (domaine_vdf.xv(les_faces_voisines(6),0)   - domaine_vdf.xv(les_faces_voisines(7),0)));
+              gradU(elem,1,1) = 	    ( (valeurs_champ(les_faces_voisines(2))  - valeurs_champ(les_faces_voisines(3)))  / (domaine_vdf.xv(les_faces_voisines(2),1)  - domaine_vdf.xv(les_faces_voisines(3),1)));
+              gradU(elem,1,2) = 1./2.*( (valeurs_champ(les_faces_voisines(16)) - valeurs_champ(les_faces_voisines(17))) / (domaine_vdf.xv(les_faces_voisines(16),2) - domaine_vdf.xv(les_faces_voisines(17),2))   + (valeurs_champ(les_faces_voisines(18)) - valeurs_champ(les_faces_voisines(19)))  / (domaine_vdf.xv(les_faces_voisines(18),2)  - domaine_vdf.xv(les_faces_voisines(19),2)));
+              gradU(elem,2,0) = 1./2.*( (valeurs_champ(les_faces_voisines(22)) - valeurs_champ(les_faces_voisines(24))) / (domaine_vdf.xv(les_faces_voisines(22),0) - domaine_vdf.xv(les_faces_voisines(24),0))   + (valeurs_champ(les_faces_voisines(23)) - valeurs_champ(les_faces_voisines(25)))  / (domaine_vdf.xv(les_faces_voisines(23),0)  - domaine_vdf.xv(les_faces_voisines(25),0)));
+              gradU(elem,2,1) = 1./2.*( (valeurs_champ(les_faces_voisines(26)) - valeurs_champ(les_faces_voisines(28))) / (domaine_vdf.xv(les_faces_voisines(26),1) - domaine_vdf.xv(les_faces_voisines(28),1))   + (valeurs_champ(les_faces_voisines(27)) - valeurs_champ(les_faces_voisines(29)))  / (domaine_vdf.xv(les_faces_voisines(27),1)  - domaine_vdf.xv(les_faces_voisines(29),1)));
+              gradU(elem,2,2) = 	  ( (valeurs_champ(les_faces_voisines(20)) - valeurs_champ(les_faces_voisines(21))) / (domaine_vdf.xv(les_faces_voisines(20),2) - domaine_vdf.xv(les_faces_voisines(21),2)));
+
+            }
+
+          // On fait une interpolation trilineaire de chaque composante du tenseur
+          for (int i=0; i<dimension; i++)
+            {
+              for (int j=0; j<dimension; j++)
+                {
+                  resu(fa7,i,j)=mu_fluide*((1-zfact)*((1-yfact)*((1-xfact)*(gradU(0,i,j)) + xfact*(gradU(1,i,j))) +
+                                                      yfact*((1-xfact)*(gradU(2,i,j)) + xfact*(gradU(3,i,j)))) +
+                                           zfact*((1-yfact)*((1-xfact)*(gradU(4,i,j)) + xfact*(gradU(5,i,j))) +
+                                                  yfact*((1-xfact)*(gradU(6,i,j)) + xfact*(gradU(7,i,j)))));
+                }
+            }
+        }
+    }
+  return 1;
+}
+// EB
+/*! @brief Voir Navier_Stokes_FT_Disc::trilinear_interpolation_gradU_elem. La seule difference avec la methode citee est que la viscosite aux aretes est utilisee pour calculer
+ *  les composantes du tenseur gradU. On ne calcule donc pas gradU mais mu*gradU.
+ *
+ */
+int Navier_Stokes_FT_Disc::trilinear_interpolation_gradU_elem_P1(const DoubleTab& indicatrice_face, const DoubleTab& indicatrice, const DoubleTab& valeurs_champ, DoubleTab& coord, DoubleTab& resu)
+{
+  // On identifie l'element dans lequel appartient le point de coordonnees coord
+  const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_dis().valeur());
+  //const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis().valeur());
+  REF(Transport_Interfaces_FT_Disc) & refeq_transport = variables_internes().ref_eq_interf_proprietes_fluide;
+  const Transport_Interfaces_FT_Disc& eq_transport = refeq_transport.valeur();
+  const Maillage_FT_Disc& maillage = eq_transport.maillage_interface();
+  int nb_voisins=8;
+  const double mu_f =fluide_diphasique().fluide_phase(1).viscosite_dynamique().valeur().valeurs()(0, 0);
+  const double mu_p = fluide_diphasique().fluide_phase(0).viscosite_dynamique().valeur().valeurs()(0, 0);
+
+  for (int fa7=0; fa7<coord.dimension(0); fa7++)
+    {
+      if (!maillage.facette_virtuelle(fa7))
+        {
+          // On recupere les elements 8 voisins ou le tenseur gradient sera calcule
+          DoubleVect coord_elem_interp(dimension);
+          for (int dim=0; dim<dimension; dim++) coord_elem_interp(dim)=coord(fa7,dim);
+          IntVect elem_voisins(nb_voisins);
+          chercher_elem_voisins(indicatrice,coord_elem_interp,elem_voisins);
+
+          for (int i=0; i<nb_voisins; i++)
+            {
+              if (elem_voisins(i)<0) return 0;
+              //if (indicatrice(elem_voisins(i))!=1) Cerr << "L'interpolation du gradient de la vitesse utilise un element diphasique"<< finl;
+            }
+          // On calcule les distances entre mailles voisines dans chaque direction pour calculer les coefficients d'interpolation
+          DoubleVect delta_i(dimension);
+          delta_i(0) = fabs(domaine_vdf.dist_elem(elem_voisins(0), elem_voisins(1), 0));
+          delta_i(1) = fabs(domaine_vdf.dist_elem(elem_voisins(0), elem_voisins(3), 1));
+          delta_i(2) = fabs(domaine_vdf.dist_elem(elem_voisins(0), elem_voisins(5), 2));
+          DoubleVect coord_elem_0(dimension);
+          for (int dim=0; dim<dimension; dim++) coord_elem_0(dim)=domaine_vdf.xp(elem_voisins(0),dim);
+
+          double xfact=fabs((coord_elem_interp(0)-coord_elem_0(0))/delta_i(0));
+          double yfact=fabs((coord_elem_interp(1)-coord_elem_0(1))/delta_i(1));
+          double zfact=fabs((coord_elem_interp(2)-coord_elem_0(2))/delta_i(2));
+
+          //on calcule le tenseur gradient de la vitesse pour chaque element voisin
+          DoubleTab gradU(nb_voisins, dimension, dimension);
+          for (int elem=0; elem<nb_voisins; elem++)
+            {
+
+              // 														SCHEMA EN 2D
+              //  					AVANT				 ---- ---- --- --- --- --- --- --- ---     AVANT
+              // 										|	 |	 |	 |	 |	 |	 |	 |	 |	 |
+              //														 9	 10
+              // 										|	 |	 |	 |	 |	 |	 |	 |	 |	 |
+              //  										 ---- --- --- -5- -3- -6- --- --- ---
+              // 										|	 |	 |	 |	 |	 |	 |	 |	 |	 |
+              //	  	  	  	  	GAUCHE  	  	  	  	  	  	     1 x 2              		DROITE
+              // 										|	 |	 |	 |	 |	 |	 |	 |	 |	 |
+              //  									     ---- --- --- -7- -4- -8- --- --- --- 	      			y
+              // 										|	 |	 |	 |	 |	 |	 |	 |	 |	 |	 	  			^
+              //												         11  12									|
+              // 										|	 |	 |	 |	 |	 |	 |	 |	 |	 |	 	  			|
+              //  					ARRIERE				 ---- --- --- --- --- --- --- --- --- ---    ARRIERE    o----->x
+              //																					 			 z
+              // Evaluation du gradient sur les faces de normale x (choix arbitraire mais peut tuer une certaine symetrie)
+              // Les termes + designent les faces juxtaposees selon +z
+              // Les termes - designent les faces juxtaposees selon -z
+              // Les termes 57 et 86 pour w designent les faces de normale z secantes aux faces 5,7 et 8,6
+              //
+              //   ON CALCULE mu*gradU et pas gradU
+              //   Pour plus de lisibilite, mu n'est pas reecrit pour chaque composante (mais sans ce mu_h local, la decomposition n'as plus d'interet)
+              //   ON UTILISE LE MU HARMONIQUE LOCAL, IE : LE MU_HARMONIQUE AUX ARETES
+              //
+              // 		   --					   													   	   																															   								   --
+              //		   |   u_2-u_1	 		   				                                   1  1  u_9-u_1	 u_1-u_11   1  u_10-u_2	   u_2-u_12	          								1     1   u_1+ - u_1    u_1 - u_1-	   1   u_2+ - u_2   u_2 - u_2-      |
+              //		   | ----------							                                   -( - (--------- + --------)+ - (--------- + ---------) )	      								-	( - ( ----------- + ---------- ) + - ( ----------- + ---------- ) ) |
+              //		   |   x_2-x1			 				                                   2  2  y_9-y_1	 y_1-y_11   2  y_10-y_2	   y_2-y_12			  								2     2   z_1+ - z_1	z_1 - z_1- 	   2   z_2+ - z_2   z_2 - z_2-      |
+              //		   |												    																																														|
+              //  grad U = | 1   1   v_5-v_3	v_3 - v_6    1  v_7-v_4	   v_4-v_8 	                       v_3-v_4								   				  								1     1   v_3+ - v_3    v_3 - v_3-	   1   v_4+ - v_4    v_4 - v_4-		|
+              // 	  	   | - ( - ( -------- + ---------)+ - (-------- + --------) ) 			 	       ------- 						    					  								-	( - ( ----------- + ---------- ) + - ( ----------- + ---------- ) )	|
+              //		   | 2   2   x_5-x_3    x_3 - x_6    2  x_7-x_4	   x_4-x_8	                       y_3-y_4						     					  								2     2   z_3+ - z_3	z_3 - z_3- 	   2   z_4+ - z_4    z_4 - z_4- 	|
+              //		   |																																																											|
+              // 	  	   | 1	 1  w57+ - w34+	 w34+ - w86+	 1 w57- - w34-	 w34- - w86-       1   1   w_1112+ - w_34+   w_34+ - w_910+	  1     w_1112- - w_34-   w_34- - w_910-	      									w_34+ - w_34-							|
+              //		   | - ( - (---------- + ----------- ) + -(---------- + ------------) )    - ( - ( --------------- + -------------- ) + - ( --------------- + -------------- ) )					    				-------------	    					|
+              //  		   | 2	 2  x57+ - x34+	 x34+ - x86+     2 x57- - x34-	 x34- - x86-       2   2   y_1112+ - y_34+	 y_34+ - y_910+   2     y_1112- - y_34-   y_34- - y_910- 	  		  	     					    z_34+ - z_34-							|
+              //		   --					   		   									              									 																						   								   --
+              //
+              // Pour chaque face, il faut donc 30 faces voisines : 1-12, 1+, 1-, 2+, 2-, 3+, 3-, 4+, 4-, 34+, 34-, 57+, 57-, 86+, 86-, 1112+, 1112-, 910+, 910-
+              // Pour plus de facilites, on numerote :  1+:13, 1-:14, 2+:15, 2-:16, 3+:17, 3-:18, 4+:19, 4-:20, 34+:21, 34-:22, 57+:23, 57-:24, 86+:25, 86-:26, 1112+:27, 1112-:28, 910+:29, 910-:30
+
+              // On identifie les faces voisines pour le calcul des composantes du tenseur
+              int nb_faces_voisines=30;
+              IntVect les_faces_voisines(nb_faces_voisines);
+              int elem_=elem_voisins(elem);
+              int elem_gauche = domaine_vdf.face_voisins_pour_interp(domaine_vdf.elem_faces_pour_interp(elem_,0),0);
+              int elem_droite = domaine_vdf.face_voisins_pour_interp(domaine_vdf.elem_faces_pour_interp(elem_,0+dimension),1);
+              int elem_haut=domaine_vdf.face_voisins_pour_interp(domaine_vdf.elem_faces_pour_interp(elem_,2+dimension), 1);
+              int elem_bas=domaine_vdf.face_voisins_pour_interp(domaine_vdf.elem_faces_pour_interp(elem_,2), 0);
+              int elem_avant=domaine_vdf.face_voisins_pour_interp(domaine_vdf.elem_faces_pour_interp(elem_,1+dimension),1);
+              int elem_arriere=domaine_vdf.face_voisins_pour_interp(domaine_vdf.elem_faces_pour_interp(elem_,1),0);
+
+              les_faces_voisines(0)=domaine_vdf.elem_faces_pour_interp(elem_,0);
+              les_faces_voisines(1)=domaine_vdf.elem_faces_pour_interp(elem_,0+dimension);
+              les_faces_voisines(2)=domaine_vdf.elem_faces_pour_interp(elem_,1);
+              les_faces_voisines(3)=domaine_vdf.elem_faces_pour_interp(elem_,1+dimension);
+              les_faces_voisines(4)=domaine_vdf.elem_faces_pour_interp(elem_gauche,1+dimension);
+              les_faces_voisines(5)=domaine_vdf.elem_faces_pour_interp(elem_droite,1+dimension);
+              les_faces_voisines(6)=domaine_vdf.elem_faces_pour_interp(elem_gauche,1);
+              les_faces_voisines(7)=domaine_vdf.elem_faces_pour_interp(elem_droite,1);
+              les_faces_voisines(8)=domaine_vdf.elem_faces_pour_interp(elem_avant,0);
+              les_faces_voisines(9)=domaine_vdf.elem_faces_pour_interp(elem_avant,0+dimension);
+              les_faces_voisines(10)=domaine_vdf.elem_faces_pour_interp(elem_arriere,0);
+              les_faces_voisines(11)=domaine_vdf.elem_faces_pour_interp(elem_arriere,0+dimension);
+
+              //Cerr << "Elem de coord " << zone_vdf.xp(elem_,0) << " " << zone_vdf.xp(elem_,1) << " " << zone_vdf.xp(elem_,2) << finl;
+              //for (int ii=4; ii<12; ii++) Cerr << "Face voisine " << ii << " de coord " << domaine_vdf.xv(les_faces_voisines(ii),0) << " " << domaine_vdf.xv(les_faces_voisines(ii),1) << " " << domaine_vdf.xv(les_faces_voisines(ii),2) << finl;
+              les_faces_voisines(12)=domaine_vdf.elem_faces_pour_interp(elem_haut,0);
+              les_faces_voisines(13)=domaine_vdf.elem_faces_pour_interp(elem_bas,0);
+              les_faces_voisines(14)=domaine_vdf.elem_faces_pour_interp(elem_haut,0+dimension);
+              les_faces_voisines(15)=domaine_vdf.elem_faces_pour_interp(elem_bas,0+dimension);
+              les_faces_voisines(16)=domaine_vdf.elem_faces_pour_interp(elem_haut,1+dimension);
+              les_faces_voisines(17)=domaine_vdf.elem_faces_pour_interp(elem_bas,1+dimension);
+              les_faces_voisines(18)=domaine_vdf.elem_faces_pour_interp(elem_haut,1);
+              les_faces_voisines(19)=domaine_vdf.elem_faces_pour_interp(elem_bas,1);
+              les_faces_voisines(20)=domaine_vdf.elem_faces_pour_interp(elem_,2);
+              les_faces_voisines(21)=domaine_vdf.elem_faces_pour_interp(elem_,2+dimension);
+              les_faces_voisines(22)=domaine_vdf.elem_faces_pour_interp(elem_gauche,2);
+              les_faces_voisines(23)=domaine_vdf.elem_faces_pour_interp(elem_gauche,2+dimension);
+              les_faces_voisines(24)=domaine_vdf.elem_faces_pour_interp(elem_droite,2);
+              les_faces_voisines(25)=domaine_vdf.elem_faces_pour_interp(elem_droite,2+dimension);
+              les_faces_voisines(26)=domaine_vdf.elem_faces_pour_interp(elem_arriere,2);
+              les_faces_voisines(27)=domaine_vdf.elem_faces_pour_interp(elem_arriere,2+dimension);
+              les_faces_voisines(28)=domaine_vdf.elem_faces_pour_interp(elem_avant,2);
+              les_faces_voisines(29)=domaine_vdf.elem_faces_pour_interp(elem_avant,2+dimension);
+
+
+              for (int i=0; i<nb_faces_voisines; i++)
+                {
+                  if (les_faces_voisines(i)<0) return 0;
+                  /*if (indicatrice_face(les_faces_voisines(i))<1)
+                    {
+                      if (indicatrice(domaine_vdf.face_voisins_pour_interp(les_faces_voisines(i),0))<1 && indicatrice(domaine_vdf.face_voisins_pour_interp(les_faces_voisines(i),1))) Cerr << "Une des face voisines pour le calcul du gradient est solide, coord : " <<zone_vdf.xv(les_faces_voisines(i),0) << " " << zone_vdf.xv(les_faces_voisines(i),1) << " " <<zone_vdf.xv(les_faces_voisines(i),2)  << finl;
+                    } */
+                }
+              int compo= static_cast<int>(get_num_compo().valeur().valeurs()(elem));
+              gradU(elem,0,0) = 	    ( (mu_p*mu_f/(mu_f-indicatrice(elem_voisins(elem))*(mu_f-mu_p)))*(valeurs_champ(les_faces_voisines(1))  - valeurs_champ(les_faces_voisines(0)))  / (domaine_vdf.xv(les_faces_voisines(1),0)  - domaine_vdf.xv(les_faces_voisines(0),0)));
+              gradU(elem,0,1) = 1./2.*  ( 1./2.*( calculer_viscosite_arete(les_faces_voisines(8),les_faces_voisines(0),compo)*(valeurs_champ(les_faces_voisines(8))  - valeurs_champ(les_faces_voisines(0))) / (domaine_vdf.xv(les_faces_voisines(8),1)  - domaine_vdf.xv(les_faces_voisines(0),1))   + calculer_viscosite_arete(les_faces_voisines(0),les_faces_voisines(10),compo)*(valeurs_champ(les_faces_voisines(0))  - valeurs_champ(les_faces_voisines(10)))  / (domaine_vdf.xv(les_faces_voisines(0),1) - domaine_vdf.xv(les_faces_voisines(10),1)))
+                                          + 1./2.*( calculer_viscosite_arete(les_faces_voisines(9),les_faces_voisines(1),compo)*(valeurs_champ(les_faces_voisines(9))  - valeurs_champ(les_faces_voisines(1))) / (domaine_vdf.xv(les_faces_voisines(9),1)  - domaine_vdf.xv(les_faces_voisines(1),1))   + calculer_viscosite_arete(les_faces_voisines(1),les_faces_voisines(11),compo)*(valeurs_champ(les_faces_voisines(1))  - valeurs_champ(les_faces_voisines(11)))  / (domaine_vdf.xv(les_faces_voisines(1),1) - domaine_vdf.xv(les_faces_voisines(11),1))) );
+              gradU(elem,0,2) = 1./2.*  ( 1./2.*( calculer_viscosite_arete(les_faces_voisines(12),les_faces_voisines(0),compo)*(valeurs_champ(les_faces_voisines(12)) - valeurs_champ(les_faces_voisines(0))) / (domaine_vdf.xv(les_faces_voisines(12),2) - domaine_vdf.xv(les_faces_voisines(0),2))   + calculer_viscosite_arete(les_faces_voisines(0),les_faces_voisines(13),compo)*(valeurs_champ(les_faces_voisines(0)) - valeurs_champ(les_faces_voisines(13)))  / (domaine_vdf.xv(les_faces_voisines(0),2)  - domaine_vdf.xv(les_faces_voisines(13),2)))
+                                          + 1./2.*( calculer_viscosite_arete(les_faces_voisines(14),les_faces_voisines(1),compo)*(valeurs_champ(les_faces_voisines(14)) - valeurs_champ(les_faces_voisines(1))) / (domaine_vdf.xv(les_faces_voisines(14),2) - domaine_vdf.xv(les_faces_voisines(1),2))   + calculer_viscosite_arete(les_faces_voisines(1),les_faces_voisines(15),compo)*(valeurs_champ(les_faces_voisines(1)) - valeurs_champ(les_faces_voisines(15)))  / (domaine_vdf.xv(les_faces_voisines(1),2)  - domaine_vdf.xv(les_faces_voisines(15),2))) );
+              gradU(elem,1,0) = 1./2.*  ( 1./2.*( calculer_viscosite_arete(les_faces_voisines(4),les_faces_voisines(2),compo)*(valeurs_champ(les_faces_voisines(4))  - valeurs_champ(les_faces_voisines(2)))  / (domaine_vdf.xv(les_faces_voisines(4),0)  - domaine_vdf.xv(les_faces_voisines(2),0))    + calculer_viscosite_arete(les_faces_voisines(3),les_faces_voisines(5),compo)*(valeurs_champ(les_faces_voisines(2))  - valeurs_champ(les_faces_voisines(5)))   / (domaine_vdf.xv(les_faces_voisines(2),0)   - domaine_vdf.xv(les_faces_voisines(5),0)))
+                                          + 1./2.*( calculer_viscosite_arete(les_faces_voisines(6),les_faces_voisines(3),compo)*(valeurs_champ(les_faces_voisines(6))  - valeurs_champ(les_faces_voisines(3)))  / (domaine_vdf.xv(les_faces_voisines(6),0)  - domaine_vdf.xv(les_faces_voisines(3),0))    + calculer_viscosite_arete(les_faces_voisines(3),les_faces_voisines(7),compo)*(valeurs_champ(les_faces_voisines(3))  - valeurs_champ(les_faces_voisines(7)))   / (domaine_vdf.xv(les_faces_voisines(3),0)   - domaine_vdf.xv(les_faces_voisines(7),0))) );
+              gradU(elem,1,1) = 	    ( (mu_p*mu_f/(mu_f-indicatrice(elem_voisins(elem))*(mu_f-mu_p)))*(valeurs_champ(les_faces_voisines(2))  - valeurs_champ(les_faces_voisines(3)))  / (domaine_vdf.xv(les_faces_voisines(2),1)  - domaine_vdf.xv(les_faces_voisines(3),1)));
+              gradU(elem,1,2) = 1./2.*  ( 1./2.*( calculer_viscosite_arete(les_faces_voisines(16),les_faces_voisines(2),compo)*(valeurs_champ(les_faces_voisines(16)) - valeurs_champ(les_faces_voisines(2))) / (domaine_vdf.xv(les_faces_voisines(16),2) - domaine_vdf.xv(les_faces_voisines(2),2))   + calculer_viscosite_arete(les_faces_voisines(2),les_faces_voisines(17),compo)*(valeurs_champ(les_faces_voisines(2)) - valeurs_champ(les_faces_voisines(17)))  / (domaine_vdf.xv(les_faces_voisines(2),2)  - domaine_vdf.xv(les_faces_voisines(17),2)))
+                                          + 1./2.*( calculer_viscosite_arete(les_faces_voisines(18),les_faces_voisines(3),compo)*(valeurs_champ(les_faces_voisines(18)) - valeurs_champ(les_faces_voisines(3))) / (domaine_vdf.xv(les_faces_voisines(18),2) - domaine_vdf.xv(les_faces_voisines(3),2))   + calculer_viscosite_arete(les_faces_voisines(3),les_faces_voisines(19),compo)*(valeurs_champ(les_faces_voisines(3)) - valeurs_champ(les_faces_voisines(19)))  / (domaine_vdf.xv(les_faces_voisines(3),2)  - domaine_vdf.xv(les_faces_voisines(19),2))));
+              gradU(elem,2,0) = 1./2.*  ( 1./2.*( calculer_viscosite_arete(les_faces_voisines(22),les_faces_voisines(20),compo)*(valeurs_champ(les_faces_voisines(22)) - valeurs_champ(les_faces_voisines(20))) / (domaine_vdf.xv(les_faces_voisines(22),0) - domaine_vdf.xv(les_faces_voisines(20),0))   + calculer_viscosite_arete(les_faces_voisines(20),les_faces_voisines(24),compo)*(valeurs_champ(les_faces_voisines(20)) - valeurs_champ(les_faces_voisines(24)))  / (domaine_vdf.xv(les_faces_voisines(20),0)  - domaine_vdf.xv(les_faces_voisines(24),0)))
+                                          + 1./2.*( calculer_viscosite_arete(les_faces_voisines(23),les_faces_voisines(21),compo)*(valeurs_champ(les_faces_voisines(23)) - valeurs_champ(les_faces_voisines(21))) / (domaine_vdf.xv(les_faces_voisines(23),0) - domaine_vdf.xv(les_faces_voisines(21),0))   + calculer_viscosite_arete(les_faces_voisines(21),les_faces_voisines(25),compo)*(valeurs_champ(les_faces_voisines(21)) - valeurs_champ(les_faces_voisines(25)))  / (domaine_vdf.xv(les_faces_voisines(21),0)  - domaine_vdf.xv(les_faces_voisines(25),0))) );
+              gradU(elem,2,1) = 1./2.*  ( 1./2.*( calculer_viscosite_arete(les_faces_voisines(26),les_faces_voisines(20),compo)*(valeurs_champ(les_faces_voisines(26)) - valeurs_champ(les_faces_voisines(20))) / (domaine_vdf.xv(les_faces_voisines(26),1) - domaine_vdf.xv(les_faces_voisines(20),1))   + calculer_viscosite_arete(les_faces_voisines(20),les_faces_voisines(28),compo)*(valeurs_champ(les_faces_voisines(20)) - valeurs_champ(les_faces_voisines(28)))  / (domaine_vdf.xv(les_faces_voisines(20),1)  - domaine_vdf.xv(les_faces_voisines(28),1)))
+                                          + 1./2.*( calculer_viscosite_arete(les_faces_voisines(27),les_faces_voisines(21),compo)*(valeurs_champ(les_faces_voisines(27)) - valeurs_champ(les_faces_voisines(21))) / (domaine_vdf.xv(les_faces_voisines(27),1) - domaine_vdf.xv(les_faces_voisines(21),1))   + calculer_viscosite_arete(les_faces_voisines(21),les_faces_voisines(29),compo)*(valeurs_champ(les_faces_voisines(21)) - valeurs_champ(les_faces_voisines(29)))  / (domaine_vdf.xv(les_faces_voisines(21),1)  - domaine_vdf.xv(les_faces_voisines(29),1))));
+              gradU(elem,2,2) = 	  ( (mu_p*mu_f/(mu_f-indicatrice(elem_voisins(elem))*(mu_f-mu_p)))*(valeurs_champ(les_faces_voisines(20)) - valeurs_champ(les_faces_voisines(21))) / (domaine_vdf.xv(les_faces_voisines(20),2) - domaine_vdf.xv(les_faces_voisines(21),2)));
+
+            }
+
+          // On fait une interpolation trilineaire de chaque composante du tenseur
+          for (int i=0; i<dimension; i++)
+            {
+              for (int j=0; j<dimension; j++)
+                {
+                  resu(fa7,i,j)=((1-zfact)*((1-yfact)*((1-xfact)*(gradU(0,i,j)) + xfact*(gradU(1,i,j))) +
+                                            yfact*((1-xfact)*(gradU(2,i,j)) + xfact*(gradU(3,i,j)))) +
+                                 zfact*((1-yfact)*((1-xfact)*(gradU(4,i,j)) + xfact*(gradU(5,i,j))) +
+                                        yfact*((1-xfact)*(gradU(6,i,j)) + xfact*(gradU(7,i,j)))));
+                }
+            }
+        }
+    }
+  return 1;
+}
+
+// EB
+/*! @brief Calcul de la viscosite aux aretes par la methode de Vincent et al (2014). Pour l'arete commune aux faces 1 et 2, on repartit uniformement dans le volume 10 points par direction.
+ *  Pour chaque point, on calcule la distance au centre de gravite de la particule poour savoir si le point est solide ou fluide. On compte ensuite le nombre de points fluide pour connaitre
+ *  l'indicatrice a l'arete.
+ *  Cette methode est utilisee dans Navier_Stokes_FT_Disc::trilinear_interpolation_gradU_elem_P1.
+ */
+double Navier_Stokes_FT_Disc::calculer_viscosite_arete(int face1, int face2, int compo)
+{
+  const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, Domaine_dis().valeur());
+  REF(Transport_Interfaces_FT_Disc) & refeq_transport = variables_internes().ref_eq_interf_proprietes_fluide;
+  const Transport_Interfaces_FT_Disc& eq_transport = refeq_transport.valeur();
+  const DoubleTab& positions_compo=eq_transport.get_positions_compo();
+
+  int elem1 = domaine_vdf.face_voisins_pour_interp(face1,0);
+  int elem2 = domaine_vdf.face_voisins_pour_interp(face1,1);
+  int elem3 = domaine_vdf.face_voisins_pour_interp(face2,0);
+  int elem4 = domaine_vdf.face_voisins_pour_interp(face2,1);
+
+  const double mu_f =fluide_diphasique().fluide_phase(1).viscosite_dynamique().valeur().valeurs()(0, 0);
+  const double mu_p =fluide_diphasique().fluide_phase(0).viscosite_dynamique().valeur().valeurs()(0, 0);
+  const double rayon_particule = eq_transport.get_rayons_compo()(compo);
+  double indicatrice_arete=0;
+  int pvx=10;
+  int pvy=10;
+  int pvz=10;
+  double x_min,y_min,z_min,x_max;
+  double x_cg=positions_compo(compo,0);
+  double y_cg=positions_compo(compo,1);
+  double z_cg=positions_compo(compo,2);
+  x_min=std::min(domaine_vdf.xp(elem1,0),domaine_vdf.xp(elem2,0));
+  x_min=std::min(x_min,domaine_vdf.xp(elem3,0));
+  x_min=std::min(x_min,domaine_vdf.xp(elem4,0));
+  x_max=std::max(domaine_vdf.xp(elem1,0),domaine_vdf.xp(elem2,0));
+  x_max=std::max(x_min,domaine_vdf.xp(elem3,0));
+  x_max=std::max(x_min,domaine_vdf.xp(elem4,0));
+  y_min=std::min(domaine_vdf.xp(elem1,1),domaine_vdf.xp(elem2,1));
+  y_min=std::min(y_min,domaine_vdf.xp(elem3,1));
+  y_min=std::min(y_min,domaine_vdf.xp(elem4,1));
+  z_min=std::min(domaine_vdf.xp(elem1,2),domaine_vdf.xp(elem2,2));
+  z_min=std::min(z_min,domaine_vdf.xp(elem3,2));
+  z_min=std::min(z_min,domaine_vdf.xp(elem4,2));
+
+  double delta_x=x_max-x_min;
+
+  for (int i=0; i<pvx; i++)
+    {
+      for (int j=0; j<pvy; j++)
+        {
+          for (int k=0; k<pvz; k++)
+            {
+              double x=x_min+i*delta_x/pvx;
+              double y=y_min+i*delta_x/pvy;
+              double z=z_min+i*delta_x/pvz;
+              if (sqrt(pow(x-x_cg,2)+pow(y-y_cg,2)+pow(z-z_cg,2))>rayon_particule) indicatrice_arete+=1;
+            }
+        }
+    }
+  indicatrice_arete/=(pvx*pvy*pvz);
+
+  return(mu_p*mu_f/(mu_f-indicatrice_arete*(mu_f-mu_p)));
+}
+
+/*! @brief Interpolation trilineaire d'un champs aux coordonnees du tableau coord
+ * Il y a  3 interpolations : une utilisant les faces de normale x --> resu(fa7,0), la faces de nomale y --> resu(fa7,1) et les faces de normale z --> resu(fa7,2)
+ */
+int Navier_Stokes_FT_Disc::trilinear_interpolation_face(const DoubleTab& indicatrice_faces, const DoubleTab& valeurs_champ, DoubleTab& coord, DoubleTab& resu)
+{
+  // On identifie l'element dans lequel appartient le point de coordonnees coord
+  const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_dis().valeur());
+  REF(Transport_Interfaces_FT_Disc) & refeq_transport = variables_internes().ref_eq_interf_proprietes_fluide;
+  const Transport_Interfaces_FT_Disc& eq_transport = refeq_transport.valeur();
+  const Maillage_FT_Disc& maillage = eq_transport.maillage_interface();
+  int nb_voisins=8;
+  for (int fa7=0; fa7<coord.dimension(0); fa7++)
+    {
+      if (!maillage.facette_virtuelle(fa7))
+        {
+          // On recupere les faces voisines : les faces euleriennes qui vont servir a l'interpolation
+          DoubleVect coord_elem_interp(dimension); // coordonnee du cg de la fa7
+          for (int dim=0; dim<dimension; dim++) coord_elem_interp(dim)=coord(fa7,dim);
+          IntTab faces_voisines(dimension,nb_voisins); // 8 elements voisins au point de coordonnees coord. L'element elem est inclu dedans.
+          chercher_faces_voisines_xyz(coord_elem_interp,faces_voisines);
+          int acces_faces=1;
+          for (int dim=0; dim<dimension; dim++)
+            {
+              for (int i=0; i<nb_voisins; i++)
+                {
+                  if (faces_voisines(dim,i)<0) acces_faces= 0; // s'il y a eu un bug dans la recuperation des faces (pbm d'acces : zone de joint, bord), on renvoie 0 et la fa7 n'est pas prise en compte dans le calcul
+                }
+            }
+          if (acces_faces)
+            {
+              DoubleVect xfact(dimension);
+              DoubleVect yfact(dimension);
+              DoubleVect zfact(dimension);
+              DoubleTab Delta_(dimension);
+              Delta_(0)=fabs(domaine_vdf.dist_face(faces_voisines(0,0),faces_voisines(0,1),0));
+              Delta_(1)=fabs(domaine_vdf.dist_face(faces_voisines(0,0),faces_voisines(0,2),1));
+              Delta_(2)=fabs(domaine_vdf.dist_face(faces_voisines(0,0),faces_voisines(0,4),2));
+              for (int dim=0; dim<dimension; dim++)
+                {
+                  xfact(dim)=fabs((coord(fa7,0)-domaine_vdf.xv(faces_voisines(dim,0),0))/Delta_(0));
+                  yfact(dim)=fabs((coord(fa7,1)-domaine_vdf.xv(faces_voisines(dim,0),1))/Delta_(1));
+                  zfact(dim)=fabs((coord(fa7,2)-domaine_vdf.xv(faces_voisines(dim,0),2))/Delta_(2));
+                }
+              for (int dim=0; dim<dimension; dim++)
+                {
+                  if (xfact(dim)>1) Cerr << "xfact > 1 pour le point " <<coord(fa7,0)<< " " << coord(fa7,1)<< " " << coord(fa7,2) <<finl;
+                  if (yfact(dim)>1) Cerr << "yfact > 1 pour le point " <<coord(fa7,0)<< " " << coord(fa7,1)<< " " << coord(fa7,2) <<finl;
+                  if (zfact(dim)>1) Cerr << "zfact > 1 pour le point " <<coord(fa7,0)<< " " << coord(fa7,1)<< " " << coord(fa7,2) <<finl;
+                }
+
+              for (int dim=0; dim<dimension; dim++)
+                {
+                  resu(fa7,dim)=(1.-zfact(dim))*((1.-yfact(dim))*((1.-xfact(dim))*(valeurs_champ(faces_voisines(dim,0))) + xfact(dim)*(valeurs_champ(faces_voisines(dim,1)))) +
+                                                 yfact(dim)*((1.-xfact(dim))*(valeurs_champ(faces_voisines(dim,2))) + xfact(dim)*(valeurs_champ(faces_voisines(dim,3))))) +
+                                zfact(dim)*((1.-yfact(dim))*((1.-xfact(dim))*(valeurs_champ(faces_voisines(dim,4))) + xfact(dim)*(valeurs_champ(faces_voisines(dim,5)))) +
+                                            yfact(dim)*((1.-xfact(dim))*(valeurs_champ(faces_voisines(dim,6))) + xfact(dim)*(valeurs_champ(faces_voisines(dim,7)))));
+                }
+            }
+          else
+            {
+              for (int dim=0; dim<dimension; dim++)
+                {
+                  resu(fa7,dim)=-1e15; // de cette maniere, on ne calcule pas la force pour la fa7 pour laquelle on n'a pas acces a P2
+                }
+            }
+        }
+    }
+  return 1;
+}
+
+/*! @brief Interpolation trilineaire d'un champs aux coordonnees du tableau coord
+ * idem trilinear_interpolation_face mais le tableau coord contient les coordonnees des points P1 a partir des sommets lagrangien et non a partir des facettes lagrangiennes
+ */
+int Navier_Stokes_FT_Disc::trilinear_interpolation_face_sommets(const DoubleTab& indicatrice_faces, const DoubleTab& valeurs_champ, DoubleTab& coord, DoubleTab& resu)
+{
+  // On identifie l'element dans lequel appartient le point de coordonnees coord
+  const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_dis().valeur());
+  REF(Transport_Interfaces_FT_Disc) & refeq_transport = variables_internes().ref_eq_interf_proprietes_fluide;
+  const Transport_Interfaces_FT_Disc& eq_transport = refeq_transport.valeur();
+  const Maillage_FT_Disc& maillage = eq_transport.maillage_interface();
+  const ArrOfInt& elem = maillage.sommet_elem();
+  const DoubleTab& pos = maillage.sommets();
+  const int nb_pos_tot = pos.dimension(0);
+  int nb_voisins=8;
+  for (int som=0; som<nb_pos_tot; som++)
+    {
+      const int element = elem[som];
+      if (element >= 0)   // sommet reel ?
+        {
+
+          // On recupere les faces voisines : les faces euleriennes qui vont servir a l'interpolation
+          DoubleVect coord_elem_interp(dimension); // coordonnee du cg de la fa7
+          for (int dim=0; dim<dimension; dim++) coord_elem_interp(dim)=coord(som,dim);
+          IntTab faces_voisines(dimension,nb_voisins); // 8 elements voisins au point de coordonnees coord. L'element elem est inclu dedans.
+          chercher_faces_voisines_xyz(coord_elem_interp,faces_voisines);
+          for (int dim=0; dim<dimension; dim++)
+            {
+              for (int i=0; i<nb_voisins; i++)
+                {
+                  if (faces_voisines(dim,i)<0) return 0; // s'il y a eu un bug dans la recuperation des faces (pbm d'acces : zone de joint, bord), on renvoie 0 et la fa7 n'est pas prise en compte dans le calcul
+                }
+            }
+
+
+          DoubleVect xfact(dimension);
+          DoubleVect yfact(dimension);
+          DoubleVect zfact(dimension);
+
+          DoubleTab Delta_(dimension);
+
+          Delta_(0)=fabs(domaine_vdf.dist_face(faces_voisines(0,0),faces_voisines(0,1),0));
+          Delta_(1)=fabs(domaine_vdf.dist_face(faces_voisines(0,0),faces_voisines(0,2),1));
+          Delta_(2)=fabs(domaine_vdf.dist_face(faces_voisines(0,0),faces_voisines(0,4),2));
+
+          for (int dim=0; dim<dimension; dim++)
+            {
+              xfact(dim)=fabs((coord(som,0)-domaine_vdf.xv(faces_voisines(dim,0),0))/Delta_(0));
+              yfact(dim)=fabs((coord(som,1)-domaine_vdf.xv(faces_voisines(dim,0),1))/Delta_(1));
+              zfact(dim)=fabs((coord(som,2)-domaine_vdf.xv(faces_voisines(dim,0),2))/Delta_(2));
+            }
+
+          for (int dim=0; dim<dimension; dim++)
+            {
+              if (xfact(dim)>1) Cerr << "xfact > 1 pour le point " <<coord(som,0)<< " " << coord(som,1)<< " " << coord(som,2) <<finl;
+              if (yfact(dim)>1) Cerr << "yfact > 1 pour le point " <<coord(som,0)<< " " << coord(som,1)<< " " << coord(som,2) <<finl;
+              if (zfact(dim)>1) Cerr << "zfact > 1 pour le point " <<coord(som,0)<< " " << coord(som,1)<< " " << coord(som,2) <<finl;
+            }
+          //Cerr << "Delta_ " << Delta_(0) << " " << Delta_(1) << " " << Delta_(2) << finl;
+
+          for (int dim=0; dim<dimension; dim++)
+            {
+              resu(som,dim)=(1.-zfact(dim))*((1.-yfact(dim))*((1.-xfact(dim))*(valeurs_champ(faces_voisines(dim,0))) + xfact(dim)*(valeurs_champ(faces_voisines(dim,1)))) +
+                                             yfact(dim)*((1.-xfact(dim))*(valeurs_champ(faces_voisines(dim,2))) + xfact(dim)*(valeurs_champ(faces_voisines(dim,3))))) +
+                            zfact(dim)*((1.-yfact(dim))*((1.-xfact(dim))*(valeurs_champ(faces_voisines(dim,4))) + xfact(dim)*(valeurs_champ(faces_voisines(dim,5)))) +
+                                        yfact(dim)*((1.-xfact(dim))*(valeurs_champ(faces_voisines(dim,6))) + xfact(dim)*(valeurs_champ(faces_voisines(dim,7)))));
+            }
+        }
+    }
+
+  return 1;
+}
+
+int Navier_Stokes_FT_Disc::trilinear_interpolation_elem(const DoubleTab& indicatrice, const DoubleTab& valeurs_champ, DoubleTab& coord, DoubleTab& resu)
+{
+  return trilinear_interpolation_elem(indicatrice, valeurs_champ, coord, resu, 0, 0);
+}
+// EB
+/*! @brief Interpolation trilineaire d'un champs "valeurs_champs" aux coordonnees coord a partir des 8 elements (4 en 2D) voisins les plus proches. Valeurs_chaamps contient
+ * typiquement le champ de presssion ou le champ de temperature.
+ * On utilise egalement cette fonction pour sauvegarder la liste des elments P1 ainsi que l'indiatrice des elements P2
+ */
+int Navier_Stokes_FT_Disc::trilinear_interpolation_elem(const DoubleTab& indicatrice, const DoubleTab& valeurs_champ, DoubleTab& coord, DoubleTab& resu, const int is_P2, const int discr)
+{
+  const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_dis().valeur());
+  int nb_voisins=8; // 8 elements voisins au point de coordonnees coord.
+  REF(Transport_Interfaces_FT_Disc) & refeq_transport = variables_internes().ref_eq_interf_proprietes_fluide;
+  const Transport_Interfaces_FT_Disc& eq_transport = refeq_transport.valeur();
+  const Maillage_FT_Disc& maillage = eq_transport.maillage_interface();
+  const int nb_fa7=coord.dimension(0);
+
+  DoubleVect& tab_num_compo=variables_internes().num_compo.valeur().valeurs();
+  IntTab& list_elem_P1=variables_internes().list_elem_P1_;
+  IntTab& list_elem_P1_all=variables_internes().list_elem_P1_all_;
+  const int sauv_list_P1 = (discr==0) ? 1 : 0; // si discr ==0 alors on discretize en P1
+  if (sauv_list_P1)
+    {
+      list_elem_P1.resize(nb_fa7,2); // En (j,0) on stocke le num de l'element, en (j,1) on stocke le num de la particule
+      list_elem_P1=-1;
+    }
+  const int sauv_list_P1_all = (discr==2) ? 1 : 0; // si discr ==2 alors on discretize sur tous les elements utilises pour l'interpolation en P1
+  int nb_elem_P1_all;
+
+
+  if (sauv_list_P1_all)
+    {
+      list_elem_P1_all.resize(0,2); // En (j,0) on stocke le num de l'element, en (j,1) on stocke le num de la particule
+      list_elem_P1_all.set_smart_resize(1);
+      nb_elem_P1_all=0;
+    }
+  const DoubleTab& cg_fa7=maillage.cg_fa7();
+
+  for (int fa7=0; fa7<nb_fa7; fa7++)
+    {
+      if (!maillage.facette_virtuelle(fa7))
+        {
+          DoubleVect coord_elem_interp(dimension);
+          for (int dim=0; dim<dimension; dim++) coord_elem_interp(dim)=coord(fa7,dim);
+          IntVect elem_voisins(nb_voisins);
+          DoubleTab& indic_elem_P2=variables_internes().Indic_elem_P2_;
+          if (is_P2)
+            {
+              indic_elem_P2(fa7)=chercher_elem_voisins(indicatrice,coord_elem_interp,elem_voisins);
+            }
+          else
+            {
+              chercher_elem_voisins(indicatrice,coord_elem_interp,elem_voisins,sauv_list_P1,fa7);
+              if (sauv_list_P1)
+                {
+                  int elem_diph=domaine_vdf.domaine().chercher_elements(cg_fa7(fa7,0),cg_fa7(fa7,1),cg_fa7(fa7,2));
+                  int num_compo = static_cast<int>(tab_num_compo(elem_diph));
+                  list_elem_P1(fa7,1)= num_compo;
+                }
+            }
+          int acces_elems=1;
+          for (int i=0; i<nb_voisins; i++)
+            {
+              if (elem_voisins(i)<0) acces_elems= 0;
+              if (sauv_list_P1_all)
+                {
+                  int elem_voisin=elem_voisins(i);
+                  int elem_diph=domaine_vdf.domaine().chercher_elements(cg_fa7(fa7,0),cg_fa7(fa7,1),cg_fa7(fa7,2));
+                  int num_compo = static_cast<int>(tab_num_compo(elem_diph));
+                  if (elem_voisin>=0 && indicatrice(elem_voisin)==1)
+                    {
+                      list_elem_P1_all.append_line(elem_voisin,num_compo);
+                      nb_elem_P1_all++;
+                    }
+                }
+            }
+          if (acces_elems)
+            {
+              DoubleVect delta_i(dimension);
+              delta_i(0) = fabs(domaine_vdf.dist_elem(elem_voisins(0), elem_voisins(1), 0));
+              delta_i(1) = fabs(domaine_vdf.dist_elem(elem_voisins(0), elem_voisins(2), 1));
+              delta_i(2) = fabs(domaine_vdf.dist_elem(elem_voisins(0), elem_voisins(4), 2));
+              DoubleVect coord_elem_0(dimension);
+              for (int dim=0; dim<dimension; dim++) coord_elem_0(dim)=domaine_vdf.xp(elem_voisins(0),dim);
+
+              double xfact=fabs((coord_elem_interp(0)-coord_elem_0(0))/delta_i(0));
+              double yfact=fabs((coord_elem_interp(1)-coord_elem_0(1))/delta_i(1));
+              double zfact=fabs((coord_elem_interp(2)-coord_elem_0(2))/delta_i(2));
+
+              resu(fa7)=(1-zfact)*((1-yfact)*((1-xfact)*(valeurs_champ(elem_voisins(0))) + xfact*(valeurs_champ(elem_voisins(1)))) +
+                                   yfact*((1-xfact)*(valeurs_champ(elem_voisins(2))) + xfact*(valeurs_champ(elem_voisins(3))))) +
+                        zfact*((1-yfact)*((1-xfact)*(valeurs_champ(elem_voisins(4))) + xfact*(valeurs_champ(elem_voisins(5)))) +
+                               yfact*((1-xfact)*(valeurs_champ(elem_voisins(6))) + xfact*(valeurs_champ(elem_voisins(7)))));
+            }
+          else
+            {
+              for (int dim=0; dim<dimension; dim++)
+                {
+                  resu(fa7)=-1e15; // de cette maniere, on ne calcule pas la force pour la fa7 pour laquelle on n'a pas acces a P2
+                }
+            }
+        }
+    }
+  if (sauv_list_P1_all)
+    {
+      list_elem_P1_all.set_smart_resize(0);
+      list_elem_P1_all.resize(nb_elem_P1_all,2);
+    }
+  return 1;
+}
+
+// EB
+/*! @brief calcul des efforts hydrodynamiques a l'interface fluide - particule. Les composantes de frottements et de pression sont
+ * calculees pour chaque facette du maillage lagrangien. Ces composantes peuvent etre ecrites dans les fichiers latas (en Newton, on a
+ * multiplie l'effort locale exerce sur la facette par la surface de la facette). Les valeurs integrales, par particule, sont egalement imprimees dans les fichiers.out
+ * Valable uniquement en 3D.
+ */
+void Navier_Stokes_FT_Disc::calcul_forces_interface()
+{
+  /***************************************************************
+  *	  	  	  	  	  	RECUPERATION DES GRANDEURS		         *
+  ***************************************************************/
+
+  Cerr << "Navier_Stokes_FT_Disc::calcul_forces_interface"  <<  finl;
+  if (dimension!=3) Process::exit("Navier_Stokes_FT_Disc::calcul_forces_interface code uniquement pour un cas 3D.");
+  REF(Transport_Interfaces_FT_Disc) & refeq_transport = variables_internes().ref_eq_interf_proprietes_fluide;
+  const Transport_Interfaces_FT_Disc& eq_transport = refeq_transport.valeur();
+  const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis().valeur());
+  const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_dis().valeur());
+  const Domaine& domaine = domaine_vdf.domaine();
+
+  DoubleVect& surface_tot_interf=variables_internes().surface_tot_interf_;
+  DoubleTab& force_pression_tot_interf=variables_internes().force_pression_tot_interf_;
+  DoubleTab& force_frottements_tot_interf=variables_internes().force_frottements_tot_interf_;
+
+  const Maillage_FT_Disc& maillage = eq_transport.maillage_interface_pour_post();
+
+  const int nb_fa7 = maillage.nb_facettes();
+  int nb_fa7_reelle=0;
+  for (int i=0; i<nb_fa7; i++)
+    if (!maillage.facette_virtuelle(i)) nb_fa7_reelle++;
+  IntVect compo_connexes_fa7(nb_fa7); // Init a zero
+  int n = search_connex_components_local_FT(maillage, compo_connexes_fa7);
+  int nb_compo_tot=compute_global_connex_components_FT(maillage, compo_connexes_fa7, n);
+  const Fluide_Diphasique& mon_fluide = fluide_diphasique();
+  double mu_f=mon_fluide.fluide_phase(1).viscosite_dynamique().valeurs()(0, 0);
+
+  surface_tot_interf.resize(nb_compo_tot);
+  force_pression_tot_interf.resize(nb_compo_tot,dimension);
+  force_frottements_tot_interf.resize(nb_compo_tot,dimension);
+  surface_tot_interf=0;
+  force_pression_tot_interf=0;
+  force_frottements_tot_interf=0;
+  variables_internes().Prop_P2_fluide_compo_.resize(nb_compo_tot);
+
+  const Postraitement_Forces_Interfaces_FT& les_post_interf=eq_transport.postraitement_forces_interf();
+  const double& distance_interpolation_pression_P1=les_post_interf.get_distance_interpolation_pression_P1();
+  const double& distance_interpolation_pression_P2=les_post_interf.get_distance_interpolation_pression_P2();
+  const double& distance_interpolation_gradU_P1=les_post_interf.get_distance_interpolation_gradU_P1();
+  const double& distance_interpolation_gradU_P2=les_post_interf.get_distance_interpolation_gradU_P2();
+  const DoubleTab& indicatrice = refeq_transport.valeur().get_update_indicatrice().valeurs();
+  const DoubleTab& indicatrice_faces = refeq_transport.valeur().get_compute_indicatrice_faces().valeurs();
+
+  DoubleTab& Nb_fa7_ok_prop = variables_internes().Proportion_fa7_ok_UP2_;
+  Nb_fa7_ok_prop.resize(nb_compo_tot,dimension);
+  Nb_fa7_ok_prop=0;
+  IntTab Nb_fa7_tot_par_compo;
+  Nb_fa7_tot_par_compo.resize(nb_compo_tot);
+  Nb_fa7_tot_par_compo=0;
+  DoubleTab& U_P2_moy = variables_internes().U_P2_moy_;
+  U_P2_moy.resize(nb_compo_tot, dimension);
+  U_P2_moy=0;
+  DoubleTab& Prop_P2_fluide_compo=variables_internes().Prop_P2_fluide_compo_;
+  if (nb_fa7>0)
+    {
+      variables_internes().Indic_elem_P2_.resize(nb_fa7);
+      const ArrOfDouble& les_surfaces_fa7 = maillage.get_update_surface_facettes();
+      const DoubleTab& les_normales_fa7 = maillage.get_update_normale_facettes();
+      DoubleTab& pression_interf = variables_internes().pression_interf_;
+      if (les_post_interf.flag_pression_facettes_)
+        {
+          pression_interf.resize(nb_fa7);
+          pression_interf=3e15;
+        }
+      DoubleTab& force_frottements_interf = variables_internes().force_frottements_interf_;
+      if (les_post_interf.flag_force_frottements_facettes_)
+        {
+          force_frottements_interf.resize(nb_fa7,dimension);
+          force_frottements_interf=3e15;
+
+        }
+      DoubleTab& force_pression_interf = variables_internes().force_pression_interf_;
+      if (les_post_interf.flag_force_pression_facettes_)
+        {
+          force_pression_interf.resize(nb_fa7,dimension);
+
+          force_pression_interf=3e15;
+        }
+
+      DoubleTab& sigma_xx_interf = variables_internes().sigma_xx_interf_;
+      DoubleTab& sigma_xy_interf = variables_internes().sigma_xy_interf_;
+      DoubleTab& sigma_xz_interf = variables_internes().sigma_xz_interf_;
+      DoubleTab& sigma_yx_interf = variables_internes().sigma_yx_interf_;
+      DoubleTab& sigma_yy_interf = variables_internes().sigma_yy_interf_;
+      DoubleTab& sigma_yz_interf = variables_internes().sigma_yz_interf_;
+      DoubleTab& sigma_zx_interf = variables_internes().sigma_zx_interf_;
+      DoubleTab& sigma_zy_interf = variables_internes().sigma_zy_interf_;
+      DoubleTab& sigma_zz_interf = variables_internes().sigma_zz_interf_;
+      DoubleTab& dUdx_P1 = variables_internes().dUdx_P1_;
+      DoubleTab& dUdy_P1 = variables_internes().dUdy_P1_;
+      DoubleTab& dUdz_P1 = variables_internes().dUdz_P1_;
+      DoubleTab& dVdx_P1 = variables_internes().dVdx_P1_;
+      DoubleTab& dVdy_P1 = variables_internes().dVdy_P1_;
+      DoubleTab& dVdz_P1 = variables_internes().dVdz_P1_;
+      DoubleTab& dWdx_P1 = variables_internes().dWdx_P1_;
+      DoubleTab& dWdy_P1 = variables_internes().dWdy_P1_;
+      DoubleTab& dWdz_P1 = variables_internes().dWdz_P1_;
+      DoubleTab& dUdx_P2 = variables_internes().dUdx_P2_;
+      DoubleTab& dUdy_P2 = variables_internes().dUdy_P2_;
+      DoubleTab& dUdz_P2 = variables_internes().dUdz_P2_;
+      DoubleTab& dVdx_P2 = variables_internes().dVdx_P2_;
+      DoubleTab& dVdy_P2 = variables_internes().dVdy_P2_;
+      DoubleTab& dVdz_P2 = variables_internes().dVdz_P2_;
+      DoubleTab& dWdx_P2 = variables_internes().dWdx_P2_;
+      DoubleTab& dWdy_P2 = variables_internes().dWdy_P2_;
+      DoubleTab& dWdz_P2 = variables_internes().dWdz_P2_;
+
+      if (les_post_interf.flag_tenseur_contraintes_facettes_)
+        {
+          sigma_xx_interf.resize(nb_fa7);
+          sigma_xy_interf.resize(nb_fa7);
+          sigma_xz_interf.resize(nb_fa7);
+          sigma_yx_interf.resize(nb_fa7);
+          sigma_yy_interf.resize(nb_fa7);
+          sigma_yz_interf.resize(nb_fa7);
+          sigma_zx_interf.resize(nb_fa7);
+          sigma_zy_interf.resize(nb_fa7);
+          sigma_zz_interf.resize(nb_fa7);
+
+          dUdx_P1.resize(nb_fa7);
+          dUdy_P1.resize(nb_fa7);
+          dUdz_P1.resize(nb_fa7);
+          dVdx_P1.resize(nb_fa7);
+          dVdy_P1.resize(nb_fa7);
+          dVdz_P1.resize(nb_fa7);
+          dWdx_P1.resize(nb_fa7);
+          dWdy_P1.resize(nb_fa7);
+          dWdz_P1.resize(nb_fa7);
+
+          dUdx_P2.resize(nb_fa7);
+          dUdy_P2.resize(nb_fa7);
+          dUdz_P2.resize(nb_fa7);
+          dVdx_P2.resize(nb_fa7);
+          dVdy_P2.resize(nb_fa7);
+          dVdz_P2.resize(nb_fa7);
+          dWdx_P2.resize(nb_fa7);
+          dWdy_P2.resize(nb_fa7);
+          dWdz_P2.resize(nb_fa7);
+        }
+
+      const DoubleTab& les_cg_fa7=maillage.cg_fa7();
+      DoubleTab coord_voisin_fluide_fa7_pression_1(nb_fa7,dimension);
+      DoubleTab coord_voisin_fluide_fa7_pression_2(nb_fa7,dimension);
+      DoubleTab coord_voisin_fluide_fa7_gradU_1(nb_fa7,dimension);
+      DoubleTab coord_voisin_fluide_fa7_gradU_2(nb_fa7,dimension);
+
+      const int discr= variables_internes().ref_equation_mpoint_.non_nul() ? variables_internes().ref_equation_mpoint_.valeur().get_discretization_correction() : 0; // 0 si P1, 1 si elem_diph
+
+      IntTab& list_elem_diph=variables_internes().list_elem_diph_; // EB
+      if (discr==1) list_elem_diph.resize(nb_fa7,2); // EB (j,0) : num_elem_diph, (j,1) : num compo associee
+
+      const DoubleVect& tab_num_compo=variables_internes().num_compo.valeur().valeurs();
+      for (int fa7 =0 ; fa7<nb_fa7 ; fa7++)
+        {
+          if (!maillage.facette_virtuelle(fa7))
+            {
+              DoubleVect normale_fa7(dimension);
+              int elem_diph=domaine.chercher_elements(les_cg_fa7(fa7,0), les_cg_fa7(fa7,1), les_cg_fa7(fa7,2));
+              if (discr==1)
+                {
+                  list_elem_diph(fa7,0) = elem_diph;
+                  list_elem_diph(fa7,1) = static_cast<int>(tab_num_compo(elem_diph));
+                }
+              if (elem_diph>=0)
+                {
+                  DoubleVect delta_i(dimension);
+                  // On calcule les epaisseurs des mailles euleriennes  dans lesquelles se trouvent les facettes
+                  // Si on y a acces, on prend l'epaisseur a l'exterieur de la particule
+                  // Sinon, on prend l'epaisseur dans la particule
+                  // Cela revient simplement a choisir la maille juxtaposee a la maille diphasique
+                  int acces=1;
+                  for (int dim=0; dim<dimension; dim++)
+                    {
+                      int elem_haut=domaine_vdf.face_voisins_pour_interp(domaine_vf.elem_faces_pour_interp(elem_diph, dim+dimension),1);
+                      int elem_bas=domaine_vdf.face_voisins_pour_interp(domaine_vf.elem_faces_pour_interp(elem_diph, dim),0);
+                      if (elem_bas<0 && elem_haut<0) acces=0;
+                      if (les_normales_fa7(fa7,dim)>0) delta_i(dim) =  (elem_haut>=0) ? fabs(domaine_vdf.dist_elem(elem_diph,elem_haut, dim)) : fabs(domaine_vdf.dist_elem(elem_diph,elem_bas, dim));
+                      else delta_i(dim) =  (elem_bas>=0) ? fabs(domaine_vdf.dist_elem(elem_diph,elem_bas, dim)) : fabs(domaine_vdf.dist_elem(elem_diph,elem_haut, dim)) ;
+                    }
+                  if (acces==0)
+                    {
+                      for (int dim=0; dim<dimension; dim++)
+                        {
+                          coord_voisin_fluide_fa7_pression_1(fa7,dim)=-1e15;
+                          coord_voisin_fluide_fa7_pression_2(fa7,dim)=-1e15;
+                          coord_voisin_fluide_fa7_gradU_1(fa7,dim)=-1e15;
+                          coord_voisin_fluide_fa7_gradU_2(fa7,dim)=-1e15;
+                        }
+                    }
+                  else
+                    {
+                      double epsilon=0;
+                      for (int dim=0; dim<dimension; dim++)
+                        {
+                          epsilon+= fabs(delta_i(dim)*fabs(les_normales_fa7(fa7,dim))); // la distance d'interpolation varie en fonction du raffinement du maillage
+                        }
+                      for (int dim=0; dim<dimension; dim++)
+                        {
+                          normale_fa7(dim)=les_normales_fa7(fa7,dim);
+                          coord_voisin_fluide_fa7_pression_1(fa7,dim)=les_cg_fa7(fa7,dim)+distance_interpolation_pression_P1*epsilon*normale_fa7(dim);
+                          coord_voisin_fluide_fa7_pression_2(fa7,dim)=les_cg_fa7(fa7,dim)+distance_interpolation_pression_P2*epsilon*normale_fa7(dim);
+                          coord_voisin_fluide_fa7_gradU_1(fa7,dim)=les_cg_fa7(fa7,dim)+distance_interpolation_gradU_P1*epsilon*normale_fa7(dim);
+                          coord_voisin_fluide_fa7_gradU_2(fa7,dim)=les_cg_fa7(fa7,dim)+distance_interpolation_gradU_P2*epsilon*normale_fa7(dim);
+                        }
+                    }
+                }
+              else
+                {
+                  for (int dim=0; dim<dimension; dim++)
+                    {
+                      coord_voisin_fluide_fa7_pression_1(fa7,dim)=-1e15;
+                      coord_voisin_fluide_fa7_pression_2(fa7,dim)=-1e15;
+                      coord_voisin_fluide_fa7_gradU_1(fa7,dim)=-1e15;
+                      coord_voisin_fluide_fa7_gradU_2(fa7,dim)=-1e15;
+                    }
+                }
+            }
+        }
+
+      // ----------------------------- Force de pression -----------------------------
+      DoubleTab pression_P1(nb_fa7);
+      DoubleTab pression_P2(nb_fa7);
+
+      if (trilinear_interpolation_elem(indicatrice, la_pression.valeurs(), coord_voisin_fluide_fa7_pression_1, pression_P1, 0, discr) && trilinear_interpolation_elem(indicatrice, la_pression.valeurs(), coord_voisin_fluide_fa7_pression_2, pression_P2,1,0)) // soit on est capable d'interpoler en P1 et P1 et on calcule la force de p
+        {
+          DoubleTab pression_extrapolee(nb_fa7);
+          Prop_P2_fluide_compo=0;
+          for (int fa7=0; fa7<nb_fa7; fa7++)
+            {
+              if (!maillage.facette_virtuelle(fa7))
+                {
+                  int compo = compo_connexes_fa7(fa7);
+                  if (variables_internes().Indic_elem_P2_(fa7)==1) Prop_P2_fluide_compo(compo)+=1;
+                  if (pression_P2(fa7)<-1e10)
+                    {
+                      if (les_post_interf.flag_pression_facettes_) pression_interf(fa7)=1e15;
+                      pression_extrapolee(fa7)=1e15;
+                      continue;
+                    }
+
+                  pression_extrapolee(fa7) = pression_P2(fa7)-distance_interpolation_pression_P2*(pression_P2(fa7)-pression_P1(fa7))/(distance_interpolation_pression_P2-distance_interpolation_pression_P1); //3*pression_P2(compo,fa7)-2*pression_P1(compo,fa7); // Si on n'est pas capable d'interpoler en P1 ET P2, alors on ne calcule pas la force de pression
+                  if (les_post_interf.flag_pression_facettes_) pression_interf(fa7)=pression_extrapolee(fa7);
+                }
+              else
+                {
+                  if (les_post_interf.flag_pression_facettes_) pression_interf(fa7)=1e15;
+                  pression_extrapolee(fa7)=-1e15;
+                }
+            }
+          for (int fa7=0; fa7<nb_fa7; fa7++)
+            {
+              int compo = compo_connexes_fa7(fa7);
+              if (pression_extrapolee(fa7)>1e10) continue;
+              double coeff=-pression_extrapolee(fa7)*les_surfaces_fa7(fa7);
+              DoubleVect pressure_force_fa7(dimension);
+              for (int dim=0; dim<dimension; dim++) pressure_force_fa7(dim)=coeff*les_normales_fa7(fa7,dim);
+              if (!maillage.facette_virtuelle(fa7))
+                {
+                  surface_tot_interf(compo)+=les_surfaces_fa7(fa7);
+                  if (les_post_interf.flag_force_pression_facettes_)
+                    {
+                      for (int dim=0; dim<dimension; dim++) force_pression_interf(fa7,dim)=pressure_force_fa7(dim);
+                    }
+                  for (int dim=0; dim<dimension; dim++) force_pression_tot_interf(compo,dim)+=pressure_force_fa7(dim);
+                }
+            }
+        }
+      else
+        {
+          for (int compo=0; compo<nb_compo_tot; compo++)
+            {
+              surface_tot_interf(compo)=1e18;
+              for (int dim=0; dim<dimension; dim++) force_pression_tot_interf(compo,dim)+=1e18;
+            }
+        }
+      // ----------------------------- Force de frottements -----------------------------
+      if (les_post_interf.methode_calcul_force_frottements_==Postraitement_Forces_Interfaces_FT::TRILINEAIRE_LINEAIRE_TENSEUR_COMPLET)
+        {
+          DoubleTab grad_U_P1(nb_fa7, dimension, dimension);
+          DoubleTab grad_U_P2(nb_fa7, dimension, dimension);
+          grad_U_P1=-1e15;
+          grad_U_P2=-1e30;
+          int interp_gradU_P1_ok=0;
+          int interp_gradU_P2_ok=0;
+          if (les_post_interf.localisation_tenseur_contraintes_== Postraitement_Forces_Interfaces_FT::FACES_NORMALE_X)
+            {
+              interp_gradU_P1_ok=trilinear_interpolation_gradU_face(indicatrice_faces, la_vitesse.valeurs(), coord_voisin_fluide_fa7_gradU_1, grad_U_P1);
+              interp_gradU_P2_ok=trilinear_interpolation_gradU_face(indicatrice_faces, la_vitesse.valeurs(), coord_voisin_fluide_fa7_gradU_2, grad_U_P2);
+            }
+          else if (les_post_interf.localisation_tenseur_contraintes_== Postraitement_Forces_Interfaces_FT::ELEMENTS)
+            {
+              interp_gradU_P1_ok=trilinear_interpolation_gradU_elem(indicatrice_faces, indicatrice, la_vitesse.valeurs(), coord_voisin_fluide_fa7_gradU_1, grad_U_P1);
+              interp_gradU_P2_ok=trilinear_interpolation_gradU_elem(indicatrice_faces, indicatrice, la_vitesse.valeurs(), coord_voisin_fluide_fa7_gradU_2, grad_U_P2);
+            }
+          if ( interp_gradU_P1_ok==1 && interp_gradU_P2_ok==1 )
+            {
+              DoubleTab grad_U_extrapole(nb_fa7, dimension, dimension);
+              grad_U_extrapole=1e20;
+
+              for (int fa7=0; fa7<nb_fa7; fa7++)
+                {
+                  dUdx_P1(fa7)=grad_U_P1(fa7,0,0);
+                  dUdy_P1(fa7)=grad_U_P1(fa7,0,1);
+                  dUdz_P1(fa7)=grad_U_P1(fa7,0,2);
+                  dVdx_P1(fa7)=grad_U_P1(fa7,1,0);
+                  dVdy_P1(fa7)=grad_U_P1(fa7,1,1);
+                  dVdz_P1(fa7)=grad_U_P1(fa7,1,2);
+                  dWdx_P1(fa7)=grad_U_P1(fa7,2,0);
+                  dWdy_P1(fa7)=grad_U_P1(fa7,2,1);
+                  dWdz_P1(fa7)=grad_U_P1(fa7,2,2);
+
+                  dUdx_P2(fa7)=grad_U_P2(fa7,0,0);
+                  dUdy_P2(fa7)=grad_U_P2(fa7,0,1);
+                  dUdz_P2(fa7)=grad_U_P2(fa7,0,2);
+                  dVdx_P2(fa7)=grad_U_P2(fa7,1,0);
+                  dVdy_P2(fa7)=grad_U_P2(fa7,1,1);
+                  dVdz_P2(fa7)=grad_U_P2(fa7,1,2);
+                  dWdx_P2(fa7)=grad_U_P2(fa7,2,0);
+                  dWdy_P2(fa7)=grad_U_P2(fa7,2,1);
+                  dWdz_P2(fa7)=grad_U_P2(fa7,2,2);
+                  for (int i=0; i<dimension; i++)
+                    {
+                      for (int j=0; j<dimension; j++)
+                        {
+                          grad_U_extrapole(fa7,i,j) = grad_U_P2(fa7,i,j)-distance_interpolation_gradU_P2*(grad_U_P2(fa7,i,j)-grad_U_P1(fa7,i,j))/(distance_interpolation_gradU_P2-distance_interpolation_gradU_P1);
+                        }
+                    }
+                }
+              for (int fa7=0; fa7<nb_fa7; fa7++)
+                {
+                  int compo=compo_connexes_fa7(fa7);
+                  Matrice_Dense tenseur_contrainte(dimension,dimension);
+                  for (int i=0; i<dimension; i++)
+                    {
+                      for (int j=0; j<dimension; j++)
+                        {
+                          tenseur_contrainte(i,j) = (grad_U_extrapole(fa7,i,j) + grad_U_extrapole(fa7,j,i));
+                        }
+                    }
+
+                  if (les_post_interf.flag_tenseur_contraintes_facettes_)
+                    {
+                      sigma_xx_interf(fa7)=tenseur_contrainte(0,0);
+                      sigma_xy_interf(fa7)=tenseur_contrainte(0,1);
+                      sigma_xz_interf(fa7)=tenseur_contrainte(0,2);
+                      sigma_yx_interf(fa7)=tenseur_contrainte(1,0);
+                      sigma_yy_interf(fa7)=tenseur_contrainte(1,1);
+                      sigma_yz_interf(fa7)=tenseur_contrainte(1,2);
+                      sigma_zx_interf(fa7)=tenseur_contrainte(2,0);
+                      sigma_zy_interf(fa7)=tenseur_contrainte(2,1);
+                      sigma_zz_interf(fa7)=tenseur_contrainte(2,2);
+                    }
+                  DoubleTab la_normale_fa7_x_surface(dimension);
+                  for (int dim=0; dim<dimension; dim++) la_normale_fa7_x_surface(dim) =les_surfaces_fa7(fa7)*les_normales_fa7(fa7,dim);
+                  DoubleVect friction_force_fa7=tenseur_contrainte*la_normale_fa7_x_surface;
+
+                  if (!maillage.facette_virtuelle(fa7))
+                    {
+                      if (les_post_interf.flag_force_frottements_facettes_)
+                        {
+                          for (int dim=0; dim<dimension; dim++) force_frottements_interf(fa7,dim)=friction_force_fa7(dim);
+                        }
+                      for (int dim=0; dim<dimension; dim++) force_frottements_tot_interf(compo,dim)+=friction_force_fa7(dim);
+                    }
+                }
+
+            }
+          else
+            {
+              for (int compo=0; compo<nb_compo_tot; compo++)
+                {
+                  for (int dim=0; dim<dimension; dim++) force_frottements_tot_interf(compo,dim)+=0;
+                }
+            }
+        }
+      else if (les_post_interf.methode_calcul_force_frottements_==Postraitement_Forces_Interfaces_FT::TRILINENAIRE_TENSEUR_PROJETE) // Voir Butaye et al., Computers and Fluids, 2023.
+        {
+          int interp_U_P1_ok=0;
+          int interp_U_P2_ok=0;
+          DoubleTab& U_P1 = variables_internes().U_P1_;
+          U_P1.resize(nb_fa7, dimension);
+          DoubleTab& U_P2 = variables_internes().U_P2_;
+          U_P2.resize(nb_fa7, dimension);
+
+          DoubleTab U_P1_spherique(nb_fa7, dimension);
+          DoubleTab U_P2_spherique(nb_fa7, dimension);
+          DoubleTab U_cg_spherique(nb_fa7, dimension);
+          DoubleTab Urr(nb_fa7);
+          DoubleTab Uthetar(nb_fa7);
+          DoubleTab Uphir(nb_fa7);
+
+          U_P1=-1e15;
+          U_P2=-1e30;
+          U_P1_spherique=-1e15;
+          U_P2_spherique=-1e30;
+          U_cg_spherique=-1e20;
+          Urr=1e8;
+          Uthetar=1e12;
+          Uphir=1e15;
+
+          double theta=0;
+          double phi=0;
+          double distance_au_cg=0;
+          const DoubleTab& positions_compo=eq_transport.get_positions_compo();
+          const DoubleTab& vitesses_compo = eq_transport.get_vitesses_compo();
+
+          //Cerr << "debut calcul composante frottements" << finl;
+          if (les_post_interf.localisation_tenseur_contraintes_== Postraitement_Forces_Interfaces_FT::ELEMENTS)
+            {
+              // 1. On calcule (interpolation trilineaire) la vitesse en P1 et P2 en coord cartesiennes
+              interp_U_P1_ok=trilinear_interpolation_face(indicatrice_faces, la_vitesse.valeurs(), coord_voisin_fluide_fa7_gradU_1, U_P1);
+              interp_U_P2_ok=trilinear_interpolation_face(indicatrice_faces, la_vitesse.valeurs(), coord_voisin_fluide_fa7_gradU_2, U_P2);
+            }
+          if ( interp_U_P1_ok && interp_U_P2_ok )
+            {
+              // 2. On passe en coordonnees spheriques
+
+              for (int fa7=0; fa7<nb_fa7; fa7++)
+                {
+                  int compo=compo_connexes_fa7(fa7);
+                  if (!maillage.facette_virtuelle(fa7))
+                    {
+                      Nb_fa7_tot_par_compo(compo)++;
+
+                      int cont=0;
+                      for (int dim=0; dim<dimension; dim++)
+                        {
+                          if (U_P2(fa7,dim)>-1e10)
+                            {
+                              //Cerr << "avant ajout U_P2_moy" << finl;
+                              U_P2_moy(compo,dim)+= U_P2(fa7,dim); // calcul de la vitesse moyenne en P2
+                              //Cerr << "apres" << finl;
+                              Nb_fa7_ok_prop(compo,dim)+=1;
+                            }
+                          else cont=1;
+                        }
+                      if (cont) continue;
+                      DoubleVect distance_cg_vect(dimension);
+                      for (int i=0; i<dimension; i++) distance_cg_vect(i)=coord_voisin_fluide_fa7_gradU_1(fa7,i)-positions_compo(compo,i);
+
+                      distance_au_cg=sqrt(local_carre_norme_vect(distance_cg_vect));
+                      if (fabs((coord_voisin_fluide_fa7_gradU_1(fa7,2)-positions_compo(compo,2))/distance_au_cg)<=1) theta=acos((coord_voisin_fluide_fa7_gradU_1(fa7,2)-positions_compo(compo,2))/distance_au_cg);
+                      else if ((coord_voisin_fluide_fa7_gradU_1(fa7,2)-positions_compo(compo,2))/distance_au_cg>1) theta=0;
+                      else if ((coord_voisin_fluide_fa7_gradU_1(fa7,2)-positions_compo(compo,2))/distance_au_cg<-1) theta=M_PI;
+                      if ((coord_voisin_fluide_fa7_gradU_1(fa7,0)-positions_compo(compo,0))>0 && (coord_voisin_fluide_fa7_gradU_1(fa7,1)-positions_compo(compo,1))>=0)
+                        {
+                          phi=atan((coord_voisin_fluide_fa7_gradU_1(fa7,1)-positions_compo(compo,1))/(coord_voisin_fluide_fa7_gradU_1(fa7,0)-positions_compo(compo,0)));
+                        }
+                      else if ((coord_voisin_fluide_fa7_gradU_1(fa7,0)-positions_compo(compo,0))>0 && (coord_voisin_fluide_fa7_gradU_1(fa7,1)-positions_compo(compo,1))<0)
+                        {
+                          phi=atan((coord_voisin_fluide_fa7_gradU_1(fa7,1)-positions_compo(compo,1))/(coord_voisin_fluide_fa7_gradU_1(fa7,0)-positions_compo(compo,0)))+2*M_PI;
+                        }
+                      else if ((coord_voisin_fluide_fa7_gradU_1(fa7,0)-positions_compo(compo,0))<0)
+                        {
+                          phi=atan((coord_voisin_fluide_fa7_gradU_1(fa7,1)-positions_compo(compo,1))/(coord_voisin_fluide_fa7_gradU_1(fa7,0)-positions_compo(compo,0)))+M_PI;
+                        }
+                      else if ((coord_voisin_fluide_fa7_gradU_1(fa7,0)-positions_compo(compo,0))==0 && (coord_voisin_fluide_fa7_gradU_1(fa7,1)-positions_compo(compo,1))>0)
+                        {
+                          phi=M_PI/2.;
+                        }
+                      else if ((coord_voisin_fluide_fa7_gradU_1(fa7,0)-positions_compo(compo,0))==0 && (coord_voisin_fluide_fa7_gradU_1(fa7,1)-positions_compo(compo,1))<0)
+                        {
+                          phi=3.*M_PI/2.;
+                        }
+
+                      U_P1_spherique(fa7,0)=sin(theta)*cos(phi)*U_P1(fa7,0)+sin(theta)*sin(phi)*U_P1(fa7,1)+cos(theta)*U_P1(fa7,2);
+                      U_P1_spherique(fa7,1)=cos(theta)*cos(phi)*U_P1(fa7,0)+cos(theta)*sin(phi)*U_P1(fa7,1)-sin(theta)*U_P1(fa7,2);
+                      U_P1_spherique(fa7,2)=sin(phi)*U_P1(fa7,0)+cos(phi)*U_P1(fa7,1);
+
+                      U_P2_spherique(fa7,0)=sin(theta)*cos(phi)*U_P2(fa7,0)+sin(theta)*sin(phi)*U_P2(fa7,1)+cos(theta)*U_P2(fa7,2);
+                      U_P2_spherique(fa7,1)=cos(theta)*cos(phi)*U_P2(fa7,0)+cos(theta)*sin(phi)*U_P2(fa7,1)-sin(theta)*U_P2(fa7,2);
+                      U_P2_spherique(fa7,2)=sin(phi)*U_P2(fa7,0)+cos(phi)*U_P2(fa7,1);
+
+                      U_cg_spherique(fa7,0)=sin(theta)*cos(phi)*vitesses_compo(compo,0)+sin(theta)*sin(phi)*vitesses_compo(compo,1)+cos(theta)*vitesses_compo(compo,2);
+                      U_cg_spherique(fa7,1)=cos(theta)*cos(phi)*vitesses_compo(compo,0)+cos(theta)*sin(phi)*vitesses_compo(compo,1)-sin(theta)*vitesses_compo(compo,2);
+                      U_cg_spherique(fa7,2)=sin(phi)*vitesses_compo(compo,0)+cos(phi)*vitesses_compo(compo,1);
+
+                      // On recalcule delta --> epsilon
+                      int elem_diph=domaine.chercher_elements(les_cg_fa7(fa7,0), les_cg_fa7(fa7,1),les_cg_fa7(fa7,2));
+                      DoubleVect delta_i(dimension);
+                      int elem00=domaine_vdf.face_voisins_pour_interp(domaine_vf.elem_faces_pour_interp(elem_diph, 0+dimension),1);
+                      int elem11=domaine_vdf.face_voisins_pour_interp(domaine_vf.elem_faces_pour_interp(elem_diph, 1+dimension),1);
+                      int elem22=domaine_vdf.face_voisins_pour_interp(domaine_vf.elem_faces_pour_interp(elem_diph, 2+dimension),1);
+                      int elem33=domaine_vdf.face_voisins_pour_interp(domaine_vf.elem_faces_pour_interp(elem_diph, 2),0);
+
+                      delta_i(0) = elem00>=0 ? fabs(domaine_vdf.dist_elem(elem_diph, elem00, 0)) : -1e15;
+                      delta_i(1) = elem11>=0 ? fabs(domaine_vdf.dist_elem(elem_diph, elem11, 1)) : -1e15;
+
+                      if (les_normales_fa7(fa7,2)>0) delta_i(2) = elem22>=0 ? fabs(domaine_vdf.dist_elem(elem_diph, elem22, 2)) : -1e15;
+                      else delta_i(2) = elem33>=0 ? fabs(domaine_vdf.dist_elem(elem_diph, elem33 , 2)) : -1e15;
+                      double epsilon=0;
+                      for (int dim=0; dim<dimension; dim++) epsilon+= fabs(delta_i(dim)*fabs(les_normales_fa7(fa7,dim))); // la distance d'interpolation varie en fonction du raffinement du maillage
+                      // On calcule les composantes de la force de frottements en coord spherique (apres simplifications) : ff=mu*(2*Urr, Uthetar, Uphir)
+                      Urr(fa7)=(-U_P2_spherique(fa7,0)+4.*U_P1_spherique(fa7,0)-3.*U_cg_spherique(fa7,0))/(2.*epsilon);
+                      Uthetar(fa7)=(-U_P2_spherique(fa7,1)+4.*U_P1_spherique(fa7,1)-3.*U_cg_spherique(fa7,1))/(2.*epsilon);
+                      Uphir(fa7)=(-U_P2_spherique(fa7,2)+4.*U_P1_spherique(fa7,2)-3.*U_cg_spherique(fa7,2))/(2.*epsilon);
+
+                      DoubleVect ff(dimension);
+                      ff(0)=mu_f*les_surfaces_fa7(fa7)*(2.*sin(theta)*cos(phi)*Urr(fa7)+cos(theta)*cos(phi)*Uthetar(fa7)-sin(phi)*Uphir(fa7));
+                      ff(1)=mu_f*les_surfaces_fa7(fa7)*(2.*sin(theta)*sin(phi)*Urr(fa7)+cos(theta)*sin(phi)*Uthetar(fa7)+cos(phi)*Uphir(fa7));
+                      ff(2)=mu_f*les_surfaces_fa7(fa7)*(2.*cos(theta)*Urr(fa7)-sin(theta)*Uthetar(fa7));
+
+                      for (int dim=0; dim<dimension; dim++) force_frottements_tot_interf(compo,dim)+=ff(dim);
+
+                      if (les_post_interf.flag_force_frottements_facettes_)
+                        for (int dim=0; dim<dimension; dim++) force_frottements_interf(fa7,dim)=ff(dim);
+                    }
+                }
+
+            }
+          else
+            {
+              for (int compo=0; compo<nb_compo_tot; compo++)
+                {
+                  for (int dim=0; dim<dimension; dim++) force_frottements_tot_interf(compo,dim)+=0;
+                }
+            }
+        }
+    }
+  mp_sum_for_each_item(force_pression_tot_interf);
+  mp_sum_for_each_item(surface_tot_interf);
+  mp_sum_for_each_item(force_frottements_tot_interf);
+  mp_sum_for_each_item(Nb_fa7_ok_prop);
+  mp_sum_for_each_item(U_P2_moy);
+  mp_sum_for_each_item(Prop_P2_fluide_compo);
+
+  for (int compo=0; compo<nb_compo_tot; compo++)
+    {
+      for (int dim=0; dim<dimension; dim++)
+        {
+          if (Nb_fa7_ok_prop(compo,dim)>0) U_P2_moy(compo,dim)/=Nb_fa7_ok_prop(compo,dim);
+        }
+    }
+  mp_sum_for_each_item(Nb_fa7_tot_par_compo);
+  for (int compo=0; compo<nb_compo_tot; compo++)
+    {
+      for (int dim=0; dim<dimension; dim++)
+        {
+          if (Nb_fa7_tot_par_compo(compo)>0) Nb_fa7_ok_prop(compo,dim)/=Nb_fa7_tot_par_compo(compo);
+        }
+      if (Nb_fa7_tot_par_compo(compo)>0) Prop_P2_fluide_compo(compo)/=Nb_fa7_tot_par_compo(compo);
+
+    }
+  if (les_post_interf.calcul_forces_theoriques_stokes_ && schema_temps().nb_pas_dt()==0) calcul_forces_interface_stokes_th();
+}
+// EB
+/*! @brief idem que Navier_Stokes_FT_Disc::calcul_forces_interface_stokes mais utilise les champs theoriques de vitesse et de pression
+ * discretisee, respectivement, aux faces et aux elements du maillage eulerien. Valable pour une simulation avec une seule particule,
+ * centre en 0 dans le domaine. Le calcul n'est effectue qu'au premier pas de temps. Les resultats sont disponibles dans les latas (pour chaque facette),
+ * et dans les .out (grandeurs integrales). Les efforts sont calcules a partir d'une discretisation des champs theoriques et l'utilisation de la methode de calcul --> th_dis.
+ * On calcule egalement les efforts theoriques exerces sur chaque facette --> th (Le suffixe "dis" est mal choisi car "th" est aussi discretise aux facettes mais...trop tard).
+ * En effet, on connait la solution theorique des contraintes exerces sur l'interface en fonction de theta. Ces contraintes sont donnees par la solution de Stokes.
+ * Comparer th_dis et th_dis permet de calculer l'erreur de la methode, en prenant en compte la meme erreur de discretisation. En effet,
+ * dans les deux cas, on calcule les grandeurs locales sur la surface des facettes.
+ * Valable uniquement en 3D.
+ */
+void Navier_Stokes_FT_Disc::calcul_forces_interface_stokes_th()
+{
+
+  /***************************************************************
+  *	  	  	  	  	  	RECUPERATION DES GRANDEURS		         *
+  ***************************************************************/
+  Cerr << "Navier_Stokes_FT_Disc::calcul_forces_interface_stokes_th" << finl;
+  REF(Transport_Interfaces_FT_Disc) & refeq_transport = variables_internes().ref_eq_interf_proprietes_fluide;
+  const Transport_Interfaces_FT_Disc& eq_transport = refeq_transport.valeur();
+  const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis().valeur());
+  const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_dis().valeur());
+  const Domaine& domaine = domaine_vdf.domaine();
+
+  const Maillage_FT_Disc& maillage = eq_transport.maillage_interface_pour_post();
+
+  const int nb_fa7 = maillage.nb_facettes();
+  int nb_fa7_reelle=0;
+  for (int i=0; i<nb_fa7; i++)
+    if (!maillage.facette_virtuelle(i)) nb_fa7_reelle++;
+  IntVect compo_connexes_fa7(nb_fa7); // Init a zero
+  int n = search_connex_components_local_FT(maillage, compo_connexes_fa7);
+  int nb_compo_tot=compute_global_connex_components_FT(maillage, compo_connexes_fa7, n);
+  const Fluide_Diphasique& mon_fluide = fluide_diphasique();
+  const Particule_Solide& particule_solide=ref_cast(Particule_Solide,mon_fluide.fluide_phase(0));
+  const double rayon_particule =eq_transport.get_rayons_compo()(0); // On ne se sert de cette fonction que lorsqu'il y a une seule particule dans le domaine
+  double mu_p=particule_solide.viscosite_dynamique().valeurs()(0, 0);
+  double mu_f=mon_fluide.fluide_phase(1).viscosite_dynamique().valeurs()(0, 0);
+  double phi_mu=mu_p/mu_f;
+
+  DoubleTab& force_pression_tot_interf_stokes_th=variables_internes().force_pression_tot_interf_stokes_th_;
+  DoubleTab& force_frottements_tot_interf_stokes_th=variables_internes().force_frottements_tot_interf_stokes_th_;
+  DoubleTab& force_pression_tot_interf_stokes_th_dis=variables_internes().force_pression_tot_interf_stokes_th_dis_;
+  DoubleTab& force_frottements_tot_interf_stokes_th_dis=variables_internes().force_frottements_tot_interf_stokes_th_dis_;
+
+  force_pression_tot_interf_stokes_th.resize(nb_compo_tot,dimension);
+  force_frottements_tot_interf_stokes_th.resize(nb_compo_tot,dimension);
+  force_pression_tot_interf_stokes_th_dis.resize(nb_compo_tot,dimension);
+  force_frottements_tot_interf_stokes_th_dis.resize(nb_compo_tot,dimension);
+  force_pression_tot_interf_stokes_th=0;
+  force_frottements_tot_interf_stokes_th=0;
+  force_pression_tot_interf_stokes_th_dis=0;
+  force_frottements_tot_interf_stokes_th_dis=0;
+
+  const Postraitement_Forces_Interfaces_FT& les_post_interf=eq_transport.postraitement_forces_interf();
+  const double& distance_interpolation_pression_P1=les_post_interf.get_distance_interpolation_pression_P1();
+  const double& distance_interpolation_pression_P2=les_post_interf.get_distance_interpolation_pression_P2();
+  const double& distance_interpolation_gradU_P1=les_post_interf.get_distance_interpolation_gradU_P1();
+  const double& distance_interpolation_gradU_P2=les_post_interf.get_distance_interpolation_gradU_P2();
+  DoubleTab& gravite = milieu().gravite().valeurs();
+  DoubleVect vect_g(dimension);
+  for (int i=0; i<dimension; i++) vect_g(i)=gravite(0,i);
+  const double norme_g = sqrt(local_carre_norme_vect(vect_g));
+  const double rho_f = mon_fluide.fluide_phase(1).masse_volumique().valeurs()(0, 0);
+  const double rho_p = particule_solide.masse_volumique().valeurs()(0, 0);
+  const double& v_inf_stokes=2./3.*(pow(rayon_particule,2)*norme_g/mu_f)*((1+phi_mu)/(2.+3.*phi_mu)*(rho_f-rho_p));
+  const DoubleTab& indicatrice = refeq_transport.valeur().get_update_indicatrice().valeurs();
+  const DoubleTab& indicatrice_faces = refeq_transport.valeur().get_compute_indicatrice_faces().valeurs();
+
+  // Idealement il faudrait plutot mettre le calcul des champs theoriques de stokes sur le champs eulerien dans une fonction inclue a la fin de derivee_en_temps_inco mais comme on va quasi jamais s'en servir...
+  DoubleTab& vitesse_stokes_th=variables_internes().vitesse_stokes_th_.valeur().valeurs();
+  vitesse_stokes_th=0;
+  //vitesse_stokes_th.resize(la_vitesse.valeurs().dimension_tot(0),dimension);
+
+  for (int num_face=0; num_face<vitesse_stokes_th.dimension_tot(0); num_face++)
+    {
+      double x=domaine_vdf.xv(num_face,0);
+      double y=domaine_vdf.xv(num_face,1);
+      double z=domaine_vdf.xv(num_face,2);
+      if (sqrt(x*x+y*y+z*z)>=rayon_particule)
+        {
+          if (domaine_vf.orientation(num_face)==0) vitesse_stokes_th(num_face)=(v_inf_stokes*z*x*((2+3*phi_mu)/(1+phi_mu)*(rayon_particule)/(4*(pow(x*x+y*y+z*z,1.5)))-3*phi_mu/(1+phi_mu)*pow(rayon_particule,3)/(4*pow(x*x+y*y+z*z,2.5))));
+          if (domaine_vf.orientation(num_face)==1) vitesse_stokes_th(num_face)=(v_inf_stokes*z*y*((2+3*phi_mu)/(1+phi_mu)*(rayon_particule)/(4*(pow(x*x+y*y+z*z,1.5)))-3*phi_mu/(1+phi_mu)*pow(rayon_particule,3)/(4*pow(x*x+y*y+z*z,2.5))));
+          if (domaine_vf.orientation(num_face)==2) vitesse_stokes_th(num_face)=-v_inf_stokes*(+(z*z)*(1/(x*x+y*y+z*z)-(2+3*phi_mu)/(1+phi_mu)*(rayon_particule)/(2*pow(x*x+y*y+z*z,1.5))+phi_mu/(1+phi_mu)*pow(rayon_particule,3)/(2*pow(x*x+y*y+z*z,2.5)))+(1-z*z/(x*x+y*y+z*z))*(1-(2+3*phi_mu)/(1+phi_mu)*rayon_particule/(4*sqrt(x*x+y*y+z*z))-phi_mu/(1+phi_mu)*pow(rayon_particule,3)/(4*pow(x*x+y*y+z*z,1.5))));
+        }
+      else
+        {
+          if (domaine_vf.orientation(num_face)==0) vitesse_stokes_th(num_face)=v_inf_stokes/(2*pow(rayon_particule,2))*(1/(1+phi_mu))*x*z;
+          if (domaine_vf.orientation(num_face)==1) vitesse_stokes_th(num_face)=v_inf_stokes/(2*pow(rayon_particule,2))*(1/(1+phi_mu))*y*z;
+          if (domaine_vf.orientation(num_face)==2) vitesse_stokes_th(num_face)=v_inf_stokes/(2*(1+phi_mu))*(1+z*z/(pow(rayon_particule,2))-2*(x*x+y*y+z*z)/(pow(rayon_particule,2)));
+        }
+    }
+  vitesse_stokes_th.echange_espace_virtuel();
+
+  DoubleTab& pression_stokes_th=variables_internes().pression_stokes_th_.valeur().valeurs();
+
+  for (int num_elem=0; num_elem<pression_stokes_th.dimension_tot(0); num_elem++)
+    {
+      double x=domaine_vdf.xp(num_elem,0);
+      double y=domaine_vdf.xp(num_elem,1);
+      double z=domaine_vdf.xp(num_elem,2);
+      if (sqrt(x*x+y*y+z*z)>=rayon_particule)
+        {
+          pression_stokes_th(num_elem)=mu_f*v_inf_stokes*((2+3*phi_mu)/(1+phi_mu))*1/2*rayon_particule*z/(pow(x*x+y*y+z*z,1.5));
+        }
+      else
+        {
+          pression_stokes_th(num_elem)=mu_p*v_inf_stokes*5/((1+phi_mu)*(pow(rayon_particule,2)))*z;
+        }
+    }
+
+  pression_stokes_th.echange_espace_virtuel();
+
+  if (nb_fa7>0)
+    {
+      const ArrOfDouble& les_surfaces_fa7 = maillage.get_update_surface_facettes();
+      const DoubleTab& les_normales_fa7 = maillage.get_update_normale_facettes();
+      DoubleTab& pression_interf_stokes_th_dis = variables_internes().pression_interf_stokes_th_dis_;
+      if (les_post_interf.flag_pression_facettes_)
+        {
+          pression_interf_stokes_th_dis.resize(nb_fa7);
+          pression_interf_stokes_th_dis=3e15;
+        }
+      DoubleTab& force_pression_th = variables_internes().force_pression_stokes_th_;
+      force_pression_th.resize(nb_fa7,dimension);
+      force_pression_th=3e15;
+
+      DoubleTab& force_frottements_th = variables_internes().force_frottements_stokes_th_;
+      force_frottements_th.resize(nb_fa7,dimension);
+      force_frottements_th=3e15;
+
+      DoubleTab& force_pression_th_dis = variables_internes().force_pression_stokes_th_dis_;
+      force_pression_th_dis.resize(nb_fa7,dimension);
+      force_pression_th_dis=3e15;
+
+      DoubleTab& force_frottements_th_dis = variables_internes().force_frottements_stokes_th_dis_;
+      force_frottements_th_dis.resize(nb_fa7,dimension);
+      force_frottements_th_dis=3e15;
+
+      const DoubleTab& la_vitesse_stokes_th=variables_internes().vitesse_stokes_th_.valeurs();
+      const DoubleTab& la_pression_stokes_th=variables_internes().pression_stokes_th_.valeurs();
+
+      DoubleTab& sigma_xx_interf_stokes_th_dis = variables_internes().sigma_xx_interf_stokes_th_dis_;
+      DoubleTab& sigma_xy_interf_stokes_th_dis = variables_internes().sigma_xy_interf_stokes_th_dis_;
+      DoubleTab& sigma_xz_interf_stokes_th_dis = variables_internes().sigma_xz_interf_stokes_th_dis_;
+      DoubleTab& sigma_yx_interf_stokes_th_dis = variables_internes().sigma_yx_interf_stokes_th_dis_;
+      DoubleTab& sigma_yy_interf_stokes_th_dis = variables_internes().sigma_yy_interf_stokes_th_dis_;
+      DoubleTab& sigma_yz_interf_stokes_th_dis = variables_internes().sigma_yz_interf_stokes_th_dis_;
+      DoubleTab& sigma_zx_interf_stokes_th_dis = variables_internes().sigma_zx_interf_stokes_th_dis_;
+      DoubleTab& sigma_zy_interf_stokes_th_dis = variables_internes().sigma_zy_interf_stokes_th_dis_;
+      DoubleTab& sigma_zz_interf_stokes_th_dis = variables_internes().sigma_zz_interf_stokes_th_dis_;
+      DoubleTab& sigma_xx_interf_stokes_th = variables_internes().sigma_xx_interf_stokes_th_;
+      DoubleTab& sigma_xy_interf_stokes_th = variables_internes().sigma_xy_interf_stokes_th_;
+      DoubleTab& sigma_xz_interf_stokes_th = variables_internes().sigma_xz_interf_stokes_th_;
+      DoubleTab& sigma_yy_interf_stokes_th = variables_internes().sigma_yy_interf_stokes_th_;
+      DoubleTab& sigma_yz_interf_stokes_th = variables_internes().sigma_yz_interf_stokes_th_;
+      DoubleTab& sigma_zz_interf_stokes_th = variables_internes().sigma_zz_interf_stokes_th_;
+      DoubleTab& dUdx_P1_th_dis = variables_internes().dUdx_P1_th_dis_;
+      DoubleTab& dUdy_P1_th_dis = variables_internes().dUdy_P1_th_dis_;
+      DoubleTab& dUdz_P1_th_dis = variables_internes().dUdz_P1_th_dis_;
+      DoubleTab& dVdx_P1_th_dis = variables_internes().dVdx_P1_th_dis_;
+      DoubleTab& dVdy_P1_th_dis = variables_internes().dVdy_P1_th_dis_;
+      DoubleTab& dVdz_P1_th_dis = variables_internes().dVdz_P1_th_dis_;
+      DoubleTab& dWdx_P1_th_dis = variables_internes().dWdx_P1_th_dis_;
+      DoubleTab& dWdy_P1_th_dis = variables_internes().dWdy_P1_th_dis_;
+      DoubleTab& dWdz_P1_th_dis = variables_internes().dWdz_P1_th_dis_;
+      DoubleTab& dUdx_P2_th_dis = variables_internes().dUdx_P2_th_dis_;
+      DoubleTab& dUdy_P2_th_dis = variables_internes().dUdy_P2_th_dis_;
+      DoubleTab& dUdz_P2_th_dis = variables_internes().dUdz_P2_th_dis_;
+      DoubleTab& dVdx_P2_th_dis = variables_internes().dVdx_P2_th_dis_;
+      DoubleTab& dVdy_P2_th_dis = variables_internes().dVdy_P2_th_dis_;
+      DoubleTab& dVdz_P2_th_dis = variables_internes().dVdz_P2_th_dis_;
+      DoubleTab& dWdx_P2_th_dis = variables_internes().dWdx_P2_th_dis_;
+      DoubleTab& dWdy_P2_th_dis = variables_internes().dWdy_P2_th_dis_;
+      DoubleTab& dWdz_P2_th_dis = variables_internes().dWdz_P2_th_dis_;
+      DoubleTab& dUdx_P1_th = variables_internes().dUdx_P1_th_;
+      DoubleTab& dUdy_P1_th = variables_internes().dUdy_P1_th_;
+      DoubleTab& dUdz_P1_th = variables_internes().dUdz_P1_th_;
+      DoubleTab& dVdx_P1_th = variables_internes().dVdx_P1_th_;
+      DoubleTab& dVdy_P1_th = variables_internes().dVdy_P1_th_;
+      DoubleTab& dVdz_P1_th = variables_internes().dVdz_P1_th_;
+      DoubleTab& dWdx_P1_th = variables_internes().dWdx_P1_th_;
+      DoubleTab& dWdy_P1_th = variables_internes().dWdy_P1_th_;
+      DoubleTab& dWdz_P1_th = variables_internes().dWdz_P1_th_;
+      DoubleTab& dUdx_P2_th = variables_internes().dUdx_P2_th_;
+      DoubleTab& dUdy_P2_th = variables_internes().dUdy_P2_th_;
+      DoubleTab& dUdz_P2_th = variables_internes().dUdz_P2_th_;
+      DoubleTab& dVdx_P2_th = variables_internes().dVdx_P2_th_;
+      DoubleTab& dVdy_P2_th = variables_internes().dVdy_P2_th_;
+      DoubleTab& dVdz_P2_th = variables_internes().dVdz_P2_th_;
+      DoubleTab& dWdx_P2_th = variables_internes().dWdx_P2_th_;
+      DoubleTab& dWdy_P2_th = variables_internes().dWdy_P2_th_;
+      DoubleTab& dWdz_P2_th = variables_internes().dWdz_P2_th_;
+
+      if (les_post_interf.flag_tenseur_contraintes_facettes_)
+        {
+          sigma_xx_interf_stokes_th_dis.resize(nb_fa7);
+          sigma_xy_interf_stokes_th_dis.resize(nb_fa7);
+          sigma_xz_interf_stokes_th_dis.resize(nb_fa7);
+          sigma_yx_interf_stokes_th_dis.resize(nb_fa7);
+          sigma_yy_interf_stokes_th_dis.resize(nb_fa7);
+          sigma_yz_interf_stokes_th_dis.resize(nb_fa7);
+          sigma_zx_interf_stokes_th_dis.resize(nb_fa7);
+          sigma_zy_interf_stokes_th_dis.resize(nb_fa7);
+          sigma_zz_interf_stokes_th_dis.resize(nb_fa7);
+
+          sigma_xx_interf_stokes_th.resize(nb_fa7);
+          sigma_xy_interf_stokes_th.resize(nb_fa7);
+          sigma_xz_interf_stokes_th.resize(nb_fa7);
+          sigma_yy_interf_stokes_th.resize(nb_fa7);
+          sigma_yz_interf_stokes_th.resize(nb_fa7);
+          sigma_zz_interf_stokes_th.resize(nb_fa7);
+
+          dUdx_P1_th_dis.resize(nb_fa7);
+          dUdy_P1_th_dis.resize(nb_fa7);
+          dUdz_P1_th_dis.resize(nb_fa7);
+          dVdx_P1_th_dis.resize(nb_fa7);
+          dVdy_P1_th_dis.resize(nb_fa7);
+          dVdz_P1_th_dis.resize(nb_fa7);
+          dWdx_P1_th_dis.resize(nb_fa7);
+          dWdy_P1_th_dis.resize(nb_fa7);
+          dWdz_P1_th_dis.resize(nb_fa7);
+
+          dUdx_P2_th_dis.resize(nb_fa7);
+          dUdy_P2_th_dis.resize(nb_fa7);
+          dUdz_P2_th_dis.resize(nb_fa7);
+          dVdx_P2_th_dis.resize(nb_fa7);
+          dVdy_P2_th_dis.resize(nb_fa7);
+          dVdz_P2_th_dis.resize(nb_fa7);
+          dWdx_P2_th_dis.resize(nb_fa7);
+          dWdy_P2_th_dis.resize(nb_fa7);
+          dWdz_P2_th_dis.resize(nb_fa7);
+
+          dUdx_P1_th.resize(nb_fa7);
+          dUdy_P1_th.resize(nb_fa7);
+          dUdz_P1_th.resize(nb_fa7);
+          dVdx_P1_th.resize(nb_fa7);
+          dVdy_P1_th.resize(nb_fa7);
+          dVdz_P1_th.resize(nb_fa7);
+          dWdx_P1_th.resize(nb_fa7);
+          dWdy_P1_th.resize(nb_fa7);
+          dWdz_P1_th.resize(nb_fa7);
+
+          dUdx_P2_th.resize(nb_fa7);
+          dUdy_P2_th.resize(nb_fa7);
+          dUdz_P2_th.resize(nb_fa7);
+          dVdx_P2_th.resize(nb_fa7);
+          dVdy_P2_th.resize(nb_fa7);
+          dVdz_P2_th.resize(nb_fa7);
+          dWdx_P2_th.resize(nb_fa7);
+          dWdy_P2_th.resize(nb_fa7);
+          dWdz_P2_th.resize(nb_fa7);
+        }
+
+      DoubleTab& U_P1_th=variables_internes().U_P1_th_;
+      U_P1_th.resize(nb_fa7,dimension);
+      DoubleTab& U_P2_th=variables_internes().U_P2_th_;
+      U_P2_th.resize(nb_fa7,dimension);
+
+      const DoubleTab& les_cg_fa7=maillage.cg_fa7();
+      DoubleTab coord_voisin_fluide_fa7_pression_1(nb_fa7,dimension);
+      DoubleTab coord_voisin_fluide_fa7_pression_2(nb_fa7,dimension);
+      DoubleTab coord_voisin_fluide_fa7_gradU_1(nb_fa7,dimension);
+      DoubleTab coord_voisin_fluide_fa7_gradU_2(nb_fa7,dimension);
+
+      for (int fa7 =0 ; fa7<nb_fa7 ; fa7++)
+        {
+          if (!maillage.facette_virtuelle(fa7))
+            {
+              DoubleVect normale_fa7(dimension);
+              int elem_diph=domaine.chercher_elements(les_cg_fa7(fa7,0), les_cg_fa7(fa7,1),les_cg_fa7(fa7,2));
+              DoubleVect delta_i(dimension);
+
+              // On calcule les epaisseurs des mailles euleriennes  dans lesquelles se trouvent les facettes
+              // Si on y a acces, on prend l'epaisseur a l'exterieur de la particule
+              // Sinon, on prend l'epaisseur dans la particule
+              // Cela revient simplement a choisir la maille juxtaposee a la maille diphasique
+              for (int dim=0; dim<dimension; dim++)
+                {
+                  int elem_haut=domaine_vdf.face_voisins_pour_interp(domaine_vf.elem_faces_pour_interp(elem_diph, dim+dimension),1);
+                  int elem_bas=domaine_vdf.face_voisins_pour_interp(domaine_vf.elem_faces_pour_interp(elem_diph, dim),0);
+                  if (les_normales_fa7(fa7,dim)>0) delta_i(dim) =  (elem_haut>=0) ? fabs(domaine_vdf.dist_elem(elem_diph,elem_haut, dim)) : fabs(domaine_vdf.dist_elem(elem_diph,elem_bas, dim));
+                  else delta_i(dim) =  (elem_bas>=0) ? fabs(domaine_vdf.dist_elem(elem_diph,elem_bas, dim)) : fabs(domaine_vdf.dist_elem(elem_diph,elem_haut, dim));
+                }
+
+              double epsilon=0;
+              for (int dim=0; dim<dimension; dim++)
+                {
+                  epsilon+= fabs(delta_i(dim)*fabs(les_normales_fa7(fa7,dim))); // la distance d'interpolation varie en fonction du raffinement du maillage
+                }
+
+              for (int dim=0; dim<dimension; dim++)
+                {
+                  normale_fa7(dim)=les_normales_fa7(fa7,dim);
+                  coord_voisin_fluide_fa7_pression_1(fa7,dim)=les_cg_fa7(fa7,dim)+distance_interpolation_pression_P1*epsilon*normale_fa7(dim);
+                  coord_voisin_fluide_fa7_pression_2(fa7,dim)=les_cg_fa7(fa7,dim)+distance_interpolation_pression_P2*epsilon*normale_fa7(dim);
+                  coord_voisin_fluide_fa7_gradU_1(fa7,dim)=les_cg_fa7(fa7,dim)+distance_interpolation_gradU_P1*epsilon*normale_fa7(dim);
+                  coord_voisin_fluide_fa7_gradU_2(fa7,dim)=les_cg_fa7(fa7,dim)+distance_interpolation_gradU_P2*epsilon*normale_fa7(dim);
+                }
+
+              double x=coord_voisin_fluide_fa7_pression_1(fa7,0);
+              double y=coord_voisin_fluide_fa7_pression_1(fa7,1);
+              double z=coord_voisin_fluide_fa7_pression_1(fa7,2);
+              U_P1_th(fa7,0) = (v_inf_stokes*z*x*((2+3*phi_mu)/(1+phi_mu)*(rayon_particule)/(4*(pow(x*x+y*y+z*z,1.5)))-3*phi_mu/(1+phi_mu)*pow(rayon_particule,3)/(4*pow(x*x+y*y+z*z,2.5))));
+              U_P1_th(fa7,1) = (v_inf_stokes*z*y*((2+3*phi_mu)/(1+phi_mu)*(rayon_particule)/(4*(pow(x*x+y*y+z*z,1.5)))-3*phi_mu/(1+phi_mu)*pow(rayon_particule,3)/(4*pow(x*x+y*y+z*z,2.5))));
+              U_P1_th(fa7,2) = -v_inf_stokes*(+(z*z)*(1/(x*x+y*y+z*z)-(2+3*phi_mu)/(1+phi_mu)*(rayon_particule)/(2*pow(x*x+y*y+z*z,1.5))+phi_mu/(1+phi_mu)*pow(rayon_particule,3)/(2*pow(x*x+y*y+z*z,2.5)))+(1-z*z/(x*x+y*y+z*z))*(1-(2+3*phi_mu)/(1+phi_mu)*rayon_particule/(4*sqrt(x*x+y*y+z*z))-phi_mu/(1+phi_mu)*pow(rayon_particule,3)/(4*pow(x*x+y*y+z*z,1.5))));
+
+              x=coord_voisin_fluide_fa7_pression_2(fa7,0);
+              y=coord_voisin_fluide_fa7_pression_2(fa7,1);
+              z=coord_voisin_fluide_fa7_pression_2(fa7,2);
+              U_P2_th(fa7,0) = (v_inf_stokes*z*x*((2+3*phi_mu)/(1+phi_mu)*(rayon_particule)/(4*(pow(x*x+y*y+z*z,1.5)))-3*phi_mu/(1+phi_mu)*pow(rayon_particule,3)/(4*pow(x*x+y*y+z*z,2.5))));
+              U_P2_th(fa7,1) = (v_inf_stokes*z*y*((2+3*phi_mu)/(1+phi_mu)*(rayon_particule)/(4*(pow(x*x+y*y+z*z,1.5)))-3*phi_mu/(1+phi_mu)*pow(rayon_particule,3)/(4*pow(x*x+y*y+z*z,2.5))));
+              U_P2_th(fa7,2) = -v_inf_stokes*(+(z*z)*(1/(x*x+y*y+z*z)-(2+3*phi_mu)/(1+phi_mu)*(rayon_particule)/(2*pow(x*x+y*y+z*z,1.5))+phi_mu/(1+phi_mu)*pow(rayon_particule,3)/(2*pow(x*x+y*y+z*z,2.5)))+(1-z*z/(x*x+y*y+z*z))*(1-(2+3*phi_mu)/(1+phi_mu)*rayon_particule/(4*sqrt(x*x+y*y+z*z))-phi_mu/(1+phi_mu)*pow(rayon_particule,3)/(4*pow(x*x+y*y+z*z,1.5))));
+
+            }
+        }
+
+      // ----------------------------- Force de pression -----------------------------
+      DoubleTab pression_P1(nb_fa7);
+      DoubleTab pression_P2(nb_fa7);
+
+      if (trilinear_interpolation_elem(indicatrice, la_pression_stokes_th, coord_voisin_fluide_fa7_pression_1, pression_P1) && trilinear_interpolation_elem(indicatrice, la_pression_stokes_th, coord_voisin_fluide_fa7_pression_2, pression_P2)) // soit on est capable d'interpoler en P1 et P1 et on calcule la force de p
+        {
+          DoubleTab pression_extrapolee(nb_fa7);
+
+          for (int fa7=0; fa7<nb_fa7; fa7++)
+            {
+              if (!maillage.facette_virtuelle(fa7))
+                {
+                  pression_extrapolee(fa7) = pression_P2(fa7)-distance_interpolation_pression_P2*(pression_P2(fa7)-pression_P1(fa7))/(distance_interpolation_pression_P2-distance_interpolation_pression_P1); //3*pression_P2(compo,fa7)-2*pression_P1(compo,fa7); // Si on n'est pas capable d'interpoler en P1 ET P2, alors on ne calcule pas la force de pression
+                  pression_interf_stokes_th_dis(fa7)=pression_extrapolee(fa7);
+                }
+              else
+                {
+                  pression_interf_stokes_th_dis(fa7)=1e15;
+                  pression_extrapolee(fa7)=-1e15;
+                }
+            }
+
+
+          for (int fa7=0; fa7<nb_fa7; fa7++)
+            {
+              int compo=compo_connexes_fa7(fa7);
+              double coeff=-pression_extrapolee(fa7)*les_surfaces_fa7(fa7);
+              DoubleVect pressure_force_fa7(dimension);
+              for (int dim=0; dim<dimension; dim++) pressure_force_fa7(dim)=coeff*les_normales_fa7(fa7,dim);
+              if (!maillage.facette_virtuelle(fa7))
+                {
+
+                  for (int dim=0; dim<dimension; dim++) force_pression_th_dis(fa7,dim)=pressure_force_fa7(dim);
+                  force_pression_th(fa7,0)=-(mu_f*v_inf_stokes*(2.+3.*phi_mu)/(1.+phi_mu)*1./(2.*rayon_particule)*les_cg_fa7(fa7,2)/rayon_particule)*les_normales_fa7(fa7,0)*les_surfaces_fa7(fa7);
+                  force_pression_th(fa7,1)=-(mu_f*v_inf_stokes*(2.+3.*phi_mu)/(1.+phi_mu)*1./(2.*rayon_particule)*les_cg_fa7(fa7,2)/rayon_particule)*les_normales_fa7(fa7,1)*les_surfaces_fa7(fa7);
+                  force_pression_th(fa7,2)=-(mu_f*v_inf_stokes*(2.+3.*phi_mu)/(1.+phi_mu)*1./(2.*rayon_particule)*les_cg_fa7(fa7,2)/rayon_particule)*les_normales_fa7(fa7,2)*les_surfaces_fa7(fa7);
+
+                  for (int dim=0; dim<dimension; dim++)
+                    {
+                      force_pression_tot_interf_stokes_th_dis(compo,dim)+=pressure_force_fa7(dim);
+                      force_pression_tot_interf_stokes_th(compo,dim)+=force_pression_th(fa7,dim);
+                    }
+                }
+            }
+
+        }
+      else
+        {
+          for (int compo=0; compo<nb_compo_tot; compo++)
+            {
+              for (int dim=0; dim<dimension; dim++) force_pression_tot_interf_stokes_th(compo,dim)+=1e18;
+            }
+        }
+
+      // ----------------------------- Force de frottements -----------------------------
+      DoubleTab grad_U_P1(nb_fa7, dimension, dimension);
+      DoubleTab grad_U_P2(nb_fa7, dimension, dimension);
+      grad_U_P1=-1e15;
+      grad_U_P2=-1e30;
+
+      if (les_post_interf.methode_calcul_force_frottements_==Postraitement_Forces_Interfaces_FT::TRILINEAIRE_LINEAIRE_TENSEUR_COMPLET)
+        {
+          int interp_gradU_P1_ok=0;
+          int interp_gradU_P2_ok=0;
+          if (les_post_interf.localisation_tenseur_contraintes_==Postraitement_Forces_Interfaces_FT::FACES_NORMALE_X)
+            {
+              interp_gradU_P1_ok=trilinear_interpolation_gradU_face(indicatrice_faces, la_vitesse_stokes_th, coord_voisin_fluide_fa7_gradU_1, grad_U_P1);
+              interp_gradU_P2_ok=trilinear_interpolation_gradU_face(indicatrice_faces, la_vitesse_stokes_th, coord_voisin_fluide_fa7_gradU_2, grad_U_P2);
+            }
+          else if (les_post_interf.localisation_tenseur_contraintes_==Postraitement_Forces_Interfaces_FT::ELEMENTS)
+            {
+              interp_gradU_P1_ok=trilinear_interpolation_gradU_elem(indicatrice_faces, indicatrice, la_vitesse_stokes_th, coord_voisin_fluide_fa7_gradU_1, grad_U_P1);
+              interp_gradU_P2_ok=trilinear_interpolation_gradU_elem(indicatrice_faces, indicatrice, la_vitesse_stokes_th, coord_voisin_fluide_fa7_gradU_2, grad_U_P2);
+            }
+          if ( interp_gradU_P1_ok==1 && interp_gradU_P2_ok==1 )
+            {
+              DoubleTab grad_U_extrapole(nb_fa7, dimension, dimension);
+              grad_U_extrapole=1e20;
+
+              for (int fa7=0; fa7<nb_fa7; fa7++)
+                {
+                  dUdx_P1_th_dis(fa7)=grad_U_P1(fa7,0,0);
+                  dUdy_P1_th_dis(fa7)=grad_U_P1(fa7,0,1);
+                  dUdz_P1_th_dis(fa7)=grad_U_P1(fa7,0,2);
+                  dVdx_P1_th_dis(fa7)=grad_U_P1(fa7,1,0);
+                  dVdy_P1_th_dis(fa7)=grad_U_P1(fa7,1,1);
+                  dVdz_P1_th_dis(fa7)=grad_U_P1(fa7,1,2);
+                  dWdx_P1_th_dis(fa7)=grad_U_P1(fa7,2,0);
+                  dWdy_P1_th_dis(fa7)=grad_U_P1(fa7,2,1);
+                  dWdz_P1_th_dis(fa7)=grad_U_P1(fa7,2,2);
+
+                  dUdx_P2_th_dis(fa7)=grad_U_P2(fa7,0,0);
+                  dUdy_P2_th_dis(fa7)=grad_U_P2(fa7,0,1);
+                  dUdz_P2_th_dis(fa7)=grad_U_P2(fa7,0,2);
+                  dVdx_P2_th_dis(fa7)=grad_U_P2(fa7,1,0);
+                  dVdy_P2_th_dis(fa7)=grad_U_P2(fa7,1,1);
+                  dVdz_P2_th_dis(fa7)=grad_U_P2(fa7,1,2);
+                  dWdx_P2_th_dis(fa7)=grad_U_P2(fa7,2,0);
+                  dWdy_P2_th_dis(fa7)=grad_U_P2(fa7,2,1);
+                  dWdz_P2_th_dis(fa7)=grad_U_P2(fa7,2,2);
+                  if (!maillage.facette_virtuelle(fa7))
+                    {
+
+                      double x_fa7_P1=coord_voisin_fluide_fa7_gradU_1(fa7,0);
+                      double y_fa7_P1=coord_voisin_fluide_fa7_gradU_1(fa7,1);
+                      double z_fa7_P1=coord_voisin_fluide_fa7_gradU_1(fa7,2);
+                      double r_fa7_P1=sqrt(x_fa7_P1*x_fa7_P1+y_fa7_P1*y_fa7_P1+z_fa7_P1*z_fa7_P1);
+
+                      dUdx_P1_th(fa7)=v_inf_stokes*(pow(x_fa7_P1,2)*z_fa7_P1/pow(r_fa7_P1,3)*( -(2+3*phi_mu)/(1+phi_mu)*3*rayon_particule/(pow(2*r_fa7_P1,2)) + phi_mu/(1+phi_mu)*9*pow(rayon_particule,3)/(4*pow(r_fa7_P1,4)) )  +
+                                                    pow(x_fa7_P1,2)/(pow(r_fa7_P1,2)-pow(z_fa7_P1,2))*z_fa7_P1/r_fa7_P1*( (1-pow(z_fa7_P1/r_fa7_P1,2))*( (2+3*phi_mu)/(1+phi_mu)*rayon_particule/(4*pow(r_fa7_P1,2)) + phi_mu/(1+phi_mu)*3*pow(rayon_particule,3)/(4*pow(r_fa7_P1,4)) )
+                                                                                                                          + pow(z_fa7_P1/r_fa7_P1,2)*( (2+3*phi_mu)/(1+phi_mu)*rayon_particule/(4*pow(r_fa7_P1,2))-phi_mu/(1+phi_mu)*3*pow(rayon_particule,3)/(4*pow(r_fa7_P1,4)) ) )
+                                                    + pow(y_fa7_P1,2)*z_fa7_P1/(r_fa7_P1*(pow(r_fa7_P1,2)-pow(z_fa7_P1,2)))*((2+3*phi_mu)/(1+phi_mu)*rayon_particule/(pow(2*r_fa7_P1,2))-phi_mu/(1+phi_mu)*3*pow(rayon_particule,3)/(4*pow(r_fa7_P1,4))));
+
+                      dUdy_P1_th(fa7)=1e8; // valeur abritraire car pas besoin de cette composante
+
+                      dUdz_P1_th(fa7)=v_inf_stokes*(x_fa7_P1/r_fa7_P1*(pow(z_fa7_P1/r_fa7_P1,2)*(-(2+3*phi_mu)/(1+phi_mu)*rayon_particule/(2*pow(r_fa7_P1,2))+phi_mu/(1+phi_mu)*3*pow(rayon_particule,3)/(2*pow(r_fa7_P1,4)))
+                                                                       +(1-pow(z_fa7_P1/r_fa7_P1,2))*((2+3*phi_mu)/(1+phi_mu)*rayon_particule/(4*pow(r_fa7_P1,2))-phi_mu/(1+phi_mu)*3*pow(rayon_particule,3)/(4*pow(r_fa7_P1,4))))+
+                                                    pow(z_fa7_P1,2)*x_fa7_P1/pow(r_fa7_P1,3)*phi_mu/(1+phi_mu)*3*pow(rayon_particule,3)/(2*pow(r_fa7_P1,4)));
+
+                      dVdx_P1_th(fa7)=1e8;
+
+                      dVdy_P1_th(fa7)=-1e8;
+
+                      dVdz_P1_th(fa7)=v_inf_stokes*(y_fa7_P1/r_fa7_P1*(pow(z_fa7_P1/r_fa7_P1,2)*(-(2+3*phi_mu)/(1+phi_mu)*rayon_particule/(2*pow(r_fa7_P1,2))+phi_mu/(1+phi_mu)*3*pow(rayon_particule,3)/(2*pow(r_fa7_P1,4)))
+                                                                       +(1-pow(z_fa7_P1/r_fa7_P1,2))*((2+3*phi_mu)/(1+phi_mu)*rayon_particule/(4*pow(r_fa7_P1,2))-phi_mu/(1+phi_mu)*3*pow(rayon_particule,3)/(4*pow(r_fa7_P1,4))))+
+                                                    pow(z_fa7_P1,2)*y_fa7_P1/pow(r_fa7_P1,3)*phi_mu/(1+phi_mu)*3*pow(rayon_particule,3)/(2*pow(r_fa7_P1,4)));
+
+                      dWdx_P1_th(fa7)=v_inf_stokes*(pow(z_fa7_P1,2)*x_fa7_P1/pow(r_fa7_P1,3)*(-(2+3*phi_mu)/(1+phi_mu)*3*rayon_particule/(pow(2*r_fa7_P1,2))+phi_mu/(1+phi_mu)*9*pow(rayon_particule,3)/(4*pow(r_fa7_P1,4)))-
+                                                    x_fa7_P1/r_fa7_P1*((1-pow(z_fa7_P1/r_fa7_P1,2))*((2+3*phi_mu)/(1+phi_mu)*rayon_particule/pow(2*r_fa7_P1,2)+phi_mu/(1+phi_mu)*3*pow(rayon_particule,3)/(4*pow(r_fa7_P1,4)))
+                                                                       +pow(z_fa7_P1/r_fa7_P1,2)*((2+3*phi_mu)/(1+phi_mu)*rayon_particule/pow(2*r_fa7_P1,2)-phi_mu/(1+phi_mu)*3*pow(rayon_particule,3)/(4*pow(r_fa7_P1,4)))));
+
+                      dWdy_P1_th(fa7)=v_inf_stokes*(pow(z_fa7_P1,2)*y_fa7_P1/pow(r_fa7_P1,3)*(-(2+3*phi_mu)/(1+phi_mu)*3*rayon_particule/(pow(2*r_fa7_P1,2))+phi_mu/(1+phi_mu)*9*pow(rayon_particule,3)/(4*pow(r_fa7_P1,4)))-
+                                                    y_fa7_P1/r_fa7_P1*((1-pow(z_fa7_P1/r_fa7_P1,2))*((2+3*phi_mu)/(1+phi_mu)*rayon_particule/pow(2*r_fa7_P1,2)+phi_mu/(1+phi_mu)*3*pow(rayon_particule,3)/(4*pow(r_fa7_P1,4)))
+                                                                       +pow(z_fa7_P1/r_fa7_P1,2)*((2+3*phi_mu)/(1+phi_mu)*rayon_particule/pow(2*r_fa7_P1,2)-phi_mu/(1+phi_mu)*3*pow(rayon_particule,3)/(4*pow(r_fa7_P1,4)))));
+
+                      dWdz_P1_th(fa7)=v_inf_stokes*(z_fa7_P1/r_fa7_P1*(pow(z_fa7_P1/r_fa7_P1,2)*(-(2+3*phi_mu)/(1+phi_mu)*rayon_particule/(2*pow(r_fa7_P1,2))+phi_mu/(1+phi_mu)*3*pow(rayon_particule,3)/(2*pow(r_fa7_P1,4)))+
+                                                                       (1-pow(z_fa7_P1/r_fa7_P1,2))*((2+3*phi_mu)/(1+phi_mu)*rayon_particule/(pow(2*r_fa7_P1,2))-phi_mu/(1+phi_mu)*3*pow(rayon_particule,3)/(4*pow(r_fa7_P1,4))))-
+                                                    z_fa7_P1/r_fa7_P1*(1-pow(z_fa7_P1/r_fa7_P1,2))*phi_mu/(1+phi_mu)*3*pow(rayon_particule,3)/(2*pow(r_fa7_P1,4)));
+
+
+
+                      double x_fa7_P2=coord_voisin_fluide_fa7_gradU_2(fa7,0);
+                      double y_fa7_P2=coord_voisin_fluide_fa7_gradU_2(fa7,1);
+                      double z_fa7_P2=coord_voisin_fluide_fa7_gradU_2(fa7,2);
+                      double r_fa7_P2=sqrt(x_fa7_P2*x_fa7_P2+y_fa7_P2*y_fa7_P2+z_fa7_P2*z_fa7_P2);
+
+                      dUdx_P2_th(fa7)=v_inf_stokes*(pow(x_fa7_P2,2)*z_fa7_P2/pow(r_fa7_P2,3)*( -(2+3*phi_mu)/(1+phi_mu)*3*rayon_particule/(pow(2*r_fa7_P2,2)) + phi_mu/(1+phi_mu)*9*pow(rayon_particule,3)/(4*pow(r_fa7_P2,4)) )  +
+                                                    pow(x_fa7_P2,2)/(pow(r_fa7_P2,2)-pow(z_fa7_P2,2))*z_fa7_P2/r_fa7_P2*( (1-pow(z_fa7_P2/r_fa7_P2,2))*( (2+3*phi_mu)/(1+phi_mu)*rayon_particule/(4*pow(r_fa7_P2,2)) + phi_mu/(1+phi_mu)*3*pow(rayon_particule,3)/(4*pow(r_fa7_P2,4)) )
+                                                                                                                          + pow(z_fa7_P2/r_fa7_P2,2)*( (2+3*phi_mu)/(1+phi_mu)*rayon_particule/(4*pow(r_fa7_P2,2))-phi_mu/(1+phi_mu)*3*pow(rayon_particule,3)/(4*pow(r_fa7_P2,4)) ) )
+                                                    + pow(y_fa7_P2,2)*z_fa7_P2/(r_fa7_P2*(pow(r_fa7_P2,2)-pow(z_fa7_P2,2)))*((2+3*phi_mu)/(1+phi_mu)*rayon_particule/(pow(2*r_fa7_P2,2))-phi_mu/(1+phi_mu)*3*pow(rayon_particule,3)/(4*pow(r_fa7_P2,4))));
+
+                      dUdy_P2_th(fa7)=1e8;
+
+                      dUdz_P2_th(fa7)=v_inf_stokes*(x_fa7_P2/r_fa7_P2*(pow(z_fa7_P2/r_fa7_P2,2)*(-(2+3*phi_mu)/(1+phi_mu)*rayon_particule/(2*pow(r_fa7_P2,2))+phi_mu/(1+phi_mu)*3*pow(rayon_particule,3)/(2*pow(r_fa7_P2,4)))
+                                                                       +(1-pow(z_fa7_P2/r_fa7_P2,2))*((2+3*phi_mu)/(1+phi_mu)*rayon_particule/(4*pow(r_fa7_P2,2))-phi_mu/(1+phi_mu)*3*pow(rayon_particule,3)/(4*pow(r_fa7_P2,4))))+
+                                                    pow(z_fa7_P2,2)*x_fa7_P2/pow(r_fa7_P2,3)*phi_mu/(1+phi_mu)*3*pow(rayon_particule,3)/(2*pow(r_fa7_P2,4)));
+
+                      dVdx_P2_th(fa7)=1e8;
+
+                      dVdy_P2_th(fa7)=-1e8;
+
+                      dVdz_P2_th(fa7)=v_inf_stokes*(y_fa7_P2/r_fa7_P2*(pow(z_fa7_P2/r_fa7_P2,2)*(-(2+3*phi_mu)/(1+phi_mu)*rayon_particule/(2*pow(r_fa7_P2,2))+phi_mu/(1+phi_mu)*3*pow(rayon_particule,3)/(2*pow(r_fa7_P2,4)))
+                                                                       +(1-pow(z_fa7_P2/r_fa7_P2,2))*((2+3*phi_mu)/(1+phi_mu)*rayon_particule/(4*pow(r_fa7_P2,2))-phi_mu/(1+phi_mu)*3*pow(rayon_particule,3)/(4*pow(r_fa7_P2,4))))+
+                                                    pow(z_fa7_P2,2)*y_fa7_P2/pow(r_fa7_P2,3)*phi_mu/(1+phi_mu)*3*pow(rayon_particule,3)/(2*pow(r_fa7_P2,4)));
+
+                      dWdx_P2_th(fa7)=v_inf_stokes*(pow(z_fa7_P2,2)*x_fa7_P2/pow(r_fa7_P2,3)*(-(2+3*phi_mu)/(1+phi_mu)*3*rayon_particule/(pow(2*r_fa7_P2,2))+phi_mu/(1+phi_mu)*9*pow(rayon_particule,3)/(4*pow(r_fa7_P2,4)))-
+                                                    x_fa7_P2/r_fa7_P2*((1-pow(z_fa7_P2/r_fa7_P2,2))*((2+3*phi_mu)/(1+phi_mu)*rayon_particule/pow(2*r_fa7_P2,2)+phi_mu/(1+phi_mu)*3*pow(rayon_particule,3)/(4*pow(r_fa7_P2,4)))
+                                                                       +pow(z_fa7_P2/r_fa7_P2,2)*((2+3*phi_mu)/(1+phi_mu)*rayon_particule/pow(2*r_fa7_P2,2)-phi_mu/(1+phi_mu)*3*pow(rayon_particule,3)/(4*pow(r_fa7_P2,4)))));
+
+                      dWdy_P2_th(fa7)=v_inf_stokes*(pow(z_fa7_P2,2)*y_fa7_P2/pow(r_fa7_P2,3)*(-(2+3*phi_mu)/(1+phi_mu)*3*rayon_particule/(pow(2*r_fa7_P2,2))+phi_mu/(1+phi_mu)*9*pow(rayon_particule,3)/(4*pow(r_fa7_P2,4)))-
+                                                    y_fa7_P2/r_fa7_P2*((1-pow(z_fa7_P2/r_fa7_P2,2))*((2+3*phi_mu)/(1+phi_mu)*rayon_particule/pow(2*r_fa7_P2,2)+phi_mu/(1+phi_mu)*3*pow(rayon_particule,3)/(4*pow(r_fa7_P2,4)))
+                                                                       +pow(z_fa7_P2/r_fa7_P2,2)*((2+3*phi_mu)/(1+phi_mu)*rayon_particule/pow(2*r_fa7_P2,2)-phi_mu/(1+phi_mu)*3*pow(rayon_particule,3)/(4*pow(r_fa7_P2,4)))));
+
+                      dWdz_P2_th(fa7)=v_inf_stokes*(z_fa7_P2/r_fa7_P2*(pow(z_fa7_P2/r_fa7_P2,2)*(-(2+3*phi_mu)/(1+phi_mu)*rayon_particule/(2*pow(r_fa7_P2,2))+phi_mu/(1+phi_mu)*3*pow(rayon_particule,3)/(2*pow(r_fa7_P2,4)))+
+                                                                       (1-pow(z_fa7_P2/r_fa7_P2,2))*((2+3*phi_mu)/(1+phi_mu)*rayon_particule/(pow(2*r_fa7_P2,2))-phi_mu/(1+phi_mu)*3*pow(rayon_particule,3)/(4*pow(r_fa7_P2,4))))-
+                                                    z_fa7_P2/r_fa7_P2*(1-pow(z_fa7_P2/r_fa7_P2,2))*phi_mu/(1+phi_mu)*3*pow(rayon_particule,3)/(2*pow(r_fa7_P2,4)));
+
+                    }
+                  for (int i=0; i<dimension; i++)
+                    {
+                      for (int j=0; j<dimension; j++)
+                        {
+                          grad_U_extrapole(fa7,i,j) = grad_U_P2(fa7,i,j)-distance_interpolation_gradU_P2*(grad_U_P2(fa7,i,j)-grad_U_P1(fa7,i,j))/(distance_interpolation_gradU_P2-distance_interpolation_gradU_P1);
+                        }
+                    }
+                }
+
+              for (int fa7=0; fa7<nb_fa7; fa7++)
+                {
+                  int compo=compo_connexes_fa7(fa7);
+                  Matrice_Dense tenseur_contrainte(dimension,dimension);
+                  for (int i=0; i<dimension; i++)
+                    {
+                      for (int j=0; j<dimension; j++)
+                        {
+                          tenseur_contrainte(i,j) = (grad_U_extrapole(fa7,i,j) + grad_U_extrapole(fa7,j,i));
+                        }
+                    }
+
+                  if (les_post_interf.flag_tenseur_contraintes_facettes_)
+                    {
+                      sigma_xx_interf_stokes_th_dis(fa7)=tenseur_contrainte(0,0);
+                      sigma_xy_interf_stokes_th_dis(fa7)=tenseur_contrainte(0,1);
+                      sigma_xz_interf_stokes_th_dis(fa7)=tenseur_contrainte(0,2);
+                      sigma_yx_interf_stokes_th_dis(fa7)=tenseur_contrainte(1,0);
+                      sigma_yy_interf_stokes_th_dis(fa7)=tenseur_contrainte(1,1);
+                      sigma_yz_interf_stokes_th_dis(fa7)=tenseur_contrainte(1,2);
+                      sigma_zx_interf_stokes_th_dis(fa7)=tenseur_contrainte(2,0);
+                      sigma_zy_interf_stokes_th_dis(fa7)=tenseur_contrainte(2,1);
+                      sigma_zz_interf_stokes_th_dis(fa7)=tenseur_contrainte(2,2);
+
+                      double X_p=les_cg_fa7(fa7,0);
+                      double Y_p=les_cg_fa7(fa7,1);
+                      double Z_p=les_cg_fa7(fa7,2);
+
+                      sigma_xx_interf_stokes_th(fa7)=(mu_f*v_inf_stokes/(rayon_particule))*(Z_p/(rayon_particule*(1.+phi_mu)))*(pow(X_p/rayon_particule,2)*(Z_p*Z_p/(pow(rayon_particule,2)*(1.-pow(Z_p/rayon_particule,2)))+3.*phi_mu-2.)+(pow(Y_p/rayon_particule,2)*(1.-pow(Z_p/rayon_particule,2))));
+                      sigma_xy_interf_stokes_th(fa7)=(mu_f*v_inf_stokes/(rayon_particule))*(Z_p/(rayon_particule*(1.+phi_mu)))*X_p*Y_p/(rayon_particule*rayon_particule)*(3.*phi_mu-3.);
+                      sigma_xz_interf_stokes_th(fa7)=(mu_f*v_inf_stokes/(rayon_particule))*X_p/(rayon_particule*(1.+phi_mu))*(-3./2.*phi_mu*(1.-pow(Z_p/rayon_particule,2))+3.*pow(Z_p/rayon_particule,2)*(phi_mu/2.-1.));
+                      sigma_yy_interf_stokes_th(fa7)=(mu_f*v_inf_stokes/(rayon_particule))*(Z_p/(rayon_particule*(1.+phi_mu)))*(Y_p*Y_p/pow(rayon_particule,2)*(3.*phi_mu-2.+(Z_p*Z_p/pow(rayon_particule,2))/(1.-Z_p*Z_p/pow(rayon_particule,2)))+X_p*X_p/(pow(rayon_particule,2)*(1.-Z_p*Z_p/pow(rayon_particule,2))));
+                      sigma_yz_interf_stokes_th(fa7)=(mu_f*v_inf_stokes/(rayon_particule))*Y_p/(rayon_particule*(1.+phi_mu))*(-3./2.*phi_mu*(1.-Z_p*Z_p/pow(rayon_particule,2))+3.*Z_p*Z_p/pow(rayon_particule,2)*(phi_mu/2.-1.));
+                      sigma_zz_interf_stokes_th(fa7)=(mu_f*v_inf_stokes/(rayon_particule))*(Z_p/(rayon_particule*(1.+phi_mu)))*(-3.*phi_mu/2.*(1.-Z_p*Z_p/pow(rayon_particule,2))+1.-3.*Z_p*Z_p/pow(rayon_particule,2));
+                    }
+                  DoubleTab la_normale_fa7_x_surface(dimension);
+                  for (int dim=0; dim<dimension; dim++) la_normale_fa7_x_surface(dim) =les_surfaces_fa7(fa7)*les_normales_fa7(fa7,dim);
+                  DoubleVect friction_force_fa7=tenseur_contrainte*la_normale_fa7_x_surface;
+
+                  if (!maillage.facette_virtuelle(fa7))
+                    {
+
+                      for (int dim=0; dim<dimension; dim++) force_frottements_th_dis(fa7,dim)=friction_force_fa7(dim);
+
+                      force_frottements_th(fa7,0)=-mu_f*v_inf_stokes*les_cg_fa7(fa7,0)*les_cg_fa7(fa7,2)/(pow(rayon_particule,3))*(9.*phi_mu+8.)/(1.+phi_mu)*les_surfaces_fa7(fa7);
+                      force_frottements_th(fa7,1)=-mu_f*v_inf_stokes*les_cg_fa7(fa7,1)*les_cg_fa7(fa7,2)/(pow(rayon_particule,3))*(9.*phi_mu+8.)/(1.+phi_mu)*les_surfaces_fa7(fa7);
+                      force_frottements_th(fa7,2)=mu_f*v_inf_stokes*1./(2.*rayon_particule*(1.+phi_mu))*(-3.*phi_mu+pow(les_cg_fa7(fa7,2)/rayon_particule,2)*(3.*phi_mu-4.))*les_surfaces_fa7(fa7);
+
+                      for (int dim=0; dim<dimension; dim++)
+                        {
+                          force_frottements_tot_interf_stokes_th_dis(compo,dim)+=friction_force_fa7(dim);
+                          force_frottements_tot_interf_stokes_th(compo,dim)+=force_frottements_th(fa7,dim);
+                        }
+                    }
+                }
+            }
+          else
+            {
+              for (int compo=0; compo<nb_compo_tot; compo++)
+                {
+                  for (int dim=0; dim<dimension; dim++) force_frottements_tot_interf_stokes_th(compo,dim)+=0;
+                }
+            }
+        }
+      else if (les_post_interf.methode_calcul_force_frottements_==Postraitement_Forces_Interfaces_FT::TRILINENAIRE_TENSEUR_PROJETE)
+        {
+          int interp_U_P1_ok=0;
+          int interp_U_P2_ok=0;
+          DoubleTab& U_P1_th_dis = variables_internes().U_P1_th_dis_;
+          U_P1_th_dis.resize(nb_fa7, dimension);
+          DoubleTab& U_P2_th_dis = variables_internes().U_P2_th_dis_;
+          U_P2_th_dis.resize(nb_fa7, dimension);
+
+          DoubleTab U_P1_spherique(nb_fa7, dimension);
+          DoubleTab U_P2_spherique(nb_fa7, dimension);
+          DoubleTab U_cg_spherique(nb_fa7, dimension);
+          DoubleTab Urr(nb_fa7);
+          DoubleTab Uthetar(nb_fa7);
+          DoubleTab Uphir(nb_fa7);
+
+          U_P1_th_dis=-1e15;
+          U_P2_th_dis=-1e30;
+          U_P1_spherique=-1e15;
+          U_P2_spherique=-1e30;
+          U_cg_spherique=-1e20;
+          Urr=1e8;
+          Uthetar=1e12;
+          Uphir=1e15;
+          const DoubleTab& positions_compo=eq_transport.get_positions_compo();
+          double theta=0;
+          double phi=0;
+          double distance_au_cg=0;
+
+          if (les_post_interf.localisation_tenseur_contraintes_== Postraitement_Forces_Interfaces_FT::ELEMENTS)
+            {
+              // 1. On calcule (interpolation trilineaire) la vitesse en P1 et P2 en coord cartesiennes
+              interp_U_P1_ok=trilinear_interpolation_face(indicatrice_faces, la_vitesse_stokes_th, coord_voisin_fluide_fa7_gradU_1, U_P1_th_dis);
+              interp_U_P2_ok=trilinear_interpolation_face(indicatrice_faces, la_vitesse_stokes_th, coord_voisin_fluide_fa7_gradU_2, U_P2_th_dis);
+            }
+          if ( interp_U_P1_ok && interp_U_P2_ok )
+            {
+              // 2. On passe en coordonnees spheriques
+
+              for (int fa7=0; fa7<nb_fa7; fa7++)
+                {
+                  int compo=compo_connexes_fa7(fa7);
+                  if (!maillage.facette_virtuelle(fa7))
+                    {
+                      DoubleVect distance_cg_vect(dimension);
+                      for (int i=0; i<dimension; i++) distance_cg_vect(i)=coord_voisin_fluide_fa7_gradU_1(fa7,i)-positions_compo(compo,i);
+
+                      distance_au_cg=sqrt(local_carre_norme_vect(distance_cg_vect));
+                      if (fabs((coord_voisin_fluide_fa7_gradU_1(fa7,2)-positions_compo(compo,2))/distance_au_cg)<=1) theta=acos((coord_voisin_fluide_fa7_gradU_1(fa7,2)-positions_compo(compo,2))/distance_au_cg);
+                      else if ((coord_voisin_fluide_fa7_gradU_1(fa7,2)-positions_compo(compo,2))/distance_au_cg>1) theta=0;
+                      else if ((coord_voisin_fluide_fa7_gradU_1(fa7,2)-positions_compo(compo,2))/distance_au_cg<-1) theta=M_PI;
+                      if ((coord_voisin_fluide_fa7_gradU_1(fa7,0)-positions_compo(compo,0))>0 && (coord_voisin_fluide_fa7_gradU_1(fa7,1)-positions_compo(compo,1))>=0)
+                        {
+                          phi=atan((coord_voisin_fluide_fa7_gradU_1(fa7,1)-positions_compo(compo,1))/(coord_voisin_fluide_fa7_gradU_1(fa7,0)-positions_compo(compo,0)));
+                        }
+                      else if ((coord_voisin_fluide_fa7_gradU_1(fa7,0)-positions_compo(compo,0))>0 && (coord_voisin_fluide_fa7_gradU_1(fa7,1)-positions_compo(compo,1))<0)
+                        {
+                          phi=atan((coord_voisin_fluide_fa7_gradU_1(fa7,1)-positions_compo(compo,1))/(coord_voisin_fluide_fa7_gradU_1(fa7,0)-positions_compo(compo,0)))+2*M_PI;
+                        }
+                      else if ((coord_voisin_fluide_fa7_gradU_1(fa7,0)-positions_compo(compo,0))<0)
+                        {
+                          phi=atan((coord_voisin_fluide_fa7_gradU_1(fa7,1)-positions_compo(compo,1))/(coord_voisin_fluide_fa7_gradU_1(fa7,0)-positions_compo(compo,0)))+M_PI;
+                        }
+                      else if ((coord_voisin_fluide_fa7_gradU_1(fa7,0)-positions_compo(compo,0))==0 && (coord_voisin_fluide_fa7_gradU_1(fa7,1)-positions_compo(compo,1))>0)
+                        {
+                          phi=M_PI/2.;
+                        }
+                      else if ((coord_voisin_fluide_fa7_gradU_1(fa7,0)-positions_compo(compo,0))==0 && (coord_voisin_fluide_fa7_gradU_1(fa7,1)-positions_compo(compo,1))<0)
+                        {
+                          phi=3.*M_PI/2.;
+                        }
+
+                      U_P1_spherique(fa7,0)=sin(theta)*cos(phi)*U_P1_th_dis(fa7,0)+sin(theta)*sin(phi)*U_P1_th_dis(fa7,1)+cos(theta)*U_P1_th_dis(fa7,2);
+                      U_P1_spherique(fa7,1)=cos(theta)*cos(phi)*U_P1_th_dis(fa7,0)+cos(theta)*sin(phi)*U_P1_th_dis(fa7,1)-sin(theta)*U_P1_th_dis(fa7,2);
+                      U_P1_spherique(fa7,2)=-sin(phi)*U_P1_th_dis(fa7,0)+cos(phi)*U_P1_th_dis(fa7,1);
+
+                      U_P2_spherique(fa7,0)=sin(theta)*cos(phi)*U_P2_th_dis(fa7,0)+sin(theta)*sin(phi)*U_P2_th_dis(fa7,1)+cos(theta)*U_P2_th_dis(fa7,2);
+                      U_P2_spherique(fa7,1)=cos(theta)*cos(phi)*U_P2_th_dis(fa7,0)+cos(theta)*sin(phi)*U_P2_th_dis(fa7,1)-sin(theta)*U_P2_th_dis(fa7,2);
+                      U_P2_spherique(fa7,2)=-sin(phi)*U_P2_th_dis(fa7,0)+cos(phi)*U_P2_th_dis(fa7,1);
+
+                      U_cg_spherique(fa7,0)=0;//sin(theta)*cos(phi)*vitesses_compo(compo,0)+sin(theta)*sin(phi)*vitesses_compo(compo,1)+cos(theta)*vitesses_compo(compo,2);
+                      U_cg_spherique(fa7,1)=0;//cos(theta)*cos(phi)*vitesses_compo(compo,0)+cos(theta)*sin(phi)*vitesses_compo(compo,1)-sin(theta)*vitesses_compo(compo,2);
+                      U_cg_spherique(fa7,2)=0;//-sin(phi)*vitesses_compo(compo,0)+cos(phi)*vitesses_compo(compo,1);
+
+                      // On recalcule delta --> epsilon
+                      int elem_diph=domaine.chercher_elements(les_cg_fa7(fa7,0), les_cg_fa7(fa7,1),les_cg_fa7(fa7,2));
+                      DoubleVect delta_i(dimension);
+                      delta_i(0) = fabs(domaine_vdf.dist_elem(elem_diph, domaine_vdf.face_voisins(domaine_vf.elem_faces(elem_diph, 0+dimension),1), 0));
+                      delta_i(1) = fabs(domaine_vdf.dist_elem(elem_diph, domaine_vdf.face_voisins(domaine_vf.elem_faces(elem_diph, 1+dimension),1), 1));
+                      if (les_normales_fa7(fa7,2)>0) delta_i(2) = fabs(domaine_vdf.dist_elem(elem_diph, domaine_vdf.face_voisins(domaine_vf.elem_faces(elem_diph, 2+dimension),1), 2));
+                      else delta_i(2) = fabs(domaine_vdf.dist_elem(elem_diph, domaine_vdf.face_voisins(domaine_vf.elem_faces(elem_diph, 2),0), 2));
+                      double epsilon=0;
+                      for (int dim=0; dim<dimension; dim++) epsilon+= fabs(delta_i(dim)*fabs(les_normales_fa7(fa7,dim))); // la distance d'interpolation varie en fonction du raffinement du maillage
+
+                      // On calcule les composantes de la force de frottements en coord spherique (apres simplifications) : ff=mu*(2*Urr, Uthetar, Uphir)
+                      Urr(fa7)=(-U_P2_spherique(fa7,0)+4.*U_P1_spherique(fa7,0)-3.*U_cg_spherique(fa7,0))/(2.*epsilon);
+                      Uthetar(fa7)=(-U_P2_spherique(fa7,1)+4.*U_P1_spherique(fa7,1)-3.*U_cg_spherique(fa7,1))/(2.*epsilon);
+                      Uphir(fa7)=(-U_P2_spherique(fa7,2)+4.*U_P1_spherique(fa7,2)-3.*U_cg_spherique(fa7,2))/(2.*epsilon);
+
+                      force_frottements_th_dis(fa7,0)=mu_f*les_surfaces_fa7(fa7)*(2.*sin(theta)*cos(phi)*Urr(fa7)+cos(theta)*cos(phi)*Uthetar(fa7)-sin(phi)*Uphir(fa7));
+                      force_frottements_th_dis(fa7,1)=mu_f*les_surfaces_fa7(fa7)*(2.*sin(theta)*sin(phi)*Urr(fa7)+cos(theta)*sin(phi)*Uthetar(fa7)+cos(phi)*Uphir(fa7));
+                      force_frottements_th_dis(fa7,2)=mu_f*les_surfaces_fa7(fa7)*(2.*cos(theta)*Urr(fa7)-sin(theta)*Uthetar(fa7));
+
+
+                      force_frottements_th(fa7,0)=-mu_f*v_inf_stokes*les_cg_fa7(fa7,0)*les_cg_fa7(fa7,2)/(pow(rayon_particule,3))*(9.*phi_mu+8.)/(1.+phi_mu)*les_surfaces_fa7(fa7);
+                      force_frottements_th(fa7,1)=-mu_f*v_inf_stokes*les_cg_fa7(fa7,1)*les_cg_fa7(fa7,2)/(pow(rayon_particule,3))*(9.*phi_mu+8.)/(1.+phi_mu)*les_surfaces_fa7(fa7);
+                      force_frottements_th(fa7,2)=mu_f*v_inf_stokes*1./(2.*rayon_particule*(1.+phi_mu))*(-3.*phi_mu+pow(les_cg_fa7(fa7,2)/rayon_particule,2)*(3.*phi_mu-4.))*les_surfaces_fa7(fa7);
+
+                      for (int dim=0; dim<dimension; dim++)
+                        {
+                          force_frottements_tot_interf_stokes_th_dis(compo,dim)+=force_frottements_th_dis(fa7,dim);
+                          force_frottements_tot_interf_stokes_th(compo,dim)+=force_frottements_th(fa7,dim);
+                        }
+                    }
+                }
+
+            }
+          else
+            {
+              for (int compo=0; compo<nb_compo_tot; compo++)
+                {
+                  for (int dim=0; dim<dimension; dim++) force_frottements_tot_interf_stokes_th(compo,dim)+=0;
+                }
+            }
+        }
+    }
+
+  mp_sum_for_each_item(force_pression_tot_interf_stokes_th);
+  mp_sum_for_each_item(force_frottements_tot_interf_stokes_th);
+  mp_sum_for_each_item(force_pression_tot_interf_stokes_th_dis);
+  mp_sum_for_each_item(force_frottements_tot_interf_stokes_th_dis);
+}
+// fin EB
+
+>>>>>>> 282fc085e (suppression espaces)
 /*! @brief Calcul de la derivee en temps de la vitesse.
  *
  */
