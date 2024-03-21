@@ -1608,6 +1608,45 @@ void Maillage_FT_Disc::remplir_structure(const DoubleTab& soms)
 
   Descripteur_FT& espace_distant = desc_sommets_.espace_distant();
   Descripteur_FT& espace_virtuel = desc_sommets_.espace_virtuel();
+<<<<<<< HEAD
+=======
+  //int nb_som_tot=def_noeud.dimension(0);
+  //def_noeud.resize(nb_som_tot,8);
+  //  def_noeud(i,5) = numero de la face de normale x qui contient le sommet (-1 sinon) // EB
+  //  def_noeud(i,6) = numero de la face de normale y qui contient le sommet (-1 sinon) // EB
+  //  def_noeud(i,7) = numero de la face de normale z qui contient le sommet (-1 sinon) // EB
+  // debut EB
+  // Maintenant que l'on connait le num des elements qui contiennent les sommets,
+  // on peut construire sommet_face de la maniere suivante :
+  // --------------------------------
+  //	|	 |    !	x |    !   |
+  //	|--- 1--- |---e2---|---e3--|
+  //	|	 |    !	  |    !   |
+  // ---------------------------------
+  //	| 1  |	2|	  |	   |	        y
+  //	|--------|-------- |--------|	^
+  //	| 3  |	4|	  |	   |            |
+  // ---------------------------------	---> x
+  // x : sommet lagrangien
+  // representation du volume de controle d'une face eulerienne
+  // !	|  !
+  // !	|  !
+
+
+  // Faces de normale x :
+  // Si x appartient a la zone 2 ou 4, alors le sommet appartient a la face 2 de l'element e2
+  // Si x appartient a la zone 1 ou 3, alors, le sommmet appartient a la face 0 de l'element e2
+  // Faces de normale y :
+  // Si x appartient a la zone 1 ou 2, alors le sommet appartient a la face 4 de l'element e2
+  // Si x appartient a la zone 3 ou 4, alors, le sommmet appartient a la face 1 de l'element e2
+  // Idem avec Z
+
+
+  // Fin EB
+  //const Zone_dis& zone_dis = refzone_dis_.valeur(); // EB
+  //const Zone_VF& zone_vf = ref_cast(Zone_VF, zone_dis.valeur());  // EB
+  //const int nb_faces_reelles=zone_vf.nb_faces(); // EB
+>>>>>>> f8333f9c1 (ajout d'espace dans des commentaires pour un schema)
 
   int nb_noeuds = def_noeud.dimension(0);
   for (int noeud=0; noeud<nb_noeuds; noeud++)
