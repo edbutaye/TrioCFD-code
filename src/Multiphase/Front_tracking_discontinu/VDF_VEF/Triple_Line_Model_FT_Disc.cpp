@@ -1425,7 +1425,7 @@ void Triple_Line_Model_FT_Disc::compute_TCL_fluxes_in_all_boundary_cells(ArrOfIn
                             // Cerr << "[TCL: MICRO+MESO]: Corresponding face number at wall " << num_face_wall << finl;
 
                           }
-                        else if (hcell_dn<=ymeso_+Objet_U::precision_geom)
+                        else if (hcell_dn<ymeso_)
                           {
                             if (!is_in_list(list_meso_elems,elem_voisin))
                               {
