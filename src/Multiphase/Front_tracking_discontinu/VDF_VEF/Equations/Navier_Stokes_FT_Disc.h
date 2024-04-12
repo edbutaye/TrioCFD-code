@@ -33,7 +33,6 @@ class Navier_Stokes_FT_Disc: public Navier_Stokes_Turbulent
 public:
   friend class Post_Processing_Hydrodynamic_Forces;
 
-  Navier_Stokes_FT_Disc();
   void set_param(Param& titi) override;
   int lire_motcle_non_standard(const Motcle&, Entree&) override;
   const Milieu_base& milieu() const override;

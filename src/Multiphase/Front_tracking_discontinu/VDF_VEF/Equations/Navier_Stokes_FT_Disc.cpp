@@ -152,10 +152,10 @@ static void FT_disc_calculer_champs_rho_mu_nu_mono(const Domaine_dis_base& zdis,
       const DoubleTab& tab_nu_phase_0 = fluide.viscosite_cinematique().valeurs();
       const double nu = tab_nu_phase_0(0, 0);
       const double mu = nu * rho;
-      champ_rho_elem_.valeurs() = rho;
-      champ_nu_.valeurs() = nu;
-      champ_mu_.valeurs() = mu;
-      champ_rho_faces.valeurs() = rho;
+      champ_rho_elem_->valeurs() = rho;
+      champ_nu_->valeurs() = nu;
+      champ_mu_->valeurs() = mu;
+      champ_rho_faces_->valeurs() = rho;
     }
   else
     {
@@ -208,6 +208,16 @@ static void FT_disc_calculer_champs_rho_mu_nu_mono(const Domaine_dis_base& zdis,
 
       val_rho_faces.echange_espace_virtuel();
     }
+}
+
+Navier_Stokes_FT_Disc::Navier_Stokes_FT_Disc()
+{
+  variables_internes_ = new Navier_Stokes_FT_Disc_interne;
+}
+
+Navier_Stokes_FT_Disc::~Navier_Stokes_FT_Disc()
+{
+  delete variables_internes_;
 }
 
 Sortie& Navier_Stokes_FT_Disc::printOn(Sortie& os) const
