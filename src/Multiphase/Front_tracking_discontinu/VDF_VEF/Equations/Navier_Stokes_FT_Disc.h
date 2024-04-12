@@ -33,6 +33,7 @@ class Navier_Stokes_FT_Disc: public Navier_Stokes_Turbulent
 public:
   friend class Post_Processing_Hydrodynamic_Forces;
 
+  Navier_Stokes_FT_Disc();
   void set_param(Param& titi) override;
   int lire_motcle_non_standard(const Motcle&, Entree&) override;
   const Milieu_base& milieu() const override;
@@ -131,8 +132,7 @@ private:
   Navier_Stokes_FT_Disc_interne variables_internes_;
 
   double minx = -123., maxx = -123., pente = -123.;
-  int is_repulsion = 0;
-  int correction_diffusion_pch_ = 0;
+  int is_repulsion = 0, correction_diffusion_pch_ = 0;
 };
 
 #endif /* Navier_Stokes_FT_Disc_included */
