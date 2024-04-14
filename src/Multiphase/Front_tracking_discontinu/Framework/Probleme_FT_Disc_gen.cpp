@@ -114,10 +114,18 @@ void Probleme_FT_Disc_gen::lire_solved_equations(Entree& is)
     if (eq_types[i].debute_par("TRANSPORT_INTERFACES"))
       add_FT_equation(eq_name[i], eq_types[i]);
 
+  /* Add Transport_Interfaces at second */
+  for (auto& itr : solved_eqs)
+    if (Nom(itr.second).debute_par("TRANSPORT_INTERFACES"))
+      add_FT_equation(itr.first, itr.second);
+
   /* Add the remaining */
   for (int i = 0; i < static_cast<int>(eq_types.size()); i++)
     if (eq_types[i] != "NAVIER_STOKES_FT_DISC" && !eq_types[i].debute_par("TRANSPORT_INTERFACES"))
       add_FT_equation(eq_name[i], eq_types[i]);
+ /* for (auto& itr : solved_eqs)
+    if (itr.second != "NAVIER_STOKES_FT_DISC" && !Nom(itr.second).debute_par("TRANSPORT_INTERFACES"))
+      add_FT_equation(itr.first, itr.second);  */
 }
 
 void Probleme_FT_Disc_gen::typer_lire_milieu(Entree& is)
