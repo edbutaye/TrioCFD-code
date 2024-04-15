@@ -6261,6 +6261,1125 @@ int Navier_Stokes_FT_Disc::is_terme_gravite_rhog() const
   else
     return 0;
 }
+<<<<<<< HEAD
+=======
+
+const Champ_Fonc& Navier_Stokes_FT_Disc::get_num_compo() const
+{
+  return variables_internes().num_compo;
+}
+Champ_Fonc& Navier_Stokes_FT_Disc::get_num_compo()
+{
+  return variables_internes().num_compo;
+}
+
+
+// Debut EB
+const DoubleTab& Navier_Stokes_FT_Disc::get_force_pression_interf() const
+{
+  return variables_internes().force_pression_interf_;
+}
+
+const DoubleTab& Navier_Stokes_FT_Disc::get_force_frottements_interf() const
+{
+  return variables_internes().force_frottements_interf_;
+}
+
+DoubleTab& Navier_Stokes_FT_Disc::get_force_pression_interf()
+{
+  return variables_internes().force_pression_interf_;
+}
+
+DoubleTab& Navier_Stokes_FT_Disc::get_force_frottements_interf()
+{
+  return variables_internes().force_frottements_interf_;
+}
+
+const DoubleTab& Navier_Stokes_FT_Disc::get_pression_interf() const
+{
+  return variables_internes().pression_interf_;
+}
+
+DoubleTab& Navier_Stokes_FT_Disc::get_pression_interf()
+{
+  return variables_internes().pression_interf_;
+}
+
+const DoubleTab& Navier_Stokes_FT_Disc::get_force_tot_pression_interf() const
+{
+  return variables_internes().force_pression_tot_interf_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_force_tot_frottements_interf() const
+{
+  return variables_internes().force_frottements_tot_interf_;
+}
+const DoubleVect& Navier_Stokes_FT_Disc::get_surface_tot_interf() const
+{
+  return variables_internes().surface_tot_interf_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_force_pression_tot_interf_stokes_th() const
+{
+  return variables_internes().force_pression_tot_interf_stokes_th_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_force_frottements_tot_interf_stokes_th() const
+{
+  return variables_internes().force_frottements_tot_interf_stokes_th_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_force_pression_tot_interf_stokes_th_dis() const
+{
+  return variables_internes().force_pression_tot_interf_stokes_th_dis_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_force_frottements_tot_interf_stokes_th_dis() const
+{
+  return variables_internes().force_frottements_tot_interf_stokes_th_dis_;
+}
+
+DoubleTab& Navier_Stokes_FT_Disc::get_force_tot_pression_interf()
+{
+  return variables_internes().force_pression_tot_interf_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_force_tot_frottements_interf()
+{
+  return variables_internes().force_frottements_tot_interf_;
+}
+DoubleVect& Navier_Stokes_FT_Disc::get_surface_tot_interf()
+{
+  return variables_internes().surface_tot_interf_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_force_pression_tot_interf_stokes_th()
+{
+  return variables_internes().force_pression_tot_interf_stokes_th_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_force_frottements_tot_interf_stokes_th()
+{
+  return variables_internes().force_frottements_tot_interf_stokes_th_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_force_pression_tot_interf_stokes_th_dis()
+{
+  return variables_internes().force_pression_tot_interf_stokes_th_dis_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_force_frottements_tot_interf_stokes_th_dis()
+{
+  return variables_internes().force_frottements_tot_interf_stokes_th_dis_;
+}
+
+const DoubleTab& Navier_Stokes_FT_Disc::get_sigma_xx_interf() const
+{
+  return variables_internes().sigma_xx_interf_;
+}
+
+DoubleTab& Navier_Stokes_FT_Disc::get_sigma_xx_interf()
+{
+  return variables_internes().sigma_xx_interf_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_sigma_xy_interf() const
+{
+  return variables_internes().sigma_xy_interf_;
+}
+
+DoubleTab& Navier_Stokes_FT_Disc::get_sigma_xy_interf()
+{
+  return variables_internes().sigma_xy_interf_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_sigma_xz_interf() const
+{
+  return variables_internes().sigma_xz_interf_;
+}
+
+DoubleTab& Navier_Stokes_FT_Disc::get_sigma_xz_interf()
+{
+  return variables_internes().sigma_xz_interf_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_sigma_yx_interf() const
+{
+  return variables_internes().sigma_yx_interf_;
+}
+
+DoubleTab& Navier_Stokes_FT_Disc::get_sigma_yx_interf()
+{
+  return variables_internes().sigma_yx_interf_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_sigma_yy_interf() const
+{
+  return variables_internes().sigma_yy_interf_;
+}
+
+DoubleTab& Navier_Stokes_FT_Disc::get_sigma_yy_interf()
+{
+  return variables_internes().sigma_yy_interf_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_sigma_yz_interf() const
+{
+  return variables_internes().sigma_yz_interf_;
+}
+
+DoubleTab& Navier_Stokes_FT_Disc::get_sigma_yz_interf()
+{
+  return variables_internes().sigma_yz_interf_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_sigma_zx_interf() const
+{
+  return variables_internes().sigma_zx_interf_;
+}
+
+DoubleTab& Navier_Stokes_FT_Disc::get_sigma_zx_interf()
+{
+  return variables_internes().sigma_zx_interf_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_sigma_zy_interf() const
+{
+  return variables_internes().sigma_zy_interf_;
+}
+
+DoubleTab& Navier_Stokes_FT_Disc::get_sigma_zy_interf()
+{
+  return variables_internes().sigma_zy_interf_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_sigma_zz_interf() const
+{
+  return variables_internes().sigma_zz_interf_;
+}
+
+DoubleTab& Navier_Stokes_FT_Disc::get_sigma_zz_interf()
+{
+  return variables_internes().sigma_zz_interf_;
+}
+
+const DoubleTab& Navier_Stokes_FT_Disc::get_force_pression_stokes_th() const
+{
+  return variables_internes().force_pression_stokes_th_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_force_pression_stokes_th()
+{
+  return variables_internes().force_pression_stokes_th_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc:: get_force_frottements_stokes_th() const
+{
+  return variables_internes().force_frottements_stokes_th_;
+}
+DoubleTab& Navier_Stokes_FT_Disc:: get_force_frottements_stokes_th()
+{
+  return variables_internes().force_frottements_stokes_th_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_force_pression_stokes_th_dis() const
+{
+  return variables_internes().force_pression_stokes_th_dis_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_force_pression_stokes_th_dis()
+{
+  return variables_internes().force_pression_stokes_th_dis_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_force_frottements_stokes_th_dis() const
+{
+  return variables_internes().force_frottements_stokes_th_dis_;
+}
+
+const DoubleTab& Navier_Stokes_FT_Disc::get_pression_interf_stokes_th_dis() const
+{
+  return variables_internes().pression_interf_stokes_th_dis_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_pression_interf_stokes_th_dis()
+{
+  return variables_internes().pression_interf_stokes_th_dis_;
+}
+
+const DoubleTab& Navier_Stokes_FT_Disc::get_sigma_xx_interf_stokes_th_dis() const
+{
+  return variables_internes().sigma_xx_interf_stokes_th_dis_;
+}
+
+DoubleTab& Navier_Stokes_FT_Disc::get_sigma_xx_interf_stokes_th_dis()
+{
+  return variables_internes().sigma_xx_interf_stokes_th_dis_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_sigma_xy_interf_stokes_th_dis() const
+{
+  return variables_internes().sigma_xy_interf_stokes_th_dis_;
+}
+
+DoubleTab& Navier_Stokes_FT_Disc::get_sigma_xy_interf_stokes_th_dis()
+{
+  return variables_internes().sigma_xy_interf_stokes_th_dis_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_sigma_xz_interf_stokes_th_dis() const
+{
+  return variables_internes().sigma_xz_interf_stokes_th_dis_;
+}
+
+DoubleTab& Navier_Stokes_FT_Disc::get_sigma_xz_interf_stokes_th_dis()
+{
+  return variables_internes().sigma_xz_interf_stokes_th_dis_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_sigma_yx_interf_stokes_th_dis() const
+{
+  return variables_internes().sigma_yx_interf_stokes_th_dis_;
+}
+
+DoubleTab& Navier_Stokes_FT_Disc::get_sigma_yx_interf_stokes_th_dis()
+{
+  return variables_internes().sigma_yx_interf_stokes_th_dis_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_sigma_yy_interf_stokes_th_dis() const
+{
+  return variables_internes().sigma_yy_interf_stokes_th_dis_;
+}
+
+DoubleTab& Navier_Stokes_FT_Disc::get_sigma_yy_interf_stokes_th_dis()
+{
+  return variables_internes().sigma_yy_interf_stokes_th_dis_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_sigma_yz_interf_stokes_th_dis() const
+{
+  return variables_internes().sigma_yz_interf_stokes_th_dis_;
+}
+
+DoubleTab& Navier_Stokes_FT_Disc::get_sigma_yz_interf_stokes_th_dis()
+{
+  return variables_internes().sigma_yz_interf_stokes_th_dis_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_sigma_zx_interf_stokes_th_dis() const
+{
+  return variables_internes().sigma_zx_interf_stokes_th_dis_;
+}
+
+DoubleTab& Navier_Stokes_FT_Disc::get_sigma_zx_interf_stokes_th_dis()
+{
+  return variables_internes().sigma_zx_interf_stokes_th_dis_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_sigma_zy_interf_stokes_th_dis() const
+{
+  return variables_internes().sigma_zy_interf_stokes_th_dis_;
+}
+
+DoubleTab& Navier_Stokes_FT_Disc::get_sigma_zy_interf_stokes_th_dis()
+{
+  return variables_internes().sigma_zy_interf_stokes_th_dis_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_sigma_zz_interf_stokes_th_dis() const
+{
+  return variables_internes().sigma_zz_interf_stokes_th_dis_;
+}
+
+DoubleTab& Navier_Stokes_FT_Disc::get_sigma_zz_interf_stokes_th_dis()
+{
+  return variables_internes().sigma_zz_interf_stokes_th_dis_;
+}
+
+const DoubleTab& Navier_Stokes_FT_Disc::get_sigma_xx_interf_stokes_th() const
+{
+  return variables_internes().sigma_xx_interf_stokes_th_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_sigma_xx_interf_stokes_th()
+{
+  return variables_internes().sigma_xx_interf_stokes_th_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_sigma_xy_interf_stokes_th() const
+{
+  return variables_internes().sigma_xy_interf_stokes_th_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_sigma_xy_interf_stokes_th()
+{
+  return variables_internes().sigma_xy_interf_stokes_th_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_sigma_xz_interf_stokes_th() const
+{
+  return variables_internes().sigma_xz_interf_stokes_th_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_sigma_xz_interf_stokes_th()
+{
+  return variables_internes().sigma_xz_interf_stokes_th_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_sigma_yy_interf_stokes_th() const
+{
+  return variables_internes().sigma_yy_interf_stokes_th_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_sigma_yy_interf_stokes_th()
+{
+  return variables_internes().sigma_yy_interf_stokes_th_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_sigma_yz_interf_stokes_th() const
+{
+  return variables_internes().sigma_yz_interf_stokes_th_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_sigma_yz_interf_stokes_th()
+{
+  return variables_internes().sigma_yz_interf_stokes_th_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_sigma_zz_interf_stokes_th() const
+{
+  return variables_internes().sigma_zz_interf_stokes_th_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_sigma_zz_interf_stokes_th()
+{
+  return variables_internes().sigma_zz_interf_stokes_th_;
+}
+
+const DoubleTab& Navier_Stokes_FT_Disc::get_dUdx_P1() const
+{
+  return variables_internes().dUdx_P1_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dUdx_P1()
+{
+  return variables_internes().dUdx_P1_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dUdy_P1() const
+{
+  return variables_internes().dUdy_P1_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dUdy_P1()
+{
+  return variables_internes().dUdy_P1_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dUdz_P1() const
+{
+  return variables_internes().dUdz_P1_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dUdz_P1()
+{
+  return variables_internes().dUdz_P1_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dVdx_P1() const
+{
+  return variables_internes().dVdx_P1_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dVdx_P1()
+{
+  return variables_internes().dVdx_P1_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dVdy_P1() const
+{
+  return variables_internes().dVdy_P1_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dVdy_P1()
+{
+  return variables_internes().dVdy_P1_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dVdz_P1() const
+{
+  return variables_internes().dVdz_P1_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dVdz_P1()
+{
+  return variables_internes().dVdz_P1_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dWdx_P1() const
+{
+  return variables_internes().dWdx_P1_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dWdx_P1()
+{
+  return variables_internes().dWdx_P1_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dWdy_P1() const
+{
+  return variables_internes().dWdy_P1_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dWdy_P1()
+{
+  return variables_internes().dWdy_P1_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dWdz_P1() const
+{
+  return variables_internes().dWdz_P1_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dWdz_P1()
+{
+  return variables_internes().dWdz_P1_;
+}
+
+
+const DoubleTab& Navier_Stokes_FT_Disc::get_dUdx_P2() const
+{
+  return variables_internes().dUdx_P2_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dUdx_P2()
+{
+  return variables_internes().dUdx_P2_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dUdy_P2() const
+{
+  return variables_internes().dUdy_P2_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dUdy_P2()
+{
+  return variables_internes().dUdy_P2_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dUdz_P2() const
+{
+  return variables_internes().dUdz_P2_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dUdz_P2()
+{
+  return variables_internes().dUdz_P2_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dVdx_P2() const
+{
+  return variables_internes().dVdx_P2_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dVdx_P2()
+{
+  return variables_internes().dVdx_P2_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dVdy_P2() const
+{
+  return variables_internes().dVdy_P2_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dVdy_P2()
+{
+  return variables_internes().dVdy_P2_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dVdz_P2() const
+{
+  return variables_internes().dVdz_P2_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dVdz_P2()
+{
+  return variables_internes().dVdz_P2_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dWdx_P2() const
+{
+  return variables_internes().dWdx_P2_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dWdx_P2()
+{
+  return variables_internes().dWdx_P2_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dWdy_P2() const
+{
+  return variables_internes().dWdy_P2_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dWdy_P2()
+{
+  return variables_internes().dWdy_P2_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dWdz_P2() const
+{
+  return variables_internes().dWdz_P2_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dWdz_P2()
+{
+  return variables_internes().dWdz_P2_;
+}
+
+const DoubleTab& Navier_Stokes_FT_Disc::get_dUdx_P1_th_dis() const
+{
+  return variables_internes().dUdx_P1_th_dis_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dUdx_P1_th_dis()
+{
+  return variables_internes().dUdx_P1_th_dis_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dUdy_P1_th_dis() const
+{
+  return variables_internes().dUdy_P1_th_dis_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dUdy_P1_th_dis()
+{
+  return variables_internes().dUdy_P1_th_dis_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dUdz_P1_th_dis() const
+{
+  return variables_internes().dUdz_P1_th_dis_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dUdz_P1_th_dis()
+{
+  return variables_internes().dUdz_P1_th_dis_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dVdx_P1_th_dis() const
+{
+  return variables_internes().dVdx_P1_th_dis_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dVdx_P1_th_dis()
+{
+  return variables_internes().dVdx_P1_th_dis_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dVdy_P1_th_dis() const
+{
+  return variables_internes().dVdy_P1_th_dis_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dVdy_P1_th_dis()
+{
+  return variables_internes().dVdy_P1_th_dis_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dVdz_P1_th_dis() const
+{
+  return variables_internes().dVdz_P1_th_dis_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dVdz_P1_th_dis()
+{
+  return variables_internes().dVdz_P1_th_dis_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dWdx_P1_th_dis() const
+{
+  return variables_internes().dWdx_P1_th_dis_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dWdx_P1_th_dis()
+{
+  return variables_internes().dWdx_P1_th_dis_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dWdy_P1_th_dis() const
+{
+  return variables_internes().dWdy_P1_th_dis_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dWdy_P1_th_dis()
+{
+  return variables_internes().dWdy_P1_th_dis_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dWdz_P1_th_dis() const
+{
+  return variables_internes().dWdz_P1_th_dis_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dWdz_P1_th_dis()
+{
+  return variables_internes().dWdz_P1_th_dis_;
+}
+
+const DoubleTab& Navier_Stokes_FT_Disc::get_dUdx_P2_th_dis() const
+{
+  return variables_internes().dUdx_P2_th_dis_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dUdx_P2_th_dis()
+{
+  return variables_internes().dUdx_P2_th_dis_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dUdy_P2_th_dis() const
+{
+  return variables_internes().dUdy_P2_th_dis_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dUdy_P2_th_dis()
+{
+  return variables_internes().dUdy_P2_th_dis_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dUdz_P2_th_dis() const
+{
+  return variables_internes().dUdz_P2_th_dis_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dUdz_P2_th_dis()
+{
+  return variables_internes().dUdz_P2_th_dis_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dVdx_P2_th_dis() const
+{
+  return variables_internes().dVdx_P2_th_dis_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dVdx_P2_th_dis()
+{
+  return variables_internes().dVdx_P2_th_dis_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dVdy_P2_th_dis() const
+{
+  return variables_internes().dVdy_P2_th_dis_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dVdy_P2_th_dis()
+{
+  return variables_internes().dVdy_P2_th_dis_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dVdz_P2_th_dis() const
+{
+  return variables_internes().dVdz_P2_th_dis_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dVdz_P2_th_dis()
+{
+  return variables_internes().dVdz_P2_th_dis_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dWdx_P2_th_dis() const
+{
+  return variables_internes().dWdx_P2_th_dis_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dWdx_P2_th_dis()
+{
+  return variables_internes().dWdx_P2_th_dis_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dWdy_P2_th_dis() const
+{
+  return variables_internes().dWdy_P2_th_dis_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dWdy_P2_th_dis()
+{
+  return variables_internes().dWdy_P2_th_dis_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dWdz_P2_th_dis() const
+{
+  return variables_internes().dWdz_P2_th_dis_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dWdz_P2_th_dis()
+{
+  return variables_internes().dWdz_P2_th_dis_;
+}
+
+
+const DoubleTab& Navier_Stokes_FT_Disc::get_dUdx_P1_th() const
+{
+  return variables_internes().dUdx_P1_th_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dUdx_P1_th()
+{
+  return variables_internes().dUdx_P1_th_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dUdy_P1_th() const
+{
+  return variables_internes().dUdy_P1_th_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dUdy_P1_th()
+{
+  return variables_internes().dUdy_P1_th_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dUdz_P1_th() const
+{
+  return variables_internes().dUdz_P1_th_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dUdz_P1_th()
+{
+  return variables_internes().dUdz_P1_th_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dVdx_P1_th() const
+{
+  return variables_internes().dVdx_P1_th_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dVdx_P1_th()
+{
+  return variables_internes().dVdx_P1_th_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dVdy_P1_th() const
+{
+  return variables_internes().dVdy_P1_th_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dVdy_P1_th()
+{
+  return variables_internes().dVdy_P1_th_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dVdz_P1_th() const
+{
+  return variables_internes().dVdz_P1_th_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dVdz_P1_th()
+{
+  return variables_internes().dVdz_P1_th_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dWdx_P1_th() const
+{
+  return variables_internes().dWdx_P1_th_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dWdx_P1_th()
+{
+  return variables_internes().dWdx_P1_th_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dWdy_P1_th() const
+{
+  return variables_internes().dWdy_P1_th_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dWdy_P1_th()
+{
+  return variables_internes().dWdy_P1_th_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dWdz_P1_th() const
+{
+  return variables_internes().dWdz_P1_th_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dWdz_P1_th()
+{
+  return variables_internes().dWdz_P1_th_;
+}
+
+const DoubleTab& Navier_Stokes_FT_Disc::get_dUdx_P2_th() const
+{
+  return variables_internes().dUdx_P2_th_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dUdx_P2_th()
+{
+  return variables_internes().dUdx_P2_th_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dUdy_P2_th() const
+{
+  return variables_internes().dUdy_P2_th_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dUdy_P2_th()
+{
+  return variables_internes().dUdy_P2_th_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dUdz_P2_th() const
+{
+  return variables_internes().dUdz_P2_th_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dUdz_P2_th()
+{
+  return variables_internes().dUdz_P2_th_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dVdx_P2_th() const
+{
+  return variables_internes().dVdx_P2_th_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dVdx_P2_th()
+{
+  return variables_internes().dVdx_P2_th_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dVdy_P2_th() const
+{
+  return variables_internes().dVdy_P2_th_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dVdy_P2_th()
+{
+  return variables_internes().dVdy_P2_th_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dVdz_P2_th() const
+{
+  return variables_internes().dVdz_P2_th_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dVdz_P2_th()
+{
+  return variables_internes().dVdz_P2_th_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dWdx_P2_th() const
+{
+  return variables_internes().dWdx_P2_th_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dWdx_P2_th()
+{
+  return variables_internes().dWdx_P2_th_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dWdy_P2_th() const
+{
+  return variables_internes().dWdy_P2_th_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dWdy_P2_th()
+{
+  return variables_internes().dWdy_P2_th_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_dWdz_P2_th() const
+{
+  return variables_internes().dWdz_P2_th_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_dWdz_P2_th()
+{
+  return variables_internes().dWdz_P2_th_;
+}
+
+const DoubleTab& Navier_Stokes_FT_Disc::get_U_P1() const
+{
+  return variables_internes().U_P1_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_U_P1()
+{
+  return variables_internes().U_P1_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_U_P2() const
+{
+  return variables_internes().U_P2_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_U_P2()
+{
+  return variables_internes().U_P2_;
+}
+
+
+const DoubleTab& Navier_Stokes_FT_Disc::get_U_P1_th() const
+{
+  return variables_internes().U_P1_th_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_U_P1_th()
+{
+  return variables_internes().U_P1_th_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_U_P2_th() const
+{
+  return variables_internes().U_P2_th_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_U_P2_th()
+{
+  return variables_internes().U_P2_th_;
+}
+
+const DoubleTab& Navier_Stokes_FT_Disc::get_U_P1_th_dis() const
+{
+  return variables_internes().U_P1_th_dis_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_U_P1_th_dis()
+{
+  return variables_internes().U_P1_th_dis_;
+}
+const DoubleTab& Navier_Stokes_FT_Disc::get_U_P2_th_dis() const
+{
+  return variables_internes().U_P2_th_dis_;
+}
+DoubleTab& Navier_Stokes_FT_Disc::get_U_P2_th_dis()
+{
+  return variables_internes().U_P2_th_dis_;
+}
+
+const IntTab& Navier_Stokes_FT_Disc::get_list_elem_P1() const
+{
+  return variables_internes().list_elem_P1_;
+}
+IntTab& Navier_Stokes_FT_Disc::get_list_elem_P1()
+{
+  return variables_internes().list_elem_P1_;
+}
+const IntTab& Navier_Stokes_FT_Disc::get_list_elem_diph() const
+{
+  return variables_internes().list_elem_diph_;
+}
+IntTab& Navier_Stokes_FT_Disc::get_list_elem_diph()
+{
+  return variables_internes().list_elem_diph_;
+}
+const IntTab& Navier_Stokes_FT_Disc::get_list_elem_P1_all() const
+{
+  return variables_internes().list_elem_P1_all_;
+}
+IntTab& Navier_Stokes_FT_Disc::get_list_elem_P1_all()
+{
+  return variables_internes().list_elem_P1_all_;
+}
+
+// debut EB
+
+// On initialise les champs a 0 pour le premier postraitement
+void Navier_Stokes_FT_Disc::init_champs_forces_interf()
+{
+  REF(Transport_Interfaces_FT_Disc) &refeq_transport = variables_internes().ref_eq_interf_proprietes_fluide;
+  const Transport_Interfaces_FT_Disc& eq_transport = refeq_transport.valeur();
+  const Maillage_FT_Disc& maillage = eq_transport.maillage_interface();
+  const int nb_fa7 = maillage.nb_facettes();
+  if (eq_transport.postraitement_forces_interf().flag_force_pression_facettes_)
+    {
+      variables_internes().force_pression_interf_.resize(nb_fa7,dimension);
+      variables_internes().force_pression_interf_=3.14e31;
+    }
+
+  if (eq_transport.postraitement_forces_interf().flag_force_frottements_facettes_)
+    {
+      variables_internes().force_frottements_interf_.resize(nb_fa7,dimension);
+      variables_internes().force_frottements_interf_=3.14e31;
+    }
+
+  if (eq_transport.postraitement_forces_interf().flag_pression_facettes_)
+    {
+      variables_internes().pression_interf_.resize(nb_fa7);
+      variables_internes().pression_interf_=3.14e31;
+    }
+
+  if (eq_transport.postraitement_forces_interf().flag_tenseur_contraintes_facettes_)
+    {
+      variables_internes().sigma_xx_interf_.resize(nb_fa7);
+      variables_internes().sigma_xx_interf_=0;
+      variables_internes().sigma_xy_interf_.resize(nb_fa7);
+      variables_internes().sigma_xy_interf_=0;
+      variables_internes().sigma_xz_interf_.resize(nb_fa7);
+      variables_internes().sigma_xz_interf_=0;
+      variables_internes().sigma_yx_interf_.resize(nb_fa7);
+      variables_internes().sigma_yz_interf_=0;
+      variables_internes().sigma_yy_interf_.resize(nb_fa7);
+      variables_internes().sigma_yy_interf_=0;
+      variables_internes().sigma_yz_interf_.resize(nb_fa7);
+      variables_internes().sigma_yz_interf_=0;
+      variables_internes().sigma_zx_interf_.resize(nb_fa7);
+      variables_internes().sigma_zx_interf_=0;
+      variables_internes().sigma_zy_interf_.resize(nb_fa7);
+      variables_internes().sigma_zy_interf_=0;
+      variables_internes().sigma_zz_interf_.resize(nb_fa7);
+      variables_internes().sigma_zz_interf_=0;
+    }
+  if (eq_transport.postraitement_forces_interf().calcul_forces_theoriques_stokes_)
+    {
+      variables_internes().force_pression_stokes_th_.resize(nb_fa7,dimension);
+      variables_internes().force_pression_stokes_th_=3.14e31;
+      variables_internes().force_frottements_stokes_th_.resize(nb_fa7,dimension);
+      variables_internes().force_frottements_stokes_th_=3.14e31;
+      variables_internes().force_pression_stokes_th_dis_.resize(nb_fa7,dimension);
+      variables_internes().force_pression_stokes_th_dis_=3.14e31;
+      variables_internes().force_frottements_stokes_th_dis_.resize(nb_fa7,dimension);
+      variables_internes().force_frottements_stokes_th_dis_=3.14e31;
+      variables_internes().pression_interf_stokes_th_dis_.resize(nb_fa7);
+      variables_internes().pression_interf_stokes_th_dis_=3.14e31;
+    }
+  if (eq_transport.postraitement_forces_interf().flag_tenseur_contraintes_facettes_ &&
+      eq_transport.postraitement_forces_interf().calcul_forces_theoriques_stokes_)
+    {
+      variables_internes().sigma_xx_interf_stokes_th_dis_.resize(nb_fa7);
+      variables_internes().sigma_xx_interf_stokes_th_dis_=0;
+      variables_internes().sigma_xy_interf_stokes_th_dis_.resize(nb_fa7);
+      variables_internes().sigma_xy_interf_stokes_th_dis_=0;
+      variables_internes().sigma_xz_interf_stokes_th_dis_.resize(nb_fa7);
+      variables_internes().sigma_xz_interf_stokes_th_dis_=0;
+      variables_internes().sigma_yx_interf_stokes_th_dis_.resize(nb_fa7);
+      variables_internes().sigma_yx_interf_stokes_th_dis_=0;
+      variables_internes().sigma_yy_interf_stokes_th_dis_.resize(nb_fa7);
+      variables_internes().sigma_yy_interf_stokes_th_dis_=0;
+      variables_internes().sigma_yz_interf_stokes_th_dis_.resize(nb_fa7);
+      variables_internes().sigma_yz_interf_stokes_th_dis_=0;
+      variables_internes().sigma_zx_interf_stokes_th_dis_.resize(nb_fa7);
+      variables_internes().sigma_zx_interf_stokes_th_dis_=0;
+      variables_internes().sigma_zy_interf_stokes_th_dis_.resize(nb_fa7);
+      variables_internes().sigma_zy_interf_stokes_th_dis_=0;
+      variables_internes().sigma_zz_interf_stokes_th_dis_.resize(nb_fa7);
+      variables_internes().sigma_zz_interf_stokes_th_dis_=0;
+
+      variables_internes().sigma_xx_interf_stokes_th_.resize(nb_fa7);
+      variables_internes().sigma_xx_interf_stokes_th_=0;
+      variables_internes().sigma_xy_interf_stokes_th_.resize(nb_fa7);
+      variables_internes().sigma_xy_interf_stokes_th_=0;
+      variables_internes().sigma_xz_interf_stokes_th_.resize(nb_fa7);
+      variables_internes().sigma_xz_interf_stokes_th_=0;
+      variables_internes().sigma_yy_interf_stokes_th_.resize(nb_fa7);
+      variables_internes().sigma_yy_interf_stokes_th_=0;
+      variables_internes().sigma_yz_interf_stokes_th_.resize(nb_fa7);
+      variables_internes().sigma_yz_interf_stokes_th_=0;
+      variables_internes().sigma_zz_interf_stokes_th_.resize(nb_fa7);
+      variables_internes().sigma_zz_interf_stokes_th_=0;
+
+      variables_internes().dUdx_P1_.resize(nb_fa7);
+      variables_internes().dUdx_P1_=0;
+      variables_internes().dUdy_P1_.resize(nb_fa7);
+      variables_internes().dUdy_P1_=0;
+      variables_internes().dUdz_P1_.resize(nb_fa7);
+      variables_internes().dUdz_P1_=0;
+      variables_internes().dVdx_P1_.resize(nb_fa7);
+      variables_internes().dVdx_P1_=0;
+      variables_internes().dVdy_P1_.resize(nb_fa7);
+      variables_internes().dVdy_P1_=0;
+      variables_internes().dVdz_P1_.resize(nb_fa7);
+      variables_internes().dVdz_P1_=0;
+      variables_internes().dWdx_P1_.resize(nb_fa7);
+      variables_internes().dWdx_P1_=0;
+      variables_internes().dWdy_P1_.resize(nb_fa7);
+      variables_internes().dWdy_P1_=0;
+      variables_internes().dWdz_P1_.resize(nb_fa7);
+      variables_internes().dWdz_P1_=0;
+
+      variables_internes().dUdx_P2_.resize(nb_fa7);
+      variables_internes().dUdx_P2_=0;
+      variables_internes().dUdy_P2_.resize(nb_fa7);
+      variables_internes().dUdy_P2_=0;
+      variables_internes().dUdz_P2_.resize(nb_fa7);
+      variables_internes().dUdz_P2_=0;
+      variables_internes().dVdx_P2_.resize(nb_fa7);
+      variables_internes().dVdx_P2_=0;
+      variables_internes().dVdy_P2_.resize(nb_fa7);
+      variables_internes().dVdy_P2_=0;
+      variables_internes().dVdz_P2_.resize(nb_fa7);
+      variables_internes().dVdz_P2_=0;
+      variables_internes().dWdx_P2_.resize(nb_fa7);
+      variables_internes().dWdx_P2_=0;
+      variables_internes().dWdy_P2_.resize(nb_fa7);
+      variables_internes().dWdy_P2_=0;
+      variables_internes().dWdz_P2_.resize(nb_fa7);
+      variables_internes().dWdz_P2_=0;
+
+      variables_internes().dUdx_P1_th_dis_.resize(nb_fa7);
+      variables_internes().dUdx_P1_th_dis_=0;
+      variables_internes().dUdy_P1_th_dis_.resize(nb_fa7);
+      variables_internes().dUdy_P1_th_dis_=0;
+      variables_internes().dUdz_P1_th_dis_.resize(nb_fa7);
+      variables_internes().dUdz_P1_th_dis_=0;
+      variables_internes().dVdx_P1_th_dis_.resize(nb_fa7);
+      variables_internes().dVdx_P1_th_dis_=0;
+      variables_internes().dVdy_P1_th_dis_.resize(nb_fa7);
+      variables_internes().dVdy_P1_th_dis_=0;
+      variables_internes().dVdz_P1_th_dis_.resize(nb_fa7);
+      variables_internes().dVdz_P1_th_dis_=0;
+      variables_internes().dWdx_P1_th_dis_.resize(nb_fa7);
+      variables_internes().dWdx_P1_th_dis_=0;
+      variables_internes().dWdy_P1_th_dis_.resize(nb_fa7);
+      variables_internes().dWdy_P1_th_dis_=0;
+      variables_internes().dWdz_P1_th_dis_.resize(nb_fa7);
+      variables_internes().dWdz_P1_th_dis_=0;
+
+      variables_internes().dUdx_P2_th_dis_.resize(nb_fa7);
+      variables_internes().dUdx_P2_th_dis_=0;
+      variables_internes().dUdy_P2_th_dis_.resize(nb_fa7);
+      variables_internes().dUdy_P2_th_dis_=0;
+      variables_internes().dUdz_P2_th_dis_.resize(nb_fa7);
+      variables_internes().dUdz_P2_th_dis_=0;
+      variables_internes().dVdx_P2_th_dis_.resize(nb_fa7);
+      variables_internes().dVdx_P2_th_dis_=0;
+      variables_internes().dVdy_P2_th_dis_.resize(nb_fa7);
+      variables_internes().dVdy_P2_th_dis_=0;
+      variables_internes().dVdz_P2_th_dis_.resize(nb_fa7);
+      variables_internes().dVdz_P2_th_dis_=0;
+      variables_internes().dWdx_P2_th_dis_.resize(nb_fa7);
+      variables_internes().dWdx_P2_th_dis_=0;
+      variables_internes().dWdy_P2_th_dis_.resize(nb_fa7);
+      variables_internes().dWdy_P2_th_dis_=0;
+      variables_internes().dWdz_P2_th_dis_.resize(nb_fa7);
+      variables_internes().dWdz_P2_th_dis_=0;
+
+      variables_internes().dUdx_P1_th_.resize(nb_fa7);
+      variables_internes().dUdx_P1_th_=0;
+      variables_internes().dUdy_P1_th_.resize(nb_fa7);
+      variables_internes().dUdy_P1_th_=0;
+      variables_internes().dUdz_P1_th_.resize(nb_fa7);
+      variables_internes().dUdz_P1_th_=0;
+      variables_internes().dVdx_P1_th_.resize(nb_fa7);
+      variables_internes().dVdx_P1_th_=0;
+      variables_internes().dVdy_P1_th_.resize(nb_fa7);
+      variables_internes().dVdy_P1_th_=0;
+      variables_internes().dVdz_P1_th_.resize(nb_fa7);
+      variables_internes().dVdz_P1_th_=0;
+      variables_internes().dWdx_P1_th_.resize(nb_fa7);
+      variables_internes().dWdx_P1_th_=0;
+      variables_internes().dWdy_P1_th_.resize(nb_fa7);
+      variables_internes().dWdy_P1_th_=0;
+      variables_internes().dWdz_P1_th_.resize(nb_fa7);
+      variables_internes().dWdz_P1_th_=0;
+
+      variables_internes().dUdx_P2_th_.resize(nb_fa7);
+      variables_internes().dUdx_P2_th_=0;
+      variables_internes().dUdy_P2_th_.resize(nb_fa7);
+      variables_internes().dUdy_P2_th_=0;
+      variables_internes().dUdz_P2_th_.resize(nb_fa7);
+      variables_internes().dUdz_P2_th_=0;
+      variables_internes().dVdx_P2_th_.resize(nb_fa7);
+      variables_internes().dVdx_P2_th_=0;
+      variables_internes().dVdy_P2_th_.resize(nb_fa7);
+      variables_internes().dVdy_P2_th_=0;
+      variables_internes().dVdz_P2_th_.resize(nb_fa7);
+      variables_internes().dVdz_P2_th_=0;
+      variables_internes().dWdx_P2_th_.resize(nb_fa7);
+      variables_internes().dWdx_P2_th_=0;
+      variables_internes().dWdy_P2_th_.resize(nb_fa7);
+      variables_internes().dWdy_P2_th_=0;
+      variables_internes().dWdz_P2_th_.resize(nb_fa7);
+      variables_internes().dWdz_P2_th_=0;
+    }
+  if (eq_transport.postraitement_forces_interf().calcul_forces_)
+    {
+      variables_internes().U_P1_.resize(nb_fa7,dimension);
+      variables_internes().U_P1_=0;
+      variables_internes().U_P2_.resize(nb_fa7,dimension);
+      variables_internes().U_P2_=0;
+    }
+  if (eq_transport.postraitement_forces_interf().calcul_forces_theoriques_stokes_)
+    {
+      variables_internes().U_P1_th_.resize(nb_fa7,dimension);
+      variables_internes().U_P1_th_=0;
+      variables_internes().U_P2_th_.resize(nb_fa7,dimension);
+      variables_internes().U_P2_th_=0;
+      variables_internes().U_P1_th_dis_.resize(nb_fa7,dimension);
+      variables_internes().U_P1_th_dis_=0;
+      variables_internes().U_P2_th_dis_.resize(nb_fa7,dimension);
+      variables_internes().U_P2_th_dis_=0;
+    }
+}
+
+void Navier_Stokes_FT_Disc::compute_num_compo(DoubleTab& num_compo,const DoubleTab& indicatrice) const
+{
+  const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis().valeur());
+  const int nb_elem=domaine_vf.nb_elem();
+  const int indic_phase_fluide=1;
+  for (int elem = 0; elem < nb_elem; elem++)
+    {
+      //les elements diphasiques ne sont pas compris dans num compo
+      num_compo[elem] = (indicatrice[elem] != 1 - indic_phase_fluide ) ? -1 : 1;
+    }
+
+  const IntTab& elem_faces = domaine_vf.elem_faces();
+  const IntTab& faces_elem = domaine_vf.face_voisins();
+  const int nb_local_connex_components = search_connex_components_local(elem_faces, faces_elem, num_compo);
+  compute_global_connex_components(num_compo, nb_local_connex_components);
+
+}
+
+>>>>>>> 09c9f0ce0 ([FIX] methode_interpolation_v:VITESSE_SOLIDE_MOYENNE_ELEM corrigee pour les cas multi-particules)
 /*
 void Navier_Stokes_FT_Disc::corriger_mpoint()
 {

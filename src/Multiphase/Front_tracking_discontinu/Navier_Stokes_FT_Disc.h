@@ -74,6 +74,12 @@ public:
 
   int is_terme_gravite_rhog() const;
   const Champ_Fonc& champ_rho_faces() const;
+<<<<<<< HEAD
+=======
+  const Champ_Fonc& get_num_compo() const;
+  Champ_Fonc& get_num_compo();
+  void reprendre_num_compo(Entree& is) ;
+>>>>>>> 09c9f0ce0 ([FIX] methode_interpolation_v:VITESSE_SOLIDE_MOYENNE_ELEM corrigee pour les cas multi-particules)
 
   virtual void calculer_dI_dt(DoubleVect& dI_dt); // const;
   const int& get_is_penalized() const;
@@ -85,6 +91,252 @@ public:
   //void corriger_mpoint(); // Apply correction based on TCL model
 
   const SolveurSys& get_solveur_pression() const;
+<<<<<<< HEAD
+=======
+  const DoubleTab& get_force_pression_interf() const; // EB
+  const DoubleTab& get_force_frottements_interf() const; // EB
+  const DoubleTab& get_pression_interf() const; // EB
+  const DoubleTab& get_force_tot_pression_interf() const;  // EB
+  const DoubleTab& get_force_tot_frottements_interf() const;  // EB
+  const DoubleVect& get_surface_tot_interf() const; // EB
+  const DoubleTab& get_force_pression_tot_interf_stokes_th() const; // EB
+  const DoubleTab& get_force_frottements_tot_interf_stokes_th() const; // EB
+  const DoubleTab& get_force_pression_tot_interf_stokes_th_dis() const; // EB
+  const DoubleTab& get_force_frottements_tot_interf_stokes_th_dis() const; // EB
+  const DoubleTab& get_sigma_xx_interf() const; // EB
+  const DoubleTab& get_sigma_xy_interf() const; // EB
+  const DoubleTab& get_sigma_xz_interf() const; // EB
+  const DoubleTab& get_sigma_yx_interf() const; // EB
+  const DoubleTab& get_sigma_yy_interf() const; // EB
+  const DoubleTab& get_sigma_yz_interf() const; // EB
+  const DoubleTab& get_sigma_zx_interf() const; // EB
+  const DoubleTab& get_sigma_zy_interf() const; // EB
+  const DoubleTab& get_sigma_zz_interf() const; // EB
+
+  DoubleTab& get_force_pression_interf();  // EB
+  DoubleTab& get_force_frottements_interf();  // EB
+  DoubleTab& get_pression_interf(); // EB
+  DoubleTab& get_force_tot_pression_interf();  // EB
+  DoubleTab& get_force_tot_frottements_interf();  // EB
+  DoubleVect& get_surface_tot_interf(); // EB
+  DoubleTab& get_force_pression_tot_interf_stokes_th(); // EB
+  DoubleTab& get_force_frottements_tot_interf_stokes_th(); // EB
+  DoubleTab& get_force_pression_tot_interf_stokes_th_dis(); // EB
+  DoubleTab& get_force_frottements_tot_interf_stokes_th_dis(); // EB
+
+  DoubleTab& get_sigma_xx_interf(); // EB
+  DoubleTab& get_sigma_xy_interf(); // EB
+  DoubleTab& get_sigma_xz_interf(); // EB
+  DoubleTab& get_sigma_yx_interf(); // EB
+  DoubleTab& get_sigma_yy_interf(); // EB
+  DoubleTab& get_sigma_yz_interf(); // EB
+  DoubleTab& get_sigma_zx_interf(); // EB
+  DoubleTab& get_sigma_zy_interf(); // EB
+  DoubleTab& get_sigma_zz_interf(); // EB
+
+  const DoubleTab& get_force_pression_stokes_th() const; // EB
+  const DoubleTab& get_force_frottements_stokes_th() const; // EB
+  const DoubleTab& get_force_pression_stokes_th_dis() const; // EB
+  const DoubleTab& get_force_frottements_stokes_th_dis() const; // EB
+  const DoubleTab& get_pression_interf_stokes_th_dis() const; // EB
+
+  const DoubleTab& get_sigma_xx_interf_stokes_th_dis() const; // EB
+  const DoubleTab& get_sigma_xy_interf_stokes_th_dis() const; // EB
+  const DoubleTab& get_sigma_xz_interf_stokes_th_dis() const; // EB
+  const DoubleTab& get_sigma_yx_interf_stokes_th_dis() const; // EB
+  const DoubleTab& get_sigma_yy_interf_stokes_th_dis() const; // EB
+  const DoubleTab& get_sigma_yz_interf_stokes_th_dis() const; // EB
+  const DoubleTab& get_sigma_zx_interf_stokes_th_dis() const; // EB
+  const DoubleTab& get_sigma_zy_interf_stokes_th_dis() const; // EB
+  const DoubleTab& get_sigma_zz_interf_stokes_th_dis() const; // EB
+
+  DoubleTab& get_force_pression_stokes_th(); // EB
+  DoubleTab& get_force_frottements_stokes_th(); // EB
+  DoubleTab& get_force_pression_stokes_th_dis(); // EB
+  DoubleTab& get_force_frottements_stokes_th_dis(); // EB
+  DoubleTab& get_pression_interf_stokes_th_dis(); // EB
+
+
+  DoubleTab& get_sigma_xx_interf_stokes_th_dis(); // EB
+  DoubleTab& get_sigma_xy_interf_stokes_th_dis(); // EB
+  DoubleTab& get_sigma_xz_interf_stokes_th_dis(); // EB
+  DoubleTab& get_sigma_yx_interf_stokes_th_dis(); // EB
+  DoubleTab& get_sigma_yy_interf_stokes_th_dis(); // EB
+  DoubleTab& get_sigma_yz_interf_stokes_th_dis(); // EB
+  DoubleTab& get_sigma_zx_interf_stokes_th_dis(); // EB
+  DoubleTab& get_sigma_zy_interf_stokes_th_dis(); // EB
+  DoubleTab& get_sigma_zz_interf_stokes_th_dis(); // EB
+
+  const DoubleTab& get_sigma_xx_interf_stokes_th() const; // EB
+  const DoubleTab& get_sigma_xy_interf_stokes_th() const; // EB
+  const DoubleTab& get_sigma_xz_interf_stokes_th() const; // EB
+  const DoubleTab& get_sigma_yy_interf_stokes_th() const; // EB
+  const DoubleTab& get_sigma_yz_interf_stokes_th() const; // EB
+  const DoubleTab& get_sigma_zz_interf_stokes_th() const; // EB
+
+  DoubleTab& get_sigma_xx_interf_stokes_th(); // EB
+  DoubleTab& get_sigma_xy_interf_stokes_th(); // EB
+  DoubleTab& get_sigma_xz_interf_stokes_th(); // EB
+  DoubleTab& get_sigma_yy_interf_stokes_th(); // EB
+  DoubleTab& get_sigma_yz_interf_stokes_th(); // EB
+  DoubleTab& get_sigma_zz_interf_stokes_th(); // EB
+
+
+  const DoubleTab& get_dUdx_P1() const; // EB
+  const DoubleTab& get_dUdy_P1() const; // EB
+  const DoubleTab& get_dUdz_P1() const; // EB
+  const DoubleTab& get_dVdx_P1() const; // EB
+  const DoubleTab& get_dVdy_P1() const; // EB
+  const DoubleTab& get_dVdz_P1() const; // EB
+  const DoubleTab& get_dWdx_P1() const; // EB
+  const DoubleTab& get_dWdy_P1() const; // EB
+  const DoubleTab& get_dWdz_P1() const; // EB
+
+  DoubleTab& get_dUdx_P1(); // EB
+  DoubleTab& get_dUdy_P1(); // EB
+  DoubleTab& get_dUdz_P1(); // EB
+  DoubleTab& get_dVdx_P1(); // EB
+  DoubleTab& get_dVdy_P1(); // EB
+  DoubleTab& get_dVdz_P1(); // EB
+  DoubleTab& get_dWdx_P1(); // EB
+  DoubleTab& get_dWdy_P1(); // EB
+  DoubleTab& get_dWdz_P1(); // EB
+
+
+  const DoubleTab& get_dUdx_P2() const; // EB
+  const DoubleTab& get_dUdy_P2() const; // EB
+  const DoubleTab& get_dUdz_P2() const; // EB
+  const DoubleTab& get_dVdx_P2() const; // EB
+  const DoubleTab& get_dVdy_P2() const; // EB
+  const DoubleTab& get_dVdz_P2() const; // EB
+  const DoubleTab& get_dWdx_P2() const; // EB
+  const DoubleTab& get_dWdy_P2() const; // EB
+  const DoubleTab& get_dWdz_P2() const; // EB
+
+  DoubleTab& get_dUdx_P2(); // EB
+  DoubleTab& get_dUdy_P2(); // EB
+  DoubleTab& get_dUdz_P2(); // EB
+  DoubleTab& get_dVdx_P2(); // EB
+  DoubleTab& get_dVdy_P2(); // EB
+  DoubleTab& get_dVdz_P2(); // EB
+  DoubleTab& get_dWdx_P2(); // EB
+  DoubleTab& get_dWdy_P2(); // EB
+  DoubleTab& get_dWdz_P2(); // EB
+
+  const DoubleTab& get_dUdx_P1_th_dis() const; // EB
+  const DoubleTab& get_dUdy_P1_th_dis() const; // EB
+  const DoubleTab& get_dUdz_P1_th_dis() const; // EB
+  const DoubleTab& get_dVdx_P1_th_dis() const; // EB
+  const DoubleTab& get_dVdy_P1_th_dis() const; // EB
+  const DoubleTab& get_dVdz_P1_th_dis() const; // EB
+  const DoubleTab& get_dWdx_P1_th_dis() const; // EB
+  const DoubleTab& get_dWdy_P1_th_dis() const; // EB
+  const DoubleTab& get_dWdz_P1_th_dis() const; // EB
+
+  DoubleTab& get_dUdx_P1_th_dis(); // EB
+  DoubleTab& get_dUdy_P1_th_dis(); // EB
+  DoubleTab& get_dUdz_P1_th_dis(); // EB
+  DoubleTab& get_dVdx_P1_th_dis(); // EB
+  DoubleTab& get_dVdy_P1_th_dis(); // EB
+  DoubleTab& get_dVdz_P1_th_dis(); // EB
+  DoubleTab& get_dWdx_P1_th_dis(); // EB
+  DoubleTab& get_dWdy_P1_th_dis(); // EB
+  DoubleTab& get_dWdz_P1_th_dis(); // EB
+
+  const DoubleTab& get_dUdx_P2_th_dis() const; // EB
+  const DoubleTab& get_dUdy_P2_th_dis() const; // EB
+  const DoubleTab& get_dUdz_P2_th_dis() const; // EB
+  const DoubleTab& get_dVdx_P2_th_dis() const; // EB
+  const DoubleTab& get_dVdy_P2_th_dis() const; // EB
+  const DoubleTab& get_dVdz_P2_th_dis() const; // EB
+  const DoubleTab& get_dWdx_P2_th_dis() const; // EB
+  const DoubleTab& get_dWdy_P2_th_dis() const; // EB
+  const DoubleTab& get_dWdz_P2_th_dis() const; // EB
+
+  DoubleTab& get_dUdx_P2_th_dis(); // EB
+  DoubleTab& get_dUdy_P2_th_dis(); // EB
+  DoubleTab& get_dUdz_P2_th_dis(); // EB
+  DoubleTab& get_dVdx_P2_th_dis(); // EB
+  DoubleTab& get_dVdy_P2_th_dis(); // EB
+  DoubleTab& get_dVdz_P2_th_dis(); // EB
+  DoubleTab& get_dWdx_P2_th_dis(); // EB
+  DoubleTab& get_dWdy_P2_th_dis(); // EB
+  DoubleTab& get_dWdz_P2_th_dis(); // EB
+
+  const DoubleTab& get_dUdx_P1_th() const; // EB
+  const DoubleTab& get_dUdy_P1_th() const; // EB
+  const DoubleTab& get_dUdz_P1_th() const; // EB
+  const DoubleTab& get_dVdx_P1_th() const; // EB
+  const DoubleTab& get_dVdy_P1_th() const; // EB
+  const DoubleTab& get_dVdz_P1_th() const; // EB
+  const DoubleTab& get_dWdx_P1_th() const; // EB
+  const DoubleTab& get_dWdy_P1_th() const; // EB
+  const DoubleTab& get_dWdz_P1_th() const; // EB
+
+  DoubleTab& get_dUdx_P1_th(); // EB
+  DoubleTab& get_dUdy_P1_th(); // EB
+  DoubleTab& get_dUdz_P1_th(); // EB
+  DoubleTab& get_dVdx_P1_th(); // EB
+  DoubleTab& get_dVdy_P1_th(); // EB
+  DoubleTab& get_dVdz_P1_th(); // EB
+  DoubleTab& get_dWdx_P1_th(); // EB
+  DoubleTab& get_dWdy_P1_th(); // EB
+  DoubleTab& get_dWdz_P1_th(); // EB
+
+  const DoubleTab& get_dUdx_P2_th() const; // EB
+  const DoubleTab& get_dUdy_P2_th() const; // EB
+  const DoubleTab& get_dUdz_P2_th() const; // EB
+  const DoubleTab& get_dVdx_P2_th() const; // EB
+  const DoubleTab& get_dVdy_P2_th() const; // EB
+  const DoubleTab& get_dVdz_P2_th() const; // EB
+  const DoubleTab& get_dWdx_P2_th() const; // EB
+  const DoubleTab& get_dWdy_P2_th() const; // EB
+  const DoubleTab& get_dWdz_P2_th() const; // EB
+
+  DoubleTab& get_dUdx_P2_th(); // EB
+  DoubleTab& get_dUdy_P2_th(); // EB
+  DoubleTab& get_dUdz_P2_th(); // EB
+  DoubleTab& get_dVdx_P2_th(); // EB
+  DoubleTab& get_dVdy_P2_th(); // EB
+  DoubleTab& get_dVdz_P2_th(); // EB
+  DoubleTab& get_dWdx_P2_th(); // EB
+  DoubleTab& get_dWdy_P2_th(); // EB
+  DoubleTab& get_dWdz_P2_th(); // EB
+
+
+  const DoubleTab& get_U_P1() const; // EB
+  const DoubleTab& get_U_P2() const; // EB
+  const DoubleTab& get_U_P1_th() const; // EB
+  const DoubleTab& get_U_P2_th() const; // EB
+  const DoubleTab& get_U_P1_th_dis() const; // EB
+  const DoubleTab& get_U_P2_th_dis() const; // EB
+
+  DoubleTab& get_U_P1(); // EB
+  DoubleTab& get_U_P2(); // EB
+  DoubleTab& get_U_P1_th(); // EB
+  DoubleTab& get_U_P2_th(); // EB
+  DoubleTab& get_U_P1_th_dis(); // EB
+  DoubleTab& get_U_P2_th_dis(); // EB
+  const IntTab& get_list_elem_P1() const; // EB
+  IntTab& get_list_elem_P1(); // EB
+  const IntTab& get_list_elem_diph() const; // EB
+  IntTab& get_list_elem_diph(); // EB
+  const IntTab& get_list_elem_P1_all() const; // EB
+  IntTab& get_list_elem_P1_all(); // EB
+  void init_champs_forces_interf(); // EB
+  void compute_num_compo(DoubleTab& num_compo,const DoubleTab& indicatrice) const; // EB
+
+  void calcul_forces_interface();
+  void calcul_forces_interface_stokes_th();
+  void calcul_forces_interface_taylor_lagrange(DoubleVect& surface_tot_interf, DoubleTab& force_pression_tot_interf, DoubleTab& force_frottements_tot_interf);
+
+  // Interpolation trilineaire de valeurs_champs aux facettes du maillage lagrangien. Valeurs_champs contient les infos aux faces du maillage eulerien.
+  int trilinear_interpolation_face(const DoubleTab& indicatrice_faces, const DoubleTab& valeurs_champ, DoubleTab& coord, DoubleTab& resu); // EB // on le declare public car on en a besoin dans Transport_Interfaces_FT_Disc:calculer_vitesse_transport_interpolee
+  int trilinear_interpolation_elem(const DoubleTab& indicatrice, const DoubleTab& valeurs_champ, DoubleTab& coord, DoubleTab& resu);
+  int trilinear_interpolation_elem(const DoubleTab& indicatrice, const DoubleTab& valeurs_champ, DoubleTab& coord, DoubleTab& resu, const int is_P2, const int discr);
+  // Interpolation trilineaire de valeurs_champs aux sommets du maillage lagrangien. Valeurs_champs contient les infos aux faces du maillage eulerien.
+  int trilinear_interpolation_face_sommets(const DoubleTab& indicatrice_faces, const DoubleTab& valeurs_champ, DoubleTab& coord, DoubleTab& resu); // EB // on le declare public car on en a besoin dans Transport_Interfaces_FT_Disc:calculer_vitesse_transport_interpolee
+>>>>>>> 09c9f0ce0 ([FIX] methode_interpolation_v:VITESSE_SOLIDE_MOYENNE_ELEM corrigee pour les cas multi-particules)
 
 protected:
   // Methode surchargee de Navier_Stokes_std :

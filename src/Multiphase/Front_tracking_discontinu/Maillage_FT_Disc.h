@@ -196,6 +196,12 @@ public:
   void creer_tableau_elements(Array_base&, RESIZE_OPTIONS opt=RESIZE_OPTIONS::COPY_INIT) const;
   double calcul_normale_3D(int num_facette, double norme[3]) const;
   virtual void   calculer_costheta_minmax(DoubleTab& costheta) const;
+<<<<<<< HEAD
+=======
+  Schema_Comm_FT get_schema_comm_FT() const;
+  void set_is_solid_particle(int is_solid_particle); // EB
+  int is_solid_particle(); // EB
+>>>>>>> 09c9f0ce0 ([FIX] methode_interpolation_v:VITESSE_SOLIDE_MOYENNE_ELEM corrigee pour les cas multi-particules)
 
 protected:
   void pre_lissage_courbure(ArrOfDouble& store_courbure_sommets, const int niter) const;

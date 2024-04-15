@@ -500,6 +500,35 @@ int Transport_Interfaces_FT_Disc::lire_motcle_non_standard(const Motcle& un_mot,
           variables_internes_->methode_interpolation_v =
             Transport_Interfaces_FT_Disc_interne::VDF_LINEAIRE;
           break;
+<<<<<<< HEAD
+=======
+          // debut EB
+        case 2:
+          variables_internes_->methode_interpolation_v =
+            Transport_Interfaces_FT_Disc_interne::VITESSE_SOLIDE_MOYENNE_FA7;
+          if (interpolation_repere_local_)
+            {
+              Cerr <<"ERREUR : interpolation_repere_local ne peut pas etre utilise avec methode_interpolation_v=VITESSE_SOLIDE_MOYENNE !!!!!!!!!!!" << finl;
+              exit();
+            }
+
+          break;
+        case 3:
+          variables_internes_->methode_interpolation_v =
+            Transport_Interfaces_FT_Disc_interne::VITESSE_SOLIDE_MOYENNE_SOMMETS;
+          break;
+        case 4:
+          variables_internes_->methode_interpolation_v =
+            Transport_Interfaces_FT_Disc_interne::VITESSE_SOLIDE_MOYENNE_ELEM;
+          if (interpolation_repere_local_)
+            {
+              Cerr <<"ERREUR : interpolation_repere_local ne peut pas etre utilise avec methode_interpolation_v=VITESSE_SOLIDE_ELEM !!!!!!!!!!!" << finl;
+              exit();
+            }
+
+          break;
+          // fin EB
+>>>>>>> 09c9f0ce0 ([FIX] methode_interpolation_v:VITESSE_SOLIDE_MOYENNE_ELEM corrigee pour les cas multi-particules)
         default:
           Cerr << "Transport_Interfaces_FT_Disc::lire\n"
                << "The options for " << un_mot << " are :\n"
@@ -2066,6 +2095,7 @@ void Transport_Interfaces_FT_Disc::calculer_vitesse_transport_interpolee(
   int standard) const
 {
 
+
   switch(variables_internes_->methode_interpolation_v)
     {
     case Transport_Interfaces_FT_Disc_interne::VALEUR_A_ELEM:
@@ -2193,6 +2223,269 @@ void Transport_Interfaces_FT_Disc::calculer_vitesse_transport_interpolee(
         maillage.desc_sommets().echange_espace_virtuel(vitesse_noeuds);
         break;
       }
+<<<<<<< HEAD
+=======
+      // debut EB
+    case Transport_Interfaces_FT_Disc_interne::VITESSE_SOLIDE_MOYENNE_FA7:
+      {
+
+        const DoubleTab& pos = maillage.sommets();
+        const int nb_pos_tot = pos.dimension(0);
+        const ArrOfInt& elem = maillage.sommet_elem();
+        const ArrOfDouble& surface_fa7 = maillage.get_update_surface_facettes();
+        const IntTab& facettes = maillage.facettes();
+        const int& nb_fa7 = maillage.nb_facettes();
+        const DoubleTab& sommets = maillage.sommets();
+        ArrOfInt compo_connexes_fa7(nb_fa7);
+        int n = search_connex_components_local_FT(maillage, compo_connexes_fa7);
+        int nb_compo_tot=compute_global_connex_components_FT(maillage, compo_connexes_fa7, n);
+        Equation_base& eqn_hydraulique = variables_internes_->refequation_vitesse_transport.valeur();
+        Navier_Stokes_FT_Disc& ns = ref_cast(Navier_Stokes_FT_Disc, eqn_hydraulique);
+        const DoubleTab& indicatrice_faces = indicatrice_faces_.valeurs();
+        const DoubleTab& les_cg_fa7=maillage.cg_fa7();
+        DoubleVect normale_fa7(dimension);
+        const DoubleVect& rayons_compo = get_rayons_compo();
+        DoubleTab coord_fa7_interne(nb_fa7,dimension);
+        DoubleTab Vitesses_fa7(nb_fa7,dimension);
+        vitesse_noeuds.resize(nb_pos_tot, dimension);
+        int nb_fa7_reelle=0;
+        int compo;
+        ArrOfDouble surfaces_compo(nb_compo_tot);
+        surfaces_compo=0;
+        const double& d_to_interf_interp_v = get_d_to_interf_interp_v(); // EB : d_to_interf_interp_v en pourcentage du rayon
+        // on remplit le tableau des coordonnees internes des fa7
+        if (nb_fa7>0)
+          {
+            const DoubleTab& les_normales_fa7 = maillage.get_update_normale_facettes();
+            DoubleTab les_cg_fa7_par_compo(nb_fa7,dimension);
+            for (int fa7 =0 ; fa7<nb_fa7 ; fa7++)
+              {
+                if (!maillage.facette_virtuelle(fa7))
+                  {
+                    nb_fa7_reelle++;
+                    compo = compo_connexes_fa7(fa7);
+                    for (int dim=0; dim<dimension; dim++)
+                      {
+                        normale_fa7(dim)=les_normales_fa7(fa7,dim);
+                        les_cg_fa7_par_compo(fa7,dim)=les_cg_fa7(fa7,dim);
+                        coord_fa7_interne(fa7,dim)=les_cg_fa7(fa7,dim)-rayons_compo(compo)*d_to_interf_interp_v*normale_fa7(dim);
+                      }
+                  }
+              }
+            int res=ns.trilinear_interpolation_face(indicatrice_faces, champ_vitesse.valeurs(), coord_fa7_interne, Vitesses_fa7);
+            if (res==0) Cerr << "Interpolation de la vitesse dans la particule non reussie" << finl; // n'arrivera jamais en theorie
+          }
+        nb_fa7_reelle=mp_sum(nb_fa7_reelle);
+        DoubleTab Vitesses_compo(nb_compo_tot,dimension);
+        Vitesses_compo=0;
+        DoubleTab Positions_compo(nb_compo_tot,dimension);
+        Positions_compo=0;
+        for (int fa7=0; fa7<nb_fa7; fa7++)
+          {
+            if (!maillage.facette_virtuelle(fa7))
+              {
+                compo = compo_connexes_fa7(fa7);
+                const double s_fa7 = surface_fa7(fa7);
+                surfaces_compo(compo)+=s_fa7;
+                for (int dim=0; dim<dimension; dim++)
+                  {
+                    Vitesses_compo(compo,dim)+=s_fa7*Vitesses_fa7(fa7,dim);
+                    for (int k = 0; k < sommets.dimension(1); k++)
+                      {
+                        int s = facettes(fa7, k);
+                        Positions_compo(compo, dim) += s_fa7 * sommets(s, dim)/dimension;
+                      }
+                  }
+              }
+          }
+        mp_sum_for_each_item(Vitesses_compo);
+        mp_sum_for_each_item(surfaces_compo);
+        mp_sum_for_each_item(Positions_compo);
+        DoubleVect s; // tab_divide prend DoubleVect, pas ArrOfDouble...
+        s.ref_array(surfaces_compo);
+        tab_divide_any_shape(Positions_compo, s);
+        tab_divide_any_shape(Vitesses_compo, s);
+        variables_internes_ -> vitesses_compo = Vitesses_compo;
+        variables_internes_ -> positions_compo = Positions_compo;
+        // DEBUT DU COPIE-COLLE DU CODE DE LA FONCTION Transport_Interfaces_FT_Disc::calculer_vitesse_repere_local
+        // Calcul de la composante connexe des sommets
+        // Attention un sommet peut n'etre rattache a aucune facette sur le meme processeur !
+        // (il faudrait calculer les compo connexes sur les sommets, et ensuite passer aux faces
+        //  ce serait plus simple, voire calculer les deux en meme temps)
+        IntVect compo_sommets;
+        maillage.creer_tableau_sommets(compo_sommets, Array_base::NOCOPY_NOINIT);
+        compo_sommets = -1;
+        {
+          const int dim = vitesse_noeuds.dimension(1);
+          for (int iface = 0; iface < nb_fa7; iface++)
+            {
+              compo = compo_connexes_fa7[iface];
+              for (int j = 0; j < dim; j++)
+                compo_sommets[facettes(iface, j)] = compo;
+            }
+          // On prend le max sur tous les processeurs qui partagent le sommet pour les sommets isoles
+          // (max calcule uniquement pour les sommets reels, sommets virtuels faux)
+          MD_Vector_tools::echange_espace_virtuel(compo_sommets, MD_Vector_tools::EV_MAX);
+          // Inutile de synchroniser, on utilise uniquement les sommets reels
+        }
+        // FIN DU COPIE COLLE
+
+        for (int som = 0; som < nb_pos_tot; som++)
+          {
+            if (elem[som] >= 0)
+              {
+                for (int dim = 0; dim < dimension; dim++) vitesse_noeuds(som, dim) = Vitesses_compo(compo_sommets(som), dim);
+              }
+
+          }
+        maillage.desc_sommets().echange_espace_virtuel(vitesse_noeuds);
+        break;
+      }
+    case Transport_Interfaces_FT_Disc_interne::VITESSE_SOLIDE_MOYENNE_SOMMETS:
+      {
+        const ArrOfInt& elem = maillage.sommet_elem();
+        const DoubleTab pos = maillage.sommets();
+        const int nb_pos_tot = pos.dimension(0);
+        const int nb_fa7 = maillage.nb_facettes();
+        ArrOfInt compo_connexes_fa7(nb_fa7);
+        Equation_base& eqn_hydraulique = variables_internes_->refequation_vitesse_transport.valeur();
+        Navier_Stokes_FT_Disc& ns = ref_cast(Navier_Stokes_FT_Disc, eqn_hydraulique);
+        const DoubleTab& indicatrice_faces = indicatrice_faces_.valeurs();
+        vitesse_noeuds.resize(nb_pos_tot, dimension);
+        DoubleTab coord_sommets_interne(nb_pos_tot,dimension);
+        DoubleTabFT normale_sommets;
+        const DoubleVect& rayons_compo = get_rayons_compo();
+        calculer_normale_sommets_interface(maillage, normale_sommets); // normale non unitaire
+        DoubleVect normale_sommet(dimension);
+        const double& d_to_interf_interp_v = get_d_to_interf_interp_v();
+        // on remplit le tableau des coordonnees internes des fa7
+        if (nb_pos_tot>0)
+          {
+            for (int som =0 ; som<nb_pos_tot ; som++)
+              {
+                for (int dim=0; dim<dimension; dim++) normale_sommet(dim)=normale_sommets(som,dim);
+                int compo =compo_connexes_fa7(som);
+                const int element = elem[som];
+                if (element>=0)
+                  {
+                    double norm=sqrt(local_carre_norme_vect(normale_sommet));
+                    normale_sommet/=norm; // la normale au sommet est normee
+                    for (int dim=0; dim<dimension; dim++) coord_sommets_interne(som,dim)=pos(som,dim)-rayons_compo(compo)*d_to_interf_interp_v*normale_sommet(dim) ;
+                  }
+              }
+            int res=ns.trilinear_interpolation_face_sommets(indicatrice_faces, champ_vitesse.valeurs(), coord_sommets_interne, vitesse_noeuds);
+            if (res==0) Cerr << "Interpolation de la vitesse dans la particule non reussie" << finl; // n'arrivera jamais en theorie
+          }
+        maillage.desc_sommets().echange_espace_virtuel(vitesse_noeuds);
+        break;
+      }
+      // fin EB
+
+    case Transport_Interfaces_FT_Disc_interne::VITESSE_SOLIDE_MOYENNE_ELEM:
+      {
+        const DoubleTab& pos = maillage.sommets();
+        const int nb_pos_tot = pos.dimension(0);
+        vitesse_noeuds.resize(nb_pos_tot, dimension);
+        const int& nb_fa7 = maillage.nb_facettes();
+        ArrOfInt compo_connexes_fa7(nb_fa7);
+        const ArrOfDouble& surface_fa7 = maillage.get_update_surface_facettes();
+        const DoubleTab& sommets = maillage.sommets();
+        int n = search_connex_components_local_FT(maillage, compo_connexes_fa7);
+        int nb_compo_tot=compute_global_connex_components_FT(maillage, compo_connexes_fa7, n);
+        const DoubleTab& indicatrice = indicatrice_.valeurs();
+        const ArrOfInt& sommets_elem = maillage.sommet_elem();
+        const IntTab& facettes = maillage.facettes();
+        DoubleTab Vitesses_compo(nb_compo_tot,dimension);
+        Vitesses_compo=0;
+        DoubleVect V_compo_elem(nb_compo_tot);
+        V_compo_elem=0;
+        ArrOfDouble surfaces_compo(nb_compo_tot);
+        surfaces_compo=0;
+        Equation_base& eqn_hydraulique = variables_internes_->refequation_vitesse_transport.valeur();
+        Navier_Stokes_FT_Disc& ns = ref_cast(Navier_Stokes_FT_Disc, eqn_hydraulique);
+        DoubleTab& num_compo = ns.get_num_compo().valeur().valeurs();
+        const DoubleTab& tab_vitesse=champ_vitesse.valeurs();
+        const Domaine_dis_base& mon_dom_dis = domaine_dis().valeur();
+        const Domaine_VDF&   zone_vdf       = ref_cast(Domaine_VDF, mon_dom_dis);
+        const DoubleVect& volumes_maille = zone_vdf.volumes();
+        const IntTab& elem_faces = zone_vdf.elem_faces();
+
+        if (schema_temps().temps_courant()==0.) ns.compute_num_compo(num_compo,indicatrice);
+
+        // calcul de la vitesse moyenne du solide
+        for (int elem=0; elem<zone_vdf.nb_elem(); elem++)
+          {
+            // on moyenne sur les faces purement solides
+            if (indicatrice(elem)==0)
+              {
+                const int compo=  static_cast<int>(num_compo(elem));
+                V_compo_elem(compo)+=volumes_maille(elem)*(1-indicatrice(elem));
+                for (int dim=0; dim<dimension; dim++) Vitesses_compo(compo,dim)+=0.5*(tab_vitesse(elem_faces(elem,dim))+tab_vitesse(elem_faces(elem,dim+dimension)))*volumes_maille(elem);
+              }
+          }
+
+        mp_sum_for_each_item(Vitesses_compo);
+        mp_sum_for_each_item(V_compo_elem);
+        DoubleVect s_vcompo; // tab_divide prend DoubleVect, pas ArrOfDouble...
+        s_vcompo.ref_array(V_compo_elem);
+        tab_divide_any_shape(Vitesses_compo, s_vcompo);
+
+        variables_internes_ -> vitesses_compo = Vitesses_compo;
+        // calcul du centre de gravite des faces
+        DoubleTab Positions_compo(nb_compo_tot,dimension);
+        Positions_compo=0;
+
+        for (int fa7=0; fa7<nb_fa7; fa7++)
+          {
+            if (!maillage.facette_virtuelle(fa7))
+              {
+                const int compo = compo_connexes_fa7(fa7);
+                const double s_fa7 = surface_fa7(fa7);
+                surfaces_compo(compo)+=s_fa7;
+                for (int dim=0; dim<dimension; dim++)
+                  {
+                    for (int k = 0; k < sommets.dimension(1); k++)
+                      {
+                        int som = facettes(fa7, k);
+                        Positions_compo(compo, dim) += s_fa7 * sommets(som, dim)/dimension;
+                      }
+                  }
+              }
+          }
+
+        mp_sum_for_each_item(Positions_compo);
+        mp_sum_for_each_item(surfaces_compo);
+        DoubleVect s_scompo;
+        s_scompo.ref_array(surfaces_compo);
+        tab_divide_any_shape(Positions_compo, s_scompo);
+        variables_internes_ -> positions_compo = Positions_compo;
+        // identification du numero de compo des sommets lagrangiens
+        IntVect compo_sommets;
+        maillage.creer_tableau_sommets(compo_sommets, Array_base::NOCOPY_NOINIT);
+        compo_sommets = -1;
+        {
+          const int dim = vitesse_noeuds.dimension(1);
+          for (int iface = 0; iface < nb_fa7; iface++)
+            {
+              const int compo = compo_connexes_fa7[iface];
+              for (int j = 0; j < dim; j++)
+                compo_sommets[facettes(iface, j)] = compo;
+            }
+          MD_Vector_tools::echange_espace_virtuel(compo_sommets, MD_Vector_tools::EV_MAX);
+        }
+        // mise a jour du tableau de vitesse de deplacement des sommets
+        for (int som = 0; som < nb_pos_tot; som++)
+          {
+            if (sommets_elem[som] >= 0)
+              {
+                for (int dim = 0; dim < dimension; dim++) vitesse_noeuds(som, dim) = Vitesses_compo(compo_sommets(som), dim);
+              }
+
+          }
+        maillage.desc_sommets().echange_espace_virtuel(vitesse_noeuds);
+        break;
+      }
+>>>>>>> 09c9f0ce0 ([FIX] methode_interpolation_v:VITESSE_SOLIDE_MOYENNE_ELEM corrigee pour les cas multi-particules)
     default:
       {
         Cerr << "Transport_Interfaces_FT_Disc::calculer_vitesse_transport_interpolee\n"

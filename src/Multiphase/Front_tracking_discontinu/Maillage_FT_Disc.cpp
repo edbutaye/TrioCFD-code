@@ -3915,7 +3915,7 @@ int Maillage_FT_Disc::deplacer_un_point(double& x, double& y, double& z,
           const int elem0 = face_voisins(face_sortie, 0);
           const int elem1 = face_voisins(face_sortie, 1);
           element_suivant = elem0 + elem1 - element;
-          if (element_suivant < 0)
+          if (element_suivant < 0) // EB && is_solid_particle_==0
             {
               // Le sommet touche un bord => il devient ligne de contact
               element_suivant = element;
@@ -6955,3 +6955,20 @@ void Maillage_FT_Disc::creer_tableau_elements(Array_base& x, RESIZE_OPTIONS opt)
   const MD_Vector& md = desc_facettes().get_md_vector();
   MD_Vector_tools::creer_tableau_distribue(md, x, opt);
 }
+<<<<<<< HEAD
+=======
+
+Schema_Comm_FT Maillage_FT_Disc::get_schema_comm_FT() const
+{
+  return schema_comm_domaine_;
+}
+void Maillage_FT_Disc::set_is_solid_particle(int is_solid_particle)
+{
+  is_solid_particle_=is_solid_particle;
+}
+int Maillage_FT_Disc::is_solid_particle()
+{
+  return is_solid_particle_;
+}
+
+>>>>>>> 09c9f0ce0 ([FIX] methode_interpolation_v:VITESSE_SOLIDE_MOYENNE_ELEM corrigee pour les cas multi-particules)
