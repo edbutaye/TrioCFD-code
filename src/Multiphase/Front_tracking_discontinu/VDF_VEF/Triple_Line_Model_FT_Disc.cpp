@@ -66,6 +66,7 @@ Triple_Line_Model_FT_Disc::Triple_Line_Model_FT_Disc() :
   Rc_inject_(0.),
   thetaC_tcl_(150.),
   tempC_tcl_(10.),
+  Ri_(0.),
   integration_time_(0.),
   instant_mmicro_evap_(0.),
   instant_mmeso_evap_(0.),
@@ -164,6 +165,7 @@ void Triple_Line_Model_FT_Disc::set_param(Param& p)
   p.ajouter_flag("reinjection_tcl", &reinjection_tcl_); // XD_ADD_P flag This flag activates the automatic injection of a new nucleate seed with a specified shape when the temperature in the nucleation site becomes higher than a certain threshold (tempC_tcl). The shape of the seed is determined by the radius Rc_tcl_GridN and the contact angle thetaC_tcl. The nucleation site is considered free when there are no bubbles present. The site size is defined by Rc_tcl_GridN. This temperature threshold, termed tempC_tcl, is the activation temperature. Setting this temperature implies a wall temperature, therefore, activating reinjection_tcl is ONLY possible for a simulation coupled with solid conduction. NL2 When reinjection_tcl is activated, the values of tempC_tcl (default 10K), Rc_tcl_GridN (default 4 grid sizes), and thetaC_tcl (default 150 degrees) should be provided. Unless (STRONGLY not recommended), the default values (indicated in parentheses) will be used. NL2 If reinjection_tcl is not activated (by default), the mechanism of Numerically forcing bubble pinching/necking will be used for multi-cycle simulation. Once the Triple Contact Line (TCL) enters the nucleation site, a big contact angle thetaC_tcl is imposed to initiate bubble pinching/necking. After the bubble pinching ends, the large bubble above will depart, leaving the remaining part to serve as the nucleate seed. This process is equivalent to immediately inserting a new seed with a prescribed shape (determined by the nucleation site size and contact angle) once a bubble departs. Site size is defined by Rc_tcl_GridN (default 4 grid sizes). Contact angle thetaC_tcl (default 150 degrees). Useful for a standalone (not coupling with solid conduction) simulation.
   p.ajouter_flag("distri_first_facette", &distri_first_facette_); // XD_ADD_P flag This flag determines whether to distribute the Qtcl into all grids occupied by the first facette according to their area proportions. When set, the flux is redistributed into all grids occupied by the first facette based on their area proportions. Default value is 0, the flux is distributed differently: similar to the Meso zone, it is only distributed to grids within the Micro-zone (where the height of the front y is smaller than the size of Micro ym). The distribution of this flux is logarithmically proportional to y between 5.6nm (here interpreted as the value 0 in logarithm) and ym. In practice, in most cases, it will distribute all the flux locally in the first grid.
   p.ajouter_flag("adjust_meso_ML", &adjust_meso_ML_); // XD_ADD_P flag This flag determines whether to correct of qmeso in Micro-layer
+  p.ajouter("Ri_thermal", &Ri_);
   p.ajouter("tempC_tcl", &tempC_tcl_); // see in _.h file
   p.ajouter("file_name", &Nom_ficher_tcl_); // XD_ADD_P floattant Input file to set TCL model
   p.ajouter("nb_columns", &nb_columns_tab_);
@@ -781,11 +783,15 @@ double Triple_Line_Model_FT_Disc::compute_Qint(const DoubleTab& in_out, const do
   if (adjust_meso_ML())
     {
       if (thetaC_tcl() >= 90.)
-        Process::exit(Nom("Triple_Line_Model_FT_Disc::compute_Qint, BAD critial angle to find Micro Layer") + thetaC_tcl() + " ! Pls set thetaC_tcl in you dataset" );
+        Process::exit(Nom("Triple_Line_Model_FT_Disc::compute_Qint, BAD critial angle to find Micro Layer ") + thetaC_tcl() + " ! Pls set thetaC_tcl in you dataset" );
       if ((theta_app_loc/3.1415926*180. < thetaC_tcl()) || (theta_app_loc/3.1415926*180. > 90.))
         {
           Cerr << "[TCL: MESO:] Micro-Layer detected with slope " << theta_app_loc/3.14159326*180. << " distance to wall "<< (yl+yr)/2. <<finl;
-          Q_meso = kl_cond_*(Twall*2./(yl+yr));
+          const double dx =in_out(1,0)-in_out(0,0);
+          const double dy =ytop-ybot;
+          const double s_meso = sqrt(dx*dx+dy*dy);
+          const double h_loc = (yl+yr)/2.;
+          Q_meso = kl_cond_*Twall/( h_loc+ Ri()*kl_cond_)*s_meso;
         }
       else
         Q_meso = kl_cond_*(Twall/theta_app_loc)*ln_y; // Twall here is (Wall temperature - saturation temperature)..unit of Q_meso is W/m
@@ -1852,7 +1858,6 @@ void Triple_Line_Model_FT_Disc::compute_TCL_fluxes_in_all_boundary_cells(ArrOfIn
             {
               // That cell is fully micro ie ym>y2>y1
               // in that case, smeso should be 0. :
-              x0=x2;
               y0=y2;
             }
           const double dx = x2-x0;

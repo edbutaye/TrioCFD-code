@@ -88,6 +88,10 @@ public :
   {
     return adjust_meso_ML_;
   };
+  const double& Ri() const
+  {
+    return Ri_;
+  };
   const bool& distri_first_facette() const
   {
     return distri_first_facette_;
@@ -221,7 +225,9 @@ protected:
 
   // if to correct of qmeso in Micro-layer
   // par default, it should NOT be activated
+  // interface thermal resistence solid-fluid
   bool adjust_meso_ML_ = false;
+  double Ri_;
 
   // Information on the TCL region :
   // Note that the same elem may appear twice in the list, once for the micro contribution, once for the meso.
