@@ -65,10 +65,10 @@ class Case:
         self.resolution = resolution  # in µm
         self.dx = float(resolution) * 1e-6
         rho_m = (rho_L + rho_V)/2.
-        tspL= 0.5*sqrt(rho_L*self.dx**3./sigma)   # stability Loric
-        tspM = sqrt(rho_m/pi/sigma*self.dx**3.)   # stability vof 
+        tspL= 0.5*math.sqrt(rho_L*self.dx**3./sigma)   # stability Loric
+        tspM = math.sqrt(rho_m/math.pi/sigma*self.dx**3.)   # stability vof 
         mytsp = min(tspL, tspM)
-        self.timestep = min(timestep, mytsp*0.9)  # factor de relaxation 0.9
+        self.timestep = min(float(timestep), mytsp*0.9)  # factor de relaxation 0.9
         self.dict = copy.deepcopy(cases.dict)
         # 1/3 is regular mesh:
         pre_regu = 1. / 3.
@@ -363,7 +363,7 @@ sMs = [4.9]  # in µm
 hMs = [3.8]  # in µm
 Qmicros = [30.5]
 
-Ms = ["1_0.75_0.5"]  # Mesh sizes in µm
+Ms = ["1_0.75"]  # Mesh sizes in µm
 nmesos = ["4"]
 dts = ["1.e-7_1.e-7"]
 tmaxs = 50e-3 * unit
