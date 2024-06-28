@@ -762,7 +762,7 @@ double Triple_Line_Model_FT_Disc::compute_Qint(const DoubleTab& in_out, const do
       double radial_dis = (xr + xl)/2;
       const double angle_bidim_axi = Maillage_FT_Disc::angle_bidim_axi();
       circum_dis = angle_bidim_axi*radial_dis;
-      Cerr << "[TCL: MESO:] FILLING LIST Qmeso [bidim_axi] circum_dis = " << circum_dis << finl;
+      // Cerr << "[TCL: MESO:] FILLING LIST Qmeso [bidim_axi] circum_dis = " << circum_dis << finl;
     }
 
   const double yl = in_out(0,1);
@@ -1145,8 +1145,8 @@ void Triple_Line_Model_FT_Disc::compute_TCL_fluxes_in_all_boundary_cells(ArrOfIn
   // Micro cells: 1, at wall BC + 2, 0<indicatrice <1 3, height < ym
   {
     // const double temps = ns.schema_temps().temps_courant();
-    Cerr <<  " ****************************** TCL ****************************** " << finl;
-    Cerr << que_suis_je() << "::compute_TCL_fluxes_in_all_boundary_cells() searching TCL cells" <<finl;
+    // Cerr <<  " ****************************** TCL ****************************** " << finl;
+    // Cerr << que_suis_je() << "::compute_TCL_fluxes_in_all_boundary_cells() searching TCL cells" <<finl;
     const Domaine_Cl_dis_base& zcldis = ns.domaine_Cl_dis();
     // get wall BC frontiere nb
     int num_bord = -1;
@@ -1161,8 +1161,7 @@ void Triple_Line_Model_FT_Disc::compute_TCL_fluxes_in_all_boundary_cells(ArrOfIn
                        || sub_type(Dirichlet_paroi_defilante,la_cl.valeur());
         if (is_wall)
           {
-            Cerr << "[TCL]: Wall-type BC found at " <<
-                 bc_name <<finl;
+            Cerr << "[TCL]: Wall-type BC found at " << bc_name <<finl;
             num_bord = i;
             nbwall_found = nbwall_found +1;
 //             break;
@@ -1201,8 +1200,8 @@ void Triple_Line_Model_FT_Disc::compute_TCL_fluxes_in_all_boundary_cells(ArrOfIn
                 Cerr <<  "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! " << finl;
                 continue;
               }
-            else
-              Cerr << "[TCL] FOUND interface cell at #" << elemi <<" with face number #" << num_face << finl;
+            // else
+            // Cerr << "[TCL] FOUND interface cell at #" << elemi <<" with face number #" << num_face << finl;
 
             const int korient = orientation(num_face); // 0:x 1:y or 2:z (gives the direction it is normal to the wall)
             const double xwall = zvdf.xv(num_face, korient);
@@ -1242,7 +1241,7 @@ void Triple_Line_Model_FT_Disc::compute_TCL_fluxes_in_all_boundary_cells(ArrOfIn
                                 list_micro_faces.append_array(num_face_wall);
                                 list_micro_indexs.append_array(indextmp);
                                 // Cerr << "[TCL: MICRO]: Corresponding face number at wall " << num_face_wall << finl;
-                                Cerr << "[TCL: MICRO]: elem " << elem << " | face number at wall " << num_face_wall << finl;
+                                // Cerr << "[TCL: MICRO]: elem " << elem << " | face number at wall " << num_face_wall << finl;
                               }
                             indextmp = datatmp.index_element_suivant_;
                           }
@@ -1285,7 +1284,7 @@ void Triple_Line_Model_FT_Disc::compute_TCL_fluxes_in_all_boundary_cells(ArrOfIn
                                 list_micro_faces.append_array(num_face_wall);
                                 list_micro_indexs.append_array(indextmp);
                                 // Cerr << "[TCL: MICRO]: Corresponding face number at wall " << num_face_wall << finl;
-                                Cerr << "[TCL: MICRO]: elem " << elem << " | face number at wall " << num_face_wall << finl;
+                                // Cerr << "[TCL: MICRO]: elem " << elem << " | face number at wall " << num_face_wall << finl;
                               }
                           }
 
@@ -1304,7 +1303,7 @@ void Triple_Line_Model_FT_Disc::compute_TCL_fluxes_in_all_boundary_cells(ArrOfIn
 
               }
 
-            Cerr << "[TCL] Check if this CELL A MICRO and/or MESO cell by h" << finl;
+            // Cerr << "[TCL] Check if this CELL A MICRO and/or MESO cell by h" << finl;
 
             const double dist1 = std::fabs(zvdf.dist_face_elem0(num_face,elemi)); // h
             const double half_cell_height1 = std::fabs(zvdf.dist_face_elem0(elem_faces(elemi,iface),elemi)); // half distanct to furface parallel to wall
@@ -1318,7 +1317,7 @@ void Triple_Line_Model_FT_Disc::compute_TCL_fluxes_in_all_boundary_cells(ArrOfIn
 
                     list_micro_elems.append_array(elemi);
                     list_micro_faces.append_array(num_face);
-                    Cerr << "[TCL: MICRO]: elem " << elemi << " | face number at wall " << num_face << finl;
+                    // Cerr << "[TCL: MICRO]: elem " << elemi << " | face number at wall " << num_face << finl;
                   }
               }
             else if (hcell_bot <= ym_ + Objet_U::precision_geom)
@@ -1336,14 +1335,14 @@ void Triple_Line_Model_FT_Disc::compute_TCL_fluxes_in_all_boundary_cells(ArrOfIn
                     list_meso_elems.append_array(elemi);
                   }
 
-                Cerr << "[TCL: MICRO+MESO]: elem " << elemi << " | face number at wall " << num_face << finl;
+                // Cerr << "[TCL: MICRO+MESO]: elem " << elemi << " | face number at wall " << num_face << finl;
 
               }
             else if (hcell_bot <= ymeso_ + Objet_U::precision_geom && !is_in_list(list_meso_elems,elemi) )
               {
                 list_meso_elems.append_array(elemi);
                 list_meso_faces.append_array(num_face);
-                Cerr << "[TCL: MESO]: elem " << elemi << " | face number at wall " << num_face << finl;
+                // Cerr << "[TCL: MESO]: elem " << elemi << " | face number at wall " << num_face << finl;
               }
 
 
@@ -1351,7 +1350,7 @@ void Triple_Line_Model_FT_Disc::compute_TCL_fluxes_in_all_boundary_cells(ArrOfIn
             // Cerr << "[TCL] Searching MICRO CELLS (INTERFACE + 1.e-10m<Y<YM) among Neighboorhood cells of iElem #" << elemi << finl;
             // Cerr << "[TCL] Searching MESO CELLS (INTERFACE + YM<Y<YMeso) among Neighboorhood cells of iElem #" << elemi << finl;
             // loop to find all cells with interface
-            Cerr << "[TCL] Searching neighboor cells from Elem #" << elemi << " and face #" << num_face << finl;
+            // Cerr << "[TCL] Searching neighboor cells from Elem #" << elemi << " and face #" << num_face << finl;
 
             ArrOfInt future_new_elems;
 
@@ -1400,7 +1399,7 @@ void Triple_Line_Model_FT_Disc::compute_TCL_fluxes_in_all_boundary_cells(ArrOfIn
                                 const int num_face_wall = wall_face_towards(iface, elem_voisin, num_bord, zvdf);
                                 list_micro_faces.append_array(num_face_wall);
                                 // Cerr << "[TCL: MICRO]: Corresponding face number at wall " << num_face_wall << finl;
-                                Cerr << "[TCL: MICRO]: elem " << elem_voisin << " | face number at wall " << num_face_wall << finl;
+                                // Cerr << "[TCL: MICRO]: elem " << elem_voisin << " | face number at wall " << num_face_wall << finl;
                                 future_new_elems.append_array(elem_voisin);
                               }
                           }
@@ -1416,7 +1415,7 @@ void Triple_Line_Model_FT_Disc::compute_TCL_fluxes_in_all_boundary_cells(ArrOfIn
                               {
                                 list_micro_elems.append_array(elem_voisin);
                                 list_micro_faces.append_array(num_face_wall);
-                                Cerr << "[TCL: MICRO]: elem " << elem_voisin << " | face number at wall " << num_face_wall << finl;
+                                // Cerr << "[TCL: MICRO]: elem " << elem_voisin << " | face number at wall " << num_face_wall << finl;
                                 future_new_elems.append_array(elem_voisin);
                               }
 
@@ -1424,7 +1423,7 @@ void Triple_Line_Model_FT_Disc::compute_TCL_fluxes_in_all_boundary_cells(ArrOfIn
                               {
                                 list_meso_elems.append_array(elem_voisin);
                                 list_meso_faces.append_array(num_face_wall);
-                                Cerr << "[TCL: MESO]: elem " << elem_voisin << " | face number at wall " << num_face_wall << finl;
+                                // Cerr << "[TCL: MESO]: elem " << elem_voisin << " | face number at wall " << num_face_wall << finl;
                                 if(!is_in_list(future_new_elems,elem_voisin))
                                   future_new_elems.append_array(elem_voisin);
                               }
@@ -1441,7 +1440,7 @@ void Triple_Line_Model_FT_Disc::compute_TCL_fluxes_in_all_boundary_cells(ArrOfIn
                                 // Cerr << "[TCL: MESO]: (2D case: 0 LEFT; 1 DOWN; 2 Right; 3 UP.)" << finl;
                                 const int num_face_wall = wall_face_towards(iface, elem_voisin, num_bord, zvdf);
                                 list_meso_faces.append_array(num_face_wall);
-                                Cerr << "[TCL: MESO]: elem " << elem_voisin << " | face number at wall " << num_face_wall << finl;
+                                // Cerr << "[TCL: MESO]: elem " << elem_voisin << " | face number at wall " << num_face_wall << finl;
                                 future_new_elems.append_array(elem_voisin);
                               }
                           }
@@ -1582,7 +1581,7 @@ void Triple_Line_Model_FT_Disc::compute_TCL_fluxes_in_all_boundary_cells(ArrOfIn
             {
               const double angle_bidim_axi = Maillage_FT_Disc::angle_bidim_axi();
               circum_dis = angle_bidim_axi*x_cl_;
-              Cerr << "[TCL: MICRO] FILLING LIST MICRO [bidim_axi] circum_dis = " << circum_dis << finl;
+              // Cerr << "[TCL: MICRO] FILLING LIST MICRO [bidim_axi] circum_dis = " << circum_dis << finl;
             }
 
 
@@ -1815,7 +1814,7 @@ void Triple_Line_Model_FT_Disc::compute_TCL_fluxes_in_all_boundary_cells(ArrOfIn
               integrated_vmeso_evap_ = instant_vmeso_evap_;
             }
           Cerr.precision(16);
-          Cerr << "[TCL: MESO] time  = " << integration_time_ << " Qmeso= " << Q_meso << " Qint " << Q_int << finl;
+          // Cerr << "[TCL: MESO] time  = " << integration_time_ << " Qmeso= " << Q_meso << " Qint " << Q_int << finl;
           Cerr.precision(7);
           Cerr << "time = " << integration_time_ << " instantaneous mass-meso-evaporation = " << instant_mmeso_evap_ << " instantaneous meso-evaporation = " << instant_vmeso_evap_ << finl;
           elems_with_CL_contrib.append_array(elem);

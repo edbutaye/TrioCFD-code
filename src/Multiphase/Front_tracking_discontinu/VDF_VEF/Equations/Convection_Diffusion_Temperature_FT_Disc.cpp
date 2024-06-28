@@ -1259,7 +1259,7 @@ DoubleTab& Convection_Diffusion_Temperature_FT_Disc::derivee_en_temps_inco(Doubl
 
       // Correct the phase-change in wall adjacent cells:
       // The mean cell-temperature is simply derived from the TCL solution.
-      tcl.set_wall_adjacent_temperature_according_to_TCL_model(temperature);
+      // tcl.set_wall_adjacent_temperature_according_to_TCL_model(temperature);
       temperature.echange_espace_virtuel();
     }
   // Cerr << "[temperature] max before/after TCL model: " << max_val_before << " / " << max_array(temperature) << finl;

@@ -366,6 +366,8 @@ int Echange_contact_VDF_FT_Disc::initialiser(double temps)
   // T_autre_pb is ALSO created and initialised in the following line
   if (!Echange_contact_VDF::initialiser (temps))
     return 0;
+  // Echange_contact_VDF initilise T as temp of liq
+  T_autre_pb().mettre_a_jour(temps);
 
   DoubleTab& mon_Ti = Ti_wall_->valeurs ();
 
