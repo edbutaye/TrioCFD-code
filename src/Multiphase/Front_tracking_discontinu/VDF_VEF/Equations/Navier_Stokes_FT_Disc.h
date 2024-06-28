@@ -132,7 +132,7 @@ private:
 
   double minx = -123., maxx = -123., pente = -123.;
   int is_repulsion = 0;
-
+  int correction_diffusion_pch_ = 0;
 };
 
 #endif /* Navier_Stokes_FT_Disc_included */

@@ -285,6 +285,7 @@ void Navier_Stokes_FT_Disc::set_param(Param& param)
   param.ajouter("correction_courbure_ordre", &variables_internes().correction_courbure_ordre_);
   param.ajouter_non_std("interpol_indic_pour_dI_dt", (this));
   param.ajouter_non_std("OutletCorrection_pour_dI_dt", (this));
+  param.ajouter_flag("correction_diffusion_pch", &correction_diffusion_pch_);
 }
 
 int Navier_Stokes_FT_Disc::lire_motcle_non_standard(const Motcle& mot, Entree& is)
@@ -2865,6 +2866,57 @@ DoubleTab& Navier_Stokes_FT_Disc::derivee_en_temps_inco(DoubleTab& vpoint)
   //                (on a associe "mu" a la "diffusivite" de l'operateur,
   //                 voir Navier_Stokes_FT_Disc::lire)
   terme_diffusif.calculer(la_vitesse->valeurs(), variables_internes().terme_diffusion->valeurs());
+  if (correction_diffusion_pch_)
+    {
+      DoubleTab& diffusion = variables_internes().terme_diffusion.valeur().valeurs();
+      DoubleTab diffusion_liq(diffusion);
+      DoubleTab diffusion_vap(diffusion);
+      REF(Transport_Interfaces_FT_Disc) & refeq_transport =
+        variables_internes().ref_eq_interf_proprietes_fluide;
+      if (refeq_transport.non_nul())
+        {
+          //const Champ_base& indicatrice = refeq_transport.valeur().get_update_indicatrice();
+          int phase_liq = 1;
+          int phase_vap = 0;
+          if (variables_internes().ref_equation_mpoint_.non_nul())
+            {
+              const Convection_Diffusion_Temperature_FT_Disc& eq_temp = variables_internes().ref_equation_mpoint_.valeur();
+              eq_temp.vitesse_pour_transport().valeurs();
+              phase_liq = eq_temp.get_phase();
+              terme_diffusif.calculer(eq_temp.vitesse_pour_transport().valeurs(),
+                                      diffusion_liq);
+            }
+          if (variables_internes().ref_equation_mpoint_vap_.non_nul())
+            {
+              const Convection_Diffusion_Temperature_FT_Disc& eq_temp = variables_internes().ref_equation_mpoint_vap_.valeur();
+              eq_temp.vitesse_pour_transport().valeurs();
+              phase_vap = eq_temp.get_phase();
+              terme_diffusif.calculer(eq_temp.vitesse_pour_transport().valeurs(),
+                                      diffusion_vap);
+            }
+
+          if ((phase_liq == 1) && (phase_vap == 0))
+            {
+              // ok
+            }
+          else
+            {
+              Cerr << "error bad weighting below" << finl;
+              Process::exit();
+            }
+          const DoubleTab& indicatrice_faces = refeq_transport.valeur().get_compute_indicatrice_faces().valeurs();
+          const DoubleTab&  dist_faces = refeq_transport.valeur().get_update_distance_interface_faces().valeurs();
+          for (int i = 0; i < diffusion.dimension(0) ; i++)
+            {
+              const double indic_f = indicatrice_faces(i);
+              // if ((est_different(indicatrice_faces(i), 0.)) && (est_different(indicatrice_faces(i), 1.)) )
+              if (std::fabs(dist_faces(i))< 3.*1.414e-6)
+                {
+                  diffusion(i) = (indic_f)* diffusion_liq(i) + (1-indic_f)* diffusion_vap(i) ;
+                }
+            }
+        }
+    }
   solveur_masse->appliquer(variables_internes().terme_diffusion->valeurs());
 
   // Termes sources : gravite et tension de surface,
@@ -3529,45 +3581,43 @@ DoubleTab& Navier_Stokes_FT_Disc::derivee_en_temps_inco(DoubleTab& vpoint)
           const double coef = jump_inv_rho / Lvap;
           // Correct the secmem2 contribution due to TCL :
           if (!variables_internes().mpoint_inactif)
+            probleme_ft().tcl().corriger_secmem(coef, secmem2);
+
+          const int check_consistency = 1 ; // local option to check that secmem2 in near-wall cell is actually well calculated
+          if (check_consistency)
             {
-              probleme_ft().tcl().corriger_secmem(coef, secmem2);
-
-              const int check_consistency = 1 ; // local option to check that secmem2 in near-wall cell is actually well calculated
-              if (check_consistency)
+              Cerr << "Verifying Contact line model consistency" << finl;
+              double error = 0.;
+              const int nb_contact_line_contribution = elems_with_CL_contrib.size_array();
+              for (int idx = 0; idx < nb_contact_line_contribution; idx++)
                 {
-                  Cerr << "Verifying Contact line model consistency" << finl;
-                  double error = 0.;
-                  const int nb_contact_line_contribution = elems_with_CL_contrib.size_array();
-                  for (int idx = 0; idx < nb_contact_line_contribution; idx++)
+                  const int elem = elems_with_CL_contrib[idx];
+                  const double sec = secmem2(elem);
+                  double Q = 0.;
+                  // Go through the list to find all occurences of elem;
+                  for (int idx2 = 0; idx2 < nb_contact_line_contribution; idx2++)
                     {
-                      const int elem = elems_with_CL_contrib[idx];
-                      const double sec = secmem2(elem);
-                      double Q = 0.;
-                      // Go through the list to find all occurences of elem;
-                      for (int idx2 = 0; idx2 < nb_contact_line_contribution; idx2++)
+                      if (elem == elems_with_CL_contrib[idx2])
                         {
-                          if (elem == elems_with_CL_contrib[idx2])
-                            {
-                              Q +=Q_from_CL[idx2];
-                            }
-                        }
-                      const double value = coef*Q;
-
-                      // sec and value should be the same:
-                      error +=fabs(sec - value);
-                      if (fabs(sec - value) > 1.e-12) // changed from 1.e-12 to 1.e-7 ---- for test
-                        {
-                          Cerr << "local difference sec-value=" << sec <<" - " << value << " = " << (sec - value) << finl;
+                          Q +=Q_from_CL[idx2];
                         }
                     }
+                  const double value = coef*Q;
 
-                  if (error > 1.e-8)
+                  // sec and value should be the same:
+                  error +=fabs(sec - value);
+                  if (fabs(sec - value) > 1.e-12) // changed from 1.e-12 to 1.e-7 ---- for test
                     {
-                      Cerr << "Final error : " << error << " is fatal!" << finl;
-                      Process::exit();
+                      Cerr << "local difference sec-value=" << sec <<" - " << value << " = " << (sec - value) << finl;
                     }
-
                 }
+
+              if (error > 1.e-8)
+                {
+                  Cerr << "Final error : " << error << " is fatal!" << finl;
+                  Process::exit();
+                }
+
             }
         }
 #endif
