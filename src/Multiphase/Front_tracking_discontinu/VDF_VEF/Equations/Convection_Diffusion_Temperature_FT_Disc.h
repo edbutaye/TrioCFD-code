@@ -108,6 +108,7 @@ protected:
   int stencil_width_;
   int correction_courbure_ordre_;
   int is_solid_particle_;
+  int correction_gradt_ordre_;
   Nom nom_sous_domaine_;
   double temp_moy_ini_;
   bool maintien_temperature_ = false;

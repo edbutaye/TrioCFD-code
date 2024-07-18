@@ -366,8 +366,6 @@ int Echange_contact_VDF_FT_Disc::initialiser(double temps)
   // T_autre_pb is ALSO created and initialised in the following line
   if (!Echange_contact_VDF::initialiser (temps))
     return 0;
-  // Echange_contact_VDF initilise T as temp of liq
-  T_autre_pb().mettre_a_jour(temps);
 
   DoubleTab& mon_Ti = Ti_wall_->valeurs ();
 
@@ -386,9 +384,23 @@ int Echange_contact_VDF_FT_Disc::initialiser(double temps)
 
   calculer_Teta_paroi (Twalltmp, mon_h, mautre_h, is_pb_fluide, temps);
 
+  // Echange_contact_VDF initilise T as temp of liq
+  // some pb in initilization of Twall
+  // T_autre_pb().mettre_a_jour(temps);
+
   int taille = mon_Ti.dimension (0);
   for (int ii = 0; ii < taille; ii++)
-    mon_Ti (ii, 0) = Twalltmp (ii);
+    {
+      double tempValue = Twalltmp(ii);  // Store the result of Twalltmp(ii) in a temporary variable
+      if (tempValue < 0)
+        {
+          mon_Ti(ii, 0) = 0.;           // If the value is negative, set mon_Ti(ii, 0) to 0
+        }
+      else
+        {
+          mon_Ti(ii, 0) = tempValue;    // Otherwise, use the original value
+        }
+    }
 
   Champ_front_calc& chbis=ref_cast(Champ_front_calc, indicatrice_.valeur());
   return chbis.initialiser(temps,domaine_Cl_dis().equation().inconnue());

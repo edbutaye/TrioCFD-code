@@ -52,6 +52,7 @@ Convection_Diffusion_Temperature_FT_Disc::Convection_Diffusion_Temperature_FT_Di
 {
   phase_ = -1;
   correction_courbure_ordre_=0; // Par defaut, pas de prise en compte de la courbure pour corriger le champ etendu delta_vitesse
+  correction_gradt_ordre_=1; // Par defaut, temperature gradient is computed in ordre 1
   stencil_width_ = 8; //GB : Valeur par defaut de stencil_width_
   temp_moy_ini_ = 0.; //GB : Valeur par defaut de la temperature moyenne initiale
   nom_sous_domaine_ = "unknown_sous_domaine"; //GB : Valeur par defaut de la sous-domaine de moyenne
@@ -107,6 +108,7 @@ void Convection_Diffusion_Temperature_FT_Disc::set_param(Param& param)
   param.ajouter_condition("(value_of_phase_eq_0)_or_(value_of_phase_eq_1)","phase must be set to 0 or 1");
   param.ajouter("stencil_width",&stencil_width_);
   param.ajouter("correction_courbure_ordre", &correction_courbure_ordre_);
+  param.ajouter("correction_divn_ordre", &correction_gradt_ordre_);
   param.ajouter_non_std("equation_interface",(this),Param::REQUIRED);
   param.ajouter_non_std("maintien_temperature",(this));
   param.ajouter_non_std("equation_navier_stokes",(this),Param::REQUIRED);
@@ -336,6 +338,7 @@ static void extrapoler_champ_elem(const Domaine_VF&    domaine_vf,
                                   const DoubleTab& distance_interface,
                                   const DoubleTab& normale_interface,
                                   const DoubleTab& champ_div_n,
+                                  const int correction_gradt_ordre_,
                                   const int   phase,
                                   const int   stencil_width,
                                   const double   interfacial_value,
@@ -427,8 +430,25 @@ static void extrapoler_champ_elem(const Domaine_VF&    domaine_vf,
           // on suppose que le transfert est stationnaire, et flux normal
           // a l'interface.
           const double div_n = champ_div_n[i_elem];
-          gradient[i_elem] = grad * (1. + div_n * (d*0.5));
-          //gradient[i_elem] = grad * (1. + div_n * (d*0.5) + 0.5 * div_n * div_n * (d*0.5) * (d*0.5));
+
+          switch (correction_gradt_ordre_)
+            {
+            case 0:
+              // Pas de prise en compte de la correction en courbure
+              gradient[i_elem] = grad;
+              break;
+            case 1:
+              //  note that div_n and k are in opposite sign
+              gradient[i_elem] = grad * (1. - (-div_n) * d / 2.);
+              break;
+            case 2:
+              //  Prise en compte de la correction en courbure a l'ordre 2
+              gradient[i_elem] = grad * (1. - (-div_n) * d / 2. + (-div_n) * (-div_n) * d * d / 6.);
+              break;
+            default:
+              Cerr << "Error for the method Convection_Diffusion_Temperature_FT_Disc::extrapoler_champ_elem correction_gradt_ordre_" << finl;
+              Process::exit();
+            }
         }
     }
   if (err_count)
@@ -493,6 +513,7 @@ void Convection_Diffusion_Temperature_FT_Disc::calculer_grad_t()
   const DoubleTab& div_n = eq_navier_stokes.calculer_div_normale_interface().valeurs();
 
   extrapoler_champ_elem(domaine_vf, indicatrice, distance_interface, normale_interface, div_n,
+                        correction_gradt_ordre_,
                         phase_, stencil_width, interfacial_value,
                         temperature,
                         grad_t_->valeurs(),
