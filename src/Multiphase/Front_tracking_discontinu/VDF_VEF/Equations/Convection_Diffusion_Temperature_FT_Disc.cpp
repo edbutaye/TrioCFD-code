@@ -108,7 +108,7 @@ void Convection_Diffusion_Temperature_FT_Disc::set_param(Param& param)
   param.ajouter_condition("(value_of_phase_eq_0)_or_(value_of_phase_eq_1)","phase must be set to 0 or 1");
   param.ajouter("stencil_width",&stencil_width_);
   param.ajouter("correction_courbure_ordre", &correction_courbure_ordre_);
-  param.ajouter("correction_divn_ordre", &correction_gradt_ordre_);
+  param.ajouter("correction_gradt_ordre", &correction_gradt_ordre_);
   param.ajouter_non_std("equation_interface",(this),Param::REQUIRED);
   param.ajouter_non_std("maintien_temperature",(this));
   param.ajouter_non_std("equation_navier_stokes",(this),Param::REQUIRED);
