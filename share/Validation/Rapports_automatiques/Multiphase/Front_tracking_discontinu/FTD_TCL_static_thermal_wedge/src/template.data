@@ -48,9 +48,8 @@ Lire sch
 }
 
 Associate pb dom
-
-VDF dis
 Associate pb sch
+VDF dis
 Discretize pb dis
 system "mkdir -p lata"
 Lire pb
@@ -58,12 +57,12 @@ Lire pb
     solved_equations
     {
         Navier_stokes_FT_disc                         hydraulique
-        Transport_interFACES_FT_disc                  interf
+        Transport_interfaces_FT_disc                  interf
         convection_diffusion_temperature_ft_disc      thermique
     }
     Fluide_diphasique
     {
-        fluide1 Fluide_Incompressible
+        fluide1 Fluide_Incompressible # eau #
         {
             mu champ_uniforme       1 2.8291e-4
             rho champ_uniforme      1 958.63
@@ -71,7 +70,7 @@ Lire pb
             cp champ_uniforme       1 4215.2
             beta_th champ_uniforme  1 0.e-6
         }
-        fluide0 Fluide_Incompressible
+        fluide0 Fluide_Incompressible # vapeur #
         {
             mu champ_uniforme       1 1.2256e-5
             rho champ_uniforme      1 958.  #  HACK, mettre 0.59034 au final #
@@ -228,7 +227,6 @@ Lire pb
             equation_navier_stokes hydraulique
             equation_temperature thermique
             equation_interface interf
-
             Qtcl @Qi@ # W/m #
             ym 3.e-7          # smaller ym to make sure Meso zone always exists even for refined cases #
             # ymeso 5.e-6 #
