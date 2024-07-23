@@ -53,7 +53,7 @@ class Case:
         launcher += " -A gen7712 "
         pass
 
-    def __init__(self, cases, repo, resolution):
+    def __init__(self, cases, repo, resolution, timestep):
         self.cases = cases
         self.directory = repo
         self.resolution = resolution  # in µm
@@ -85,7 +85,7 @@ class Case:
         # The pre_run in steady creates and fills MESH directory
         self.createSteady()
         self.createNOTCL("NOTCL")
-        for nmeso in self.cases.nmeso.split("-"):
+        for nmeso in self.cases.nmeso.split("_"):
             self.createTCLcase(f"TCL{nmeso}", nmeso=nmeso)
         return ok
 
@@ -276,7 +276,7 @@ class Case:
 
 
 class Cases:
-    def __init__(self, case, resolution, nmeso, Lx, Ly, dT, theta, r0=0.0002):
+    def __init__(self, case, resolution, nmeso, Lx, Ly, dT, theta, timestep="1e-7", r0=0.0002):
         self.name = case
         self.M = resolution  # in µm
         self.nmeso = nmeso
@@ -297,9 +297,10 @@ class Cases:
     def createCases(self, root='.'):
         ok = True
         os.makedirs(os.path.join(root, self.name), exist_ok=True)
-        for resol in self.M.split("-"):
+        timesteps = self.timestep.split("_")
+        for idx, resol in enumerate(self.M.split("_")):
             repo = os.path.join(root, self.name, f"M{resol}")
-            cas = Case(self, repo, resol)
+            cas = Case(self, repo, resol, timestep=timestep)
             ok = cas.createCase() and ok
             if not ok: return ok
             self.dcases[(self.name, f"M{resol}")] = cas
@@ -331,11 +332,11 @@ thetas = [50.0]
 sMs = [4.9]  # in µm
 hMs = [3.8]  # in µm
 Qmicros = [30.5]
-Ms = ["40-20-10-5"]  # Mesh sizes in µm
-nmesos = ["1-4"]
-dts = 1e-8 * unit
+Ms = ["40_20_10-5"]  # Mesh sizes in µm
+nmesos = ["1_4"]
+dts = ["1.e-7_1.e-7"]
 tmaxs = 50e-3 * unit
-r0 = [0.0002]  # initial bubble radius
+r0s = [0.0002]  # initial bubble radius
 nb_pas_dt_max = 1000000000 * unit
 
 d_all = {}
@@ -345,9 +346,11 @@ for idx, config in enumerate(configurations):
     theta = thetas[idx]
     dT = dTs[idx]
     M = Ms[idx]
+    dt= dts[idx]
     nmeso = nmesos[idx]
+    r0=r0s[idx]
     print(f"CONFIGURATION: {config} {r} {z} {M} $dT $theta $sM $hM $Qmicro $eth $r0 $Ntot")
-    cas = Cases(config, resolution=M, nmeso=nmeso, Lx=r, Ly=z, dT=dT, theta=theta)
+    cas = Cases(config, resolution=M, nmeso=nmeso, Lx=r, Ly=z, dT=dT, theta=theta, r0=r0, timestep=dt)
     ok = cas.createCases(root=runs)
     d_all[config] = cas
     print("CASES CREATED:")

@@ -124,40 +124,6 @@ END SCATTER #
 
 Probleme_FT_Disc_gen pb1
 Pb_conduction pb2
-Fluide_Incompressible  liquid_water
-Lire liquid_water
-{
-    mu champ_uniforme       1 2.8e-4
-    rho champ_uniforme      1 958.37
-    lambda champ_uniforme   1 0.679
-    cp champ_uniforme       1 4.21e3
-    # import CoolProp.CoolProp as CP
-    P,Q -> (pression, fraction de vapeur)
-    CP.PropsSI('ISOBARIC_EXPANSION_COEFFICIENT', "P", 101325, "Q", 0, "Water")                                                     0.0007504815417629351
-    CP.PropsSI('ISOBARIC_EXPANSION_COEFFICIENT', "P", 101325, "Q", 1, "Water")                                                     0.002902383982248589
-Ou pas a saturation:
-    PropsSI('ISOBARIC_EXPANSION_COEFFICIENT','P',101325,'T',373.124,'Water')  #
-    beta_th Champ_Uniforme  1 0.0007504815417629351
-}
-
-Fluide_Incompressible vapeur
-Lire vapeur
-{
-    mu champ_uniforme       1 1.227e-5
-    rho champ_uniforme      1 0.597
-    lambda champ_uniforme   1 0.025
-    cp champ_uniforme       1 2.077e3
-    beta_th Champ_Uniforme  1 0.002902383982248589
-}
-
-Fluide_diphasique fluide
-Lire fluide
-{
-    fluide1 liquid_water
-    fluide0 vapeur
-    sigma   Champ_Uniforme 1            5.89e-2
-    chaleur_latente Champ_Uniforme 1    -2.256e6
-}
 
 Schema_Euler_explicite  sch
 Lire sch
@@ -179,22 +145,7 @@ Lire sch
    seuil_diffusion_implicite 1e-6
    periode_sauvegarde_securite_en_heures 0.5
 }
-
-
-Champ_Uniforme gravite
-Lire gravite 2 0. -9.81
-Associate fluide gravite
-
-Navier_stokes_FT_disc                         hydraulique
-Transport_interfaces_FT_disc                  interf
-convection_diffusion_temperature_ft_disc      thermique
-convection_diffusion_temperature_ft_disc      thermique_vapeur
-
 Associate pb1 dom_fluide
-Associate pb1 hydraulique
-Associate pb1 thermique
-Associate pb1 thermique_vapeur
-Associate pb1 interf
 Associate pb1 fluide
 
 Associate pb2 dom_solide
@@ -210,9 +161,45 @@ system "mkdir -p lata slata"
 option_vdf { All_options } # To set the BC of pressure on the Boundary, not at the center of ghost cells! #
 Lire pb1
 {
-   hydraulique
-   {
-       parametre_equation parametre_diffusion_implicite
+    solved_equations
+    {
+        Navier_stokes_FT_disc                         hydraulique
+        Transport_interFaces_FT_disc                  interf
+        convection_diffusion_temperature_ft_disc      thermique
+        convection_diffusion_temperature_ft_disc      thermique_vapeur
+    }
+    Fluide_diphasique
+    {
+        fluide1 Fluide_Incompressible # Liquid water #
+        {
+            mu champ_uniforme       1 2.8e-4
+            rho champ_uniforme      1 958.37
+            lambda champ_uniforme   1 0.679
+            cp champ_uniforme       1 4.21e3
+    # import CoolProp.CoolProp as CP
+    P,Q -> (pression, fraction de vapeur)
+    CP.PropsSI('ISOBARIC_EXPANSION_COEFFICIENT', "P", 101325, "Q", 0, "Water")                                                     0.0007504815417629351
+    CP.PropsSI('ISOBARIC_EXPANSION_COEFFICIENT', "P", 101325, "Q", 1, "Water")                                                     0.002902383982248589
+Ou pas a saturation:
+    PropsSI('ISOBARIC_EXPANSION_COEFFICIENT','P',101325,'T',373.124,'Water')  #
+            beta_th Champ_Uniforme  1 0.0007504815417629351
+        }
+        fluide0 Fluide_Incompressible # Vapeur #
+        {
+            mu champ_uniforme       1 1.227e-5
+            rho champ_uniforme      1 0.597
+            lambda champ_uniforme   1 0.025
+            cp champ_uniforme       1 2.077e3
+            beta_th Champ_Uniforme  1 0.002902383982248589
+        }
+        sigma   Champ_Uniforme 1            5.89e-2
+        chaleur_latente Champ_Uniforme 1    -2.256e6
+        gravite Champ_Uniforme 2 0 -9.81
+    }
+
+    hydraulique
+    {
+        parametre_equation parametre_diffusion_implicite
         {
             solveur petsc gcp { precond block_jacobi_ilu { level 0 } rtol 1.e-13 impr }
         }
@@ -289,97 +276,88 @@ Lire pb1
         {
             solveur petsc gcp { precond block_jacobi_ilu { level 0 } rtol 1.e-13 impr }
         }
-      # Pb quand on fait ça, il ne calcul pas le dt_stab de convection en FTD?? #
-      # Parametre_equation parametre_implicite { resolution_explicite } #
-      equation_interface interf
-      equation_navier_stokes hydraulique
-      phase 1
-      stencil_width 9
-      correction_mpoint_diff_conv_energy 3 0 0 0 # diff conv energy #
-      diffusion { }
-      convection { quick }
-      boundary_conditions
-      {
-         bot   ECHANGE_CONTACT_VDF_FT_DISC {
-					AUTRE_PROBLEME pb2
-					AUTRE_BORD sup 
-					AUTRE_CHAMP_TEMPERATURE TEMPERATURE 
-					NOM_MON_INDICATRICE INDICATRICE_INTERF 
-					PHASE 1
-	                }
-         up    frontiere_ouverte T_ext Champ_front_Uniforme 1 0.
-         right  frontiere_ouverte T_ext Champ_front_Fonc_xyz 1 (@dT@*(1-erf(y/@delta_th@)))
-         left  Symetrie
-      }
-      conditions_initiales { Temperature_thermique Champ_Fonc_xyz dom_fluide 1 (@dT@*(1-erf(y/@delta_th@))+0.01*sin(6.2831*x/@rmax@)) }
-   }
-   thermique_vapeur
-   {
-      parametre_equation parametre_diffusion_implicite
+        # Pb quand on fait ça, il ne calcul pas le dt_stab de convection en FTD?? #
+        # Parametre_equation parametre_implicite { resolution_explicite } #
+        equation_interface interf
+        equation_navier_stokes hydraulique
+        phase 1
+        stencil_width 9
+        correction_mpoint_diff_conv_energy 3 0 0 0 # diff conv energy #
+        diffusion { }
+        convection { quick }
+        boundary_conditions
+        {
+            bot   paroi_temperature_imposee champ_front_Uniforme 1 @dT@
+            up    frontiere_ouverte T_ext Champ_front_Uniforme 1 0.0
+            right  frontiere_ouverte T_ext Champ_front_Fonc_xyz 1 (@dT@*(1-erf(y/@delta_th@)))
+            left  Symetrie
+        }
+        conditions_initiales { Temperature_thermique Champ_Fonc_xyz dom_fluide 1 (@dT@*(1-erf(y/@delta_th@))+0.01*sin(6.2831*x/@rmax@)) }
+    }
+
+    thermique_vapeur
+    {
+        parametre_equation parametre_diffusion_implicite
         {
             solveur petsc gcp { precond block_jacobi_ilu { level 0 } rtol 1.e-13 impr }
         }
-      # Pb quand on fait ça, il ne calcul pas le dt_stab de convection en FTD?? #
-      # Parametre_equation parametre_implicite { resolution_explicite } #
-      equation_interface interf
-      equation_navier_stokes hydraulique
-      phase 0
-      stencil_width 9
-      # correction_mpoint_diff_conv_energy 3 0 0 0  diff conv energy #
-      diffusion { }
-      convection { quick }
-      boundary_conditions
-      {
-                bot   ECHANGE_CONTACT_VDF_FT_DISC {
-					AUTRE_PROBLEME pb2
-					AUTRE_BORD sup 
-					AUTRE_CHAMP_TEMPERATURE TEMPERATURE 
-					NOM_MON_INDICATRICE INDICATRICE_INTERF 
-					PHASE 0
-				}
-                up    frontiere_ouverte T_ext Champ_front_Uniforme 1 0.
-                right  frontiere_ouverte T_ext Champ_front_Fonc_xyz 1 0.
-                left  Symetrie
-      }
-      conditions_initiales { Temperature_thermique_vapeur Champ_Fonc_xyz dom_fluide 1 0. }
-   }
-   postraitement 
-   {
-      champs dt_post 100
-      {
-         indicatrice_interf
-         temperature_thermique
-       vitesse
-       pression
-       mpoint_thermique
-      }
-                Probes 
-               {
-                  T_points grav temperature_thermique Periode 1.e-4 point 3 0.25e-3 0.125e-3 0.25e-3 0.25e-3 0.25e-3 0.5e-3 
-                  T_seg grav temperature_thermique Periode 1.e-4 segment 400 1.8e-3 0 1.8e-3 1.0e-3
-                  T_x10 grav temperature_thermique Periode 1.e-4 segment 400 10.e-4 0 10.e-4 1.e-3
-                  T_x15 grav temperature_thermique Periode 1.e-4 segment 400 15.e-4 0 15.e-4 1.e-3
-                  T_x20 grav temperature_thermique Periode 1.e-4 segment 400 20.e-4 0 20.e-4 1.e-3
-                  T_x25 grav temperature_thermique Periode 1.e-4 segment 400 25.e-4 0 25.e-4 1.e-3
-                  T_x30 grav temperature_thermique Periode 1.e-4 segment 400 30.e-4 0 30.e-4 1.e-3
-                  T_x40 grav temperature_thermique Periode 1.e-4 segment 400 40.e-4 0 40.e-4 1.e-3
-               # velocity_probe grav VitesseX Periode 1.e-4 segment 100 0. 1.875e-5 0.003 1.875e-5 #           
-               }
-   }
-   
-   liste_postraitements
-   {
-    postraitement_ft_lata post1 { 
-     format Lata 
-     fichier lata/steady 
-            champs dt_post 2.0e-1 {
+        # Pb quand on fait ça, il ne calcul pas le dt_stab de convection en FTD?? #
+        # Parametre_equation parametre_implicite { resolution_explicite } #
+        equation_interface interf
+        equation_navier_stokes hydraulique
+        phase 0
+        stencil_width 9
+        # correction_mpoint_diff_conv_energy 3 0 0 0  diff conv energy #
+        diffusion { }
+        convection { quick }
+        boundary_conditions
+        {
+            bot   paroi_temperature_imposee champ_front_Uniforme 1 0.
+            up    frontiere_ouverte T_ext Champ_front_Uniforme 1 0.
+            left  Symetrie
+            right  frontiere_ouverte T_ext Champ_front_Fonc_xyz 1 0.
+        }
+        conditions_initiales { Temperature_thermique_vapeur Champ_Fonc_xyz dom_fluide 1 0. }
+    }
+    postraitement
+    {
+        champs dt_post 100
+        {
+            indicatrice_interf
+            temperature_thermique
+            vitesse
+            pression
+            mpoint_thermique
+        }
+        Probes
+        {
+            T_points grav temperature_thermique Periode 1.e-4 point 3 0.25e-3 0.125e-3 0.25e-3 0.25e-3 0.25e-3 0.5e-3
+            T_seg grav temperature_thermique Periode 1.e-4 segment 400 1.8e-3 0 1.8e-3 1.0e-3
+            T_x10 grav temperature_thermique Periode 1.e-4 segment 400 10.e-4 0 10.e-4 1.e-3
+            T_x15 grav temperature_thermique Periode 1.e-4 segment 400 15.e-4 0 15.e-4 1.e-3
+            T_x20 grav temperature_thermique Periode 1.e-4 segment 400 20.e-4 0 20.e-4 1.e-3
+            T_x25 grav temperature_thermique Periode 1.e-4 segment 400 25.e-4 0 25.e-4 1.e-3
+            T_x30 grav temperature_thermique Periode 1.e-4 segment 400 30.e-4 0 30.e-4 1.e-3
+            T_x40 grav temperature_thermique Periode 1.e-4 segment 400 40.e-4 0 40.e-4 1.e-3
+            # velocity_probe grav VitesseX Periode 1.e-4 segment 100 0. 1.875e-5 0.003 1.875e-5 #
+        }
+    }
+
+    liste_postraitements
+    {
+        postraitement_ft_lata post1 {
+            format Lata
+            fichier lata/steady
+            champs dt_post 1.0e-4 {
                 VOLUME_MAILLE elem
                 indicatrice_interf elem
                 temperature_thermique elem
                 temperature_thermique_vapeur elem
                 vitesse faces
+                vitesse elem
                 pression elem
                 mpoint_thermique elem
+                mpoint_thermique_vapeur elem
                 interfacial_area elem
                 distance_interface_elem_interf elem
                 # pression_laplacien_d elem
@@ -404,40 +382,30 @@ Lire pb1
 # resume_last_time binaire ../R0/source.sauv #
 
 }
+
 Read pb2
 {
-   Solide
-   {
-     gravite champ_uniforme 2 0 -9.81
-	  rho Uniform_Field 1 8500.
-	  lambda Champ_Uniforme 1 234.    
-	  Cp Champ_Uniforme 1 376.
-   }
-	Conduction
-	{
-	   diffusion { }
-      sources {
-                 Puissance_Thermique Champ_fonc_xyz dom_solide 1 $power*(y_ge_@pdy@)*(x_le_@rmax@)
-             }
-		boundary_conditions {
-			sleft symetrie
-			sright   PAROI_ADIABATIQUE
-			sbot PAROI_ADIABATIQUE
-			sup  echange_contact_VDF_FT_Disc_solid {
-				autre_probleme pb1
-				autre_bord bot 
-				autre_champ_temperature_indic1 temperature_thermique
-				autre_champ_temperature_indic0 temperature_thermique_vapeur
-				autre_champ_indicatrice indicatrice_interf
-                               dt_impr_Tw 1.e-4
-			}
+    Solide # sol #
+    {
+        rho Uniform_Field 1 8500.
+        lambda Champ_Uniforme 1 234.
+        Cp Champ_Uniforme 1 376.
+    }
+    Conduction
+    {
+        diffusion { }
+        boundary_conditions {
+            sleft symetrie
+            sright   PAROI_ADIABATIQUE
+            sbot PAROI_ADIABATIQUE
+            sup  PAROI_ADIABATIQUE
+
         }
         CONDITIONS_INITIALES { temperature Champ_Uniforme 1 @dT@ }
     }
 
     Post_processing
     {
-
         Format lata
         fichier slata/steady
         fields dt_post 2.0e-1

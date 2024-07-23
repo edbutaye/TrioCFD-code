@@ -60,10 +60,6 @@ Lire sch
     periode_sauvegarde_securite_en_heures 0.5
 }
 
-
-
-
-
 Associate pb dom
 
 Associate pb sch
@@ -79,25 +75,34 @@ Lire pb
         convection_diffusion_temperature_ft_disc      thermique
     }
     Fluide_diphasique
-{
-    fluide1 Fluide_Incompressible
-{
-    mu champ_uniforme       1 2.8e-4
-    rho champ_uniforme      1 958.37
-    lambda champ_uniforme   1 0.679
-    cp champ_uniforme       1 4.21e3
-}
-    fluide0 Fluide_Incompressible
-{
-    mu champ_uniforme       1 1.227e-5
-    rho champ_uniforme      1 0.597
-    lambda champ_uniforme   1 0.025
-    cp champ_uniforme       1 2.077e3
-}
-    sigma   Champ_Uniforme 1            5.89e-2
-    chaleur_latente Champ_Uniforme 1    -2.256e6
-    gravite Champ_Uniforme 2 0. -9.81
-}
+    {
+        fluide1 Fluide_Incompressible # Liquid water #
+        {
+            mu champ_uniforme       1 2.8e-4
+            rho champ_uniforme      1 958.37
+            lambda champ_uniforme   1 0.679
+            cp champ_uniforme       1 4.21e3
+    # import CoolProp.CoolProp as CP
+    P,Q -> (pression, fraction de vapeur)
+    CP.PropsSI('ISOBARIC_EXPANSION_COEFFICIENT', "P", 101325, "Q", 0, "Water")                                                     0.0007504815417629351
+    CP.PropsSI('ISOBARIC_EXPANSION_COEFFICIENT', "P", 101325, "Q", 1, "Water")                                                     0.002902383982248589
+Ou pas a saturation:
+    PropsSI('ISOBARIC_EXPANSION_COEFFICIENT','P',101325,'T',373.124,'Water')  #
+            beta_th Champ_Uniforme  1 0.0007504815417629351
+        }
+        fluide0 Fluide_Incompressible # Vapeur #
+        {
+            mu champ_uniforme       1 1.227e-5
+            rho champ_uniforme      1 0.597
+            lambda champ_uniforme   1 0.025
+            cp champ_uniforme       1 2.077e3
+            beta_th Champ_Uniforme  1 0.002902383982248589
+        }
+        sigma   Champ_Uniforme 1            5.89e-2
+        chaleur_latente Champ_Uniforme 1    -2.256e6
+        gravite Champ_Uniforme 2 0 -9.81
+    }
+
     hydraulique
     {
         modele_turbulence null {  }
@@ -198,19 +203,20 @@ thermique
     }
     conditions_initiales { Temperature_thermique Champ_Fonc_xyz dom 1 (8.5*(1-erf(y/0.0001))) }
 }
-Triple_Line_Model_FT_Disc
-{
-    equation_navier_stokes hydraulique
-    equation_temperature thermique
-    equation_interface interf
-    Qtcl 30.450
-    lv 10.e-9
-    coeffa -1.9291
-    coeffb  4.03634
-    ym 3.785e-6
-    sm 4.946e-6
-    initial_CL_xcoord 6.0297e-5 # Incorrect. To be computed by Vinod #
-}
+    Triple_Line_Model_FT_Disc # TCL #
+    { # TCL #
+        equation_navier_stokes hydraulique # TCL #
+        equation_temperature thermique # TCL #
+        equation_interface interf # TCL #
+        # deactivate TCL #
+        Qtcl 30.450 #  TCL #
+        ym 3.785e-6 # TCL #
+        sm 4.946e-6 # TCL #
+        n_extend_meso 4 # TCL #
+        inout_method approx # TCL #
+        # read_via_file 1  TCL #
+        # file_name model.txt TCL #
+    } # TCL #
 postraitement
 {
     champs dt_post 100

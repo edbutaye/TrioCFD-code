@@ -13,14 +13,19 @@
 # Script Python permettant de calculer des correlations (Teste avec VisIt 1.8.1)
 # -----------------------------------------------------------------------
 from sys import *
-import exceptions, sys
+import sys
+try: 
+   import exceptions
+   importExceptions = True
+except:
+   importExceptions = False
 
 lo = dir()
 # Valeurs par defaut : 
 nb_ts = 1  # frequence des pas de temps tires : Utilise dans range(1,TimeSliderGetNStates(), nb_ts)
 ts_im = 1  # timestep chosen to buid images.
 ts_start = 0  # timestep at which the loop starts
-ts_end = 10000  # timestep at which the loop ends
+ts_end = 100000  # timestep at which the loop ends
 p_filtre = "p7"  # Choix de la taille du filtre
 name_case = "TCR"  # Choix de la base de donnees
 subname_case = "Ja-1"  # Choix du nombre de jacob du cas etudie.
@@ -258,14 +263,14 @@ for state in list_ts:
     try:
         ib, jb = GetQueryOutputValue()
     except Exception as e:
-        if type(e) == exceptions.ValueError:
+        if importExceptions and type(e) == exceptions.ValueError:
             if e.message == 'need more than 0 values to unpack':
                 print("No bubble, the exception is dealt with by setting nbulles to 0")
                 ib, jb = 0, 1
                 continue  # Skipping the time step is the best option.
             else:
                 raise e
-        elif type(e) == exceptions.TypeError:
+        elif importExceptions and type(e) == exceptions.TypeError:
             f = GetQueryOutputValue()
             if type(f) == float:
                continue
@@ -273,7 +278,14 @@ for state in list_ts:
                print(e.message)
                raise e
         else:
-            raise e
+            # raise e
+            ret = GetQueryOutputValue()
+            print("Timestep Without interface is skipped")
+            if (len(ret) ==0):
+                ib, jb = 0, 1
+                continue  # Skipping the time step is the best option.
+            else:
+                raise e
     ib, jb = int(ib), int(jb)
     nbulles = jb + 1 - ib
     lbulles = list(range(ib, jb + 1))

@@ -132,41 +132,6 @@ Lire zone_sortie
 
 Probleme_FT_Disc_gen pb1
 Pb_conduction pb2
-Fluide_Incompressible  liquid_water
-Lire liquid_water
-{
-    mu champ_uniforme       1 2.8e-4
-    rho champ_uniforme      1 958.37
-    lambda champ_uniforme   1 0.679
-    cp champ_uniforme       1 4.21e3
-    # import CoolProp.CoolProp as CP
-    P,Q -> (pression, fraction de vapeur)
-    CP.PropsSI('ISOBARIC_EXPANSION_COEFFICIENT', "P", 101325, "Q", 0, "Water")                                                     0.0007504815417629351
-    CP.PropsSI('ISOBARIC_EXPANSION_COEFFICIENT', "P", 101325, "Q", 1, "Water")                                                     0.002902383982248589
-Ou pas a saturation:
-    PropsSI('ISOBARIC_EXPANSION_COEFFICIENT','P',101325,'T',373.124,'Water')  #
-    beta_th Champ_Uniforme  1 0.0007504815417629351
-}
-
-Fluide_Incompressible vapeur
-Lire vapeur
-{
-    mu champ_uniforme       1 1.227e-5
-    rho champ_uniforme      1 0.597
-    lambda champ_uniforme   1 0.025
-    cp champ_uniforme       1 2.077e3
-    beta_th Champ_Uniforme  1 0.002902383982248589
-}
-
-Fluide_diphasique fluide
-Lire fluide
-{
-    fluide1 liquid_water
-    fluide0 vapeur
-    sigma   Champ_Uniforme 1            5.89e-2
-    chaleur_latente Champ_Uniforme 1    -2.256e6
-}
-
 
 Schema_Euler_explicite  sch
 Lire sch
@@ -189,43 +154,8 @@ Lire sch
    periode_sauvegarde_securite_en_heures 0.5
 }
 
-Triple_Line_Model_FT_Disc TCL 
-Read TCL 
-{ # TCL #
-  # deactivate TCL #
-  Qtcl 30.450 #  TCL #
-  ym 2.130e-6 # TCL #
-  sm 4.956e-6 # TCL #
-  n_extend_meso 4 # TCL #
-  inout_method approx # TCL #
-  read_via_file 1  # TCL #
-  file_name model.txt # TCL #
-  reinjection_tcl # TCL #
-  thetaC_tcl @theta@ # TCL #
-  tempC_tcl @tempC@ # TCL #
-  Rc_tcl_GridN 4 # TCL #
-} # TCL #
-
-Champ_Uniforme gravite
-Lire gravite 2 0. -9.81
-Associate fluide gravite
-
-Navier_stokes_FT_disc                         hydraulique
-Transport_interfaces_FT_disc                  interf
-convection_diffusion_temperature_ft_disc      thermique
-convection_diffusion_temperature_ft_disc      thermique_vapeur
-
 Associate pb1 dom_fluide
-Associate pb1 hydraulique
-Associate pb1 thermique
-Associate pb1 thermique_vapeur
-Associate pb1 interf
 Associate pb1 fluide
-
-Associate TCL hydraulique
-Associate TCL thermique
-Associate TCL interf
-Associate pb1 TCL
 
 Associate pb2 dom_solide
 
@@ -240,6 +170,42 @@ system "mkdir -p lata slata"
 option_vdf { All_options } # To set the BC of pressure on the Boundary, not at the center of ghost cells! #
 Lire pb1
 {
+    solved_equations
+    {
+        Navier_stokes_FT_disc                         hydraulique
+        Transport_interFaces_FT_disc                  interf
+        convection_diffusion_temperature_ft_disc      thermique
+        convection_diffusion_temperature_ft_disc      thermique_vapeur
+    }
+    Fluide_diphasique
+    {
+        fluide1 Fluide_Incompressible # Liquid water #
+        {
+            mu champ_uniforme       1 2.8e-4
+            rho champ_uniforme      1 958.37
+            lambda champ_uniforme   1 0.679
+            cp champ_uniforme       1 4.21e3
+    # import CoolProp.CoolProp as CP
+    P,Q -> (pression, fraction de vapeur)
+    CP.PropsSI('ISOBARIC_EXPANSION_COEFFICIENT', "P", 101325, "Q", 0, "Water")                                                     0.0007504815417629351
+    CP.PropsSI('ISOBARIC_EXPANSION_COEFFICIENT', "P", 101325, "Q", 1, "Water")                                                     0.002902383982248589
+Ou pas a saturation:
+    PropsSI('ISOBARIC_EXPANSION_COEFFICIENT','P',101325,'T',373.124,'Water')  #
+            beta_th Champ_Uniforme  1 0.0007504815417629351
+        }
+        fluide0 Fluide_Incompressible # Vapeur #
+        {
+            mu champ_uniforme       1 1.227e-5
+            rho champ_uniforme      1 0.597
+            lambda champ_uniforme   1 0.025
+            cp champ_uniforme       1 2.077e3
+            beta_th Champ_Uniforme  1 0.002902383982248589
+        }
+        sigma   Champ_Uniforme 1            5.89e-2
+        chaleur_latente Champ_Uniforme 1    -2.256e6
+        gravite Champ_Uniforme 2 0 -9.81
+    }
+
     hydraulique
     {
         # parametre_equation parametre_diffusion_implicite
@@ -390,98 +356,20 @@ Lire pb1
                }
    }
    
-   liste_postraitements
-   {
-    postraitement_ft_lata post1 { 
-     format Lata 
-     fichier lata/post 
-     champs dt_post 1.0e-4 { 
-        VOLUME_MAILLE elem 
-        indicatrice_interf elem 
-        temperature_thermique elem
-	temperature_thermique_vapeur elem 
-        vitesse elem
-        pression elem 
-        mpoint_thermique elem
-	mpoint_thermique_vapeur elem 
-        interfacial_area elem 
-        distance_interface_elem_interf elem
-        # pression_laplacien_d elem 
-        second_membre_projection elem
-        vitesse faces
-        vitesse_conv_thermique faces 
-        vitesse_delta_interface faces 
-        terme_convection_vitesse faces 
-        terme_diffusion_vitesse faces #
-        # flux_tmp_interf faces  #
-     } 
-     interfaces interf { 
-        courbure som 
-        vitesse som 
-        vitesse_repere_local som 
-        COMPO_CONNEXE elem 
-        PE elem 
-        PE_LOCAL elem 
-     } 
-    }   
-   }
-
-    thermique
-    {
-        # parametre_equation parametre_diffusion_implicite
-        {
-            solveur petsc gcp { precond block_jacobi_ilu { level 0 } rtol 1.e-13 impr }
-        } #
-        # Pb quand on fait ca, il ne calcul pas le dt_stab de convection en FTD?? #
-        # Parametre_equation parametre_implicite { resolution_explicite } #
-        equation_interface interf
-        equation_navier_stokes hydraulique
-        phase 1
-        stencil_width 9
-        correction_mpoint_diff_conv_energy 3 0 0 0 # diff conv energy #
-        diffusion { }
-        convection { quick }
-        boundary_conditions
-        {
-            bot   ECHANGE_CONTACT_VDF_FT_DISC {
-                AUTRE_PROBLEME pb2
-                AUTRE_BORD sup
-                AUTRE_CHAMP_TEMPERATURE TEMPERATURE
-                NOM_MON_INDICATRICE INDICATRICE_INTERF
-                PHASE 1
-            }
-            up    frontiere_ouverte T_ext Champ_front_Uniforme 1 0.
-            right  frontiere_ouverte T_ext Champ_front_Fonc_xyz 1 (@dT@*(1-erf(y/@delta_th@)))
-            left  Symetrie
-        }
-        # conditions_initiales { Temperature_thermique Champ_Fonc_xyz dom_fluide 1 (@dT@*(1-erf(y/@delta_th@))) } #
-        conditions_initiales { Temperature_thermique Champ_Fonc_reprise binaire ../../STEADY/steady.sauv pb1 temperature_thermique last_time }
-    }
-
-    thermique_vapeur
-    {
-        equation_interface interf
-        equation_navier_stokes hydraulique
-        phase 0
-        stencil_width 9
-        correction_mpoint_diff_conv_energy 3 0 0 0 # diff conv energy #
-        diffusion { }
-        convection { quick }
-        boundary_conditions
-        {
-            bot   ECHANGE_CONTACT_VDF_FT_DISC {
-                AUTRE_PROBLEME pb2
-                AUTRE_BORD sup
-                AUTRE_CHAMP_TEMPERATURE TEMPERATURE
-                NOM_MON_INDICATRICE INDICATRICE_INTERF
-                PHASE 0
-            }
-            up  FRONTIERE_OUVERTE T_EXT CHAMP_FRONT_UNIFORME 1 0.
-            left  Symetrie
-            right PAROI_ADIABATIQUE
-        }
-        conditions_initiales { Temperature_thermique_vapeur Champ_Fonc_xyz dom_fluide 1 0. }
-    }
+    Triple_Line_Model_FT_Disc # TCL #
+    { # TCL #
+        equation_navier_stokes hydraulique # TCL #
+        equation_temperature thermique # TCL #
+        equation_interface interf # TCL #
+        # deactivate TCL #
+        Qtcl 30.450 #  TCL #
+        ym 2.130e-6 # TCL #
+        sm 4.956e-6 # TCL #
+        n_extend_meso 4 # TCL #
+        inout_method approx # TCL #
+        read_via_file 1  # TCL #
+        file_name model.txt # TCL #
+    } # TCL #
     postraitement
     {
         champs dt_post 100
@@ -510,6 +398,7 @@ Lire pb1
                 indicatrice_interf elem
                 temperature_thermique elem
                 temperature_thermique_vapeur elem
+                vitesse faces
                 vitesse elem
                 pression elem
                 mpoint_thermique elem
@@ -518,7 +407,6 @@ Lire pb1
                 distance_interface_elem_interf elem
                 # pression_laplacien_d elem
                 second_membre_projection elem
-                vitesse faces
                 vitesse_conv_thermique faces
                 vitesse_delta_interface faces
                 terme_convection_vitesse faces
@@ -547,32 +435,27 @@ Lire pb1
 
 Read pb2
 {
-	Solide
-	{
-		gravite champ_uniforme 2 0 -9.81
-		rho Uniform_Field 1 8500.
-		lambda Champ_Uniforme 1 234.    
-		Cp Champ_Uniforme 1 376.
-	}
-	Conduction
-	{
-		diffusion { }
-      sources {
-                  Puissance_Thermique Champ_fonc_xyz dom_solide 1 @power@*(y_ge_(@pdy@))*(x_le_@rmax@)
-      }
-		boundary_conditions {
-			sleft symetrie
-			sright   PAROI_ADIABATIQUE
-			# sbot paroi_flux_impose Champ_front_fonc_xyz 1 @pws@*(x_le_@xpsurf@) #
-                        sbot PAROI_ADIABATIQUE
-			sup  echange_contact_VDF_FT_Disc_solid {
-				autre_probleme pb1
-				autre_bord bot 
-				autre_champ_temperature_indic1 temperature_thermique
-				autre_champ_temperature_indic0 temperature_thermique_vapeur
-				autre_champ_indicatrice indicatrice_interf
-                               dt_impr_Tw 1.e-4
-			}
+    Solide # sol #
+    {
+        rho Uniform_Field 1 8500.
+        lambda Champ_Uniforme 1 234.
+        Cp Champ_Uniforme 1 376.
+    }
+    Conduction
+    {
+        diffusion { }
+        boundary_conditions {
+            sleft symetrie
+            sright   PAROI_ADIABATIQUE
+            sbot paroi_flux_impose Champ_front_fonc_xyz 1 @pws@
+            sup  echange_contact_VDF_FT_Disc_solid {
+                autre_probleme pb1
+                autre_bord bot
+                autre_champ_temperature_indic1 temperature_thermique
+                autre_champ_temperature_indic0 temperature_thermique_vapeur
+                autre_champ_indicatrice indicatrice_interf
+                dt_impr_Tw 1.e-4
+            }
 
         }
         CONDITIONS_INITIALES { temperature Champ_Uniforme 1 @dT@ }

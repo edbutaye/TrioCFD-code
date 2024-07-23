@@ -23,12 +23,14 @@ coarsen ()
     -e "s/ tmax .*/ tmax 50e-3/" ./$1/source.data > ./$d/COA_source.data;
    sed -e "s#$1#$d#g" $1/sub_file > $d/sub_file
    \cp -f ./$1/pre_run ./$1/post_run $d/
+   \cp -f ./$1/visit_Re_Nu2.py $d/
    # Case without TCL
    d2=$(dirname $(dirname $1))/M20-Fiche-noTCL/R0
    mkdir -p $d2
    remove_tcl ./$d/COA_source.data ./$d2/COA_source.data 
    sed -e "s#$d#$d2#g" $d/sub_file > $d2/sub_file
    \cp -f ./$d/pre_run ./$d/post_run $d2/
+   \cp -f ./$d/visit_Re_Nu2.py $d2/
 }
 
 cases=(S1a S1b S1c S2 S3 S4 S5 S6 S7 )
@@ -70,7 +72,7 @@ do
       #echo "$index ${meshes[index]}"
       M=${meshes[index]}
       Nx=$(python3 -c "print(int($r/3./($M*1e-6))+1)")
-      Nz=$(python3 -c "print(int($z//3.($M*1e-6))+1)")
+      Nz=$(python3 -c "print(int($z/3./($M*1e-6))+1)")
       Ntot=$(python3 -c "print(($Nx-1)*($Nz-1))")
       if [ 10 == 10 ] ; then 
          for i in "${!deltas[@]}" 
@@ -79,8 +81,13 @@ do
             echo "CASE: $case $r $z $M $dT $theta $sM $hM $Qmicro $eth $r0 $Ntot" 
             dest=$case/eth$eth/M$M/R0
             mkdir -p $dest
+            # TODO: Calculer Nx2, Ny2 proprement
             sed -e "s/@Nx@/$Nx/g" \
                 -e "s/@Nz@/$Nz/g" \
+                -e "s/@Nx1@/$Nx/g" \
+                -e "s/@Ny1@/$Nz/g" \
+                -e "s/@Nx2@/$Nx/g" \
+                -e "s/@Ny2@/$Nz/g" \
                 -e "s/@rmax@/$r/g" \
                 -e "s/@zmax@/$z/g" \
                 -e "s/ tmax .*/ tmax $tmax/" \
@@ -94,9 +101,9 @@ do
                 -e "s/@dT@/$dT/g" \
                 -e "s/@delta_th@/$eth/g" \
                 -e "s/nb_pas_dt_max .*/nb_pas_dt_max $nb_pas_dt_max/" \
-                template.data > $dest/source.data
+                template_source.data > $dest/source.data
             sed -e "s#@case@#$dest#g" sub_file_template > $dest/sub_file
-            \cp -f pre_run post_run $dest/
+            \cp -f pre_run post_run visit_Re_Nu2.py $dest/
             # Prepare the true case for run_fiche:
             [ $coarsening ] && [ $case == "S2" ] && [ $eth == "0.0001" ] && [ $M == 10 ] && echo "******Reducing case $dest for run_fiche" && coarsen $dest
             if [ $case == "S1b" ] && [ $M == 10 ] ; then 
@@ -105,7 +112,7 @@ do
                mkdir -p $pinch
                sed -e "s/ # +90*(x_lt_3.e-5) to pinch contact line #/+90*(x_lt_3.e-5) # to pinch contact line #/" $dest/source.data > $pinch/source.data
                sed -e "s#$dest#$pinch#g" $dest/sub_file > $pinch/sub_file
-               \cp -f $dest/pre_run $dest/post_run $pinch/
+               \cp -f $dest/pre_run $dest/post_run $dest/visit_Re_Nu2.py $pinch/
             fi
             if [ $case == "S6" ] ; then
                \mv -f $dest/source.data $dest/source-bkp-with-TCL.data

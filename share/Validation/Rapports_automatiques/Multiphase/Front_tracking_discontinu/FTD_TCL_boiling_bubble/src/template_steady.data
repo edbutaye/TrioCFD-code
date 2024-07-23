@@ -105,7 +105,6 @@ Lire sch
 
 Associate pb dom
 Associate pb sch
-
 VDF dis
 Discretize pb dis
 system "mkdir -p lata"
@@ -277,6 +276,7 @@ Ou pas a saturation:
                 VOLUME_MAILLE elem
                 indicatrice_interf elem
                 temperature_thermique elem
+                vitesse elem
                 vitesse faces
                 pression elem
                 mpoint_thermique elem

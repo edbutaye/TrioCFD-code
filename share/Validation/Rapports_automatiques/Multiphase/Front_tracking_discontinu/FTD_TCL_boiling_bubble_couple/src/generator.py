@@ -326,7 +326,7 @@ class Cases:
         timesteps = self.timestep.split("_")
         for idx, resol in enumerate(self.M.split("_")):
             repo = os.path.join(root, self.name, f"M{resol}")
-            cas = Case(self, repo, resol, timestep=timesteps[idx])
+            cas = Case(self, repo, resol, timestep=timestep)
             ok = cas.createCase() and ok
             if not ok: return ok
             self.dcases[(self.name, f"M{resol}")] = cas

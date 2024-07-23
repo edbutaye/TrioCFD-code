@@ -7,7 +7,7 @@ do
 done
 
 [ ! -d ../MESH ] && [ $(basename $PWD) != "R0" ] && mkdir ../MESH \
- && \cp -f DOM_[0-9]*.Zones ../MESH && echo "Mesh files copied into $PWD/../MESH"
+ && \cp -f DOM_*.Zones ../MESH && echo "Mesh files copied into $PWD/../MESH"
 #DEACTIVATE [ -f sub_file ] && [ -f /usr/bin/ccc_msub ] && ccc_msub -A gen7712 sub_file && echo "Run via sub_file." && sed -i "1iEnd" SEQ_source.data && echo "SEQ_source disabled by End"
 
 dir=$(basename $PWD)
