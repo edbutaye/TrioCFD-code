@@ -37,11 +37,15 @@ Parameters {
         CasTest CAS_OFFSET0.5 calc 1
         CasTest CAS_OFFSET-0.2_TIMESTEP2e-07 calc 1
 #        CasTest CAS_OFFSET-0.2_TIMESTEP3e-07 calc 1 /* Weirdly, but its the only one unstable, spurrious currents */
-        CasTest CAS_REFINE0.25 calc 1
-        CasTest CAS_REFINE0.5 calc 1
-        CasTest CAS_REFINE2 calc 1
-        CasTest CAS_REFINE4 calc 1
-#        CasTest CAS_REFINE8 calc 1
+        CasTest 2D/M0.125 calc 1
+        CasTest 2D/M0.25 calc 1
+        CasTest 2D/M1.0 calc 1
+        CasTest 2D/M2.0 calc 1
+#        CasTest 2D/M4.0 calc 1
+        CasTest 2D/M0.5/TCL2 calc 1
+        CasTest 2D/M0.5/TCL4 calc 1
+        CasTest 2D/M0.5/TCL6 calc 1
+	     CasTest 2D/M0.5/TCL8 calc 1
         CasTest CAS_ANGLE5 calc 1
         CasTest CAS_ANGLE10 calc 1
         CasTest CAS_ANGLE15 calc 1
@@ -54,10 +58,6 @@ Parameters {
         CasTest CAS_DT5 calc 1
         CasTest CAS_DT10 calc 1
         CasTest CAS_DT15 calc 1
-        CasTest CAS_REFINE1/TCL2 calc 1
-        CasTest CAS_REFINE1/TCL4 calc 1
-        CasTest CAS_REFINE1/TCL6 calc 1
-	CasTest CAS_REFINE1/TCL8 calc 1
         ExtraUsedFile REF/lata/post.lata.INDICATRICE_*
 	ExtraUsedFile REF/lata/post.lata.TEMPERATURE_THERMIQUE*
 	ExtraUsedFile REF/lata/post.lata.TEMPERATURE_GRAD_THERMIQUE*
@@ -68,7 +68,7 @@ Parameters {
 
 Chapter {
 	Title "Tests Description"
-	Description "Geometry : 2D"
+	Description "Geometry : 2D or 2D_axi"
 	Description "Dimensions : R=25e-6 m, L=12.e-6 m"
 	Description "Mesh : Hexa, "
 	Description "Initial conditions : "
@@ -78,6 +78,8 @@ Chapter {
 	Description "Boundary conditions :"
 	Description "..."
 	Description "..."
+	Description "We do just 100 timestep as the expected solution is static. should check steady in the future."
+	Description "div(lda grad(T)) change in time (establishement of the discrete equilibrium), but not visible effect on T."
 	
 	Table {
 		Title "Physical properties"
@@ -175,14 +177,14 @@ Chapter {
 	}
 	
 	visu {
-		Title "final comparison of mp to analytical using VisIt projection by pos_cmfe"
+		Title "final comparison of mp (ref) to analytical (black) using VisIt projection by pos_cmfe"
 		nb_img_without_newline 1
 		Origin Visit
 		Width 7.5cm
-		instruction_visit DefineScalarExpression("ri","1.e-20+sqrt((coord(INTERFACES)[0]-5e-6)^2+(coord(INTERFACES)[1])^2)")
+		instruction_visit DefineScalarExpression("ri","1.e-12+sqrt((coord(INTERFACES)[0]-5e-6)^2+(coord(INTERFACES)[1])^2)")
 		instruction_visit DefineScalarExpression("mpana", "0.67897/(-2.2574e6)*7.0/(ri*(50*3.14159)/180)")
 		instruction_visit DefineScalarExpression("mp", "pos_cmfe(<[0]id:MPOINT_THERMIQUE_ELEM_dom>,INTERFACES,-100.)")
-		instruction_visit  OpenDatabase("REF/lata/post.lata")
+		instruction_visit OpenDatabase("REF/lata/post.lata")
 		instruction_visit ScatterAtts = ScatterAttributes()
 		instruction_visit ScatterAtts.var1 = "ri"
 		instruction_visit ScatterAtts.var2 = "mpana"
@@ -215,7 +217,7 @@ Chapter {
 		Include_Description_Curves 0
 		Curve {
 			legend "Reference solution (without interf. resistance)"
-			file ./CAS_REFINE2/sm_ana.dat
+			file ./2D/M1.0/sm_ana.dat
 			columns ($1*1e6) ($2)
 			Style lines
 			TypeLigne 1
@@ -223,7 +225,7 @@ Chapter {
 		}
 		Curve {
 			legend "Reference solution (with interf. resistance)"
-			file ./CAS_REFINE2/sm_ana.dat
+			file ./2D/M1.0/sm_ana.dat
 			columns ($1*1e6) ($3)
 			Style lines
 			TypeLigne 2
@@ -231,7 +233,7 @@ Chapter {
 		}
 		Curve {
 			legend "Mesh M2"
-			file ./CAS_REFINE2/xysm.dat
+			file ./2D/M1.0/xysm.dat
 			columns ($3*1e6) ($4)
 			Style lines
 			TypeLigne 3
@@ -239,7 +241,7 @@ Chapter {
 		}
 		Curve {
 			legend "Mesh M1"
-			file ./CAS_REFINE1/xysm.dat
+			file ./2D/M0.5/xysm.dat
 			columns ($3*1e6) ($4)
 			Style lines
 			TypeLigne 4
@@ -247,7 +249,7 @@ Chapter {
 		}
 		Curve {
 			legend "Mesh M0.5"
-			file ./CAS_REFINE0.5/xysm.dat
+			file ./2D/M0.25/xysm.dat
 			columns ($3*1e6) ($4)
 			Style lines
 			TypeLigne 5
@@ -265,7 +267,7 @@ Chapter {
 		Include_Description_Curves 0
 		Curve {
 			legend "Reference solution (without interf. resistance)"
-			file ./CAS_REFINE2/sm_ana.dat
+			file ./2D/M1.0/sm_ana.dat
 			columns ($1*1e6) ($2)
 			Style lines
 			TypeLigne 1
@@ -273,7 +275,7 @@ Chapter {
 		}
 		Curve {
 			legend "Reference solution (with interf. resistance)"
-			file ./CAS_REFINE2/sm_ana.dat
+			file ./2D/M1.0/sm_ana.dat
 			columns ($1*1e6) ($3)
 			Style lines
 			TypeLigne 2
@@ -281,7 +283,7 @@ Chapter {
 		}
 		Curve {
 			legend "Mesh M1"
-			file ./CAS_REFINE1/xysm.dat
+			file ./2D/M0.5/xysm.dat
 			columns ($3*1e6) ($4)
 			Style lines
 			TypeLigne 3
@@ -289,7 +291,7 @@ Chapter {
 		}
 		Curve {
 			legend "Mesh M1 (TCL - meso=2)"
-			file ./CAS_REFINE1/TCL2/xysm.dat
+			file ./2D/M0.5/TCL2/xysm.dat
 			columns ($3*1e6) ($4)
 			Style lines
 			TypeLigne 4
@@ -297,7 +299,7 @@ Chapter {
 		}
 		Curve {
 			legend "Mesh M1 (TCL - meso=4)"
-			file ./CAS_REFINE1/TCL4/xysm.dat
+			file ./2D/M0.5/TCL4/xysm.dat
 			columns ($3*1e6) ($4)
 			Style lines
 			TypeLigne 5
@@ -305,7 +307,7 @@ Chapter {
 		}
 		Curve {
 			legend "Mesh M1 (TCL - meso=6)"
-			file ./CAS_REFINE1/TCL6/xysm.dat
+			file ./2D/M0.5/TCL6/xysm.dat
 			columns ($3*1e6) ($4)
 			Style lines
 			TypeLigne 6
@@ -313,7 +315,7 @@ Chapter {
 		}
 		Curve {
 			legend "Mesh M1 (TCL - meso=8)"
-			file ./CAS_REFINE1/TCL8/xysm.dat
+			file ./2D/M0.5/TCL8/xysm.dat
 			columns ($3*1e6) ($4)
 			Style lines
 			TypeLigne 7
@@ -904,11 +906,11 @@ The definition of $T_l$ in mixed cells should be clarified.
 		instruction_visit DefineScalarExpression("Tana50_ELEM_dom", "if(eq(INDICATRICE_INTERF_ELEM_dom,1),7.*(1-theta/50), 0.)")
 		instruction_visit DefineScalarExpression("dT_ELEM_dom", "Tl_ELEM_dom-Tana50_ELEM_dom")
 		Origin Visit
-#		mesh CAS_REFINE2/lata/post.lata dom
-		mesh CAS_REFINE2/lata/post.lata INTERFACES
+#		mesh 2D/M1.0/lata/post.lata dom
+		mesh 2D/M1.0/lata/post.lata INTERFACES
 #		Operator_to_all no_legend
 		Operator no_databaseinfo
-		Pseudocolor_with_range CAS_REFINE2/lata/post.lata dom dT ELEM min max
+		Pseudocolor_with_range 2D/M1.0/lata/post.lata dom dT ELEM min max
 		cycles -1
 		normal3D 0. 0. 1. 
 		up3D 0. 1 0.
@@ -924,11 +926,11 @@ The definition of $T_l$ in mixed cells should be clarified.
 		instruction_visit DefineScalarExpression("Tana50_ELEM_dom", "if(eq(INDICATRICE_INTERF_ELEM_dom,1),7.*(1-theta/50), 0.)")
 		instruction_visit DefineScalarExpression("dT_ELEM_dom", "Tl_ELEM_dom-Tana50_ELEM_dom")
 		Origin Visit
-#		mesh CAS_REFINE4/lata/post.lata dom
-		mesh CAS_REFINE4/lata/post.lata INTERFACES
+#		mesh 2D/M2.0/lata/post.lata dom
+		mesh 2D/M2.0/lata/post.lata INTERFACES
 #		Operator_to_all no_legend
 		Operator no_databaseinfo
-		Pseudocolor_with_range CAS_REFINE4/lata/post.lata dom dT ELEM min max
+		Pseudocolor_with_range 2D/M2.0/lata/post.lata dom dT ELEM min max
 		cycles -1
 		normal3D 0. 0. 1. 
 		up3D 0. 1 0.
@@ -944,10 +946,10 @@ The definition of $T_l$ in mixed cells should be clarified.
 		instruction_visit DefineScalarExpression("Tana50_ELEM_dom", "if(eq(INDICATRICE_INTERF_ELEM_dom,1),7.*(1-theta/50), 0.)")
 		instruction_visit DefineScalarExpression("dT_ELEM_dom", "Tl_ELEM_dom-Tana50_ELEM_dom")
 		Origin Visit
-		mesh CAS_REFINE4/lata/post.lata INTERFACES
+		mesh 2D/M2.0/lata/post.lata INTERFACES
 #		Operator_to_all no_legend
 #		Operator no_databaseinfo
-		Pseudocolor_with_range CAS_REFINE4/lata/post.lata dom dT ELEM min max
+		Pseudocolor_with_range 2D/M2.0/lata/post.lata dom dT ELEM min max
 		cycles -1
 		normal3D 0. 0. 1. 
 		up3D 0. 1 0.
@@ -963,8 +965,8 @@ The definition of $T_l$ in mixed cells should be clarified.
 		instruction_visit DefineScalarExpression("Tana50_ELEM_dom", "if(eq(INDICATRICE_INTERF_ELEM_dom,1),7.*(1-theta/50), 0.)")
 		instruction_visit DefineScalarExpression("dT_ELEM_dom", "Tl_ELEM_dom-Tana50_ELEM_dom")
 		Origin Visit
-		mesh CAS_REFINE4/lata/post.lata INTERFACES
-		Pseudocolor_with_range CAS_REFINE4/lata/post.lata dom dT ELEM -0.01 0.01
+		mesh 2D/M2.0/lata/post.lata INTERFACES
+		Pseudocolor_with_range 2D/M2.0/lata/post.lata dom dT ELEM -0.01 0.01
 		cycles -1
 		normal3D 0. 0. 1. 
 		up3D 0. 1 0.
@@ -986,7 +988,7 @@ The definition of $T_l$ in mixed cells should be clarified.
 		Include_Description_Curves 0
 		Curve {
 			legend "refine: 0.25 (coarsest)"
-			file CAS_REFINE0.25/xphi_last.txt
+			file 2D/M0.125/xphi_last.txt
 			columns (1e6*($1-5e-6+0.e-6)) ($2)
 			Style linespoints
 			TypeLigne 3
@@ -995,7 +997,7 @@ The definition of $T_l$ in mixed cells should be clarified.
 		}
 		Curve {
 			legend "refine: 0.5"
-			file CAS_REFINE0.5/xphi_last.txt
+			file 2D/M0.25/xphi_last.txt
 			columns (1e6*($1-5e-6+0.e-6)) ($2)
 			Style linespoints
 			TypeLigne 2
@@ -1004,7 +1006,7 @@ The definition of $T_l$ in mixed cells should be clarified.
 		}
 		Curve {
 			legend "refine: 1 (ref)"
-			file CAS_REFINE1/xphi_last.txt
+			file 2D/M0.5/xphi_last.txt
 			columns (1e6*($1-5e-6-0.0e-6)) ($2)
 			Style linespoints
 			TypeLigne 1
@@ -1013,7 +1015,7 @@ The definition of $T_l$ in mixed cells should be clarified.
 		}
 		Curve {
 			legend "refine: 2"
-			file CAS_REFINE2/xphi_last.txt
+			file 2D/M1.0/xphi_last.txt
 			columns (1e6*($1-5e-6-0.e-6)) ($2)
 			Style linespoints
 			TypeLigne 2
@@ -1022,7 +1024,7 @@ The definition of $T_l$ in mixed cells should be clarified.
 		}
 		Curve {
 			legend "refine: 4"
-			file CAS_REFINE4/xphi_last.txt
+			file 2D/M2.0/xphi_last.txt
 			columns (1e6*($1-5e-6-0.e-6)) ($2)
 			Style linespoints
 			TypeLigne 3
@@ -1031,7 +1033,7 @@ The definition of $T_l$ in mixed cells should be clarified.
 		}
 #		Curve {
 #			legend "refine: 8 (finest)"
-#			file CAS_REFINE8/xphi_last.txt
+#			file 2D/M4.0/xphi_last.txt
 #			columns (1e6*($1-5e-6-0.e-6)) ($2)
 #			Style linespoints
 #			TypeLigne 4
@@ -1052,7 +1054,7 @@ The definition of $T_l$ in mixed cells should be clarified.
 		Include_Description_Curves 0
 		Curve {
 			legend "refine: 0.25 (coarsest)"
-			file CAS_REFINE0.25/xphi_last.txt
+			file 2D/M0.125/xphi_last.txt
 			columns (1e6*($1-5e-6+0.e-6)) ($2)
 			Style linespoints
 			TypeLigne 3
@@ -1061,7 +1063,7 @@ The definition of $T_l$ in mixed cells should be clarified.
 		}
 		Curve {
 			legend "refine: 0.5"
-			file CAS_REFINE0.5/xphi_last.txt
+			file 2D/M0.25/xphi_last.txt
 			columns (1e6*($1-5e-6+0.e-6)) ($2)
 			Style linespoints
 			TypeLigne 2
@@ -1070,7 +1072,7 @@ The definition of $T_l$ in mixed cells should be clarified.
 		}
 		Curve {
 			legend "refine: 1 (ref)"
-			file CAS_REFINE1/xphi_last.txt
+			file 2D/M0.5/xphi_last.txt
 			columns (1e6*($1-5e-6-0.0e-6)) ($2)
 			Style linespoints
 			TypeLigne 1
@@ -1079,7 +1081,7 @@ The definition of $T_l$ in mixed cells should be clarified.
 		}
 		Curve {
 			legend "refine: 2"
-			file CAS_REFINE2/xphi_last.txt
+			file 2D/M1.0/xphi_last.txt
 			columns (1e6*($1-5e-6-0.e-6)) ($2)
 			Style linespoints
 			TypeLigne 2
@@ -1088,7 +1090,7 @@ The definition of $T_l$ in mixed cells should be clarified.
 		}
 		Curve {
 			legend "refine: 4"
-			file CAS_REFINE4/xphi_last.txt
+			file 2D/M2.0/xphi_last.txt
 			columns (1e6*($1-5e-6-0.e-6)) ($2)
 			Style linespoints
 			TypeLigne 3
@@ -1097,7 +1099,7 @@ The definition of $T_l$ in mixed cells should be clarified.
 		}
 #		Curve {
 #			legend "refine: 8 (finest)"
-#			file CAS_REFINE8/xphi_last.txt
+#			file 2D/M4.0/xphi_last.txt
 #			columns (1e6*($1-5e-6-0.e-6)) ($2)
 #			Style linespoints
 #			TypeLigne 4
@@ -1118,7 +1120,7 @@ The definition of $T_l$ in mixed cells should be clarified.
 		Include_Description_Curves 0
 		Curve {
 			legend "refine: 0.25 (coarsest)"
-			file CAS_REFINE0.25/xphi_last.txt
+			file 2D/M0.125/xphi_last.txt
 			columns (1e6*($1-5e-6+0.e-6)) ($3)
 			Style linespoints
 			TypeLigne 3
@@ -1127,7 +1129,7 @@ The definition of $T_l$ in mixed cells should be clarified.
 		}
 		Curve {
 			legend "refine: 0.5"
-			file CAS_REFINE0.5/xphi_last.txt
+			file 2D/M0.25/xphi_last.txt
 			columns (1e6*($1-5e-6+0.e-6)) ($3)
 			Style linespoints
 			TypeLigne 2
@@ -1136,7 +1138,7 @@ The definition of $T_l$ in mixed cells should be clarified.
 		}
 		Curve {
 			legend "refine: 1 (ref)"
-			file CAS_REFINE1/xphi_last.txt
+			file 2D/M0.5/xphi_last.txt
 			columns (1e6*($1-5e-6-0.0e-6)) ($3)
 			Style linespoints
 			TypeLigne 1
@@ -1145,7 +1147,7 @@ The definition of $T_l$ in mixed cells should be clarified.
 		}
 		Curve {
 			legend "refine: 2"
-			file CAS_REFINE2/xphi_last.txt
+			file 2D/M1.0/xphi_last.txt
 			columns (1e6*($1-5e-6-0.e-6)) ($3)
 			Style linespoints
 			TypeLigne 2
@@ -1154,7 +1156,7 @@ The definition of $T_l$ in mixed cells should be clarified.
 		}
 		Curve {
 			legend "refine: 4"
-			file CAS_REFINE4/xphi_last.txt
+			file 2D/M2.0/xphi_last.txt
 			columns (1e6*($1-5e-6-0.e-6)) ($3)
 			Style linespoints
 			TypeLigne 3
@@ -1163,7 +1165,7 @@ The definition of $T_l$ in mixed cells should be clarified.
 		}
 #		Curve {
 #			legend "refine: 8 (finest)"
-#			file CAS_REFINE8/xphi_last.txt
+#			file 2D/M4.0/xphi_last.txt
 #			columns (1e6*($1-5e-6-0.e-6)) ($3)
 #			Style linespoints
 #			TypeLigne 4
@@ -1184,7 +1186,7 @@ The definition of $T_l$ in mixed cells should be clarified.
 		Include_Description_Curves 0
 		Curve {
 			legend "refine: 0.25 (coarsest)"
-			file CAS_REFINE0.25/xphi_last.txt
+			file 2D/M0.125/xphi_last.txt
 			columns (1e6*($1-5e-6+0.e-6)) ($3)
 			Style linespoints
 			TypeLigne 3
@@ -1193,7 +1195,7 @@ The definition of $T_l$ in mixed cells should be clarified.
 		}
 		Curve {
 			legend "refine: 0.5"
-			file CAS_REFINE0.5/xphi_last.txt
+			file 2D/M0.25/xphi_last.txt
 			columns (1e6*($1-5e-6+0.e-6)) ($3)
 			Style linespoints
 			TypeLigne 2
@@ -1202,7 +1204,7 @@ The definition of $T_l$ in mixed cells should be clarified.
 		}
 		Curve {
 			legend "refine: 1 (ref)"
-			file CAS_REFINE1/xphi_last.txt
+			file 2D/M0.5/xphi_last.txt
 			columns (1e6*($1-5e-6-0.0e-6)) ($3)
 			Style linespoints
 			TypeLigne 1
@@ -1211,7 +1213,7 @@ The definition of $T_l$ in mixed cells should be clarified.
 		}
 		Curve {
 			legend "refine: 2"
-			file CAS_REFINE2/xphi_last.txt
+			file 2D/M1.0/xphi_last.txt
 			columns (1e6*($1-5e-6-0.e-6)) ($3)
 			Style linespoints
 			TypeLigne 2
@@ -1220,7 +1222,7 @@ The definition of $T_l$ in mixed cells should be clarified.
 		}
 		Curve {
 			legend "refine: 4"
-			file CAS_REFINE4/xphi_last.txt
+			file 2D/M2.0/xphi_last.txt
 			columns (1e6*($1-5e-6-0.e-6)) ($3)
 			Style linespoints
 			TypeLigne 3
@@ -1229,7 +1231,7 @@ The definition of $T_l$ in mixed cells should be clarified.
 		}
 #		Curve {
 #			legend "refine: 8 (finest)"
-#			file CAS_REFINE8/xphi_last.txt
+#			file 2D/M4.0/xphi_last.txt
 #			columns (1e6*($1-5e-6-0.e-6)) ($3)
 #			Style linespoints
 #			TypeLigne 4

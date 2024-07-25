@@ -1,6 +1,6 @@
 # Boiling bubble simulation #
 # PARALLEL RUNS #
-PrecisionGeom 1.e-12
+PrecisionGeom 1.e-14
 dimension 2
 # bidim_axi #
 domaine dom
@@ -32,7 +32,7 @@ Scatter DOM.Zones dom
 Schema_Euler_explicite  sch
 Lire sch
 {
-    nb_pas_dt_max 110000 # 100000000 #
+    nb_pas_dt_max 100 # 1100000 # # Pas besoin de tonnes de dt car c'est stationnaire a priori. la div(lda grad(T)) change un peu, mais pas d'impact vu sur le T"
     tinit 0.
     tmax  1.e-4
     dt_min 1.e-10
@@ -187,6 +187,7 @@ Lire pb
             equation_interface interf
             equation_navier_stokes hydraulique
             correction_courbure_ordre 0
+	    correction_gradt_ordre @ordre_gradT@
             phase 1
             # maintien_temperature zone_tranche -6. #
             stencil_width 11 # 10 #
@@ -250,7 +251,6 @@ Lire pb
             }
         }
 #
-#
         Post_processing
         {
             Format lata
@@ -262,8 +262,9 @@ Lire pb
                     numero_op 0
                 }
                 gradient_temp gradient {
-                    source  refchamp { pb_champ pb temperature  }
+                    source  refchamp { pb_champ pb temperature_thermique  }
                 }
+#
                 gradient_temp_interp interpolation {
                     localisation elem
                     sources_reference { gradient_temp  }
@@ -272,17 +273,38 @@ Lire pb
                     methode composante numero 0
                     sources_reference { gradient_temp_interp  }
                 }
+#
+                # Temperature convection T.u #
+               convection_T operateur_eqn
+               {
+                   sources { refchamp { pb_champ pb Temperature_thermique } }
+                   numero_op 1
+               }
             }
-            fields dt_post 1.e-2
+            fields dt_post 4.e-5 # 1e-2 #
             {
                 diffusion_Ts elem
-                temperature elem
-                gradient_temp_X
-                gradient_temp
+                convection_T elem
+                # gradient_temp elem #
+                # gradient_temp_X #
                 flux_bords
+                    temperature_grad_thermique elem
+                    temperature_thermique elem
+                    mpoint_thermique elem
+                    interfacial_area elem
+                    NORMALE_INTERFACE_INTERF elem
+		    pression_laplacien_d elem
+                    distance_interface_elem_interf elem
+                    volume_maille elem
+                    indicatrice_interf elem
+                    vitesse elem
+                    pressure elem
+                    second_membre_projection elem
+                    vitesse_delta_interface faces
+                    second_membre_projection_jump elem
+                    vitesse faces
             }
         }
-#
 
         liste_postraitements
         {
@@ -294,7 +316,9 @@ Lire pb
                     temperature_thermique elem
                     mpoint_thermique elem
                     interfacial_area elem
+                    NORMALE_INTERFACE_INTERF elem
                     distance_interface_elem_interf elem
+		    pression_laplacien_d elem
                     volume_maille elem
                     indicatrice_interf elem
                     vitesse elem

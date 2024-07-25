@@ -6,21 +6,23 @@ refNy = 24
 refdegliq = 50
 refoffset = 0 # in microns
 refDT = 8.5
+refogt = 1
 loffsets = ['-0.5', '-0.4', '-0.3', '-0.2', '-0.1', '0.0', '0.1', '0.2', '0.3', '0.4', '0.5']
 lraf = [0.25, 0.5, 1, 2, 4, 8]
 langle = [5, 10, 15, 20, 30, 50, 80, 90]
 ldT = [3,5,8.5,10,15]
+lordre_gradT = [0,1,2] # @ordre_gradT@
 tstep=1.e-6  # Reference timestep
 lts = [1e-8, 1e-7, 2e-7, 3e-7] # List of Timesteps tested
 lda=0.67897  # conductivity liq 
 
-def makeCase(dest="TEST", Nx=refNx, Ny=refNy,degliq=refdegliq,offset=refoffset, dT=refDT, tstep=tstep):
+def makeCase(dest="TEST", Nx=refNx, Ny=refNy,degliq=refdegliq,offset=refoffset, dT=refDT, ordre_gradT=refogt, axi=False, tstep=tstep):
    if os.path.isdir(dest):
       # shutil.rmtree(dest)
       print("Directory %s not updated"%dest)
       return
    else:
-      os.mkdir(dest)
+      os.makedirs(dest, exist_ok=True)
       pass
    # Read in the file and make the replacements:
    with open('template.data') as f:
@@ -39,6 +41,9 @@ def makeCase(dest="TEST", Nx=refNx, Ny=refNy,degliq=refdegliq,offset=refoffset, 
    data = re.sub(r'@tstep@',str(tstep),data)
    data = re.sub(r'@sm@',str(sm),data)
    data = re.sub(r'@Qi@',str(Qi),data)
+   data = re.sub(r'@ordre_gradT@',str(ordre_gradT),data)
+   if axi:
+      data = re.sub(r'# bidim_axi #',str("bidim_axi"),data) # To activate bidim_axi
    #data = re.sub(r'(\d+):',lambda m: repl[m.group(1)]+':',data)
    #
    # Write it back out:
@@ -79,7 +84,12 @@ def makeCase(dest="TEST", Nx=refNx, Ny=refNy,degliq=refdegliq,offset=refoffset, 
       shutil.copy(file_info, dest2)
       shutil.copy("post_run", dest2)
       pass
-   pass
+   cwd = os.getcwd()
+   os.chdir(dest)
+   subprocess.call(["ln","-sf", ".", "NOTCL"])
+   os.chdir(cwd)
+   return
+   
 
 # Offset serie : 
 for o in loffsets : 
@@ -95,14 +105,22 @@ for ts in lts :
 
 if not os.path.exists("REF"): subprocess.call(["ln","-sf", "CAS_OFFSET0.0", "REF"])
 
-# refinement serie : 
-for r in lraf : 
-   if (r == 1):
-       if not os.path.exists("CAS_REFINE%s"%r): subprocess.call(["ln","-sf", "REF", "CAS_REFINE%s"%r])
-   else:
-      makeCase(dest="CAS_REFINE%s"%r, Nx=int(refNx*r), Ny=(refNy*r),degliq=refdegliq,offset=refoffset)
+# 2D or 2Daxi
+for axi in ["2D", "2D_axi"]:
+   os.makedirs(axi, exist_ok=True)
+   # refinement serie : 
+   for r in lraf : 
+      M=0.5*r # REF case has a mesh 0.5micron
+      if (r == 1):
+          if not os.path.exists("%s/M%s"%(axi,M)): 
+             os.chdir(axi)
+             subprocess.call(["ln","-sf", "../REF", "M%s"%(M)])
+             os.chdir("..")
+      else:
+         makeCase(dest="%s/M%s"%(axi,M), Nx=int(refNx*r), Ny=(refNy*r),degliq=refdegliq,offset=refoffset, axi=(axi=="2D_axi"))
+         pass
       pass
-   pass 
+   pass
 
 # Angle serie : 
 for angle in langle : 
