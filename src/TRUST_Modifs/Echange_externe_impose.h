@@ -46,6 +46,12 @@ class Echange_externe_impose: public Echange_impose_base
 {
   Declare_instanciable(Echange_externe_impose);
   void verifie_ch_init_nb_comp() const override;
+  double h_imp_grad(int num) const override
+  {
+    // Le h n'a pas de gradient normal a la CL dans la plupart des cas, ...
+    return 0.0;
+  }
+  double h_imp_grad(int num,int k) const override { return 0.0;}
 };
 
 #endif

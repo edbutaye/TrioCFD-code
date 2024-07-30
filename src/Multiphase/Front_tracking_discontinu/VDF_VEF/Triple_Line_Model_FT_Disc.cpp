@@ -1044,6 +1044,12 @@ bool is_in_list(const ArrOfInt& list, const int elem)
   return false;
 }
 
+void Triple_Line_Model_FT_Disc::compute_TCL_fluxes_in_all_boundary_cells()
+{
+  ArrOfInt elems_with_CL_contrib, faces_with_CL_contrib;
+  ArrOfDouble mpoint_from_CL, Q_from_CL;
+  compute_TCL_fluxes_in_all_boundary_cells(elems_with_CL_contrib, faces_with_CL_contrib, mpoint_from_CL, Q_from_CL);
+}
 // Arguments :
 //    elems_with_CL_contrib : The list of elements containing either the TCL itself, or the meso domaine.
 //                            In all of them, the flux_evap has to be modified.
@@ -1137,9 +1143,6 @@ void Triple_Line_Model_FT_Disc::compute_TCL_fluxes_in_all_boundary_cells(ArrOfIn
   const IntVect& orientation = zvdf.orientation();
   // const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis);
   const IntTab& elem_faces = zvdf.elem_faces();
-
-
-
 
   // 1. First loop on contact line cells:
   // Micro cells: 1, at wall BC + 2, 0<indicatrice <1 3, height < ym

@@ -2680,8 +2680,8 @@ void Navier_Stokes_FT_Disc::calculer_dI_dt(DoubleVect& dI_dt) //const
             const double un_sur_rho_0 = 1. / rho_0;
             const DoubleTab& interfacial_area = variables_internes().ai->valeurs();
             Cerr << "[TCL] Contact line model activated in volume correction" << finl;
-            ArrOfInt& tcl_elems = probleme_ft().tcl().elems();
-            ArrOfDouble& tcl_mp = probleme_ft().tcl().mp();
+            const ArrOfInt& tcl_elems = probleme_ft().tcl().elems();
+            const ArrOfDouble& tcl_mp = probleme_ft().tcl().mp();
             // We accounted for the contribution that is in Ui but not the contribution from TCL yet:
             for (int idx = 0; idx < tcl_elems.size_array(); idx++)
               {

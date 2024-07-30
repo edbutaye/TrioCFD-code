@@ -88,7 +88,7 @@ public :
   // Computes the integral flux in a cell in the meso zone.
   // in and out are the interface position on both sides of the cell.
   double compute_Qint(const DoubleTab& in_out, const double theta_app_locs, const int num_face, double& Qmeso) const;
-
+  void compute_TCL_fluxes_in_all_boundary_cells();
   void compute_TCL_fluxes_in_all_boundary_cells(ArrOfInt& elems_with_CL_contrib, ArrOfInt& faces_with_CL_contrib, ArrOfDouble& mpoint_from_CL, ArrOfDouble& Q_from_CL);
 
   void corriger_mpoint(DoubleTab& mpoint) const;
