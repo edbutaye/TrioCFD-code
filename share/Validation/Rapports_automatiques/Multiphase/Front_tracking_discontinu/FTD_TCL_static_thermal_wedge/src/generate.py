@@ -120,6 +120,16 @@ for axi in ["2D", "2D_axi"]:
          makeCase(dest="%s/M%s"%(axi,M), Nx=int(refNx*r), Ny=(refNy*r),degliq=refdegliq,offset=refoffset, axi=(axi=="2D_axi"))
          pass
       pass
+   for o in lordre_gradT:
+      if (o == 1):
+          if not os.path.exists("%s/M%s"%(axi,M)): 
+             os.chdir(axi)
+             subprocess.call(["ln","-sf", "../REF", "OGT%s"%(o)])
+             os.chdir("..")
+      else:
+          makeCase(dest="%s/OGT%s"%(axi,o), Nx=refNx, Ny=refNy,degliq=refdegliq, offset=refoffset, ordre_gradT=o, axi=(axi=="2D_axi"))
+          pass
+      pass
    pass
 
 # Angle serie : 

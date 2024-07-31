@@ -42,10 +42,15 @@ Parameters {
         CasTest 2D/M1.0 calc 1
         CasTest 2D/M2.0 calc 1
 #        CasTest 2D/M4.0 calc 1
+        CasTest 2D/OGT0 calc 1
+        CasTest 2D/OGT2 calc 1
         CasTest 2D/M0.5/TCL2 calc 1
         CasTest 2D/M0.5/TCL4 calc 1
         CasTest 2D/M0.5/TCL6 calc 1
-	     CasTest 2D/M0.5/TCL8 calc 1
+	CasTest 2D/M0.5/TCL8 calc 1
+        CasTest 2D_axi/OGT0 calc 1
+        CasTest 2D_axi/OGT2 calc 1
+
         CasTest CAS_ANGLE5 calc 1
         CasTest CAS_ANGLE10 calc 1
         CasTest CAS_ANGLE15 calc 1
@@ -212,13 +217,62 @@ Chapter {
 		Width 7.5cm
 		Dimension 2
 		LabelX "s [$\\mu m$]"
-		LabelY "mp"
+		LabelY "-mp"
+		LogY
 		legend below title " at the interface"
 		Include_Description_Curves 0
 		Curve {
+			legend "Mesh M8"
+			file ./2D/M4.0/xysm.dat
+			columns ($3*1e6) (-$4)
+			Style lines
+			TypeLigne 8
+			LineWidth 2
+		}
+		Curve {
+			legend "Mesh M4"
+			file ./2D/M2.0/xysm.dat
+			columns ($3*1e6) (-$4)
+			Style lines
+			TypeLigne 3
+			LineWidth 2
+		}
+		Curve {
+			legend "Mesh M2"
+			file ./2D/M1.0/xysm.dat
+			columns ($3*1e6) (-$4)
+			Style lines
+			TypeLigne 4
+			LineWidth 2
+		}
+		Curve {
+			legend "Mesh M1"
+			file ./2D/M0.5/xysm.dat
+			columns ($3*1e6) (-$4)
+			Style lines
+			TypeLigne 5
+			LineWidth 2
+		}
+		Curve {
+			legend "Mesh M0.5"
+			file ./2D/M0.25/xysm.dat
+			columns ($3*1e6) (-$4)
+			Style lines
+			TypeLigne 6
+			LineWidth 2
+		}
+		Curve {
+			legend "Mesh M0.25"
+			file ./2D/M0.125/xysm.dat
+			columns ($3*1e6) (-$4)
+			Style lines
+			TypeLigne 7
+			LineWidth 2
+		}
+		Curve {
 			legend "Reference solution (without interf. resistance)"
 			file ./2D/M1.0/sm_ana.dat
-			columns ($1*1e6) ($2)
+			columns ($1*1e6) (-$2)
 			Style lines
 			TypeLigne 1
 			LineWidth 2
@@ -226,33 +280,9 @@ Chapter {
 		Curve {
 			legend "Reference solution (with interf. resistance)"
 			file ./2D/M1.0/sm_ana.dat
-			columns ($1*1e6) ($3)
+			columns ($1*1e6) (-$3)
 			Style lines
 			TypeLigne 2
-			LineWidth 2
-		}
-		Curve {
-			legend "Mesh M2"
-			file ./2D/M1.0/xysm.dat
-			columns ($3*1e6) ($4)
-			Style lines
-			TypeLigne 3
-			LineWidth 2
-		}
-		Curve {
-			legend "Mesh M1"
-			file ./2D/M0.5/xysm.dat
-			columns ($3*1e6) ($4)
-			Style lines
-			TypeLigne 4
-			LineWidth 2
-		}
-		Curve {
-			legend "Mesh M0.5"
-			file ./2D/M0.25/xysm.dat
-			columns ($3*1e6) ($4)
-			Style lines
-			TypeLigne 5
 			LineWidth 2
 		}
 	}

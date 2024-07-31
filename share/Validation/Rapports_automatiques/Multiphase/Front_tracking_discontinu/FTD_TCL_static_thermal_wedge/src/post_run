@@ -30,5 +30,7 @@ if [ ${1} != "fake" ] ; then
     echo "[post_run] Running visit_Re_Nu2" &&  visit -nowin -cli -s $local_root/visit_Re_Nu2.py&> visit_Re_Nu2.log || [ $? == 250 ] || (echo "visit_Re_Nu2 failed" && exit -1)
   fi
   echo "[post_run] Running med extraction of interface. " && lata_to_med || (echo "post pro of lata_to_med failed" && exit -1)
+  time=$(grep TEMPS lata/post.lata | tail -n1 | awk '{print $2}')
+  echo "[post_run] Running convert_med" && python $local_root/convert_med.py $time &> convert_med.log || (echo "convert_med failed" && exit -1)
 fi
 echo "End of post_run in `basename $PWD`"

@@ -362,8 +362,8 @@ for idx in ordered_list:
 dirTime = f"T{time}"
 if not os.path.isdir(dirTime):
    os.makedirs(dirTime, exist_ok=True)
-np.savetxt(os.path.join(dirTime, "xysm.dat"), xysm, header="x y s m ai")
-np.savetxt(os.path.join(dirTime, "xysm_cells.dat"), xysm_cells, header="xi yi si m ai")
+np.savetxt(os.path.join(dirTime, "xysm.dat"), xysm, header="x y s m ai m_from_gradT")
+np.savetxt(os.path.join(dirTime, "xysm_cells.dat"), xysm_cells, header="xi yi si m ai m_from_gradT")
 # Reloading : 
 xysm = np.loadtxt(os.path.join(dirTime, "xysm.dat"))
 xysm_cells = np.loadtxt(os.path.join(dirTime, "xysm_cells.dat"))
