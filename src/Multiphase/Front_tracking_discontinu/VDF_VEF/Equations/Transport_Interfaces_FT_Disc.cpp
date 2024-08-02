@@ -500,6 +500,7 @@ void Transport_Interfaces_FT_Disc::set_param(Param& param)
   param.ajouter_non_std("distance_projete_faces",(this));
   param.ajouter("temps_debut",&temps_debut_);
   param.ajouter("vitesse_imposee_regularisee", &variables_internes_->vimp_regul) ;
+  param.ajouter_flag("explicit_u_NS", &explicit_u_NS_); // XD_ADD_P rien Flag to force a really explicit scheme
   //param.ajouter("indic_faces_modifiee", &variables_internes_->indic_faces_modif) ;
   //param.ajouter_non_std("indic_faces_modifiee", (this)) ;
   param.ajouter_non_std("type_indic_faces", (this)) ;
@@ -1911,9 +1912,10 @@ const Champ_base& Transport_Interfaces_FT_Disc::get_update_indicatrice()
 void interpoler_vitesse_point_vdf(const Champ_base& champ_vitesse,
                                   const FTd_vecteur3& coord_som,
                                   const int element,
-                                  FTd_vecteur3& vitesse)
+                                  FTd_vecteur3& vitesse,
+                                  const int explicit_u_NS)
 {
-  const DoubleTab& valeurs_v = champ_vitesse.valeurs();
+  const DoubleTab& valeurs_v = (bool)(explicit_u_NS) ? champ_vitesse.futur() : champ_vitesse.valeurs();
   const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, champ_vitesse.domaine_dis_base());
   const IntTab& elem_faces = domaine_vf.elem_faces();
   const DoubleTab& xv = domaine_vf.xv();
@@ -2174,9 +2176,10 @@ void interpoler_vitesse_point_vdf(const Champ_base& champ_vitesse,
 void interpoler_simple_vitesse_point_vdf(const Champ_base& champ_vitesse,
                                          const FTd_vecteur3& coord_som,
                                          const int element,
-                                         FTd_vecteur3& vitesse)
+                                         FTd_vecteur3& vitesse,
+                                         const int explicit_u_NS)
 {
-  const DoubleTab& valeurs_v = champ_vitesse.valeurs();
+  const DoubleTab& valeurs_v = (bool)(explicit_u_NS) ? champ_vitesse.futur() : champ_vitesse.valeurs();
   const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, champ_vitesse.domaine_dis_base());
   const IntTab& elem_faces = domaine_vf.elem_faces();
   const DoubleTab& xv = domaine_vf.xv();
@@ -2285,7 +2288,10 @@ void Transport_Interfaces_FT_Disc::calculer_vitesse_transport_interpolee(
                 // Premier jet :
                 // Calcul d'un champ aux sommets par filtrage L2 (inversion d'une matrice)
                 // c'est assez long...
-                champ_filtre.valeurs() = champ_vitesse.valeurs();
+                // TODO GB2024 :  Selon d'ou on fait l'appel, il faut .valeurs() ou .futur()
+                //                Je ne sais pas si l'option explicit_u_NS_ est correcte ici.
+                const DoubleTab& val_champ_vitesse = (bool)(explicit_u_NS_) ? champ_vitesse.futur() : champ_vitesse.valeurs();
+                champ_filtre.valeurs() = val_champ_vitesse;
                 ////if (type == "Champ_P1NC")
                 if (sub_type(Champ_P1NC, champ_vitesse))
                   ref_cast(Champ_P1NC, champ_vitesse).filtrer_L2(champ_filtre.valeurs());
@@ -2382,12 +2388,12 @@ void Transport_Interfaces_FT_Disc::calculer_vitesse_transport_interpolee(
                 if (standard)
                   {
                     // Interpolation M-lineaire dans toutes les M-directions pour chaque compo
-                    interpoler_vitesse_point_vdf(champ_vitesse, coord, element, vitesse);
+                    interpoler_vitesse_point_vdf(champ_vitesse, coord, element, vitesse, explicit_u_NS_);
                   }
                 else
                   {
                     // Interpolation uni-lineaire dans chaque direction de chaque compo :
-                    interpoler_simple_vitesse_point_vdf(champ_vitesse, coord, element, vitesse);
+                    interpoler_simple_vitesse_point_vdf(champ_vitesse, coord, element, vitesse, explicit_u_NS_);
                   }
                 for (j = 0; j < dim; j++)
                   vitesse_noeuds(i,j) = vitesse[j];
@@ -7107,10 +7113,19 @@ void Transport_Interfaces_FT_Disc::calculer_vitesse_repere_local(const Maillage_
     }
 }
 
+// This method is called by mettre_a_jour(), so it is done in a loop that depend on the order of equations.
+// NS is forced as first, always.
+// Therefore, NS has turned the wheel (tourner la roue) before getting here.
+// To make a really explicit scheme, we want tu use u^n, not u^n+1.
+// Because of the wheel turns in equation(0).mettre_a_jour() (which is NS), u^n is currently in .futur() and NOT in .present() (or .valeur() which is synonymous)
 void Transport_Interfaces_FT_Disc::deplacer_maillage_ft_v_fluide(const double temps)
 {
   DoubleTab& deplacement = variables_internes_->deplacement_sommets;
   const Equation_base& eqn_hydraulique = variables_internes_->refequation_vitesse_transport.valeur();
+  // Method is called by mettre_a_jour()
+  // The option explicit_u_NS_ = 0 enables corresponds to the historical scheme in TrioCFD, which was apparently semi-implicit.
+  // Set to explicit_u_NS_  = 1, you get a real explicit scheme.
+  // WARNING : read comment above method explaining why "explicit" should use ".futur()"!!!
   const Champ_base& champ_vitesse = eqn_hydraulique.inconnue();
   Maillage_FT_Disc& maillage = maillage_interface();
   // Calcul de la vitesse de deplacement des sommets par interpolation
@@ -7225,7 +7240,9 @@ void Transport_Interfaces_FT_Disc::deplacer_maillage_ft_v_fluide(const double te
 
         DoubleVect dI_dt;
         domaine_dis().domaine().creer_tableau_elements(dI_dt);
-        ns.calculer_dI_dt(dI_dt);
+        // Here, the velocity given is either explicit or semi-impli depending on the choice for : explicit_u_NS_
+        const DoubleTab& val_champ_vitesse = (bool)(explicit_u_NS_) ? champ_vitesse.futur() : champ_vitesse.valeurs();
+        ns.calculer_dI_dt(dI_dt, val_champ_vitesse);
         dI_dt.echange_espace_virtuel();
 #if DEBUG_CONSERV_VOLUME
         const int nb_elem = domaine_dis().nb_elem();
@@ -7777,8 +7794,23 @@ void Transport_Interfaces_FT_Disc::mettre_a_jour(double temps)
 
   update_critere_statio();
 
+  // Update normal and distance :
   get_update_distance_interface();
-  get_update_normale_interface();
+  get_update_normale_interface(); // TODO: GB2024 pense a delete car la ligne d'avant le fait deja.
+  variables_internes_->distance_interface.changer_temps(temps);
+  variables_internes_->normale_interface.changer_temps(temps);
+
+  // TODO: GB2024
+  // get_compute_indicatrice_faces();
+  // indicatrice_faces_.changer_temps(temps);
+  // if (???) variables_internes_->vitesse_filtree.changer_temps(temps);
+  // if (???) variables_internes_->tmp_flux.changer_temps(temps);
+  // if (???) variables_internes_->index_element.changer_temps(temps);
+  // if (???) variables_internes_->nelem_par_direction.changer_temps(temps);
+  // if (???) variables_internes_->distance_interface_faces.changer_temps(temps);
+  // if (???) variables_internes_->distance_interface_faces_corrigee.changer_temps(temps);
+  // if (???) variables_internes_->distance_interface_faces_difference.changer_temps(temps);
+  // if (???) vitesse_imp_interp_.changer_temps(temps);
 
   {
     double volume_phase_0 = 0.;

@@ -115,6 +115,7 @@ void Convection_Diffusion_Temperature_FT_Disc::set_param(Param& param)
   param.ajouter_non_std("prescribed_mpoint", (this));
   param.ajouter("correction_mpoint_diff_conv_energy", &correction_mpoint_diff_conv_energy_);
   param.ajouter_flag("divergence_free_velocity_extension", &divergence_free_velocity_extension_, Param::OPTIONAL);
+  param.ajouter_flag("explicit_u_NS", &explicit_u_NS_, Param::OPTIONAL); // XD_ADD_P rien Flag to force a really explicit scheme
   param.ajouter_non_std("solveur_pression_fictive",(this),Param::OPTIONAL);
   param.ajouter("bc_opening_pressure",&name_bc_opening_pressure_,Param::OPTIONAL);
 }
@@ -931,7 +932,7 @@ void Convection_Diffusion_Temperature_FT_Disc::correct_mpoint()
 void Convection_Diffusion_Temperature_FT_Disc::compute_divergence_free_velocity_extension()
 {
   Navier_Stokes_FT_Disc& ns = ref_cast(Navier_Stokes_FT_Disc, ref_eq_ns_.valeur());
-  vitesse_convection_->valeurs() = ns.inconnue().valeurs();
+  vitesse_convection_->valeurs() = (bool)(explicit_u_NS_) ? ns.inconnue().valeurs() : ns.inconnue().futur();
   // Projection of the convective field :
   //SolveurSys solveur_pression(ns.get_solveur_pression());
   OWN_PTR(Solveur_Masse_base) solveur_masse_fictitious(ns.solv_masse()); // Copy the operator to change the coeff
@@ -1105,9 +1106,11 @@ DoubleTab& Convection_Diffusion_Temperature_FT_Disc::derivee_en_temps_inco(Doubl
   const Champ_Inc_base& vitesse_ns = ns.inconnue();
   if (!divergence_free_velocity_extension_)
     {
+      // Here, we are in faire_un_pas_de_temps_eqn_base() between avancer and reculer()
+      // We are not in mettre_a_jour().  valeurs() has u^n; futur() is u^(n+1)
+      const DoubleTab& val_vitesse_ns = (bool)(explicit_u_NS_) ? vitesse_ns->valeurs(): vitesse_ns->futur();
       ns.calculer_delta_u_interface(vitesse_convection_, phase_, correction_courbure_ordre_);
-      //vitesse_convection_.valeurs() += vitesse_ns.valeurs();
-      vitesse_convection_->valeurs() += vitesse_ns.futur(); // avec les jeux d'avancer reculer et les equations, il faut prendre futur pour avoir u^n ici
+      vitesse_convection_->valeurs() += val_vitesse_ns;
       //Cerr << inconnue().temps()  << " =! " << vitesse_ns.temps() << " " << vitesse_convection_.temps() << finl;
       //Process::exit();
     }

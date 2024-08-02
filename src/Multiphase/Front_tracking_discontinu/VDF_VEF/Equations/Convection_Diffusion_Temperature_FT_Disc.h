@@ -156,5 +156,6 @@ protected:
   Thermal_correction_discretization_method thermal_correction_discretization_method_=
     Thermal_correction_discretization_method::P1_ALL;
 
+  int explicit_u_NS_ = 0;
 };
 #endif

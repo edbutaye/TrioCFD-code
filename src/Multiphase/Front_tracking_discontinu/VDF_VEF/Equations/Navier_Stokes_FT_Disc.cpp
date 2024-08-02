@@ -2256,7 +2256,7 @@ void correct_indicatrice_face_bord(const int num_face, const Maillage_FT_Disc& m
 // Le tableau dI_dt doit avoir la bonne structure. L'espace virtuel est
 // mis a jour. La method n'est plus const a cause des options
 // INTERP_MODIFIEE et AI_BASED qui recalculent indicatrice_faces.
-void Navier_Stokes_FT_Disc::calculer_dI_dt(DoubleVect& dI_dt) //const
+void Navier_Stokes_FT_Disc::calculer_dI_dt(DoubleVect& dI_dt, const DoubleTab& tab_vitesse) //const
 {
   const double rho_0 = fluide_diphasique().fluide_phase(0).masse_volumique()->valeurs()(0, 0);
   const double rho_1 = fluide_diphasique().fluide_phase(1).masse_volumique()->valeurs()(0, 0);
