@@ -32,7 +32,7 @@ Scatter DOM.Zones dom
 Schema_Euler_explicite  sch
 Lire sch
 {
-    nb_pas_dt_max 100 # 1100000 # # Pas besoin de tonnes de dt car c'est stationnaire a priori. la div(lda grad(T)) change un peu, mais pas d'impact vu sur le T"
+    nb_pas_dt_max 100000 # 1100000 # # Pas besoin de tonnes de dt car c'est stationnaire a priori. la div(lda grad(T)) change un peu, mais pas d'impact vu sur le T #
     tinit 0.
     tmax  1.e-4
     dt_min 1.e-10
@@ -203,28 +203,9 @@ Lire pb
             conditions_initiales { Temperature_thermique champ_fonc_xyz dom 1 @DT@*(1-180/3.14159*atan(y/(x-5.e-6+1.e-20-(@offset@e-6)))/@degliq@) }
         }
 
-#
-        thermique_vapeur
-        {
-            equation_interface interf
-            equation_navier_stokes hydraulique
-            correction_courbure_ordre 2
-            phase 0
-            stencil_width 10
-            diffusion { }
-            convection { quick }
-            boundary_conditions
-            {
-                bas1  symetrie
-                haut1  frontiere_ouverte T_ext Champ_front_Uniforme 1 0.
-                libre1 frontiere_ouverte T_ext Champ_front_Uniforme 1 0.
-                sym1   symetrie
-            }
-            conditions_initiales { Temperature_thermique_vapeur champ_fonc_xyz dom 1 0. }
-        }
-#
         Triple_Line_Model_FT_Disc
         {
+            deactivate
             equation_navier_stokes hydraulique
             equation_temperature thermique
             equation_interface interf
@@ -236,89 +217,52 @@ Lire pb
             # sm = ym / tan(theta) #
             inout_method both
         }
-#
-        postraitement
-        {
-            champs dt_post 5.e-5
-            {
-                vitesse elem
-                temperature_thermique elem
-            }
-            Sondes
-            {
-                sonde_TSH nodes Temperature_thermique periode 2.e-6 Segment 51  5.e-6 15e-6 0.25e-6  0.25e-6
-                sonde_TSV nodes Temperature_thermique periode 2.e-6 Segment 51 15.e-6 15e-6 0.       10e-6
-            }
-        }
-#
-        Post_processing
-        {
-            Format lata
-            Definition_champs
-            {
-                diffusion_Ts operateur_eqn
-                {
-                    sources { refchamp { pb_champ pb Temperature_thermique  } }
-                    numero_op 0
-                }
-                gradient_temp gradient {
-                    source  refchamp { pb_champ pb temperature_thermique  }
-                }
-#
-                gradient_temp_interp interpolation {
-                    localisation elem
-                    sources_reference { gradient_temp  }
-                }
-                gradient_temp_X transformation {
-                    methode composante numero 0
-                    sources_reference { gradient_temp_interp  }
-                }
-#
-                # Temperature convection T.u #
-               convection_T operateur_eqn
-               {
-                   sources { refchamp { pb_champ pb Temperature_thermique } }
-                   numero_op 1
-               }
-            }
-            fields dt_post 4.e-5 # 1e-2 #
-            {
-                diffusion_Ts elem
-                convection_T elem
-                # gradient_temp elem #
-                # gradient_temp_X #
-                flux_bords
-                    temperature_grad_thermique elem
-                    temperature_thermique elem
-                    mpoint_thermique elem
-                    interfacial_area elem
-                    NORMALE_INTERFACE_INTERF elem
-		    pression_laplacien_d elem
-                    distance_interface_elem_interf elem
-                    volume_maille elem
-                    indicatrice_interf elem
-                    vitesse elem
-                    pressure elem
-                    second_membre_projection elem
-                    vitesse_delta_interface faces
-                    second_membre_projection_jump elem
-                    vitesse faces
-            }
-        }
 
         liste_postraitements
         {
             postraitement_ft_lata post1 {
                 format Lata
+                Definition_champs
+                {
+                      diffusion_Ts operateur_eqn
+                      {
+                          sources { refchamp { pb_champ pb Temperature_thermique  } }
+                          numero_op 0
+                      }
+                      gradient_temp gradient {
+                          source  refchamp { pb_champ pb temperature_thermique  }
+                      }
+      #
+                      gradient_temp_interp interpolation {
+                          localisation elem
+                          sources_reference { gradient_temp  }
+                      }
+                      gradient_temp_X transformation {
+                          methode composante numero 0
+                          sources_reference { gradient_temp_interp  }
+                      }
+      #
+                      # Temperature convection T.u #
+                     convection_T operateur_eqn
+                     {
+                         sources { refchamp { pb_champ pb Temperature_thermique } }
+                         numero_op 1
+                     }
+                }
                 fichier lata/post
                 champs dt_post 4.0e-5 {
+                    diffusion_Ts elem
+                    convection_T elem
+                    # gradient_temp elem #
+                    # gradient_temp_X #
+                    flux_bords
                     temperature_grad_thermique elem
                     temperature_thermique elem
                     mpoint_thermique elem
                     interfacial_area elem
                     NORMALE_INTERFACE_INTERF elem
+		              pression_laplacien_d elem
                     distance_interface_elem_interf elem
-		    pression_laplacien_d elem
                     volume_maille elem
                     indicatrice_interf elem
                     vitesse elem

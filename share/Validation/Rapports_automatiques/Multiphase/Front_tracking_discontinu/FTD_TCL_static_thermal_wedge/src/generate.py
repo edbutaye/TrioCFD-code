@@ -110,7 +110,7 @@ for axi in ["2D", "2D_axi"]:
    os.makedirs(axi, exist_ok=True)
    # refinement serie : 
    for r in lraf : 
-      M=0.5*r # REF case has a mesh 0.5micron
+      M=0.5/r # REF case has a mesh 0.5micron
       if (r == 1):
           if not os.path.exists("%s/M%s"%(axi,M)): 
              os.chdir(axi)
