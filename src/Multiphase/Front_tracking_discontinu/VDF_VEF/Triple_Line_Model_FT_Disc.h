@@ -57,6 +57,8 @@ public :
   bool Rc_tcl_GridN() const { return Rc_tcl_GridN_; }
   const double& Rc_inject() const { return Rc_inject_; }
   const double& thetaC_tcl() const { return thetaC_tcl_; }
+  const double& t_injection() const { return t_injection_; }
+  double& t_injection() { return t_injection_; }
   bool reinjection_tcl() const { return reinjection_tcl_; }
   bool distri_first_facette() const { return distri_first_facette_; }
   bool ready_inject_tcl() const { return ready_inject_tcl_; }
@@ -189,6 +191,11 @@ protected:
   // interface thermal resistence solid-fluid
   bool adjust_meso_ML_ = false;
   double Ri_;
+
+  // if to activate lissage of Qmicro and Theta_app
+  // over time period, [t_injection_, t]
+  int lissage_tcl_;
+  double t_injection_;
 
   // Information on the TCL region :
   // Note that the same elem may appear twice in the list, once for the micro contribution, once for the meso.

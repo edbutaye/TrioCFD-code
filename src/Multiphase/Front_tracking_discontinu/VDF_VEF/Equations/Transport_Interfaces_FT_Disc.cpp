@@ -7768,6 +7768,11 @@ void Transport_Interfaces_FT_Disc::mettre_a_jour(double temps)
               // pow(-1,1-phase) ne compile pas avec xlC sur AIX car n'a que pow(double,int)
               volume *= pow (-1., 1 - phase);
               Cerr << " volume " << volume << finl;
+
+              Schema_Temps_base& sch_tps = schema_temps();
+              const double t_present_ = sch_tps.temps_courant();
+              double& t_injection_ = pb_ft.tcl().t_injection();
+              t_injection_ = t_present_;
             }
           else
             {

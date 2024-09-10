@@ -67,6 +67,8 @@ Triple_Line_Model_FT_Disc::Triple_Line_Model_FT_Disc() :
   thetaC_tcl_(150.),
   tempC_tcl_(10.),
   Ri_(0.),
+  lissage_tcl_(0),
+  t_injection_(0.),
   integration_time_(0.),
   instant_mmicro_evap_(0.),
   instant_mmeso_evap_(0.),
@@ -165,6 +167,8 @@ void Triple_Line_Model_FT_Disc::set_param(Param& p)
   p.ajouter_flag("reinjection_tcl", &reinjection_tcl_); // XD_ADD_P flag This flag activates the automatic injection of a new nucleate seed with a specified shape when the temperature in the nucleation site becomes higher than a certain threshold (tempC_tcl). The shape of the seed is determined by the radius Rc_tcl_GridN and the contact angle thetaC_tcl. The nucleation site is considered free when there are no bubbles present. The site size is defined by Rc_tcl_GridN. This temperature threshold, termed tempC_tcl, is the activation temperature. Setting this temperature implies a wall temperature, therefore, activating reinjection_tcl is ONLY possible for a simulation coupled with solid conduction. NL2 When reinjection_tcl is activated, the values of tempC_tcl (default 10K), Rc_tcl_GridN (default 4 grid sizes), and thetaC_tcl (default 150 degrees) should be provided. Unless (STRONGLY not recommended), the default values (indicated in parentheses) will be used. NL2 If reinjection_tcl is not activated (by default), the mechanism of Numerically forcing bubble pinching/necking will be used for multi-cycle simulation. Once the Triple Contact Line (TCL) enters the nucleation site, a big contact angle thetaC_tcl is imposed to initiate bubble pinching/necking. After the bubble pinching ends, the large bubble above will depart, leaving the remaining part to serve as the nucleate seed. This process is equivalent to immediately inserting a new seed with a prescribed shape (determined by the nucleation site size and contact angle) once a bubble departs. Site size is defined by Rc_tcl_GridN (default 4 grid sizes). Contact angle thetaC_tcl (default 150 degrees). Useful for a standalone (not coupling with solid conduction) simulation.
   p.ajouter_flag("distri_first_facette", &distri_first_facette_); // XD_ADD_P flag This flag determines whether to distribute the Qtcl into all grids occupied by the first facette according to their area proportions. When set, the flux is redistributed into all grids occupied by the first facette based on their area proportions. Default value is 0, the flux is distributed differently: similar to the Meso zone, it is only distributed to grids within the Micro-zone (where the height of the front y is smaller than the size of Micro ym). The distribution of this flux is logarithmically proportional to y between 5.6nm (here interpreted as the value 0 in logarithm) and ym. In practice, in most cases, it will distribute all the flux locally in the first grid.
   p.ajouter_flag("adjust_meso_ML", &adjust_meso_ML_); // XD_ADD_P flag This flag determines whether to correct of qmeso in Micro-layer
+  p.ajouter_flag("lissage_tcl", &lissage_tcl_); // XD_ADD_P flag This flag determines whether to active lissage of Qmicro and theta_app
+  p.ajouter("t_injection", &t_injection_);
   p.ajouter("Ri_thermal", &Ri_);
   p.ajouter("tempC_tcl", &tempC_tcl_); // see in _.h file
   p.ajouter("file_name", &Nom_ficher_tcl_); // XD_ADD_P floattant Input file to set TCL model
@@ -2114,6 +2118,8 @@ double Triple_Line_Model_FT_Disc:: get_Qtcl(const int num_face)
       const int num_col = num_column_qtcl_; // colon number corresponding to Qtcl
       const int num_tem = num_column_tem_;
 
+      double Qtcl_present_ = 0.;
+
       int ind = 0;
       while (ind < tab_Mtcl_.dimension (1) && tab_Mtcl_ (num_tem, ind) < Twall)
         {
@@ -2122,13 +2128,13 @@ double Triple_Line_Model_FT_Disc:: get_Qtcl(const int num_face)
       if (ind == 0)
         {
           if (!est_egal (tab_Mtcl_ (num_tem, ind), 0))
-            Qtcl_ =  tab_Mtcl_ (num_col, ind) *Twall / tab_Mtcl_ (num_tem, ind);
+            Qtcl_present_ =  tab_Mtcl_ (num_col, ind) *Twall / tab_Mtcl_ (num_tem, ind);
           else
-            Qtcl_ = 0. ;
+            Qtcl_present_ = 0. ;
         }
       else if (ind == tab_Mtcl_.dimension (1))
         {
-          Qtcl_ = tab_Mtcl_ (num_col, ind - 1);
+          Qtcl_present_ = tab_Mtcl_ (num_col, ind - 1);
         }
       else
         {
@@ -2137,8 +2143,24 @@ double Triple_Line_Model_FT_Disc:: get_Qtcl(const int num_face)
           double y1 = tab_Mtcl_ (num_col, ind - 1);
           double y2 = tab_Mtcl_ (num_col, ind);
           assert(!est_egal (x1, x2));
-          Qtcl_ = y1 + (y2 - y1) * (Twall - x1) / (x2 - x1);
+          Qtcl_present_ = y1 + (y2 - y1) * (Twall - x1) / (x2 - x1);
         }
+
+      if(lissage_tcl_)
+        {
+          const Navier_Stokes_FT_Disc& ns = ref_ns_.valeur();
+          const double t_present = ns.schema_temps().temps_courant();
+          const double dt = ns.schema_temps().pas_de_temps();
+          if ( t_present > t_injection_)
+            {
+              Qtcl_ = (Qtcl_*(t_present-t_injection_) + dt*Qtcl_present_)/(t_present-t_injection_+dt);
+            }
+          else
+            Qtcl_ = Qtcl_present_;
+        }
+      else
+        Qtcl_ = Qtcl_present_;
+
     }
   return Qtcl_;
 }
@@ -2181,6 +2203,7 @@ double Triple_Line_Model_FT_Disc:: get_theta_app(const int num_face)
 
       const int num_col = num_column_theta_; // colon number corresponding to theta_app
       const int num_tem = num_column_tem_;
+      double theta_app_present_ = 0.;
 
       int ind = 0;
       while (ind < tab_Mtcl_.dimension (1) && tab_Mtcl_ (num_tem, ind) < Twall)
@@ -2189,11 +2212,11 @@ double Triple_Line_Model_FT_Disc:: get_theta_app(const int num_face)
         }
       if (ind == 0)
         {
-          theta_app_ = tab_Mtcl_ (num_col, 0);
+          theta_app_present_ = tab_Mtcl_ (num_col, 0);
         }
       else if (ind == tab_Mtcl_.dimension (1))
         {
-          theta_app_ = tab_Mtcl_ (num_col, ind - 1);
+          theta_app_present_ = tab_Mtcl_ (num_col, ind - 1);
         }
       else
         {
@@ -2202,7 +2225,7 @@ double Triple_Line_Model_FT_Disc:: get_theta_app(const int num_face)
           double y1 = tab_Mtcl_ (num_col, ind - 1);
           double y2 = tab_Mtcl_ (num_col, ind);
           assert(!est_egal (x1, x2));
-          theta_app_ = y1 + (y2 - y1) * (Twall - x1) / (x2 - x1);
+          theta_app_present_ = y1 + (y2 - y1) * (Twall - x1) / (x2 - x1);
         }
       // if num <= 1, i.e., =0 or =1 we do not change the theta_app_:No numerical forcing breakup
       // else replaced by a big value for forcing numerical breakup
@@ -2231,9 +2254,25 @@ double Triple_Line_Model_FT_Disc:: get_theta_app(const int num_face)
           const double cell_size = 2. * std::fabs (zvdf.dist_face_elem0 (numfacex, elem_voisin));
           const double xwall_ = zvdf.xv(num_face, 0);
           if (xwall_ <= cell_size*Rc_tcl_GridN() )
-            theta_app_ = thetaC_tcl();
+            theta_app_present_ = thetaC_tcl();
         }
+
+      if(lissage_tcl_)
+        {
+          const Navier_Stokes_FT_Disc& ns = ref_ns_.valeur();
+          const double t_present = ns.schema_temps().temps_courant();
+          const double dt = ns.schema_temps().pas_de_temps();
+          if ( t_present > t_injection_)
+            {
+              theta_app_ = (theta_app_*(t_present-t_injection_) + dt*theta_app_present_)/(t_present-t_injection_+dt);
+            }
+          else
+            theta_app_ = theta_app_present_;
+        }
+      else
+        theta_app_ = theta_app_present_;
     }
+
   return theta_app_;
 }
 
