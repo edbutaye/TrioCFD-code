@@ -51,7 +51,8 @@ public:
   virtual const Champ_base& calculer_div_normale_interface();
   void correct_at_exit_bad_gradient(DoubleTab& u0) const;
   void calculer_delta_u_interface(Champ_base& u0, int phase_pilote, int ordre);
-  const Champ_Don_base& diffusivite_pour_transport() const override;
+  void shift_secmem2(DoubleTab& shift_secmem2);
+  const Champ_Don& diffusivite_pour_transport() const override;
 
   virtual const Champ_base* get_delta_vitesse_interface() const;
   virtual const Fluide_Diphasique& fluide_diphasique() const;
@@ -65,6 +66,7 @@ public:
   virtual void calculer_dI_dt(DoubleVect& dI_dt, const DoubleTab& tab_vitesse); // const;
   const int& get_is_penalized() const;
   bool get_new_mass_source() const;
+  const int& is_shift_secmem2_activated() const ;
   const DoubleTab& get_interfacial_area() const;
   DoubleTab& get_set_interfacial_area();  // Open access  in write-mode..
   const DoubleTab& get_mpoint() const;

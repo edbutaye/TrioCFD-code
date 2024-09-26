@@ -1103,16 +1103,33 @@ DoubleTab& Convection_Diffusion_Temperature_FT_Disc::derivee_en_temps_inco(Doubl
   // extension before at the begining of the function.
   statistics().create_custom_counter("extend_ui",3,"FrontTracking");
   statistics().begin_count("extend_ui", statistics().get_last_opened_counter_level()+1);
-  const Champ_Inc_base& vitesse_ns = ns.inconnue();
+  const Champ_Inc& vitesse_ns = ns.inconnue();
   if (!divergence_free_velocity_extension_)
     {
       // Here, we are in faire_un_pas_de_temps_eqn_base() between avancer and reculer()
       // We are not in mettre_a_jour().  valeurs() has u^n; futur() is u^(n+1)
       const DoubleTab& val_vitesse_ns = (bool)(explicit_u_NS_) ? vitesse_ns->valeurs(): vitesse_ns->futur();
-      ns.calculer_delta_u_interface(vitesse_convection_, phase_, correction_courbure_ordre_);
-      vitesse_convection_->valeurs() += val_vitesse_ns;
-      //Cerr << inconnue()->temps()  << " =! " << vitesse_ns.temps() << " " << vitesse_convection_.temps() << finl;
-      //Process::exit();
+
+      // only
+      if (ns.is_shift_secmem2_activated())
+        {
+          if (phase_ == 1)
+            vitesse_convection_->valeurs() = val_vitesse_ns;
+          // if (phase_ == 0 && divergence_free_velocity_extension_vap_)
+          //  compute_divergence_free_velocity_extension_vap();
+          if (phase_ == 0)
+            {
+              ns.calculer_delta_u_interface(vitesse_convection_, phase_, correction_courbure_ordre_);
+              vitesse_convection_->valeurs() += val_vitesse_ns;
+            }
+        }
+      else
+        {
+          ns.calculer_delta_u_interface(vitesse_convection_, phase_, correction_courbure_ordre_);
+          vitesse_convection_->valeurs() += val_vitesse_ns;
+          //Cerr << inconnue()->temps()  << " =! " << vitesse_ns.temps() << " " << vitesse_convection_.temps() << finl;
+          //Process::exit();
+        }
     }
   else
     {

@@ -118,6 +118,10 @@ public:
   // Par defaut, on utilise la methode historique pour imposer le saut de vitesse du changement de phase.
   bool new_mass_source_ = false;
 
+  // Flag if to shift second member 2 due to phase change:
+  // Par defaut, secmem2 is located at interface cells
+  int shift_secmem2_ = 0;
+
   enum Type_interpol_indic_pour_dI_dt
   {
     INTERP_STANDARD, INTERP_MODIFIEE, INTERP_AI_BASED, INTERP_STANDARD_UVEXT, INTERP_MODIFIEE_UVEXT, INTERP_AI_BASED_UVEXT, INTERP_STANDARD_UIEXT, INTERP_MODIFIEE_UIEXT, INTERP_AI_BASED_UIEXT
