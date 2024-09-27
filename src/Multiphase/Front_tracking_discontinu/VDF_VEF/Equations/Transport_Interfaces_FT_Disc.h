@@ -88,6 +88,12 @@ public:
   void assembler( Matrice_Morse& mat_morse, const DoubleTab& present, DoubleTab& secmem) override ;
 
   void    mettre_a_jour(double temps) override;
+  void    mettre_a_jour_deplacement(double temps);
+  void    mettre_a_jour_hors_deplacement(double temps, const bool update_statio=true);
+  void deplacer_maillage(double temps);
+  void injecter_supprimer_interfaces(double temps);
+  void completer_maillage_et_changer_temps(double temps);
+
   std::vector<YAML_data> data_a_sauvegarder() const override;
   int  sauvegarder(Sortie& ) const override;
   int  reprendre(Entree&) override;
@@ -103,11 +109,21 @@ public:
   //
   virtual void                            lire_maillage_ft_cao(Entree& is);
   int                          preparer_calcul() override;
+  int                          preparer_calcul_anticipated();
   virtual void                            preparer_pas_de_temps();
   const Maillage_FT_Disc&                 maillage_interface() const;
-  const Champ_base&               get_update_indicatrice() override;
+  const Champ_base& get_indicatrice() override;
+  void update_indicatrice() override;
+  void update_indicatrice_normale_distance();
   virtual const Champ_base&               get_indicatrice_faces();
-  virtual const Champ_base&               get_compute_indicatrice_faces();
+  virtual const Champ_base&               update_indicatrice_faces();
+  void update_normale_distance_interface() const;
+  virtual const Champ_base& get_distance_interface() const;
+  virtual const Champ_base& get_update_distance_interface_faces() const;
+  virtual const Champ_base& get_normale_interface() const;
+  // renvoie DoubleTab parce qu'il n'existe pas de champ aux sommets en VDF ! Zut...
+  virtual const DoubleTab&   get_update_distance_interface_sommets() const;
+
   virtual const Parcours_interface&       parcours_interface() const;
   virtual const Marching_Cubes&           marching_cubes() const;
   virtual const Algorithmes_Transport_FT_Disc& algorithmes_transport() const;
@@ -128,14 +144,15 @@ public:
                                                      DoubleTab& vitesse_noeuds,
                                                      int nv_calc) const
   {
-    calculer_vitesse_transport_interpolee(champ_vitesse, m, vitesse_noeuds, nv_calc, 1);
+    calculer_vitesse_transport_interpolee(champ_vitesse, m, vitesse_noeuds, nv_calc, 1, true);
   };
 
   virtual void calculer_vitesse_transport_interpolee(const Champ_base& champ_vitesse,
                                                      const Maillage_FT_Disc&,
                                                      DoubleTab& vitesse_noeuds,
-                                                     int nv_calc,
-                                                     int standard) const;
+                                                     const int nv_calc,
+                                                     const int standard,
+                                                     const bool la_roue_de_vitesse_a_deja_tournee = false) const;
   void calculer_scalaire_interpole(const Champ_base& ch_scal,
                                    const Maillage_FT_Disc&,
                                    DoubleTab& ch_scal_noeuds,
@@ -278,18 +295,16 @@ public:
   virtual double suppression_interfaces(const IntVect& num_compo, const ArrOfInt& flags_compo_a_supprimer);
 
   const int& get_vimp_regul() const;
-
-  virtual const Champ_base& get_update_distance_interface() const;
-  virtual const Champ_base& get_update_distance_interface_faces() const;
-  virtual const Champ_base& get_update_normale_interface() const;
-  // renvoie DoubleTab parce qu'il n'existe pas de champ aux sommets en VDF ! Zut...
-  virtual const DoubleTab&   get_update_distance_interface_sommets() const;
   void ramasse_miettes(const Maillage_FT_Disc& maillage,
                        DoubleVect& flux,
                        DoubleVect& valeurs);
   void nettoyer_maillage()
   {
     maillage_interface().nettoyer_maillage();
+  };
+  void parcourir_maillage()
+  {
+    maillage_interface().parcourir_maillage();
   };
 
   // On utilise des OWN_PTR() pour ne pas avoir a inclure la definition
@@ -316,6 +331,9 @@ public:
   const bool& get_is_solid_particle() const { return is_solid_particle_; }
 
 protected:
+  void injecter_interfaces_par_ajout_phase(double temps);
+  void injecter_interfaces_pour_TCL(double temps);
+  virtual void test_suppression_interfaces_sous_domaine();
 
   virtual void calculer_vmoy_composantes_connexes(const Maillage_FT_Disc& maillage,
                                                   const ArrOfInt& compo_connexes_facettes,
@@ -324,7 +342,7 @@ protected:
                                                   DoubleTab& vitesses,
                                                   DoubleTab& positions) const;
 
-  void ajouter_contribution_saut_vitesse(DoubleTab& deplacement) const;
+  void ajouter_contribution_saut_vitesse(DoubleTab& deplacement, const bool la_roue_de_vitesse_a_deja_tournee) const;
   virtual void deplacer_maillage_ft_v_fluide(const double temps);
 
   virtual void calculer_distance_interface(const Maillage_FT_Disc& maillage,
@@ -341,7 +359,6 @@ protected:
                                              DoubleTab& deplacement,
                                              DoubleTab& Positions,
                                              DoubleTab& Vitesses) const;
-  virtual void test_suppression_interfaces_sous_domaine();
 
 
   virtual void calculer_distance_interface_faces(const DoubleTab& dist_elem,
@@ -524,7 +541,7 @@ public:
   Nom maillage_interface_xyz_filename(int restart) const;
 
   // Les membres suivantes sont sauvegardes et repris:
-  OWN_PTR(Champ_Inc_base)        indicatrice_cache;     // L'indicatrice calculee par get_update_indicatrice
+  OWN_PTR(Champ_Inc_base)        indicatrice_cache;     // L'indicatrice calculee par update_indicatrice
   int           indicatrice_cache_tag; // Le tag du maillage correspondant
   Maillage_FT_Disc maillage_interface;          // Objet qui peut se reduire a un ensemble de sommets
   // quand il represente les positions de particules

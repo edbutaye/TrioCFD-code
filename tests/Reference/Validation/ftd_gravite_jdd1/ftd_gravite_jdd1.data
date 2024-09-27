@@ -34,11 +34,11 @@ VEFPreP1B dis
 Schema_Euler_explicite  sch
 Lire sch
 {
-	tinit 3.055605e-02
+	tinit 2.700010e-02
 	nb_pas_dt_max 2
 tmax  0.1
 dt_min 1.e-7
-dt_max 0.02
+dt_max 0.0035
 dt_impr 10.
 dt_sauv 100
 seuil_statio -1

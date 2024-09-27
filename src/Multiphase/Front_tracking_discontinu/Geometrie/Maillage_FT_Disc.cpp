@@ -37,13 +37,6 @@
 
 #include <TRUST_2_PDI.h>
 
-#if TCL_MODEL
-#include <Domaine_VDF.h>
-#include <Domaine_Cl_VDF.h>
-#include <Dirichlet_paroi_fixe.h>
-#include <Dirichlet_paroi_defilante.h>
-#include <Schema_Temps_base.h>
-#endif
 //#define PATCH_HYSTERESIS_V2
 //#define PATCH_HYSTERESIS_V3
 #include<ArrOfBit.h>
@@ -120,15 +113,13 @@ void Maillage_FT_Disc::calculer_costheta_minmax(DoubleTab& costheta) const
       const int num_face = sommet_face_bord_[i];
       if ((num_face < 0) || (num_face>=domaine_vf.nb_faces_bord()))
         continue;
-      const Cond_lim& cl =
-        domaine_cl.la_cl_de_la_face(num_face);
+      const Cond_lim& cl = domaine_cl.la_cl_de_la_face(num_face);
       const Cond_lim_base& cl_base = cl.valeur();
 
       double theta1 = 0., theta2 = 0.;
       if (sub_type(Paroi_FT_disc, cl_base))
         {
-          const Paroi_FT_disc& cl_ft =
-            ref_cast(Paroi_FT_disc, cl_base);
+          const Paroi_FT_disc& cl_ft = ref_cast(Paroi_FT_disc, cl_base);
           // Indice de la face sur la frontiere
           const Frontiere& front         = cl_ft.frontiere_dis().frontiere();
           const int num_premiere_face  = front.num_premiere_face();
@@ -172,6 +163,23 @@ void Maillage_FT_Disc::calculer_costheta_minmax(DoubleTab& costheta) const
                << finl;
           Process::exit();
         }
+
+      if (refequation_transport_.non_nul())
+        {
+          const Transport_Interfaces_FT_Disc& eq_interfaces = refequation_transport_.valeur();
+          const Probleme_base& pb = eq_interfaces.get_probleme_base();
+          Probleme_FT_Disc_gen& pb_ft = ref_cast_non_const(Probleme_FT_Disc_gen, pb);
+          Triple_Line_Model_FT_Disc& tcl = pb_ft.tcl();
+          // change theta to theta_app only when tcl is activated and read_via_file()
+          // read_via_file() to avoid change theta to 0. for TCL used but not activated case
+          if (tcl.is_activated() && tcl.is_read_via_file())
+            {
+              const double theta_app = tcl.get_theta_app();
+              theta1 = theta_app;
+              theta2 = theta_app;
+            }
+        }
+
       costheta(i, 0) = cos(theta1 * deg_to_rad);
       costheta(i, 1) = cos(theta2 * deg_to_rad);
     }
@@ -878,7 +886,7 @@ void Maillage_FT_Disc::completer_maillage()
  * meme tableau "indicatrice" et "indicatrice_precedente".
  */
 void Maillage_FT_Disc::calcul_indicatrice(DoubleVect& indicatrice,
-                                          const DoubleVect& indicatrice_precedente)
+                                          const DoubleVect& indicatrice_precedente) const
 {
   assert(statut_ >= PARCOURU);
 
@@ -5423,45 +5431,14 @@ void Maillage_FT_Disc::calcul_courbure_sommets(ArrOfDouble& courbure_sommets, co
 
   // Cette classe sert pour promener les sommets sur le bord du domaine.
   const Parcours_interface& parcours = refparcours_interface_.valeur();
-#if TCL_MODEL
-  int flag_tcl = 0;
-  double l_v = 0.;
-  // interfacial velocity
-  DoubleTab vit(nsom, dim);
-  if (refequation_transport_.non_nul())
-    {
-      const Transport_Interfaces_FT_Disc& eq_interfaces = refequation_transport_.valeur();
-      const Probleme_base& pb = eq_interfaces.get_probleme_base();
-      Probleme_FT_Disc_gen& pb_ft = ref_cast_non_const(Probleme_FT_Disc_gen, pb);
-      Triple_Line_Model_FT_Disc& tcl = pb_ft.tcl();
-      if (tcl.is_activated() && tcl.is_capillary_activated())
-        {
-          flag_tcl = 1;
-          l_v = tcl.get_lv();
-          Postraitement_base::Localisation loc = Postraitement_base::SOMMETS;
-          Motcle nom_du_champ = "vitesse";
-          Cerr << "Validation and checking required in Maillage_FT_Disc::calcul_courbure_sommets" << finl;
-          Process::exit();
-          // Useless init to 0:
-          // for (int ii=0; ii< nsom; ii++)
-          //  for (int jj=0; jj< dim; jj++)
-          //    vit(ii,jj) = 0.;
-          eq_interfaces.get_champ_post_FT(nom_du_champ, loc, &vit); // HACK !!!! (warning, try debug to make sure it works if you want to remove it!!)
 
-          //  const Domaine_Cl_VDF& zclvdf = ref_cast(Domaine_Cl_VDF, domaine_cl);
-          // It relies on the classical assumption in the FT module that the first equation is NS.
-        }
-      //Cerr <<"TCL Eq. 0 is " <<  equation_transport().get_probleme_base().equation(0).que_suis_je() << finl;
-    }
-#endif
-
-  if (!bidim_axi)
+  for (facette = 0; facette < nfaces; facette++)
     {
-      for (facette = 0; facette < nfaces; facette++)
+      // Si la facette est reelle, on ajoute la contribution a la differentielle
+      // des deux ou trois sommets
+      if (! facette_virtuelle(facette))
         {
-          // Si la facette est reelle, on ajoute la contribution a la differentielle
-          // des deux ou trois sommets
-          if (! facette_virtuelle(facette))
+          if (!bidim_axi)
             {
               int ii;
               const double surface_sur_dim = surface[facette] * inverse_dimension;
@@ -6018,41 +5995,11 @@ void Maillage_FT_Disc::calcul_courbure_sommets(ArrOfDouble& courbure_sommets, co
                     }
                 }
             }
-        }
-      // On a calcule la contribution de chaque facette reelle aux differents sommets.
-      // Certaines contributions ont ete ajoutees a des sommets virtuels, il
-      // faut recuperer ces contributions sur le sommet reel.
-      desc_sommets().collecter_espace_virtuel(d_volume, MD_Vector_tools::EV_SOMME);
-      desc_sommets().collecter_espace_virtuel(d_surface, MD_Vector_tools::EV_SOMME);
-    }
-
-
-
-
-
-
-
-
-
-  if (bidim_axi)
-    {
-      for (facette = 0; facette < nfaces; facette++)
-        {
-          // LW 05/oc/2023
-          // in all procs: we locate all facette has at least one sommets
-          const int isommet1 = facettes_(facette, 0);
-          const int isommet2 = facettes_(facette, 1);
-          bool no_sommts = (sommet_elem_[isommet1]<0) && (sommet_elem_[isommet2]<0) ;
-          if (!no_sommts)
+          else
             {
-
               // Case bidim_axi (calculation for a 1radian angle,
               // As it is a ratio surface/volume, the angle as no effect.
               // Volume differential:
-
-              // LW 05/10/23
-              // compute d_surface at two sides at all inside (virtual and real) sommets
-              // at BC, only count one side the (virtual and real) sommets
 
               const int s1 = facettes_(facette, 0);
               const int s2 = facettes_(facette, 1);
@@ -6076,11 +6023,6 @@ void Maillage_FT_Disc::calcul_courbure_sommets(ArrOfDouble& courbure_sommets, co
               d_surface(s2, 0) += 0.5 * L + 0.5 * (r1 + r2) * (ny);
               d_surface(s2, 1) +=           0.5 * (r1 + r2) * (-nx);
 
-              // LW 05/oc/2023
-              // add d_surface contribution from add another side at BC (only real)
-              // because only for real sommet: face = sommet_face_bord_[som[i2]] is meaningful
-              // at the end, we will do a exchange_espace_virtuelle to update virtual sommet
-
               // GB 09/01/2018. Correction to account for the surface differencial
               // from the boundary face wetted by phase 0
               int som[2];
@@ -6092,124 +6034,64 @@ void Maillage_FT_Disc::calcul_courbure_sommets(ArrOfDouble& courbure_sommets, co
               for (int i2 = 0; i2 < 2; i2++)
                 {
                   const int face = sommet_face_bord_[som[i2]];
-                  if (face < 0 || (sommet_elem_[som[i2]]<0)) // pas une face de bord or virtual
+                  if (face < 0) // pas une face de bord
                     continue;
 
                   double costheta = tab_cos_theta(som[i2], 0);
-#if TCL_MODEL
-                  // Modification of the value of costheta based on
-                  // the effect of CL velocity. Stored in tcl.set_theta_app
-                  // (but maybe unused there). Value used locally here afterward.
-                  // If the TCL model is activated and we're not on a virtual node :
-                  if (flag_tcl)
-                    {
-                      const double t=temps_physique_;
-                      int face_loc;
-                      const Domaine_Cl_dis_base& zcl = equation_transport().get_probleme_base().equation(0).domaine_Cl_dis();
-                      const Cond_lim_base& type_cl = zcl.condition_limite_de_la_face_reelle(face,face_loc);
-                      const Nom& bc_name = type_cl.frontiere_dis().le_nom();
-                      // For each BC, we check its type to see if it's a wall:
-                      //   Cerr << "TCL boundary condition is " << type_cl << " for BC " << bc_name;
-                      if ( sub_type(Dirichlet_paroi_fixe,type_cl)
-                           || sub_type(Dirichlet_paroi_defilante,type_cl) )
-                        {
-                          Cerr << "  -> for this BC [" <<
-                               bc_name <<"], we compute a specific contact angle at TCL." << finl;
-                        }
-                      else
-                        {
-                          Cerr << "  -> no modification of contact angle for this BC [" << bc_name <<"] at TCL." << finl;
-                          // We're on the symmetry axis, or something else but not at the wall...
-                          continue;
-                        }
-                      FTd_vecteur3 nface = {0., 0., 0.} ;
-                      parcours.calculer_normale_face_bord(face, sommets_(som[i2],0), sommets_(som[i2],1), 0., nface[0], nface[1], nface[2]) ;
-                      // The other som of the facette is som[1-i2] :
-                      // Cerr << " sommet-1 x= " << sommets_(som[1-i2],0) << " y= " << sommets_(som[1-i2],1) << " time_sommet= " << t << finl;
-                      // if(dt != 0.) double cl_v = (sommets_(som[i2],0) - x_cl_)/dt;
-                      const int isom1 = som[1-i2];
-                      // The second vertex of the segment should not be a contact line
-                      // so we compute its tangential velocity:
-
-                      const int nb_compo = vit.dimension(1);
-                      double norm_vit_som1 = 0.;
-                      double vn = 0.;
-                      double v_cl = 0.;
-                      double v_comp = 0.;
-                      // Component of the velocity is calculated along the direction of wall as vw = v - (v.n)n where n is the wall face normal
-                      // and v is the velocity vector of the node under consideration.
-                      for (int k=0 ; k<nb_compo ; k++)
-                        {
-                          const double vk = (double) vit(isom1,k);
-                          vn += vk*nface[k];
-                          Cerr << "Estimated TCL velocity[som=" << isom1
-                               << ", compo["<< k<<"]= " << vk << "m/s)" << " face-normal= " << nface[k] <<  finl;
-                          Cerr << "Vn= " << vn << finl;
-                          norm_vit_som1 += vk*vk;
-                        }
-                      nface[0] = vn*nface[0];
-                      nface[1] = vn*nface[1];
-                      nface[2] = vn*nface[2];
-                      for (int k=0 ; k<nb_compo ; k++)
-                        {
-                          v_comp = vit(isom1,k) - nface[k];
-                          v_cl += v_comp*v_comp;
-                        }
-                      v_cl = sqrt(v_cl);
-                      Cerr << "v_cl= " << v_cl << " time_v_cl= " << t << finl;
-
-                      // And we assume as a best guess that the contact line
-                      // velocity should be approximately that of the first
-                      // marker that is not a contact line. We use it
-                      // directly to build the Capilary number Ca.
-                      const double theta = acos(costheta);
-                      Cerr << "theta=" << theta << " time_theta= " << t << finl;
-                      const double bubble_center = 0.;
-                      const double W = (sommets_(i2, 0) - bubble_center)/(2*2.71*2.71);
-                      const double Ca = 2.8e-4*v_cl/5.89e-2;
-                      Cerr << "Capillary_number = " << Ca << " time = " << t << finl;
-                      double theta_app = pow((theta),3) - 9. * Ca * log(std::max(W, 1.e-20)/l_v);
-                      theta_app = pow(std::max(theta_app, 0.),1./3.);
-                      Cerr << "theta_after " << theta_app << " time_theta_after= " << t << finl;
-                      // We store the apparent contact angle in costheta for
-                      // later use in the calculation of the curvature
-                      // (it is through this mean that we will consider
-                      //  it and try to indirectly satisfy it).
-                      costheta = cos(theta_app);
-                      // unused?
-                      //tcl.set_theta_app(theta_app);
-                      Cerr << "[TCL-model] Contact_angle_micro= " << M_PI-theta << " apparent= " << theta_app
-                           << " (velocity= " << norm_vit_som1 << " m/s)" << " time= " << t << " theta_app_degree= " << (theta_app/M_PI)*180 << finl;
-                    }
-
-                  if (refequation_transport_.non_nul())
-                    {
-                      const Transport_Interfaces_FT_Disc& eq_interfaces = refequation_transport_.valeur();
-                      const Probleme_base& pb = eq_interfaces.get_probleme_base();
-                      Probleme_FT_Disc_gen& pb_ft = ref_cast_non_const(Probleme_FT_Disc_gen, pb);
-                      Triple_Line_Model_FT_Disc& tcl = pb_ft.tcl();
-
-                      int face_loc;
-                      const Domaine_Cl_dis_base& zcl =
-                        equation_transport().get_probleme_base().equation(0).domaine_Cl_dis();
-                      const Cond_lim_base& type_cl =
-                        zcl.condition_limite_de_la_face_reelle (face,
-                                                                face_loc);
-                      bool is_wall = (sub_type(Dirichlet_paroi_fixe, type_cl) || sub_type(Dirichlet_paroi_defilante,type_cl));
-
-                      if (tcl.is_read_via_file() && is_wall )
-                        {
-                          double theta_app = tcl.get_theta_app(face)/180.*M_PI;
-                          costheta = cos(theta_app);
-                          Cerr << "[TCL-model] Contact_angle apparent= " << (theta_app/M_PI)*180 << finl;
-                        }
-                    }
-#endif
                   // Normale unitaire au bord
                   double nfx, nfy, nfz;
-                  parcours.calculer_normale_face_bord(face,
-                                                      sommets_(som[i2],0), sommets_(som[i2],1), 0.,
-                                                      nfx, nfy, nfz);
+                  // if som[i2] est virtuel; the "face=sommet_face_bord_[som[i2]]" are also virtual,
+                  // can not directly used in calculer_normale_face_bord
+                  // because sommet_face_bord_ is not well filled for virtual sommets...
+                  if(sommet_elem_[som[i2]]<0)
+                    {
+                      const Domaine_dis& domaine_dis = refdomaine_dis_.valeur();
+                      const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis.valeur());
+
+                      const Equation_base& eq = equation_transport();
+                      const Domaine_Cl_dis_base& domaine_cl = eq.domaine_Cl_dis().valeur();
+
+                      for (int ii=0; ii<domaine_cl.nb_cond_lim(); ii++)
+                        {
+
+                          const Frontiere& fr=domaine_cl.les_conditions_limites(ii)->frontiere_dis().frontiere();
+                          const int nb_first_face = fr.num_premiere_face();
+                          const int nb_face = fr.nb_faces();
+                          if(nb_face >1)
+                            {
+                              // coords of first face
+                              const double xf1 =domaine_vf.xv(nb_first_face, 0);
+                              const double yf1 =domaine_vf.xv(nb_first_face, 1);
+                              // coords of last face
+                              const double xf2 =domaine_vf.xv(nb_first_face+nb_face-1, 0);
+                              const double yf2 =domaine_vf.xv(nb_first_face+nb_face-1, 1);
+                              const double xf3 = sommets_(som[i2],0);
+                              const double yf3 =sommets_(som[i2],1);
+
+                              // check if three points are aligned
+                              // Calculate the determinant (twice the area of the triangle)
+                              const double area = xf1 * (yf2 - yf3) + xf2 * (yf3 - yf1) + xf3 * (yf1 - yf2);
+
+                              int elem_voisin = domaine_vf.face_voisins(nb_first_face, 0) + domaine_vf.face_voisins(nb_first_face, 1) +1;
+                              const double cell_height = 2.*std::fabs(domaine_vf.dist_face_elem0(nb_first_face,elem_voisin));
+
+                              if (std::fabs(area) < cell_height*cell_height/2.)
+                                {
+                                  parcours.calculer_normale_face_bord(nb_first_face,
+                                                                      sommets_(som[i2],0), sommets_(som[i2],1), 0.,
+                                                                      nfx, nfy, nfz);
+                                  break;
+                                }
+                            }
+                        }
+                    }
+                  else
+                    {
+                      parcours.calculer_normale_face_bord(face,
+                                                          sommets_(som[i2],0), sommets_(som[i2],1), 0.,
+                                                          nfx, nfy, nfz);
+
+                    }
                   // Ajout de la contribution de la surface:
                   double signe = (i2==0) ? -1. : 1.;
                   d_surface(som[i2], 0) +=  r[i2] * signe * nfy * costheta;
@@ -6217,13 +6099,13 @@ void Maillage_FT_Disc::calcul_courbure_sommets(ArrOfDouble& courbure_sommets, co
                 }
             }
         }
-
-      // LW 05/10/23 update the virtual sommet
-      desc_sommets().echange_espace_virtuel(d_volume);
-      desc_sommets().echange_espace_virtuel(d_surface);
     }
 
-
+  // On a calcule la contribution de chaque facette reelle aux differents sommets.
+  // Certaines contributions ont ete ajoutees a des sommets virtuels, il
+  // faut recuperer ces contributions sur le sommet reel.
+  desc_sommets().collecter_espace_virtuel(d_volume, MD_Vector_tools::EV_SOMME);
+  desc_sommets().collecter_espace_virtuel(d_surface, MD_Vector_tools::EV_SOMME);
 
   // Calcul de la courbure :
   //   d_surface * d_volume / norme(d_volume)^2

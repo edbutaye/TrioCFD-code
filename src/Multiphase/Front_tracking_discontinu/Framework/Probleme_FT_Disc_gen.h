@@ -40,6 +40,7 @@ public:
   void typer_lire_milieu(Entree& is) override;
   void lire_solved_equations(Entree& is) override;
   Entree& lire_equations(Entree& is, Motcle& dernier_mot) override;
+  void preparer_calcul() override;
 
   const Equation_base& get_equation_by_name(const Nom& le_nom) const override;
   Equation_base& getset_equation_by_name(const Nom& le_nom) override;
@@ -48,6 +49,8 @@ public:
   void completer() override;
   double calculer_pas_de_temps() const override;
   void mettre_a_jour(double temps) override;
+  void update_composite_variables(double temps);
+  void update_geometrical_quantities(double temps);
   virtual bool updateGivenFields() override;
 
   // Raccourcis pour le Front_Tracking

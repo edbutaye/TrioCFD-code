@@ -68,6 +68,7 @@ public:
   OWN_PTR(Champ_Fonc_base)  derivee_temporelle_indicatrice;
   OWN_PTR(Champ_Fonc_base)  ai; // Eulerian interfacial area.
   OWN_PTR(Champ_Inc_base) vitesse_jump0_; // Extended Velocity of phase 0.
+  OWN_PTR(Champ_Inc_base) vitesse_jump1_; // Extended Velocity of phase 1.
 
   OWN_PTR(Champ_Fonc_base) contact_force_source_term; // for fpi module, solid-solid collision source term
 

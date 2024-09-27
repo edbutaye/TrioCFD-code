@@ -687,13 +687,17 @@ void Transport_Marqueur_FT::transformation(Maillage_FT_Disc& marqueurs,Propriete
 
   ArrOfDouble volumes;
   DoubleTab positions;
-  const DoubleTab& indic = eq_interf.get_update_indicatrice().valeurs();
+  const DoubleTab& indic = eq_interf.get_indicatrice().valeurs();
   calcul_proprietes_geometriques(num_compo, nb_compo, indic, volumes, positions);
   ArrOfInt flags_compos_a_supprimer;
   detection_groupes_a_supprimer(volumes, positions, flags_compos_a_supprimer);
   construction_ensemble_proprietes(num_compo, nb_compo, marqueurs, proprietes, flags_compos_a_supprimer, positions, volumes);
   eq_interf.calculer_vitesse_transport_interpolee(champ_vitesse,marqueurs,vitesse_p,1);
   eq_interf.suppression_interfaces(num_compo, flags_compos_a_supprimer);
+  // The FT mesh has been modified and its interface is no longer up-to-date.
+  // Update the indicator function :
+  eq_interf.parcourir_maillage();
+  eq_interf.update_indicatrice_normale_distance();
 }
 
 //Suppression des particules situees dans la phase non marquee

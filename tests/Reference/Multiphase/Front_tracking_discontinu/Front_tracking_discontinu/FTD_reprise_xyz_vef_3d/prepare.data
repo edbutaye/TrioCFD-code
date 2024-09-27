@@ -22,19 +22,21 @@ Schema_Euler_explicite  sch
 Lire sch
 {
 tinit 0.0
-tmax  0.1
+tmax  0.027
 dt_start dt_min
 dt_min 1.e-7
-dt_max 0.02
+dt_max 0.003
 dt_impr 10.
 dt_sauv 100
 seuil_statio -1
-nb_pas_dt_max 4
+nb_pas_dt_max 10
 }
 
 Associate pb DOM
 Associate pb sch
 Discretize pb dis
+
+System "mkdir -p lata"
 
 Lire pb
 {
@@ -113,6 +115,21 @@ bas   Paroi_FT_disc symetrie
 }
 postraitement {
 sondes { v_goutte nodes vitesse periode 0.000001 points 1 0. 0. 0.04 }
+}
+liste_postraitements {
+postraitement_ft_lata post1 {
+format Lata
+fichier lata/prepa
+champs dt_post 0.00005 {
+indicatrice_interf elem
+pression som
+vitesse faces
+}
+interfaces interf {
+pe som
+courbure som
+}
+}
 }
 Sauvegarde xyz prepare.xyz
 }

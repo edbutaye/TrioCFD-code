@@ -48,9 +48,10 @@ Triple_Line_Model_FT_Disc::Triple_Line_Model_FT_Disc() :
   n_ext_meso_(2),
   tag_tcl_(-1),
   Qtcl_(0),
-  lv_(0.),
+  ls_(0.),
   theta_app_(0.),
   x_cl_(0.),
+  xm_(0.),
   ym_(0.),
   sm_(0.),
   ymeso_(0.),
@@ -62,7 +63,7 @@ Triple_Line_Model_FT_Disc::Triple_Line_Model_FT_Disc() :
   num_column_tem_(0),
   num_column_theta_(1),
   num_column_qtcl_(2),
-  Rc_tcl_GridN_(4),
+  Rc_tcl_GridN_(0),
   Rc_inject_(0.),
   thetaC_tcl_(150.),
   tempC_tcl_(10.),
@@ -145,12 +146,13 @@ Entree& Triple_Line_Model_FT_Disc::readOn( Entree& is )
 void Triple_Line_Model_FT_Disc::set_param(Param& p)
 {
   p.ajouter("Qtcl", &Qtcl_); // XD_ADD_P floattant Heat flux contribution to micro-region [W/m]
-  p.ajouter("lv", &lv_); // XD_ADD_P floattant Slip length (unused)
+  p.ajouter("ls", &ls_); // XD_ADD_P floattant Slip length (unused)
   //p.ajouter("coeffa", &coeffa_); // XD_ADD_P floattant not_set
   //p.ajouter("coeffb", &coeffb_); // XD_ADD_P floattant not_set
   p.ajouter("theta_app", &theta_app_); // XD_ADD_P floattant Apparent contact angle (Cox-Voinov)
   //p.ajouter("ylim", &ym_); // XD_ADD_P floattant not_set
-  p.ajouter("ym", &ym_); // XD_ADD_P floattant Wall distance of the point M delimiting micro/meso transition [m]
+  p.ajouter("xm", &xm_); // XD_ADD_P floattant Wall distance [x] of the point M delimiting micro/meso transition [m]
+  p.ajouter("ym", &ym_); // XD_ADD_P floattant Wall distance [y] of the point M delimiting micro/meso transition [m]
   p.ajouter("sm", &sm_,Param::REQUIRED); // XD_ADD_P floattant Curvilinear abscissa of the point M delimiting micro/meso transition [m]
 
   p.ajouter("hydraulic_equation|equation_navier_stokes", &nom_eq_hydr_,Param::REQUIRED); // XD_ADD_P chaine Hydraulic equation name
@@ -316,8 +318,15 @@ void Triple_Line_Model_FT_Disc::completer()
   ymeso_ = std::fmax(ymeso_,DMINFLOAT);
 
 
+  if ((read_via_file_) and (theta_app_>DMINFLOAT))
+    {
+      Cerr << "Check your datafile. read_via_file and theta_app should not but set simultaneously." << finl;
+      Cerr << "read_via_file = " << read_via_file_<< finl;
+      Cerr << "theta_app  = " << theta_app_ <<finl;
+      Process::exit();
+    }
 
-  if ((Rc_tcl_GridN_ != 4)and(Rc_inject_>DMINFLOAT))
+  if ( !est_egal(Rc_tcl_GridN_, 0) and (Rc_inject_>DMINFLOAT) )
     {
       Cerr << "Check your datafile. Rc_tcl_GridN and Rc_inject should not but used simultaneously." << finl;
       Cerr << "Rc_tcl_GridN = " << Rc_tcl_GridN_ << finl;
@@ -325,7 +334,7 @@ void Triple_Line_Model_FT_Disc::completer()
       Process::exit();
     }
 
-  if ((Rc_inject_ == 0.) and reinjection_tcl() )
+  if ( est_egal(Rc_inject_, 0.) and reinjection_tcl() )
     {
       const Navier_Stokes_FT_Disc& ns = ref_ns_.valeur();
       const Domaine_Cl_dis_base& zcldis = ns.domaine_Cl_dis();
@@ -371,6 +380,14 @@ void Triple_Line_Model_FT_Disc::completer()
   if (maillage.temps()<0.)
     {
 
+    }
+
+  if(is_capillary_activated())
+    {
+      if (xm_ <= 0.)
+        Process::exit( "[TCL: capillary_activated]: !!! xm should be STRICTLY POSITIVE, PLESEASE CHECK JDD" );
+      if (ls_ <= 0.)
+        Process::exit( "[TCL: capillary_activated]: !!! ls should be STRICTLY POSITIVE, PLESEASE CHECK JDD" );
     }
 
   // how to access fluid diphasique? Through (eq_ns or pb)? We have neither so far.
@@ -1075,6 +1092,8 @@ void Triple_Line_Model_FT_Disc::compute_TCL_fluxes_in_all_boundary_cells()
 // It is not a problem, it will be considered by "+=" later
 //
 // num_faces is a locally temporary storages that in the end, is copied back into the class attribute boundary_faces_.
+// theta_app_ is also updated here if read_via_file_ is activated;
+// ATTENTION: explicit scheme: qtcl_ and theta_app_ are base on Temperature and Velocity at TCL at n-1;
 void Triple_Line_Model_FT_Disc::compute_TCL_fluxes_in_all_boundary_cells(ArrOfInt& elems_with_CL_contrib,
                                                                          ArrOfInt& num_faces,
                                                                          ArrOfDouble& mpoint_from_CL, ArrOfDouble& Q_from_CL)
@@ -1157,6 +1176,25 @@ void Triple_Line_Model_FT_Disc::compute_TCL_fluxes_in_all_boundary_cells(ArrOfIn
   // const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis);
   const IntTab& elem_faces = zvdf.elem_faces();
 
+  if (read_via_file_)
+    {
+      theta_app_ = 0.;
+      Qtcl_ = 0.;
+    }
+
+  const int nsom = maillage.nb_sommets();
+  const int dim = Objet_U::dimension;
+  DoubleTab vit(nsom, dim);
+
+  if (is_capillary_activated())
+    {
+      Postraitement_base::Localisation loc = Postraitement_base::SOMMETS;
+      Motcle nom_du_champ = "vitesse";
+      // Cerr << "Validation and checking required in Maillage_FT_Disc::calcul_courbure_sommets" << finl;
+      eq_transport.get_champ_post_FT(nom_du_champ, loc, &vit); // HACK !!!! (warning, try debug to make sure it works if you want to remove it!!)
+    }
+
+
   // 1. First loop on contact line cells:
   // Micro cells: 1, at wall BC + 2, 0<indicatrice <1 3, height < ym
   {
@@ -1214,7 +1252,7 @@ void Triple_Line_Model_FT_Disc::compute_TCL_fluxes_in_all_boundary_cells(ArrOfIn
                 Cerr << "[TCL!!!]: elem number " << elemi<< " | indicatrice " << indica(elemi,0) << finl;
                 Cerr << "[TCL!!!]: index " << index<< " | iteration " << ii << finl;
                 Cerr <<  "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! " << finl;
-                Process::exit( "[TCL]: !!! INDICATTICE and FT are NOT CONSISTENT " );
+                // Process::exit( "[TCL]: !!! INDICATTICE and FT are NOT CONSISTENT " );
                 continue;
               }
             // else
@@ -1259,15 +1297,34 @@ void Triple_Line_Model_FT_Disc::compute_TCL_fluxes_in_all_boundary_cells(ArrOfIn
                                 list_micro_indexs.append_array(indextmp);
                                 // Cerr << "[TCL: MICRO]: Corresponding face number at wall " << num_face_wall << finl;
                                 // Cerr << "[TCL: MICRO]: elem " << elem << " | face number at wall " << num_face_wall << finl;
+
+                                if (Objet_U::bidim_axi)
+                                  {
+                                    int num_som = maillage.sommet_ligne_contact(sommet0) ? sommet0: sommet1;
+                                    x_cl_ = sommets(num_som,0);
+                                    Cerr << "[TCL: MICRO] position of the CL is set to be " << x_cl_ << finl;
+
+
+                                    if (read_via_file_)
+                                      {
+                                        const int face = maillage.sommet_face_bord()[num_som];
+                                        if( est_egal(face, num_face_wall))
+                                          {
+                                            theta_app_ = get_theta_app(num_face_wall);
+                                            Cerr << "[TCL-model] Contact_angle apparent is modified to " << theta_app_ << finl;
+                                            if (is_capillary_activated())
+                                              {
+                                                // int num_som = maillage.sommet_ligne_contact(sommet0) ? sommet0: sommet1;
+                                                correct_theta_app_qtcl(theta_app_, Qtcl_, num_face_wall, num_som, vit);
+                                              }
+                                            else
+                                              Qtcl_ = get_Qtcl(num_face_wall);
+                                            Cerr << "[TCL-model] Qmicro is modified to " << Qtcl_ << finl;
+                                          }
+                                      }
+                                  }
                               }
                             indextmp = datatmp.index_element_suivant_;
-                          }
-
-                        if (Objet_U::bidim_axi)
-                          {
-                            int num_som = maillage.sommet_ligne_contact(sommet0) ? sommet0: sommet1;
-                            x_cl_ = sommets(num_som,0);
-                            Cerr << "[TCL: MICRO] position of the CL is set to be " << x_cl_ << finl;
                           }
                       }
                     index = data.index_facette_suivante_;
@@ -1276,7 +1333,7 @@ void Triple_Line_Model_FT_Disc::compute_TCL_fluxes_in_all_boundary_cells(ArrOfIn
             else
               {
 
-                while (index >= 0)       // loop over index inside an elem, loop effective when one facette has go through serveral mesh
+                while (index >= 0)       // loop over index inside an elem, check if the facette suivant is also in the same elem
                   {
                     const Intersections_Elem_Facettes_Data& data = intersections.data_intersection(index);
                     const int fa7 = data.numero_facette_;
@@ -1302,14 +1359,34 @@ void Triple_Line_Model_FT_Disc::compute_TCL_fluxes_in_all_boundary_cells(ArrOfIn
                                 list_micro_indexs.append_array(indextmp);
                                 // Cerr << "[TCL: MICRO]: Corresponding face number at wall " << num_face_wall << finl;
                                 // Cerr << "[TCL: MICRO]: elem " << elem << " | face number at wall " << num_face_wall << finl;
-                              }
-                          }
 
-                        if (Objet_U::bidim_axi)
-                          {
-                            int num_som = maillage.sommet_ligne_contact(sommet0) ? sommet0: sommet1;
-                            x_cl_ = sommets(num_som,0);
-                            Cerr << "[TCL: MICRO] position of the CL is set to be " << x_cl_ << finl;
+                                if (Objet_U::bidim_axi)
+                                  {
+                                    int num_som = maillage.sommet_ligne_contact(sommet0) ? sommet0: sommet1;
+                                    x_cl_ = sommets(num_som,0);
+                                    Cerr << "[TCL: MICRO] position of the CL is set to be " << x_cl_ << finl;
+
+                                    if (read_via_file_)
+                                      {
+                                        const int face = maillage.sommet_face_bord()[num_som];
+                                        if( est_egal(face, num_face_wall))
+                                          {
+                                            theta_app_ = get_theta_app(num_face_wall);
+                                            Cerr << "[TCL-model] Contact_angle apparent is modified to " << theta_app_ << finl;
+                                            if (is_capillary_activated())
+                                              {
+                                                // int num_som = maillage.sommet_ligne_contact(sommet0) ? sommet0: sommet1;
+                                                correct_theta_app_qtcl(theta_app_, Qtcl_, num_face_wall, num_som, vit);
+                                              }
+                                            else
+                                              Qtcl_ = get_Qtcl(num_face_wall);
+                                            Cerr << "[TCL-model] Qmicro is modified to " << Qtcl_ << finl;
+                                          }
+                                      }
+
+                                  }
+
+                              }
                           }
                       }
                     index = data.index_facette_suivante_;
@@ -1479,6 +1556,12 @@ void Triple_Line_Model_FT_Disc::compute_TCL_fluxes_in_all_boundary_cells(ArrOfIn
     // Cerr << "[TCL: MESO]: list_meso_elems number of elems: " << list_meso_elems << finl;
     // Cerr << "[TCL: MESO]: list_meso_faces number of faces: " << list_meso_faces << finl;
 
+    if (read_via_file_)
+      {
+        theta_app_ = Process::mp_max(theta_app_); // diffuse into all processeur
+        Qtcl_ = Process::mp_max(Qtcl_);
+      }
+
 
     // 2. send loop to fill-in micro contribution
     // We have our list of cells, we can complete their contribution and add them to the list
@@ -1608,7 +1691,8 @@ void Triple_Line_Model_FT_Disc::compute_TCL_fluxes_in_all_boundary_cells(ArrOfIn
           // Micro region is between 1.e-10 and ym_:
           const double ymin = exp(-19);
 
-          double Qtot = get_Qtcl(num_face);
+          double Qtot = get_Qtcl();
+
           double Qmicro = 0.;
           double fraction = 0.;
 
@@ -2275,5 +2359,149 @@ double Triple_Line_Model_FT_Disc:: get_theta_app(const int num_face)
 
   return theta_app_;
 }
+
+// Account the effect of velocity on the apparent contact angle and heat flux
+// Interpolation uni-lineaire dans chaque direction de chaque compo : interpoler_simple_vitesse_point_vdf(champ_vitesse, coord, element, vitesse, explicit_u_NS_);
+// !!! vit should be updated for all procs... as a echange_espace_virtuel is called at the end of
+// Transport_Interfaces_FT_Disc::calculer_vitesse_transport_interpolee()  maillage.desc_sommets().echange_espace_virtuel(vitesse_noeuds);
+void Triple_Line_Model_FT_Disc:: correct_theta_app_qtcl(double& theta_v,double& qtcl,const int num_face_wall, const int num_som, const DoubleTab& vit) const
+{
+
+  const Transport_Interfaces_FT_Disc& eq_transport = ref_eq_interf_.valeur();
+  const Maillage_FT_Disc& maillage = eq_transport.maillage_interface();
+  const DoubleTab& sommets = maillage.sommets();
+  const Parcours_interface& parcours = eq_transport.parcours_interface();
+
+  FTd_vecteur3 nface = {0., 0., 0.} ;
+  parcours.calculer_normale_face_bord(num_face_wall, sommets(num_som,0)
+                                      , sommets(num_som,1), 0., nface[0], nface[1], nface[2]) ;
+
+  // The other som of the facette is som[1-i2] :
+  // Cerr << " sommet-1 x= " << sommets_(som[1-i2],0) << " y= " << sommets_(som[1-i2],1) << " time_sommet= " << t << finl;
+  // if(dt != 0.) double cl_v = (sommets_(som[i2],0) - x_cl_)/dt;
+  const int isom1 = num_som;
+  // The second vertex of the segment should not be a contact line
+  // so we compute its tangential velocity:
+
+  const int nb_compo = vit.dimension(1);
+  double vn = 0.;
+  double v_cl = 0.;
+  double v_comp = 0.;
+  // Component of the velocity is calculated along the direction of wall as vw = v - (v.n)n where n is the wall face normal
+  // and v is the velocity vector of the node under consideration.
+  for (int k=0 ; k<nb_compo ; k++)
+    {
+      const double vk = (double) vit(isom1,k);
+      vn += vk*nface[k];
+      Cerr << "[TCL-model] Estimated TCL velocity[som=" << isom1
+           << ", compo["<< k<<"]= " << vk << "m/s)" << " face-normal= " << nface[k] <<  finl;
+      // Cerr << "Vn= " << vn << finl;
+    }
+  nface[0] = vn*nface[0];
+  nface[1] = vn*nface[1];
+  nface[2] = vn*nface[2];
+  for (int k=0 ; k<nb_compo ; k++)
+    {
+      v_comp = vit(isom1,k) - nface[k];
+      v_cl += v_comp*v_comp;
+    }
+  v_cl = sqrt(v_cl);
+
+
+  {
+    const double absX = abs(vit(isom1,0) - nface[0]);
+    const double absY = abs(vit(isom1,1) - nface[1]);
+    const double absZ = abs(vit(isom1,2) - nface[2]);
+
+    if (absX >= absY && absX >= absZ)
+      {
+        // x component is the largest
+        v_cl = (vit(isom1,0) - nface[0]) > 0. ? v_cl : -v_cl;
+      }
+    else if (absY >= absX && absY >= absZ)
+      {
+        // y component is the largest
+        v_cl = (vit(isom1,1) - nface[1]) > 0. ? v_cl : -v_cl;
+      }
+    else
+      {
+        // z component is the largest
+        v_cl = (vit(isom1,2) - nface[2]) > 0. ? v_cl : -v_cl;
+      }
+  }
+
+  Cerr << "[TCL-model] projected v_cl = " << v_cl << finl;
+
+  // And we assume as a best guess that the contact line
+  // velocity should be approximately that of the first
+  // marker that is not a contact line. We use it
+  // directly to build the Capilary number Ca.
+
+  // !!!  phase 1: liquid; I: phase indicator of LIQUID
+  const Navier_Stokes_FT_Disc& ns = ref_ns_.valeur();
+
+  const Fluide_Diphasique& fluide = ns.fluide_diphasique();
+  const double sigma = fluide.sigma();
+
+  const DoubleTab& tab_nu_phase_1 = fluide.fluide_phase(1).viscosite_cinematique()->valeurs();
+  const double nu_phase_1 = tab_nu_phase_1(0, 0);
+  const double Ca = nu_phase_1*v_cl/sigma;
+  Cerr << "[TCL-model] Capillary_number = " << Ca  << finl;
+
+
+  const double cst_e = exp(1.);
+  const double deg_to_rad = M_PI / 180.;
+  const double lv = 3.*ls_/cst_e/(theta_v*deg_to_rad);  //  Voinov length Eq 17 Vadim S. Nikolayev et al 2024 J. Phys.: Conf. Ser. 2766 012123
+
+  double theta_app = pow((theta_v*deg_to_rad),3) - 9. * Ca * log(std::max(xm_, 1.e-20)/lv);
+  theta_app = pow(std::max(theta_app, 0.),1./3.);
+
+  // Cerr << "[TCL-model] theta_after " << theta_app << finl;
+  // We store the apparent contact angle in costheta for
+  // later use in the calculation of the curvature
+  // (it is through this mean that we will consider
+  //  it and try to indirectly satisfy it).
+  theta_v =(theta_app/M_PI)*180;
+
+  Cerr << "[TCL-model] Contact_angle after correction= "  <<  theta_v << finl;
+
+
+
+  double Twall = 0.;
+  const Domaine_Cl_dis_base& zcldis = ref_cast(
+                                        Domaine_Cl_dis_base, ref_eq_temp_->domaine_Cl_dis ().valeur ());
+  const Domaine_Cl_VDF& zclvdf = ref_cast(Domaine_Cl_VDF, zcldis);
+  const Cond_lim& la_cl = zclvdf.la_cl_de_la_face (num_face_wall);
+  const Front_VF& le_bord = ref_cast(Front_VF,la_cl->frontiere_dis());
+  const int ndeb = le_bord.num_premiere_face();
+  if (sub_type(Echange_contact_VDF_FT_Disc, la_cl.valeur ()))
+    {
+      const Echange_contact_VDF_FT_Disc& la_cl_typee = ref_cast(
+                                                         Echange_contact_VDF_FT_Disc, la_cl.valeur ());
+      const double T_imp = la_cl_typee.Ti_wall (num_face_wall - ndeb);
+      Twall = T_imp;
+    }
+  else if (sub_type(Echange_impose_base, la_cl.valeur ()))
+    {
+      const Echange_impose_base& la_cl_typee = ref_cast(Echange_impose_base,
+                                                        la_cl.valeur ());
+      const double T_imp = la_cl_typee.T_ext (num_face_wall - ndeb);
+      Twall = T_imp;
+    }
+  else
+    {
+      Cerr
+          << "How can we set Twall when temperature(elem) is not valid? Or is it?"
+          << finl;
+      Process::exit ();
+    }
+  assert(kl_cond_*Ri_>0.);
+  double ln_y = log(sm_*theta_app/kl_cond_/Ri_+1.);
+  // Twall here is (Wall temperature - saturation temperature)..unit of Q_meso is W/m
+  qtcl = kl_cond_*(Twall/theta_app)*ln_y; // qtcl of Q_int is W/m
+}
+
+
+
 
 

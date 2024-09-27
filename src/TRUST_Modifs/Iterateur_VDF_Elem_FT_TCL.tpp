@@ -40,7 +40,7 @@ inline void Iterateur_VDF_Elem<_TYPE_>::fill_flux_tables_(const int face, const 
     {
       Convection_Diffusion_Temperature_FT_Disc& eq_typee = ref_cast_non_const(Convection_Diffusion_Temperature_FT_Disc, eq);
       Transport_Interfaces_FT_Disc& eq_interface = eq_typee.eq_interface();
-      const DoubleTab& indicatrice = eq_interface.get_update_indicatrice().valeurs();
+      const DoubleTab& indicatrice = eq_interface.get_indicatrice().valeurs();
       if (elem1 > -1)
         for (int k = 0; k < ncomp; k++)
           {

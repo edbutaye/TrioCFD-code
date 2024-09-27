@@ -46,8 +46,9 @@ public :
   void completer();
   void set_param(Param& p);
   double get_Qtcl(const int num_face);
-  const double& get_lv() const { return lv_; }
+  const double& get_ls() const { return ls_; }
   const double& get_ym() const { return ym_; }
+  const double& get_xm() const { return xm_; }
   double get_sm() { return sm_; }
   const double& get_initial_CL_xcoord() const { return initial_CL_xcoord_; }
   const double& get_rhocpl() const { return rhocpl_; }
@@ -65,6 +66,7 @@ public :
   bool& ready_inject_tcl() { return ready_inject_tcl_; }
   const double& tempC_tcl() const { return tempC_tcl_; }
   const int& tag_tcl() const { return tag_tcl_; }
+  const int& lissage_tcl() const { return lissage_tcl_; }
 
   const bool& adjust_meso_ML() const
   {
@@ -99,6 +101,10 @@ public :
   void set_wall_adjacent_temperature_according_to_TCL_model(DoubleTab& temperature) const;
   void correct_TCL_energy_evolution(DoubleTab& temperature) const;
   double get_theta_app(const int num_face);
+  void correct_theta_app_qtcl(double& theta_app_, double& qtcl, const int num_face_wall, const int num_som, const DoubleTab& vit) const;
+  const double& get_theta_app() const { return theta_app_; }
+  const double& get_Qtcl() const { return Qtcl_; }
+
 
   enum InoutMethod { EXACT, APPROX, BOTH };
 
@@ -135,10 +141,11 @@ protected:
   //double coeffa_; //
   //double coeffb_; //
   double Qtcl_; //
-  double lv_; // The length...
+  double ls_; // The slip length...
   double theta_app_;
   double x_cl_; // position of the CL.
   // The end of micro-region:
+  double xm_;
   double ym_;
   double sm_;
   // End of meso region

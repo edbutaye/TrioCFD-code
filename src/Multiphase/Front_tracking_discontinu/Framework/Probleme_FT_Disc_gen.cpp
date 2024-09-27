@@ -119,6 +119,38 @@ void Probleme_FT_Disc_gen::lire_solved_equations(Entree& is)
     if (eq_types[i] != "NAVIER_STOKES_FT_DISC" && !eq_types[i].debute_par("TRANSPORT_INTERFACES"))
       add_FT_equation(eq_name[i], eq_types[i]);
 }
+void Probleme_FT_Disc_gen::preparer_calcul()
+{
+  const double temps = schema_temps().temps_courant();
+  update_geometrical_quantities(temps);
+  Pb_Fluide_base::preparer_calcul();
+}
+
+void Probleme_FT_Disc_gen::update_geometrical_quantities(double temps)
+{
+  for (int i = 0; i < nombre_d_equations(); i++)
+    {
+      // on force la MaJ des eqs de transport pour que NS travaille avec les bonnes distances, indicatrice, ...
+      Nom name =equation(i).que_suis_je(); // une copie pour pouvoir la passer en majuscule
+      if (name.majuscule().debute_par("TRANSPORT_INTERFACES"))
+        {
+          Transport_Interfaces_FT_Disc& eq_trans = ref_cast(Transport_Interfaces_FT_Disc, equation(i));
+          // TODO : preparer_calcul de l'equation est anticipe ici pour permettre le calcul des proprietes physiques dans NS avec un bon maillage
+          //        une bonne interface, ... On fait donc appel a : preparer_calcul_anticipated
+          //        Pourquoi celui-ci est different du mettre_a_jour (hors deplacement)
+          if (1)
+            eq_trans.preparer_calcul_anticipated();
+          else
+            {
+              eq_trans.completer_maillage_et_changer_temps(temps);
+              // On ne peut pas faire appel a mettre_a_jour de l'equation facilement, car celui-ci commencerait par deplacer le maillage, et remailler!!
+              // Ici, on veut juste faire l'injection suppression si necessaire, puis mettre a jour (hors deplacement, remaillagen, ...)
+              eq_trans.injecter_supprimer_interfaces(temps);
+              eq_trans.mettre_a_jour_hors_deplacement(temps, false /* do not update stationary criterion because dt=0 */ );
+            }
+        }
+    }
+}
 
 void Probleme_FT_Disc_gen::typer_lire_milieu(Entree& is)
 {
@@ -338,6 +370,24 @@ void Probleme_FT_Disc_gen::mettre_a_jour(double temps)
     }
   if (la_chimie_.non_nul())
     la_chimie_->mettre_a_jour(temps);
+
+  update_composite_variables(temps);
+}
+
+void Probleme_FT_Disc_gen::update_composite_variables(double temps)
+{
+  /*
+  equation(0).mettre_a_jour_secmem2(); // Les conditions sont-elles remplies pour qu'on calcul secmem2?
+  bool compute_secmem2 = true;
+  const int i_NS = 0;
+  for (int i = 0; i < nombre_d_equations(); i++)
+    {
+      // on force la MaJ des eqs de transport pour que NS travaille avec les bonnes distances, indicatrice, ...
+      Nom name =equation(i).que_suis_je(); // une copie pour pouvoir la passer en majuscule
+      if (name.majuscule().debute_par("TRANSPORT_INTERFACES"))
+        equation(i).mettre_a_jour(temps);
+    }
+  */
 }
 
 void Probleme_FT_Disc_gen::completer()
@@ -350,7 +400,9 @@ void Probleme_FT_Disc_gen::completer()
       la_chimie_->completer(*this);
     }
 
-  if (tcl_.is_activated()) tcl_.completer();
+  // the Rc_injection_ [initilisation in completer()] is needed to used the the re_injection for liquid-solid coupling problem.
+  if (tcl_.is_activated() || tcl_.reinjection_tcl()) tcl_.completer();
+
 }
 
 bool Probleme_FT_Disc_gen::updateGivenFields()

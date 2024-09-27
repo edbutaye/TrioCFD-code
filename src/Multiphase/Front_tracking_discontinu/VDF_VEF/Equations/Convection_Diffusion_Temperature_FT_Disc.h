@@ -66,6 +66,14 @@ public:
   void discretiser_assembleur_pression();
   void completer() override;
 
+  void check_injection();
+  const int& is_reinject_activated() const  { return reinjection_;};
+
+  const bool& ready_injection() const { return ready_inject_; };
+  bool& ready_injection() { return ready_inject_; };
+  const double& get_tempC() const { return tempC_; };
+  const double& get_Rc_inject() const  { return Rc_inject_; } ;
+  const double& get_thetaC() const { return thetaC_;};
 
   const DoubleTab& get_mpoint() const
   {
@@ -117,6 +125,26 @@ protected:
   ArrOfInt correction_mpoint_diff_conv_energy_ ; // on attend trois flags 0 ou 1
 
   OBS_PTR(Fluide_Diphasique) fluide_dipha_;
+  // parameters injection seed nucleate
+  // Size: Using the same Radius defined above (Rc_gridN_), [in number of grids]
+  // Temperature beyond which the site is activeted [in K] T-Tsat
+  // in this case,  we need the initial value for contact angle, thetaC_tcl_ will be used
+
+  // reinjection: if a re-injection of interface if nessaire
+  // Par defaut, do not reinject bubble if previous bubbl is detached
+  int reinjection_ = 0;
+  // Par defaut, temperature of activation is 0;
+  double tempC_ = 0;
+  // Par defaut, radius of bubble seed is 0;
+  double Rc_inject_ = 0;
+  // Par defaut, angle of bubble seed is 0;
+  double thetaC_ = 0;
+  // Par defaut, radius of bubble seed in number of grids is 0;
+  int Rc_GridN_ = 0;              
+  // Par defaut, Not ready to inject the bubble
+  bool ready_inject_ = false;
+
+  REF(Fluide_Diphasique) fluide_dipha_;
 
   // Champs compris par le postraitement
   LIST(OBS_PTR(Champ_base)) liste_champs_compris_;

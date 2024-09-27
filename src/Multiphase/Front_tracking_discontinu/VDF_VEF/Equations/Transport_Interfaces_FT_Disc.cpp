@@ -1304,7 +1304,8 @@ void Transport_Interfaces_FT_Disc::lire_maillage_ft_cao(Entree& is)
           indic(i) = phase;
         }
     }
-  get_update_indicatrice();
+  // TODO : probablement plutot update_indicatrice_normale_distance(); ? A tester..
+  update_indicatrice();
   // Postraitement des composantes connexes et de l'indicatrice
   if (lata_file != "??")
     {
@@ -1334,7 +1335,7 @@ void Transport_Interfaces_FT_Disc::lire_maillage_ft_cao(Entree& is)
                         indic);
       nom_champ = "distance";
       lata.ecrire_champ(un_dom, unites, noms_compo, 1, TEMPS, nom_champ, nom_dom, "elem", "scalar",
-                        get_update_distance_interface().valeurs());
+                        get_distance_interface().valeurs());
     }
 
   if (phase_of_component.size_array() > 0 && min_array(phase_of_component) < 0)
@@ -1753,6 +1754,12 @@ void Transport_Interfaces_FT_Disc::remailler_interface()
 
 int Transport_Interfaces_FT_Disc::preparer_calcul()
 {
+  Process::Journal()<<"Transport_Interfaces_FT_Disc::preparer_calcul does nothing because it has been anticipated in the problem"<<finl;
+  return 1;
+}
+
+int Transport_Interfaces_FT_Disc::preparer_calcul_anticipated(void)
+{
   Process::Journal()<<"Transport_Interfaces_FT_Disc::preparer_calcul"<<finl;
 
   if (is_solid_particle_)
@@ -1818,10 +1825,7 @@ int Transport_Interfaces_FT_Disc::preparer_calcul()
   variables_internes_->set_checkpoint_fname(checkpoint_fname);
 
   //calcul de l'indicatrice
-  indicatrice_->valeurs() = get_update_indicatrice().valeurs();
-  get_update_distance_interface();
-  get_update_normale_interface();
-  maillage_interface().compute_gravity_center_fa7();
+  update_indicatrice_normale_distance();
 
   // On verifie que la methode de transport a bien ete fournie dans le jeu
   // de donnees:
@@ -1878,24 +1882,60 @@ double Transport_Interfaces_FT_Disc::calculer_pas_de_temps() const
   return DMAXFLOAT;
 }
 
+void Transport_Interfaces_FT_Disc::update_indicatrice_normale_distance()
+{
+  // Si le Maillage_FT_Disc::MINIMAL, le parcourir:
+  maillage_interface().parcourir_maillage();
+
+  // L'indicatrice a besoin de la distance Eulerienne (type LS) pour etre calculee
+  // (plus precisement, la distance permet de la corriger localement):
+  update_normale_distance_interface();
+  update_indicatrice();
+}
 /*! @brief Recalcul du champ variables_internes_->indicatrice_cache a partir de la position des interfaces.
  *
  *   ATTENTION, ce n'est pas l'inconnue du probleme. L'inconnue est mise a jour
  *   a partir de ce champ dans mettre_a_jour.
  *
  */
-const Champ_base& Transport_Interfaces_FT_Disc::get_update_indicatrice()
+void Transport_Interfaces_FT_Disc::update_indicatrice()
 {
   const int tag = maillage_interface().get_mesh_tag();
-  if (tag != variables_internes_->indicatrice_cache_tag)
-    {
-      DoubleVect& valeurs_indicatrice = variables_internes_->indicatrice_cache->valeurs();
-      maillage_interface().parcourir_maillage();
-      maillage_interface().calcul_indicatrice(valeurs_indicatrice,
-                                              valeurs_indicatrice);
-      variables_internes_->indicatrice_cache_tag = tag;
-    }
+  // assert pour verifier si l'appel est bien utile.
+  assert(tag != variables_internes_->indicatrice_cache_tag);
+  // Le calcul de l'indicatrice a besoin d'une distance qui soit bien a jour...
+  assert(tag == variables_internes_->distance_normale_cache_tag);
+  DoubleVect& valeurs_indicatrice = variables_internes_->indicatrice_cache->valeurs();
+  assert(maillage_interface().type_statut()>=2); // Voir s'il manque un appel a maillage_interface().parcourir_maillage();
+  maillage_interface().calcul_indicatrice(valeurs_indicatrice, valeurs_indicatrice);
+  variables_internes_->indicatrice_cache_tag = tag;
+
+  // TODO : nettoyer ce doublon de champs historique pour ne garder qu'un champ
+  indicatrice_->valeurs() = get_indicatrice().valeurs(); // met a jour l'indicatrice a partir de indicatrice_cache qui vient d'etre calculee.
+}
+
+/*! @brief getter champ variables_internes_->indicatrice_cache a partir de la position des interfaces.
+ *
+ *   ATTENTION, ce n'est pas l'inconnue du probleme. L'inconnue est mise a jour
+ *   a partir de ce champ dans mettre_a_jour.
+ *
+ */
+const Champ_base& Transport_Interfaces_FT_Disc::get_indicatrice()
+{
+  assert(maillage_interface().get_mesh_tag() == variables_internes_->indicatrice_cache_tag);
   return variables_internes_->indicatrice_cache.valeur();
+}
+
+const Champ_base& Transport_Interfaces_FT_Disc::get_distance_interface() const
+{
+  assert(maillage_interface().get_mesh_tag() == variables_internes_->distance_normale_cache_tag);
+  return variables_internes_->distance_interface.valeur();
+}
+
+const Champ_base& Transport_Interfaces_FT_Disc::get_normale_interface() const
+{
+  assert(maillage_interface().get_mesh_tag() == variables_internes_->distance_normale_cache_tag);
+  return variables_internes_->normale_interface.valeur();
 }
 
 /*! @brief Interpolation lineaire d'un champ de vitesse VDF aux faces en un point de coordonnees coord_som.
@@ -1913,9 +1953,9 @@ void interpoler_vitesse_point_vdf(const Champ_base& champ_vitesse,
                                   const FTd_vecteur3& coord_som,
                                   const int element,
                                   FTd_vecteur3& vitesse,
-                                  const int explicit_u_NS)
+                                  const int future_or_past)
 {
-  const DoubleTab& valeurs_v = (bool)(explicit_u_NS) ? champ_vitesse.futur() : champ_vitesse.valeurs();
+  const DoubleTab& valeurs_v = (bool)(future_or_past) ? champ_vitesse.futur() : champ_vitesse.valeurs();
   const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, champ_vitesse.domaine_dis_base());
   const IntTab& elem_faces = domaine_vf.elem_faces();
   const DoubleTab& xv = domaine_vf.xv();
@@ -2177,9 +2217,9 @@ void interpoler_simple_vitesse_point_vdf(const Champ_base& champ_vitesse,
                                          const FTd_vecteur3& coord_som,
                                          const int element,
                                          FTd_vecteur3& vitesse,
-                                         const int explicit_u_NS)
+                                         const int future_or_past)
 {
-  const DoubleTab& valeurs_v = (bool)(explicit_u_NS) ? champ_vitesse.futur() : champ_vitesse.valeurs();
+  const DoubleTab& valeurs_v = (bool)(future_or_past) ? champ_vitesse.futur() : champ_vitesse.valeurs();
   const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, champ_vitesse.domaine_dis_base());
   const IntTab& elem_faces = domaine_vf.elem_faces();
   const DoubleTab& xv = domaine_vf.xv();
@@ -2268,10 +2308,10 @@ void Transport_Interfaces_FT_Disc::calculer_vitesse_transport_interpolee(
   const Champ_base&        champ_vitesse,
   const Maillage_FT_Disc& maillage,
   DoubleTab&             vitesse_noeuds,
-  int                   nv_calc,
-  int standard) const
+  const int                   nv_calc,
+  const int standard,
+  const bool la_roue_de_vitesse_a_deja_tournee) const
 {
-
   switch(variables_internes_->methode_interpolation_v)
     {
     case Transport_Interfaces_FT_Disc_interne::VALEUR_A_ELEM:
@@ -2297,7 +2337,10 @@ void Transport_Interfaces_FT_Disc::calculer_vitesse_transport_interpolee(
                   ref_cast(Champ_P1NC, champ_vitesse).filtrer_L2(champ_filtre.valeurs());
                 else
                   ref_cast(Champ_Fonc_P1NC, champ_vitesse).filtrer_L2(champ_filtre.valeurs());
+                if (explicit_u_NS_ && la_roue_de_vitesse_a_deja_tournee) champ_filtre.futur() = champ_filtre.valeurs();
               }
+            else
+              Process::exit("Code never verified. I guess something is missing like : champ_filtre.valeurs() = val_champ_vitesse");
           }
         else if (sub_type(Champ_Face_VDF, champ_vitesse) || sub_type(Champ_Fonc_Face_VDF,champ_vitesse))
           {
@@ -2342,7 +2385,11 @@ void Transport_Interfaces_FT_Disc::calculer_vitesse_transport_interpolee(
         les_elements.resize(nb_positions);
         les_vitesses.resize(nb_positions, dim);
 
-        champ_vitesse_interp->valeur_aux_elems(les_positions, les_elements, les_vitesses);
+        if (explicit_u_NS_ && la_roue_de_vitesse_a_deja_tournee)
+          //champ_vitesse_interp->valeur_aux_elems_passe(les_positions, les_elements, les_vitesses);
+          champ_vitesse_interp->valeur_aux_elems_passe(les_positions, les_elements, les_vitesses);
+        else
+          champ_vitesse_interp->valeur_aux_elems(les_positions, les_elements, les_vitesses);
 
         // Copie des vitesses :
         vitesse_noeuds.resize(nb_pos_tot, dim);
@@ -2388,12 +2435,12 @@ void Transport_Interfaces_FT_Disc::calculer_vitesse_transport_interpolee(
                 if (standard)
                   {
                     // Interpolation M-lineaire dans toutes les M-directions pour chaque compo
-                    interpoler_vitesse_point_vdf(champ_vitesse, coord, element, vitesse, explicit_u_NS_);
+                    interpoler_vitesse_point_vdf(champ_vitesse, coord, element, vitesse, explicit_u_NS_ && la_roue_de_vitesse_a_deja_tournee);
                   }
                 else
                   {
                     // Interpolation uni-lineaire dans chaque direction de chaque compo :
-                    interpoler_simple_vitesse_point_vdf(champ_vitesse, coord, element, vitesse, explicit_u_NS_);
+                    interpoler_simple_vitesse_point_vdf(champ_vitesse, coord, element, vitesse, explicit_u_NS_ && la_roue_de_vitesse_a_deja_tournee);
                   }
                 for (j = 0; j < dim; j++)
                   vitesse_noeuds(i,j) = vitesse[j];
@@ -2744,7 +2791,7 @@ void Transport_Interfaces_FT_Disc::modifier_vpoint_pour_imposer_vit(const Double
         is_QC=1;
 
       // Etape 3 : calcul et ajout du terme de penalisation dans la qdm
-      const DoubleTab& indicatrice = get_update_indicatrice().valeurs();
+      const DoubleTab& indicatrice = get_indicatrice().valeurs();
 
       calcul_indicatrice_faces(indicatrice,face_voisins);
       const DoubleTab& indicatrice_faces = get_indicatrice_faces().valeurs();
@@ -2881,7 +2928,7 @@ void Transport_Interfaces_FT_Disc::calcul_indicatrice_faces(const DoubleTab& ind
             // On recupere le saut de vitesse a l'interface (changement de phase)
             const Navier_Stokes_FT_Disc& ns = ref_cast(Navier_Stokes_FT_Disc, eqn_hydraulique);
             const DoubleTab& interfacial_area = ns.get_interfacial_area();
-            const DoubleTab& normale_elements = get_update_normale_interface().valeurs();
+            const DoubleTab& normale_elements = get_normale_interface().valeurs();
 
             const int dim = ns.inconnue().valeurs().line_size();
             const int vef = (dim == 2);
@@ -3022,10 +3069,10 @@ const Champ_base& Transport_Interfaces_FT_Disc::get_indicatrice_faces()
   return indicatrice_faces_;
 }
 
-const Champ_base& Transport_Interfaces_FT_Disc::get_compute_indicatrice_faces()
+const Champ_base& Transport_Interfaces_FT_Disc::update_indicatrice_faces()
 {
-  const DoubleTab& indicatrice = get_update_indicatrice().valeurs();
   const Domaine_dis_base& mon_dom_dis = domaine_dis();
+  const DoubleTab& indicatrice = get_indicatrice().valeurs();
   const IntTab& face_voisins = mon_dom_dis.face_voisins();
   calcul_indicatrice_faces(indicatrice,face_voisins);
   return indicatrice_faces_;
@@ -4140,9 +4187,9 @@ const Champ_base& Transport_Interfaces_FT_Disc::get_update_distance_interface_fa
     return variables_internes_->distance_interface_faces.valeur();
 
   variables_internes_->distance_faces_cache_tag = tag;
-
-  const DoubleTab& dist_elem = get_update_distance_interface().valeurs();
-  const DoubleTab& normale_elem = get_update_normale_interface().valeurs();
+  assert(tag == variables_internes_->distance_normale_cache_tag);
+  const DoubleTab& dist_elem = get_distance_interface().valeurs();
+  const DoubleTab& normale_elem = get_normale_interface().valeurs();
   DoubleTab&        dist_face = variables_internes_->distance_interface_faces->valeurs();
 
   calculer_distance_interface_faces(dist_elem, normale_elem, dist_face);
@@ -4222,8 +4269,8 @@ void Transport_Interfaces_FT_Disc::interpoler_vitesse_face(
   const double indic_phase = (phase == 0) ? 0. : 1.;
   int i_face;
   Maillage_FT_Disc& maillage = maillage_interface() ;
-  const DoubleTab& indicatrice = get_update_indicatrice().valeurs();
-  const DoubleTab& indicatrice_face = get_compute_indicatrice_faces().valeurs();
+  const DoubleTab& indicatrice = get_indicatrice().valeurs();
+  const DoubleTab& indicatrice_face = update_indicatrice_faces().valeurs();
   // distance signee aux faces corrigee
   DoubleTab dist_face_cor(distance_interface_faces) ;
   // type de face : fluide (0), solide (1) et 0.5 si le barycentre de la face est proche de l'IBC
@@ -4793,7 +4840,7 @@ void Transport_Interfaces_FT_Disc::interpoler_vitesse_face(
           // x_P = x_F - d * N_F
           // on determine la normale aux faces comme la moyenne de la normale aux elements.
 
-          const DoubleTab& normale_elem = get_update_normale_interface().valeurs();
+          const DoubleTab& normale_elem = get_normale_interface().valeurs();
           for (i_face = 0; i_face < nfaces; i_face++)
             {
               double d = dist_face_cor(i_face) ;
@@ -7113,19 +7160,20 @@ void Transport_Interfaces_FT_Disc::calculer_vitesse_repere_local(const Maillage_
     }
 }
 
-// This method is called by mettre_a_jour(), so it is done in a loop that depend on the order of equations.
+// This method is called by mettre_a_jour(), so it is done in a loop that depends on the order of equations.
 // NS is forced as first, always.
 // Therefore, NS has turned the wheel (tourner la roue) before getting here.
-// To make a really explicit scheme, we want tu use u^n, not u^n+1.
+// To make a really explicit scheme, we want to use u^n, not u^n+1.
 // Because of the wheel turns in equation(0).mettre_a_jour() (which is NS), u^n is currently in .futur() and NOT in .present() (or .valeur() which is synonymous)
 void Transport_Interfaces_FT_Disc::deplacer_maillage_ft_v_fluide(const double temps)
 {
   DoubleTab& deplacement = variables_internes_->deplacement_sommets;
-  const Equation_base& eqn_hydraulique = variables_internes_->refequation_vitesse_transport.valeur();
+  const Navier_Stokes_std& eqn_hydraulique = variables_internes_->refequation_vitesse_transport.valeur();
   // Method is called by mettre_a_jour()
   // The option explicit_u_NS_ = 0 enables corresponds to the historical scheme in TrioCFD, which was apparently semi-implicit.
   // Set to explicit_u_NS_  = 1, you get a real explicit scheme.
   // WARNING : read comment above method explaining why "explicit" should use ".futur()"!!!
+  // This option affects the calculation directly in calculer_vitesse_transport_interpolee
   const Champ_base& champ_vitesse = eqn_hydraulique.inconnue();
   Maillage_FT_Disc& maillage = maillage_interface();
   // Calcul de la vitesse de deplacement des sommets par interpolation
@@ -7140,7 +7188,8 @@ void Transport_Interfaces_FT_Disc::deplacer_maillage_ft_v_fluide(const double te
   calculer_vitesse_transport_interpolee(champ_vitesse,
                                         maillage,
                                         deplacement, 1 /* recalculer le champ de vitesse L2 */,
-                                        flag /* Interpolation Multi-lineaire en VDF */);
+                                        flag /* Interpolation Multi-lineaire en VDF */,
+                                        true /* la_roue_de_vitesse_a_deja_tournee */);
 
 #if DEBUG_CONSERV_VOLUME
   int n = maillage.nb_sommets();
@@ -7164,7 +7213,8 @@ void Transport_Interfaces_FT_Disc::deplacer_maillage_ft_v_fluide(const double te
     }
 #endif
   // On recupere et ajoute a deplacement le saut de vitesse a l'interface si changement de phase
-  ajouter_contribution_saut_vitesse(deplacement);
+  ajouter_contribution_saut_vitesse(deplacement,
+                                    true /* la_roue_de_vitesse_a_deja_tournee */);
 
 #if DEBUG_CONSERV_VOLUME
   if (n>0)
@@ -7253,6 +7303,9 @@ void Transport_Interfaces_FT_Disc::deplacer_maillage_ft_v_fluide(const double te
 
         sum_before_rm_dvol +=sum_before_rm*delta_t;
 #endif
+        // if (!ns.is_shift_secmem2_activated()) even modifiee is used, the indicatrice at cell-face is not exactly well reconstructed
+        // still need ramasse_miettes to get good dI_dt
+        // ONEDAY, indicatrice at cell-face are well construire, this can be comment
         ramasse_miettes(maillage, variables_internes_->tmp_flux->valeurs(), dI_dt);
         transfert_conservatif_eulerien_vers_lagrangien_sommets(maillage, dI_dt, var_volume);
 
@@ -7442,13 +7495,15 @@ void Transport_Interfaces_FT_Disc::deplacer_maillage_ft_v_fluide(const double te
   maillage.compute_gravity_center_fa7();
 }
 
-void Transport_Interfaces_FT_Disc::ajouter_contribution_saut_vitesse(DoubleTab& deplacement) const
+void Transport_Interfaces_FT_Disc::ajouter_contribution_saut_vitesse(DoubleTab& deplacement, const bool la_roue_de_vitesse_a_deja_tournee) const
 {
   const Equation_base& eqn_hydraulique = variables_internes_->refequation_vitesse_transport.valeur();
   const Champ_base *u0_ptr = 0;
 
   if (sub_type(Navier_Stokes_FT_Disc, eqn_hydraulique))
     {
+      // assert(la_roue_de_vitesse_a_deja_tournee); // TODO : supprimer le param car il n'est jamais usite en false
+      // Je ne vois pas qui tourne le roue pour delta_u??? // TODO Supprimer le champ_inc
       // On recupere le saut de vitesse a l'interface (changement de phase)
       const Navier_Stokes_FT_Disc& ns = ref_cast(Navier_Stokes_FT_Disc, eqn_hydraulique);
       u0_ptr = ns.get_delta_vitesse_interface();
@@ -7461,7 +7516,8 @@ void Transport_Interfaces_FT_Disc::ajouter_contribution_saut_vitesse(DoubleTab& 
           calculer_vitesse_transport_interpolee(u0,
                                                 maillage_interface(),
                                                 d2, 1 /* recalculer le champ de vitesse L2 */,
-                                                1-ns.get_new_mass_source());
+                                                1-ns.get_new_mass_source(),
+                                                la_roue_de_vitesse_a_deja_tournee);
 
           const int n = d2.dimension(0);
           const int dim = d2.line_size();
@@ -7475,13 +7531,12 @@ void Transport_Interfaces_FT_Disc::ajouter_contribution_saut_vitesse(DoubleTab& 
             }
         }
     }
-
 }
 
 int Transport_Interfaces_FT_Disc::calculer_composantes_connexes_pour_suppression(IntVect& num_compo)
 {
   const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis());
-  const DoubleTab& indicatrice = get_update_indicatrice().valeurs();
+  const DoubleTab& indicatrice = get_indicatrice().valeurs();
   const int nb_compo = topologie_interface().calculer_composantes_connexes_pour_suppression(domaine_vf, indicatrice, num_compo);
   return nb_compo;
 }
@@ -7500,8 +7555,8 @@ void Transport_Interfaces_FT_Disc::test_suppression_interfaces_sous_domaine()
   if (suppression_interfaces_sous_domaine_ == "??")
     return;
 
-  const DoubleTab& indicatrice = get_update_indicatrice().valeurs();
   const Sous_Domaine& sous_domaine = domaine_dis().domaine().ss_domaine(suppression_interfaces_sous_domaine_);
+  const DoubleTab& indicatrice = get_indicatrice().valeurs();
   // Construction de la liste des elements de la sous-domaine contenant la phase a supprimer
   ArrOfInt liste_elems_sous_domaine;
   int i;
@@ -7534,20 +7589,24 @@ void Transport_Interfaces_FT_Disc::test_suppression_interfaces_sous_domaine()
       topologie_interface().suppression_interfaces(num_compo, flags_compo_a_supprimer, maillage,
                                                    variables_internes_->indicatrice_cache->valeurs());
 
-      // Parcours de toutes les equations du probleme,
-      // Pour les equations "temperature FT" on appelle la methode "suppression_interfaces"
-      Probleme_base& pb = probleme();
-      const int n = pb.nombre_d_equations();
-      for (int ii = 0; ii < n; ii++)
+      if (max_array(flags_compo_a_supprimer))
         {
-          Equation_base& eq = pb.equation(ii);
-          if (sub_type(Convection_Diffusion_Temperature_FT_Disc, eq))
+          update_indicatrice_normale_distance();
+          // Parcours de toutes les equations du probleme,
+          // Pour les equations "temperature FT" on appelle la methode "suppression_interfaces"
+          Probleme_base& pb = probleme();
+          const int n = pb.nombre_d_equations();
+          for (int ii = 0; ii < n; ii++)
             {
-              Convection_Diffusion_Temperature_FT_Disc& eq_temp =
-                ref_cast(Convection_Diffusion_Temperature_FT_Disc, eq);
-              const int i_phase_continue = (phase_continue < 0.5) ? 0 : 1;
-              eq_temp.suppression_interfaces(num_compo, flags_compo_a_supprimer,
-                                             i_phase_continue /* phase qui remplace l'ancienne */);
+              Equation_base& eq = pb.equation(ii);
+              if (sub_type(Convection_Diffusion_Temperature_FT_Disc, eq))
+                {
+                  Convection_Diffusion_Temperature_FT_Disc& eq_temp =
+                    ref_cast(Convection_Diffusion_Temperature_FT_Disc, eq);
+                  const int i_phase_continue = (phase_continue < 0.5) ? 0 : 1;
+                  eq_temp.suppression_interfaces(num_compo, flags_compo_a_supprimer,
+                                                 i_phase_continue /* phase qui remplace l'ancienne */);
+                }
             }
         }
     }
@@ -7570,8 +7629,25 @@ void Transport_Interfaces_FT_Disc::integrer_ensemble_lagrange(const double temps
 void Transport_Interfaces_FT_Disc::mettre_a_jour(double temps)
 {
   Process::Journal() << "Transport_Interfaces_FT_Disc::mettre_a_jour " << le_nom() << " temps= "<< temps << finl;
-  Maillage_FT_Disc& maillage = maillage_interface();
+  // Effectue le deplacement de l'interface:
+  mettre_a_jour_deplacement(temps);
 
+  // Remaillage de l'interface:
+  remailler_interface();
+
+  // Effectue la mise a jour de l'inconnue, des indicatrices et de tous les champs auxiliaires:
+  mettre_a_jour_hors_deplacement(temps);
+}
+
+void Transport_Interfaces_FT_Disc::mettre_a_jour_deplacement(double temps)
+{
+  deplacer_maillage(temps);
+  injecter_supprimer_interfaces(temps);
+}
+
+void Transport_Interfaces_FT_Disc::deplacer_maillage(double temps)
+{
+  Maillage_FT_Disc& maillage = maillage_interface();
   switch (variables_internes_->methode_transport)
     {
     case Transport_Interfaces_FT_Disc_interne::VITESSE_IMPOSEE:
@@ -7655,8 +7731,27 @@ void Transport_Interfaces_FT_Disc::mettre_a_jour(double temps)
            << " the requested transport mehod is not developped" << finl;
       Process::exit();
     }
+}
 
+void Transport_Interfaces_FT_Disc::completer_maillage_et_changer_temps(double temps)
+{
+  Maillage_FT_Disc& maillage = maillage_interface();
+  maillage.nettoyer_elements_virtuels();
+  maillage.completer_maillage();
+  maillage.changer_temps(temps);
+}
 
+void Transport_Interfaces_FT_Disc::injecter_supprimer_interfaces(double temps)
+{
+  injecter_interfaces_par_ajout_phase(temps);
+  injecter_interfaces_pour_TCL(temps);
+
+// Traitement des domaines de suppression
+  test_suppression_interfaces_sous_domaine();
+}
+
+void Transport_Interfaces_FT_Disc::injecter_interfaces_par_ajout_phase(double temps)
+{
   // injection des interfaces
   if (variables_internes_->injection_interfaces_temps_.size_array() > 0)
     {
@@ -7691,7 +7786,7 @@ void Transport_Interfaces_FT_Disc::mettre_a_jour(double temps)
           if (ok)
             {
               maillage_interface().ajouter_maillage(maillage_tmp);
-              get_update_indicatrice();
+              update_indicatrice_normale_distance();
               double unused_vol_phase_0 = 0.;
               const double volume_phase_1_old = calculer_integrale_indicatrice(sauvegarde, unused_vol_phase_0);
               unused_vol_phase_0= 0.;
@@ -7716,12 +7811,93 @@ void Transport_Interfaces_FT_Disc::mettre_a_jour(double temps)
           Process::exit();
         }
     }
+}
 
-  const Probleme_base&  pb = get_probleme_base();
+void Transport_Interfaces_FT_Disc::injecter_interfaces_pour_TCL(double temps)
+{
+  // PARA re_injection bublle seed
+  Probleme_base& pb = probleme();
+  const int n = pb.nombre_d_equations();
+  for (int ii = 0; ii < n; ii++)
+    {
+      Equation_base& eq = pb.equation(ii);
+      if (sub_type(Convection_Diffusion_Temperature_FT_Disc, eq))
+        {
+          Convection_Diffusion_Temperature_FT_Disc& eq_temp =
+            ref_cast(Convection_Diffusion_Temperature_FT_Disc, eq);
+
+
+          if (eq_temp.is_reinject_activated() && eq_temp.ready_injection())
+            {
+              const double thetac = eq_temp.get_thetaC();
+              const double Rc = eq_temp.get_Rc_inject();
+
+              // const Nom expr = "x^2+(y-8e-05*cos(50.0*pi/180.0))^2-8e-05^2";
+              const Nom expr = Nom("x^2+(y-") + Nom(Rc)
+                               + Nom("*cos(") + Nom(thetac)
+                               + Nom("*pi/180.0))^2-") + Nom(Rc)
+                               + Nom("^2");
+
+              // On essaye d'injecter l'interface
+              Maillage_FT_Disc maillage_tmp;
+              maillage_tmp.associer_equation_transport (*this);
+
+              // By default, inject vapeur, phase 0
+              Maillage_FT_Disc::AjoutPhase phase =
+                0 ?
+                Maillage_FT_Disc::AJOUTE_PHASE1 : Maillage_FT_Disc::AJOUTE_PHASE0;
+
+              DoubleTab sauvegarde (
+                variables_internes_->indicatrice_cache.valeur ().valeurs ());
+
+              const int ok = marching_cubes ().construire_iso (
+                               expr, 0., maillage_tmp,
+                               variables_internes_->indicatrice_cache.valeur ().valeurs (), phase,
+                               variables_internes_->distance_interface_sommets);
+
+              Cerr << "Injection_interface time " << temps << " " << expr;
+              if (ok)
+                {
+                  maillage_interface ().ajouter_maillage (maillage_tmp);
+                  get_update_indicatrice ();
+                  double unused_vol_phase_0 = 0.;
+                  const double volume_phase_1_old = calculer_integrale_indicatrice (
+                                                      sauvegarde, unused_vol_phase_0);
+                  unused_vol_phase_0 = 0.;
+                  const double volume_phase_1 = calculer_integrale_indicatrice (
+                                                  variables_internes_->indicatrice_cache.valeur ().valeurs (),
+                                                  unused_vol_phase_0);
+                  double volume = volume_phase_1 - volume_phase_1_old;
+                  // pow(-1,1-phase) ne compile pas avec xlC sur AIX car n'a que pow(double,int)
+                  volume *= pow (-1., 1 - phase);
+                  Cerr << " volume " << volume << finl;
+                  const Probleme_base&  pb2 = get_probleme_base();
+                  if (sub_type(Probleme_FT_Disc_gen,pb2))
+                    {
+                      Probleme_FT_Disc_gen& pb_ft = ref_cast_non_const(Probleme_FT_Disc_gen, pb);
+                      // injection des interfaces with temperature of activation
+                      if (pb_ft.tcl().lissage_tcl())
+                        {
+                          Schema_Temps_base& sch_tps = schema_temps();
+                          const double t_present_ = sch_tps.temps_courant();
+                          double& t_injection_ = pb_ft.tcl().t_injection();
+                          t_injection_ = t_present_;
+                        }
+                    }
+                }
+              else
+                {
+                  Cerr << " failure: collision" << finl;
+                  variables_internes_->indicatrice_cache.valeur ().valeurs () =
+                    sauvegarde;
+                }
+            }
+
+        }
+    }
 
   if (sub_type(Probleme_FT_Disc_gen,pb))
     {
-
       Probleme_FT_Disc_gen& pb_ft = ref_cast_non_const(Probleme_FT_Disc_gen, pb);
       // injection des interfaces with temperature of activation
       if (pb_ft.tcl().reinjection_tcl() && pb_ft.tcl().ready_inject_tcl())
@@ -7755,8 +7931,8 @@ void Transport_Interfaces_FT_Disc::mettre_a_jour(double temps)
           Cerr << "Injection_interface time " << temps << " " << expr;
           if (ok)
             {
-              maillage_interface ().ajouter_maillage (maillage_tmp);
-              get_update_indicatrice ();
+              maillage_interface().ajouter_maillage (maillage_tmp);
+              update_indicatrice_normale_distance();
               double unused_vol_phase_0 = 0.;
               const double volume_phase_1_old = calculer_integrale_indicatrice (
                                                   sauvegarde, unused_vol_phase_0);
@@ -7782,33 +7958,31 @@ void Transport_Interfaces_FT_Disc::mettre_a_jour(double temps)
             }
         }
     }
+}
 
-
-  // Traitement des domaines de suppression
-  test_suppression_interfaces_sous_domaine();
-
-  // Remaillage de l'interface:
-  remailler_interface();
-
+void Transport_Interfaces_FT_Disc::mettre_a_jour_hors_deplacement(double temps, const bool update_statio)
+{
+  // The Eulerian fields normal and distance should be updated first (before indicatrice!!)
+  // because the indicatrice calculation partly relies on the distance calculation.
+  // Update normal and distance and indicatrice
   // Attention: get_update_indicatrice renvoie une ref a indicatrice_cache.
   //  C'est ici qu'on copie le contenu de indicatrice_cache dans indicatrice :
-  indicatrice_->valeurs() = get_update_indicatrice().valeurs();
+  update_indicatrice_normale_distance();
+  // TODO GB 2024 : mettre_a_jour ferait un echange_EV en plus de changer temps. Mais l'echange EV est deja fait dans le update donc pas necessaire.
+  variables_internes_->distance_interface->changer_temps(temps);
+  variables_internes_->normale_interface->changer_temps(temps);
+  indicatrice_->valeurs() = get_indicatrice().valeurs();
 
   variables_internes_->indicatrice_cache->changer_temps(temps);
   indicatrice_->changer_temps(temps);
 
-  update_critere_statio();
+  if (update_statio)
+    update_critere_statio();
 
-  // Update normal and distance :
-  get_update_distance_interface();
-  get_update_normale_interface(); // TODO: GB2024 pense a delete car la ligne d'avant le fait deja.
-  // TODO GB 2024 : mettre_a_jour ferait un echange_EV en plus de changer temps. Mieux ou pas?
-  variables_internes_->distance_interface->changer_temps(temps);
-  variables_internes_->normale_interface->changer_temps(temps);
-
+  // Beaucoup de monde utilise l'indic aux faces. On la calcule tout le temps (tant pis si c'est pas perf-ideal)
+  update_indicatrice_faces();
+  indicatrice_faces_->changer_temps(temps);
   // TODO: GB2024
-  // get_compute_indicatrice_faces();
-  // indicatrice_faces_.changer_temps(temps);
   // if (???) variables_internes_->vitesse_filtree.changer_temps(temps);
   // if (???) variables_internes_->tmp_flux.changer_temps(temps);
   // if (???) variables_internes_->index_element.changer_temps(temps);
@@ -7828,6 +8002,7 @@ void Transport_Interfaces_FT_Disc::mettre_a_jour(double temps)
       }
   }
 
+  Maillage_FT_Disc& maillage = maillage_interface();
   // Affichage de la surface totale d'interfaces dans le fichier .err
   // Affichage du centre de gravite des phases 0 et 1
   {
@@ -8003,11 +8178,12 @@ void Transport_Interfaces_FT_Disc::transporter_sans_changement_topologie(DoubleT
                                           maillage.desc_sommets());
   //ajout pour postraiter ss pas de tps RK3_FT
   maillage.changer_temps(temps);
-  indicatrice_->valeurs()=get_update_indicatrice().valeurs();
+  update_indicatrice_normale_distance();
+  indicatrice_->valeurs()=get_indicatrice().valeurs();
   variables_internes_->indicatrice_cache->changer_temps(temps);
   indicatrice_->changer_temps(temps);
-  get_update_distance_interface();
-  get_update_normale_interface();
+  variables_internes_->distance_interface->changer_temps(temps);
+  variables_internes_->normale_interface->changer_temps(temps);
 }
 
 
@@ -8748,43 +8924,21 @@ const int& Transport_Interfaces_FT_Disc::get_n_iterations_distance() const
   return variables_internes_->n_iterations_distance;
 }
 
-/*! @brief Calcule et renvoie la distance a l'interface, evaluee sur une epaisseur egale a n_iterations_distance aux elements et discretisee aux elements
+/*! @brief Calcule et renvoie la normale et la distance a l'interface,
+ * evaluees sur une epaisseur egale a n_iterations_distance aux elements et discretisee aux elements
  *
  */
-const Champ_base& Transport_Interfaces_FT_Disc::get_update_distance_interface() const
-{
-  // Si le tag du maillage et le tag du champ sont identiques, inutile de recalculer:
-  const int tag = maillage_interface().get_mesh_tag();
-  if (tag != variables_internes_->distance_normale_cache_tag)
-    {
-      DoubleTab& distance = variables_internes_->distance_interface->valeurs();
-      DoubleTab& normale  = variables_internes_->normale_interface->valeurs();
-      calculer_distance_interface(maillage_interface(),
-                                  distance,
-                                  normale,
-                                  variables_internes_->n_iterations_distance);
-      variables_internes_->distance_normale_cache_tag = tag;
-    }
-  return variables_internes_->distance_interface.valeur();
-}
-
-/*! @brief Calcule et renvoie la normale a l'interface, evaluee sur une epaisseur egale a n_iterations_distance aux elements et discretisee aux elements.
- *
- */
-const Champ_base& Transport_Interfaces_FT_Disc::get_update_normale_interface() const
+void Transport_Interfaces_FT_Disc::update_normale_distance_interface() const
 {
   const int tag = maillage_interface().get_mesh_tag();
-  if (tag != variables_internes_->distance_normale_cache_tag)
-    {
-      DoubleTab& distance = variables_internes_->distance_interface->valeurs();
-      DoubleTab& normale  = variables_internes_->normale_interface->valeurs();
-      calculer_distance_interface(maillage_interface(),
-                                  distance,
-                                  normale,
-                                  variables_internes_->n_iterations_distance);
-      variables_internes_->distance_normale_cache_tag = tag;
-    }
-  return variables_internes_->normale_interface.valeur();
+  assert(tag != variables_internes_->distance_normale_cache_tag);
+  DoubleTab& distance = variables_internes_->distance_interface->valeurs();
+  DoubleTab& normale  = variables_internes_->normale_interface->valeurs();
+  calculer_distance_interface(maillage_interface(),
+                              distance,
+                              normale,
+                              variables_internes_->n_iterations_distance);
+  variables_internes_->distance_normale_cache_tag = tag;
 }
 
 /*! @brief Renvoi de la distance signee entre l'interface et les sommets du maillage eulerien.
@@ -8802,11 +8956,10 @@ const DoubleTab&   Transport_Interfaces_FT_Disc::get_update_distance_interface_s
       return variables_internes_->distance_interface_sommets;
     }
   variables_internes_->distance_sommets_cache_tag = tag;
-
-  const DoubleTab& dist_elem = get_update_distance_interface().valeurs();
-  const DoubleTab& normale_elem = get_update_normale_interface().valeurs();
+  assert(tag == variables_internes_->distance_normale_cache_tag);
+  const DoubleTab& dist_elem = get_distance_interface().valeurs();
+  const DoubleTab& normale_elem = get_normale_interface().valeurs();
   DoubleTab&        dist_som = variables_internes_->distance_interface_sommets;
-
   calculer_distance_interface_sommets(dist_elem, normale_elem, dist_som);
   return dist_som;
 }
@@ -9534,6 +9687,15 @@ void Transport_Interfaces_FT_Disc::calculer_vmoy_composantes_connexes(const Mail
 
 }
 
+
+// Note added by L. Wei on 13/01/2025
+// This subroutine advects [valeurs] from PURE cells (both liquid and vapor).
+// into two of their neighboring cells: one along the x-direction and another along the y-direction.
+// The neighboring cell is identified by the normal direction of the liquid-vapor interface.
+// Factors such as the normal vector to the liquid-vapor (L-V) interface and the proportion of the surface in x and y-dir of pure cells are considered
+// to determine the appropriate proportion to redistribute to each neighboring cell. [i.e., the final valeur of tmp_flux]
+// It's important to note that when this subroutine is invoked, it performs the advection process exactly once for all cells
+// within the area where the interface normal vector ('normale_interface') is defined and non-zero. [normally serveral cells thickness surronding the interface]
 void Transport_Interfaces_FT_Disc::ramasse_miettes(const Maillage_FT_Disc& maillage,
                                                    DoubleVect& flux,
                                                    DoubleVect& valeurs)
@@ -9549,14 +9711,14 @@ void Transport_Interfaces_FT_Disc::ramasse_miettes(const Maillage_FT_Disc& maill
   //const int nb_elem = domaine.nb_elem();
   const int nb_elem_tot = domaine.nb_elem_tot();
   const int nb_faces_elem = domaine_vf.domaine().nb_faces_elem();
-  const DoubleVect& indic = get_update_indicatrice().valeurs();
-  const DoubleTab& normale_interface =  get_update_normale_interface().valeurs();
+  const DoubleVect& indic = get_indicatrice().valeurs();
+  const DoubleTab& normale_interface =  get_normale_interface().valeurs(); // direction: from vapour toward liquid
   for (int i_face = 0; i_face < nb_faces_tot; i_face++)
     {
       double f;
       const int elem0 = face_voisins(i_face, 0);
       const int elem1 = face_voisins(i_face, 1);
-      if (elem0 < 0 || elem1 < 0)
+      if (elem0 < 0 || elem1 < 0)   // at teh boundary
         f = 0.;
       else
         {
@@ -9996,9 +10158,13 @@ void Transport_Interfaces_FT_Disc::fill_ftab_velocity(DoubleTab *ftab,const Doub
       calculer_vitesse_transport_interpolee(champ_vitesse, maillage_interface_pour_post(), vit,
                                             0 /* ne pas recalculer le champ de vitesse L2 */,  // GB 2020/03/20 -> Je suis surpris par cette option 0 en desaccord avec le moment du calcul
                                             // mais je ne prends pas la responsabilite de changer car je ne sais pas trop ce que ca represente (c'est du VEF uniquement?)
-                                            flag /* Interpolation Multi-lineaire en VDF */);
+                                            flag /* Interpolation Multi-lineaire en VDF */,
+                                            false /* la_roue_de_vitesse_a_deja_tournee => C'est vrai
+                                                     Mais en post, on veut afficher la valeur future de la vitesse qui sera appliquee lors du prochain dt,
+                                                     on l'obtient donc en regardant la case present */ );
       // Pour ajouter le saut de vitesse a l'interface :
-      ajouter_contribution_saut_vitesse(vit); // ici, l'interpolation depend de ns.get_new_mass_source()
+      ajouter_contribution_saut_vitesse(vit, // TODO: a verifier. Je ne sais pas ce que l'on veut
+                                        false /* la_roue_de_vitesse_a_deja_tournee => permet d'afficher la valeur future en expli */ ); // ici, l'interpolation depend de ns.get_new_mass_source()
       fill_ftab_vector(ftab,vit);
     }
   else
@@ -10024,9 +10190,13 @@ void Transport_Interfaces_FT_Disc::fill_ftab_local_reference_frame_velocity(Doub
       calculer_vitesse_transport_interpolee(champ_vitesse, maillage_interface_pour_post(), vit,
                                             0 /* ne pas recalculer le champ de vitesse L2 */,  // GB 2020/03/20 -> Je suis surpris par cette option 0 en desaccord avec le moment du calcul
                                             // mais je ne prends pas la responsabilite de changer car je ne sais pas trop ce que ca represente (c'est du VEF uniquement?)
-                                            1 /* Interpolation Multi-lineaire en VDF */);
+                                            1 /* Interpolation Multi-lineaire en VDF */,
+                                            false /* la_roue_de_vitesse_a_deja_tournee => C'est vrai
+                                                      Mais en post, on veut afficher la valeur future de la vitesse qui sera appliquee lors du prochain dt,
+                                                      on l'obtient donc en regardant la case present */ );
       // Pour ajouter le saut de vitesse a l'interface :
-      ajouter_contribution_saut_vitesse(vit);// ici, l'interpolation depend de ns.get_new_mass_source()
+      ajouter_contribution_saut_vitesse(vit, // TODO: a verifier. Je ne sais pas ce que l'on veut
+        false /* la_roue_de_vitesse_a_deja_tournee => permet d'afficher la valeur future en expli */ );// ici, l'interpolation depend de ns.get_new_mass_source()
       calculer_vitesse_repere_local( maillage_interface_pour_post(), vit,Positions,Vitesses);
       fill_ftab_vector(ftab,vit);
     }

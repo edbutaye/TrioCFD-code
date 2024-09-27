@@ -116,7 +116,7 @@ public:
   void completer_maillage();
   // Calcul de l'indicatrice de phase
   void calcul_indicatrice(DoubleVect& indicatrice,
-                          const DoubleVect& indicatrice_precedente);
+                          const DoubleVect& indicatrice_precedente) const;
   // Deplacement des sommets du maillage selon un vecteur donne
   virtual void transporter(const DoubleTab& deplacement);
 

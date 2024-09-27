@@ -92,7 +92,7 @@ Lire pb
             cp champ_uniforme       1 1.0
         }
         sigma   Champ_Uniforme 1            0.
-        # sigma_t   Champ_Uniforme 1          5.0e-4 #
+        # sigma_t   Champ_Uniforme 1          5.0e-4 #
         chaleur_latente Champ_Uniforme 1   -10.
     }
 
@@ -107,7 +107,7 @@ Lire pb
         projection_initiale 0
         dt_projection 1.e-10 1.e-18
         equation_interfaces_proprietes_fluide interf
-         # equation_temperature_mpoint thermique_GFM
+        # equation_temperature_mpoint thermique_GFM
         mpoint_inactif_sur_qdm 
         new_mass_source
         terme_gravite grad_I #
@@ -124,6 +124,7 @@ Lire pb
     }
     interf
     {
+        explicit_u_NS
         type_indic_faces standard
         methode_interpolation_v vdf_lineaire
         methode_transport vitesse_interpolee hydraulique
@@ -194,7 +195,6 @@ Lire pb
         conditions_initiales { Temperature_thermique_GFM Champ_Fonc_xyz dom 1 (x_ge_0.1)*(x-0.1)+(x_lt_0.1)*(x+1.9) }
     }
 #
-    
     thermique_liq
     {
         equation_navier_stokes hydraulique
@@ -204,13 +204,11 @@ Lire pb
         convection { quick }
         boundary_conditions
         {
-            bot1   Symetrie
-            top1    Symetrie
-            periox  Periodique
+            bot    Symetrie
+            top    Symetrie
+            periox Periodique
         }
         conditions_initiales { Temperature_thermique_liq Champ_Fonc_xyz dom 1 x-0.1 }
-        
-
     } 
     liste_postraitements
     {
@@ -220,7 +218,8 @@ Lire pb
             champs dt_post 1.0e-9 {
                 VOLUME_MAILLE elem
                 indicatrice_interf elem
-                Temperature_thermique_vap elem
+                Temperature_thermique_liq elem
+                # Temperature_thermique_vap elem #
                 # potentiel_marangoni_elements elem #
                 # temperature elem #
                 vitesse elem

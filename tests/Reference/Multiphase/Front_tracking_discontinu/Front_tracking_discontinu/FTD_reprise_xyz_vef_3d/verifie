@@ -1,0 +1,9 @@
+#!/bin/bash
+ko=0
+compare_sonde prepare_V_GOUTTE.son prepare_V_GOUTTE_reference.son > /dev/null || ko=1
+compare_sonde FTD_reprise_xyz_vef_3d_V_GOUTTE.son FTD_reprise_xyz_vef_3d_V_GOUTTE_reference.son &> /dev/null || ko=1
+grep Volume_phase_0  FTD_Boiling_bubble.err | awk '{print $4, $2}' &> vol.txt
+diff --brief vol.txt vol_ref.txt
+[ $ko -eq 1 ] && echo "Il y a des differences" && echo "Comparison can be achieved by : ./compare_sonde.sh" || echo "verifie ok"
+
+exit $ko

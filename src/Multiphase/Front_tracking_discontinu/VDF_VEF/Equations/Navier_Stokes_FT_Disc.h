@@ -43,14 +43,14 @@ public:
   int sauvegarder(Sortie&) const override;
   int reprendre(Entree&) override;
   int preparer_calcul() override;
-  void preparer_pas_de_temps();
   void mettre_a_jour(double temps) override;
+  void mettre_a_jour_physical_properties(double temps);
   void calculer_la_pression_en_pa() override;
   DoubleTab& derivee_en_temps_inco(DoubleTab& vpoint) override;
   void projeter() override;
   virtual const Champ_base& calculer_div_normale_interface();
   void correct_at_exit_bad_gradient(DoubleTab& u0) const;
-  void calculer_delta_u_interface(Champ_base& u0, int phase_pilote, int ordre);
+  void calculer_delta_u_interface(Champ_base& u0, int phase_pilote, int ordre, const bool future_or_past = false);
   void shift_secmem2(DoubleTab& shift_secmem2);
   const Champ_Don& diffusivite_pour_transport() const override;
 

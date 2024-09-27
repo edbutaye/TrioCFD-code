@@ -63,7 +63,7 @@ Lire pb
     solved_equations
     {
         Navier_stokes_FT_disc                         hydraulique
-        Transport_interFaces_FT_disc                  interf
+        Transport_interfaces_FT_disc                  interf
         convection_diffusion_temperature_ft_disc      thermique
     }
     Fluide_diphasique

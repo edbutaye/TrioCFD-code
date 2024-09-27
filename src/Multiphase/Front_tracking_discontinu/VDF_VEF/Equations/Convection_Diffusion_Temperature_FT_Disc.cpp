@@ -43,6 +43,8 @@
 #include <Perf_counters.h>
 #include <TRUST_Ref.h>
 #include <Parametre_implicite.h>
+#include <Dirichlet_paroi_fixe.h>
+#include <Dirichlet_paroi_defilante.h>
 
 static const double TSAT_CONSTANTE = 0.;
 
@@ -118,6 +120,11 @@ void Convection_Diffusion_Temperature_FT_Disc::set_param(Param& param)
   param.ajouter_flag("explicit_u_NS", &explicit_u_NS_, Param::OPTIONAL); // XD_ADD_P rien Flag to force a really explicit scheme
   param.ajouter_non_std("solveur_pression_fictive",(this),Param::OPTIONAL);
   param.ajouter("bc_opening_pressure",&name_bc_opening_pressure_,Param::OPTIONAL);
+  param.ajouter_flag("reinjection_tcl", &reinjection_);
+  param.ajouter("tempC", &tempC_);
+  param.ajouter("Rc_inject", &Rc_inject_);
+  param.ajouter("thetaC", &thetaC_);
+  param.ajouter("Rc_GridN", &Rc_GridN_);
 }
 
 int Convection_Diffusion_Temperature_FT_Disc::lire_motcle_non_standard(const Motcle& mot, Entree& is)
@@ -493,10 +500,9 @@ static void extrapoler_champ_elem(const Domaine_VF&    domaine_vf,
 void Convection_Diffusion_Temperature_FT_Disc::calculer_grad_t()
 {
   Transport_Interfaces_FT_Disc& eq_interface_ = ref_eq_interface_.valeur();
-
-  const DoubleTab& indicatrice = eq_interface_.get_update_indicatrice().valeurs();
-  const DoubleTab& distance_interface = eq_interface_.get_update_distance_interface().valeurs();
-  const DoubleTab& normale_interface = eq_interface_.get_update_normale_interface().valeurs();
+  const DoubleTab& indicatrice = eq_interface_.get_indicatrice().valeurs();
+  const DoubleTab& distance_interface = eq_interface_.get_distance_interface().valeurs();
+  const DoubleTab& normale_interface = eq_interface_.get_normale_interface().valeurs();
   //GB : Augmenter la constante de l'epaisseur
   //GB : const int stencil_width = 8;
   const int stencil_width = stencil_width_;
@@ -920,8 +926,8 @@ void Convection_Diffusion_Temperature_FT_Disc::correct_mpoint()
         }
       mmax = Process::mp_max(mmax);
       //  Cerr << "[Maximum-mp] Time= " << temps << " max(abs(mp))= " << mmax << finl;
-      const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis());
-      const DoubleTab& distance_interface = eq_interface_.get_update_distance_interface().valeurs();
+      const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis().valeur());
+      const DoubleTab& distance_interface = eq_interface_.get_distance_interface().valeurs();
       extrapolate(domaine_vf, ai, stencil_width_, distance_interface, mp);
     }
 }
@@ -932,7 +938,13 @@ void Convection_Diffusion_Temperature_FT_Disc::correct_mpoint()
 void Convection_Diffusion_Temperature_FT_Disc::compute_divergence_free_velocity_extension()
 {
   Navier_Stokes_FT_Disc& ns = ref_cast(Navier_Stokes_FT_Disc, ref_eq_ns_.valeur());
-  vitesse_convection_->valeurs() = (bool)(explicit_u_NS_) ? ns.inconnue()->valeurs() : ns.inconnue()->futur();
+  // vitesse_convection_->valeurs() = (bool)(explicit_u_NS_) ? ns.inconnue()->valeurs() : ns.inconnue()->futur();
+
+  const DoubleTab& val_vitesse_ns = (bool)(explicit_u_NS_) ? ns.inconnue()->valeurs() : ns.inconnue()->futur();
+
+  ns.calculer_delta_u_interface(vitesse_convection_, phase_, correction_courbure_ordre_);
+  vitesse_convection_->valeurs() += val_vitesse_ns;
+
   // Projection of the convective field :
   //SolveurSys solveur_pression(ns.get_solveur_pression());
   OWN_PTR(Solveur_Masse_base) solveur_masse_fictitious(ns.solv_masse()); // Copy the operator to change the coeff
@@ -997,7 +1009,7 @@ void Convection_Diffusion_Temperature_FT_Disc::compute_divergence_free_velocity_
       const int   nb_faces_elem = elem_faces.dimension(1);
       const Transport_Interfaces_FT_Disc& eq_transport = ref_eq_interface_.valeur();
       // Distance a l'interface discretisee aux elements:
-      const DoubleTab& distance = eq_transport.get_update_distance_interface().valeurs();
+      const DoubleTab& distance = eq_transport.get_distance_interface().valeurs();
       //     const int nb_elem = secmem2.dimension(0);
       for (int elem = 0; elem < nb_elem; elem++)
         {
@@ -1110,7 +1122,7 @@ DoubleTab& Convection_Diffusion_Temperature_FT_Disc::derivee_en_temps_inco(Doubl
       // We are not in mettre_a_jour().  valeurs() has u^n; futur() is u^(n+1)
       const DoubleTab& val_vitesse_ns = (bool)(explicit_u_NS_) ? vitesse_ns->valeurs(): vitesse_ns->futur();
 
-      // only
+      // vitesse_convection_ is Champ_Inc but never turns the wheel! So the field is always in .valeurs()
       if (ns.is_shift_secmem2_activated())
         {
           if (phase_ == 1)
@@ -1309,10 +1321,11 @@ DoubleTab& Convection_Diffusion_Temperature_FT_Disc::derivee_en_temps_inco(Doubl
   return derivee;
 }
 
-void Convection_Diffusion_Temperature_FT_Disc::mettre_a_jour (double temps)
+void Convection_Diffusion_Temperature_FT_Disc::mettre_a_jour(double temps)
 {
   Convection_Diffusion_Temperature::mettre_a_jour(temps);
   vitesse_convection_->mettre_a_jour(temps);
+  DoubleTab& temperature = inconnue()->valeurs();
   // GB : Debut du maintien artificiel de la temperature.
   if (maintien_temperature_)
     {
@@ -1323,7 +1336,7 @@ void Convection_Diffusion_Temperature_FT_Disc::mettre_a_jour (double temps)
       const Sous_Domaine& ss_domaine = dom.ss_domaine(nom_sous_domaine);
 
       Transport_Interfaces_FT_Disc& eq_interface_ = ref_eq_interface_.valeur();
-      const DoubleTab& indicatrice = eq_interface_.get_update_indicatrice().valeurs();
+      const DoubleTab& indicatrice = eq_interface_.get_indicatrice().valeurs();
       DoubleTab& temperature = inconnue().valeurs();
       const DoubleVect& volume = ref_cast(Domaine_VF, domaine_dis()).volumes();
       const int nb_elem = domaine_vf.domaine().nb_elem();
@@ -1357,6 +1370,94 @@ void Convection_Diffusion_Temperature_FT_Disc::mettre_a_jour (double temps)
         }
     }
   // GB : Fin.
+  temperature.echange_espace_virtuel();
+
+  // check if the wall is ready for reinjection of bubble
+  const bool is_liq = (get_phase()==1);
+  if (is_liq && is_reinject_activated())
+    check_injection();
+}
+
+void Convection_Diffusion_Temperature_FT_Disc::check_injection()
+{
+
+  const Navier_Stokes_std& ns = ref_eq_ns_.valeur();
+  const Domaine_Cl_dis_base& zcldis = ns.domaine_Cl_dis().valeur();
+
+  Transport_Interfaces_FT_Disc& eq_interface_ = ref_eq_interface_.valeur();
+  const DoubleTab& indica = eq_interface_.get_update_indicatrice().valeurs();
+
+  // get wall BC frontiere nb
+  int num_bord = -1;
+  int nbwall_found = 0;
+  for (int i=0; i<zcldis.nb_cond_lim(); i++)
+    {
+      const Cond_lim& la_cl = zcldis.les_conditions_limites(i);
+      const Nom& bc_name = la_cl-> frontiere_dis().le_nom();
+      // For each BC, we check its type to see if it's a wall:
+      // BC for hydraulic equation
+      bool is_wall = sub_type(Dirichlet_paroi_fixe,la_cl.valeur())
+                     || sub_type(Dirichlet_paroi_defilante,la_cl.valeur());
+      if (is_wall)
+        {
+          Cerr << "[Convection_Diffusion_Temperature_FT_Disc]: Reinjection bubble: Wall-type BC found at " << bc_name <<finl;
+          num_bord = i;
+          nbwall_found = nbwall_found +1;
+        }
+    }
+  if (nbwall_found != 1)
+    Process::exit(Nom(nbwall_found) + " wall-type BC found!!!!!  Check JDD, pls" );
+  if (num_bord<0)
+    Process::exit( "[Convection_Diffusion_Temperature_FT_Disc]: !!! NO WALL-TYPE BOUNDARY WAS FOUND IN THE DOMAINE, PLESEASE CHECK JDD" );
+
+  const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis().valeur());
+  const IntTab& face_voisins = domaine_vf.face_voisins();
+
+  const DoubleTab& centre_gravite_face = domaine_vf.xv();
+  const DoubleVect& surface= domaine_vf.face_surfaces();
+
+  const Frontiere& fr=zcldis.les_conditions_limites(num_bord) -> frontiere_dis().frontiere();
+  const int nb_first_face = fr.num_premiere_face();
+  const int nb_face = fr.nb_faces();
+
+  ready_inject_ = false;
+  int BC_has_vap = 0;
+
+  // get vap cells
+  for (int ii = 0; ii < nb_face; ii++)
+    {
+      const int num_face = ii + nb_first_face;
+      const int elemi = face_voisins (num_face, 0)
+                        + face_voisins (num_face, 1) + 1;
+
+      if (!est_egal (indica(elemi,0), 1.))
+        {
+          BC_has_vap = 1;
+          break;
+        }
+    }
+  BC_has_vap = Process::mp_max (BC_has_vap);
+
+  if (BC_has_vap == 0)
+    {
+      double sum_T = 0;
+      double sum_surface = 0;
+      for (int ii = 0; ii < nb_face; ii++)
+        {
+          const int num_face = ii + nb_first_face;
+
+          if (centre_gravite_face(num_face, 0) <= get_Rc_inject ())
+            {
+              sum_surface += surface (num_face);
+              sum_T += surface (num_face) * get_Twall_at_face (num_face);
+            }
+        }
+      sum_T = Process::mp_sum (sum_T);
+      sum_surface = Process::mp_sum (sum_surface);
+
+      sum_T = (sum_surface > DMINFLOAT) ? sum_T / sum_surface : 0;
+      ready_inject_ = (sum_T >= get_tempC()) ? true : false;
+    }
 }
 
 void Convection_Diffusion_Temperature_FT_Disc::discretiser()
@@ -1507,6 +1608,51 @@ void Convection_Diffusion_Temperature_FT_Disc::completer()
       // Informe le solveur que la matrice a change :
       solveur_pression_->reinit();
     }
+
+  if ((Rc_GridN_ != 0)and(Rc_inject_>DMINFLOAT))
+    {
+      Cerr << "Check your datafile. Rc_GridN and Rc_inject should not but used simultaneously." << finl;
+      Cerr << "Rc_tcl_GridN = " << Rc_GridN_ << finl;
+      Cerr << "Rc_inject = " << Rc_inject_ <<finl;
+      Process::exit();
+    }
+
+  if ((Rc_inject_ == 0.) and is_reinject_activated() )
+    {
+      const Navier_Stokes_std& ns = ref_eq_ns_.valeur();
+      const Domaine_Cl_dis_base& zcldis = ns.domaine_Cl_dis().valeur();
+      int num_bord = -1;
+      for (int i=0; i<zcldis.nb_cond_lim(); i++)
+        {
+          const Cond_lim& la_cl = zcldis.les_conditions_limites(i);
+          // For each BC, we check its type to see if it's a wall:
+          // BC for hydraulic equation
+          bool is_wall = sub_type(Dirichlet_paroi_fixe,la_cl.valeur())
+                         || sub_type(Dirichlet_paroi_defilante,la_cl.valeur());
+          if (is_wall)
+            {
+              num_bord = i;
+              break;
+            }
+        }
+      if (num_bord<0)
+        Process::exit( "[Convection_Diffusion_Temperature_FT_Disc]: !!! NO WALL-TYPE BOUNDARY WAS FOUND IN THE DOMAINE, PLESEASE CHECK JDD" );
+
+      const Frontiere& fr=zcldis.les_conditions_limites(num_bord)-> frontiere_dis().frontiere();
+      const int nb_face = fr.nb_faces();
+      const Domaine_VDF& zvdf = ref_cast(Domaine_VDF, ns.domaine_dis().valeur());
+      // supposing deltax = deltay in the first thermal layer
+      if (nb_face>0)
+        {
+          const int num_face=  fr.num_premiere_face();;
+          int elem_voisin = zvdf.face_voisins(num_face, 0) + zvdf.face_voisins(num_face, 1) +1;
+          const double cell_height = 2.*std::fabs(zvdf.dist_face_elem0(num_face,elem_voisin));
+          Rc_inject_ = cell_height * Rc_GridN_;
+        }
+      Rc_inject_ = Process::mp_max(Rc_inject_);
+      Cerr << "[Convection_Diffusion_Temperature_FT_Disc] Rc_inject_ is set to " << Rc_inject_ << " according to provided Rc_GridN_ " << Rc_GridN_ << finl;
+    }
+  Rc_inject_ = std::fmax(Rc_inject_,DMINFLOAT);
 }
 
 // Pour que milieu().mettre_a_jour(temps) ne plante pas...
@@ -1583,6 +1729,8 @@ int Convection_Diffusion_Temperature_FT_Disc::preparer_calcul()
   set_is_solid_particle(ref_eq_interface_.valeur().get_is_solid_particle());
   if (is_solid_particle_)
     ref_eq_interface_.valeur().associate_temp_equation_post_processing(*this);
+  calculer_mpoint();
+// Si mpoint_ etait un champ inc? mpoint_.mettre_a_jour(schema_temps().temps_courant());
   return Equation_base::preparer_calcul();
 }
 
