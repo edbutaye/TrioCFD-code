@@ -360,6 +360,11 @@ void Triple_Line_Model_FT_Disc::completer()
   // Rc_tcl_GridN_ -= Objet_U::precision_geom;
   Rc_inject_ = std::fmax(Rc_inject_,DMINFLOAT);
 
+  assert(tag_tcl_ == ref_eq_interf_.valeur().maillage_interface().get_mesh_tag());
+  //const Transport_Interfaces_FT_Disc& transport = ref_eq_interf_.valeur();
+  //const Maillage_FT_Disc& maillage = transport.maillage_interface();
+  //tag_tcl_ = maillage.get_mesh_tag();
+
   // how to access fluid diphasique? Through (eq_ns or pb)? We have neither so far.
   // const Fluide_Diphasique& fluid_dipha = ref_cast(Fluide_Diphasique, milieu); -> no it's not a Fluide_diphasique
   // Or maybe we can give access to fluide_dipha_ from Convection_Diffusion_Temperature_FT_Disc.
@@ -1197,7 +1202,7 @@ void Triple_Line_Model_FT_Disc::compute_TCL_fluxes_in_all_boundary_cells(ArrOfIn
               {
 
                 Cerr <<  "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! " << finl;
-                Cerr << "[TCL!!!]: INDICATTICE and FT are NOT CONSISTENT "<< finl;
+                Cerr << "[TCL!!!]: INDICATRICE and FT are NOT CONSISTENT "<< finl;
                 Cerr << "[TCL!!!]: elem number " << elemi<< " | indicatrice " << indica(elemi,0) << finl;
                 Cerr << "[TCL!!!]: index " << index<< " | iteration " << ii << finl;
                 Cerr <<  "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! " << finl;

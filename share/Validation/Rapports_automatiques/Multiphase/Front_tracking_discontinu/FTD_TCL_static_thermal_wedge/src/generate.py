@@ -72,7 +72,7 @@ def makeCase(dest="TEST", Nx=refNx, Ny=refNy,degliq=refdegliq,offset=refoffset, 
    print("\tCasTest %s calc %d"%(dest,1))
    shutil.copy("post_run", dest)
    # shutil.copy("data_extract.sh", dest)
-   for nmeso in [2,4,6,8]:
+   for nmeso in [1,2,4,6,8,16]:
       data2 = re.sub(r'deactivate',str(""),data) # To activate TCL
       data2 = re.sub(r'n_extend_meso 4',"n_extend_meso %d"%nmeso,data2) # To activate TCL
       dest2 = os.path.join(dest,"TCL%d"%nmeso)

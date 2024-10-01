@@ -130,8 +130,8 @@ def reorderingForContinuity(interf, check=True, printer=False):
       x=coords[:,0]
       y=coords[:,1]
       y_TCL, i_TCL  = y.getMinValue()
-      elem_TCL = interf.getCellIdsLyingOnNodes([i_TCL],False)[0]
-      if interf.getNodeIdsOfCell(i_TCL)[0] != elem_TCL:
+      fa7_TCL = interf.getCellIdsLyingOnNodes([i_TCL],False)[0]
+      if interf.getNodeIdsOfCell(fa7_TCL)[0] != i_TCL:
          raise Exception("The first som of the futur First elem is not the TCL! consider something like new orientation")
          interf.changeOrientationOfCells()
          ordered_list = interf.orderConsecutiveCells1D()

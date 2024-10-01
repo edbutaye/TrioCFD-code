@@ -1,0 +1,272 @@
+# Euler_Explicit in FTD #
+dimension 2
+PrecisionGeom 1e-15
+
+domaine dom
+
+# BEGIN MESH #
+Mailler dom
+{
+
+    Pave pave1
+    {
+        origine 0. 0. /* 0. */
+        longueurs 1 1 /* 1. */
+        nombre_de_noeuds 11 2
+        Facteurs 1. 1.0 /* 1 */
+    }
+    {
+        bord periox   X = 0.         0. <= Y <= 1
+        bord periox   X = 1          0. <= Y <= 1
+        bord bot      Y = 0.         0. <= X <= 1
+        bord top      Y = 1          0. <= X <= 1
+      /* bord front     Y = 0.  	      0. <= X <= 1 	0. <= Z <= 1 */
+       /* bord back      Y = 1  	      0. <= X <= 1      0. <= Z <= 1 */
+    }
+}
+transformer dom x*2 y*0.2 /* z*0.2 */
+# END MESH #
+
+# BEGIN PARTITION
+Partition dom
+{
+    Partitionneur tranche { tranches 2 1 }
+    Larg_joint 2
+    Nom_Zones DOM
+}
+Fin
+END PARTITION #
+
+# BEGIN SCATTER
+Scatter ./DOM.Zones dom
+END SCATTER #
+
+Probleme_FT_Disc_gen pb
+Schema_Euler_explicite  sch
+Lire sch
+{
+    nb_pas_dt_max 10
+    tinit 0.
+    tmax 6.
+    dt_min 1e-13
+    dt_max 2.0
+    dt_impr 2.e-6
+    dt_sauv 0.0025
+    facsec 100.
+    seuil_statio 1e-12
+    diffusion_implicite 0
+    # dt_start dt_min #
+}
+
+Associate pb dom
+Associate pb sch
+VDF dis
+Discretize pb dis
+system "mkdir -p lata"
+option_vdf { All_options } # To set the BC of pressure on the Boundary, not at the center of ghost cells! #
+Lire pb
+{
+    solved_equations
+    {
+        Navier_stokes_FT_disc                         hydraulique
+        Transport_interfaces_FT_disc                  interf
+        convection_diffusion_temperature_FT_disc      thermique_liq
+        # convection_diffusion_temperature_OneFluid_FT_disc thermique_OF #
+        # convection_diffusion_temperature_GFM_FT_disc  thermique_GFM #
+    }
+
+    Fluide_diphasique
+    {
+        fluide1 Fluide_Incompressible # water #
+        {
+            mu champ_uniforme       1 0
+            rho champ_uniforme      1 1.
+            lambda champ_uniforme   1 0.
+            cp champ_uniforme       1 1.
+        }
+        fluide0 Fluide_Incompressible # vapeur #
+        {
+            mu champ_uniforme       1 0
+            rho champ_uniforme      1 1.0
+            lambda champ_uniforme   1 0.
+            cp champ_uniforme       1 1.0
+        }
+        sigma   Champ_Uniforme 1            0.
+        # sigma_t   Champ_Uniforme 1          5.0e-4 #
+        chaleur_latente Champ_Uniforme 1   -10.
+    }
+
+    hydraulique
+    {
+        modele_turbulence null { }
+        solveur_pression GCP { precond ssor { omega 1.5 } seuil 1e-12 impr }
+        convection { quick }
+        diffusion { negligeable }
+        sources { Source_Qdm Champ_Fonc_xyz dom 2 0.05 0. }
+        conditions_initiales { vitesse champ_uniforme 2 0.1 0. }
+        projection_initiale 0
+        dt_projection 1.e-10 1.e-18
+        equation_interfaces_proprietes_fluide interf
+         # equation_temperature_mpoint thermique_GFM
+        mpoint_inactif_sur_qdm 
+        new_mass_source
+        terme_gravite grad_I #
+        boundary_conditions
+        {
+            # right   sortie_libre_rho_variable champ_front_fonc_xyz 1 0. #
+            periox Periodique
+            bot     Symetrie
+            top     Symetrie
+            # left    frontiere_ouverte_vitesse_imposee champ_front_Fonc_txyz 2 0.1*(1.+t) 0. #
+            # front  Symetrie #
+            # back   Symetrie #
+        }
+    }
+    interf
+    {
+        type_indic_faces standard
+        methode_interpolation_v vdf_lineaire
+        methode_transport vitesse_interpolee hydraulique
+        conditions_initiales { fonction (x-0.1) }
+        VOFlike_correction_volume 0 # Flag to activate the VOF-like volume conservation (dI/dt) #
+        nb_iterations_correction_volume 1 # to get the correct dI/dt #
+        nb_lissage_correction_volume 1 # To smooth the dI/dt correction to avoid pikes on the interface #
+        n_iterations_distance 4
+        # Bloc NO Remesh #
+        remaillage {
+            pas 1e12
+            nb_iter_remaillage 0
+            critere_arete 0.35
+            critere_remaillage 0.35
+            pas_lissage 1e12
+            relax_barycentrage 0.1
+            facteur_longueur_ideale 1.5
+            nb_iter_barycentrage 0
+            nb_iter_correction_volume 0 # 1 ? #
+            seuil_dvolume_residuel 1e-15
+            lissage_courbure_coeff -0.0
+            lissage_courbure_iterations_systematique 0
+            lissage_courbure_iterations_si_remaillage 0
+        }
+        # End Remesh Best #
+        collisions
+        {
+            active
+            juric_local  phase_continue 1
+            type_remaillage Juric { source_isovaleur indicatrice }
+        }
+        parcours_interface { Correction_Parcours_Thomas }
+        boundary_conditions
+        {
+            bot    Paroi_FT_disc Symetrie
+            periox Paroi_FT_disc Symetrie
+            top    Paroi_FT_disc Symetrie
+        }
+    }
+#
+    thermique_OF
+    {
+        diffusion { negligeable }
+        convection { quick }
+        boundary_conditions
+        {
+            bot     Symetrie
+            top     Symetrie
+            periox  Periodique
+        }
+        conditions_initiales { Temperature Champ_Fonc_xyz dom 1 sin((x-0.1)*2*PI/2.) }
+    }
+    thermique_GFM
+    {
+        prescribed_mpoint -10. 
+        equation_interface interf
+        equation_navier_stokes hydraulique
+        phase 1
+        stencil_width  5
+        diffusion { negligeable }
+        convection { quick }
+        boundary_conditions
+        {
+            bot     Symetrie
+            top     Symetrie
+            periox  Periodique
+        }
+        conditions_initiales { Temperature_thermique_GFM Champ_Fonc_xyz dom 1 (x_ge_0.1)*(x-0.1)+(x_lt_0.1)*(x+1.9) }
+    }
+#
+    
+    thermique_liq
+    {
+        equation_navier_stokes hydraulique
+        equation_interface interf
+        phase 1
+        diffusion { negligeable }
+        convection { quick }
+        boundary_conditions
+        {
+            bot1   Symetrie
+            top1    Symetrie
+            periox  Periodique
+        }
+        conditions_initiales { Temperature_thermique_liq Champ_Fonc_xyz dom 1 x-0.1 }
+        
+
+    } 
+    liste_postraitements
+    {
+        postraitement_ft_lata post1 {
+            format Lata
+            fichier lata/post
+            champs dt_post 1.0e-9 {
+                VOLUME_MAILLE elem
+                indicatrice_interf elem
+                Temperature_thermique_vap elem
+                # potentiel_marangoni_elements elem #
+                # temperature elem #
+                vitesse elem
+                pression elem
+                interfacial_area elem
+                distance_interface_elem_interf elem
+                pression_laplacien_d elem
+                second_membre_projection elem
+                vitesse faces
+                vitesse_delta_interface faces
+                terme_convection_vitesse faces
+                terme_diffusion_vitesse faces
+                # flux_tmp_interf faces  #
+            }
+            interfaces interf {
+                courbure som
+                vitesse som
+                vitesse_repere_local som
+                COMPO_CONNEXE elem
+                PE elem
+                PE_LOCAL elem
+                #
+                grads_sigma som
+                lapl_Ti som
+                surface_tension som
+                temperature som
+                #
+            }
+        }
+    }
+
+    sauvegarde binaire source.sauv
+    sauvegarde xyz source.xyz
+# Reprise binaire ../R0/source.sauv #
+# Reprise xyz ../R0/source.xyz #
+# resume_last_time xyz ../R0/source.xyz #
+
+}
+EcritureLectureSpecial 0
+
+Imprimer_flux dom { bot }
+
+Imprimer_flux_sum dom { bot }
+
+Solve pb
+
+EcritureLectureSpecial 0
+End
+
