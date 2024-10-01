@@ -932,7 +932,7 @@ void Convection_Diffusion_Temperature_FT_Disc::correct_mpoint()
 void Convection_Diffusion_Temperature_FT_Disc::compute_divergence_free_velocity_extension()
 {
   Navier_Stokes_FT_Disc& ns = ref_cast(Navier_Stokes_FT_Disc, ref_eq_ns_.valeur());
-  vitesse_convection_->valeurs() = (bool)(explicit_u_NS_) ? ns.inconnue().valeurs() : ns.inconnue().futur();
+  vitesse_convection_->valeurs() = (bool)(explicit_u_NS_) ? ns.inconnue()->valeurs() : ns.inconnue()->futur();
   // Projection of the convective field :
   //SolveurSys solveur_pression(ns.get_solveur_pression());
   OWN_PTR(Solveur_Masse_base) solveur_masse_fictitious(ns.solv_masse()); // Copy the operator to change the coeff
@@ -1111,7 +1111,7 @@ DoubleTab& Convection_Diffusion_Temperature_FT_Disc::derivee_en_temps_inco(Doubl
       const DoubleTab& val_vitesse_ns = (bool)(explicit_u_NS_) ? vitesse_ns->valeurs(): vitesse_ns->futur();
       ns.calculer_delta_u_interface(vitesse_convection_, phase_, correction_courbure_ordre_);
       vitesse_convection_->valeurs() += val_vitesse_ns;
-      //Cerr << inconnue().temps()  << " =! " << vitesse_ns.temps() << " " << vitesse_convection_.temps() << finl;
+      //Cerr << inconnue()->temps()  << " =! " << vitesse_ns.temps() << " " << vitesse_convection_.temps() << finl;
       //Process::exit();
     }
   else

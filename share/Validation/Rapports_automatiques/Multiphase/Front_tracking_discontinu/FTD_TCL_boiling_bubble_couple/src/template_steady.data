@@ -128,27 +128,28 @@ Pb_conduction pb2
 Schema_Euler_explicite  sch
 Lire sch
 {
-   nb_pas_dt_max 1000000000 # 12 HACK #
-   tinit 0.
-   tmax 15. # 50e-3 #
-   tcpumax 23.75
-   dt_min 1.e-18
-   dt_max 1.e-3
-   # 1e-7 is necessary on coa test otherwise it is unstable at 89.4e-4 with remesh BEST #
-   dt_impr 2.e-6
-   impr_diffusion_implicite 1
-   dt_sauv 0.5
-   facsec 1.
-   seuil_statio 1e-12
-   diffusion_implicite 1
-   dt_start dt_min
-   seuil_diffusion_implicite 1e-6
-   periode_sauvegarde_securite_en_heures 0.5
+    nb_pas_dt_max 1000000000 # 12 HACK #
+    tinit 0.
+    tmax 15. # 50e-3 #
+    tcpumax 23.75
+    dt_min 1.e-18
+    dt_max 1.e-3
+    # 1e-7 is necessary on coa test otherwise it is unstable at 89.4e-4 with remesh BEST #
+    dt_impr 2.e-6
+    impr_diffusion_implicite 1
+    dt_sauv 0.5
+    facsec 1.
+    seuil_statio 1e-12
+    diffusion_implicite 1
+    dt_start dt_min
+    seuil_diffusion_implicite 1e-6
+    periode_sauvegarde_securite_en_heures 0.5
 }
 Associate pb1 dom_fluide
 Associate pb1 fluide
 
 Associate pb2 dom_solide
+Associate pb2 sol
 
 Probleme_Couple pbc
 Associate pbc pb1
@@ -203,76 +204,77 @@ Ou pas a saturation:
         {
             solveur petsc gcp { precond block_jacobi_ilu { level 0 } rtol 1.e-13 impr }
         }
-      modele_turbulence null { }
-      solveur_pression GCP { precond ssor { omega 1.5 } seuil 1e-14 impr }
-      convection { quick }
-      diffusion { }
-      conditions_initiales { vitesse champ_uniforme 2 0. 0. }
-      projection_initiale 0
-      dt_projection 1.e-10 1.e-18
-      equation_interfaces_proprietes_fluide interf
-      equation_temperature_mpoint thermique
-      equation_temperature_mpoint_vapeur thermique_vapeur 
-      new_mass_source   # -> it's a flag, when not activated, the variable is 0 #
-      # when new_mass_source is used, it forces the use of the new jump(1/rho)*ai*mp as a source term in the RHS of Poisson instead of the historical div(delta_u) #
-      interpol_indic_pour_dI_dt interp_modifiee # interp_ai_based #
-      OutletCorrection_pour_dI_dt CORRECTION_GHOST_INDIC
-      terme_gravite grad_I
-      boussinesq_approximation
-      boundary_conditions 
-      {
-      right   sortie_libre_rho_variable champ_front_fonc_xyz 1 0. # -958.37*9.81*(Y-0.009) cela depend de l'option terme_gravite #
-      bot     paroi_fixe 
-      up      sortie_libre_rho_variable champ_front_uniforme 1 0.
-      left    Symetrie
-      }
-   }
-   interf
-   {
-      type_indic_faces standard # interpolation to faces of indic : { STANDARD, MODIFIEE, AI_BASED } #
-      # interpolation_repere_local #
-      methode_interpolation_v vdf_lineaire
-      methode_transport vitesse_interpolee hydraulique
-      conditions_initiales { fonction 1. }
-      VOFlike_correction_volume 1 # Flag to activate the VOF-like volume conservation (dI/dt) #
-      nb_iterations_correction_volume 1 # to get the correct dI/dt #
-      nb_lissage_correction_volume 1 # To smooth the dI/dt correction to avoid pikes on the interface #
-      n_iterations_distance 8
-      # Bloc Remesh Best # 
-      remaillage {
-                    pas 1e-12
-                    nb_iter_remaillage 3
-                    critere_arete 0.35
-                    pas_lissage 1e-12
-                    relax_barycentrage 0.1
-                    facteur_longueur_ideale 1.0
-                    nb_iter_barycentrage 1
-                    nb_iter_correction_volume 3
-                    seuil_dvolume_residuel 1e-15
-                    lissage_courbure_coeff -0.02
-                    lissage_courbure_iterations_systematique 1
-                    lissage_courbure_iterations_si_remaillage 5
-      }
-      # End Remesh Best #
-      collisions
-      {
-                active
-                juric_local  phase_continue 1 
-                type_remaillage Juric { source_isovaleur indicatrice }
-      }
-      parcours_interface { Correction_Parcours_Thomas }
-      boundary_conditions
-      {
-      bot    Paroi_FT_disc constant champ_front_fonc_xyz 1 @theta@
-      right  Paroi_FT_disc Symetrie
-      up     Paroi_FT_disc Symetrie
-      left   Paroi_FT_disc Symetrie
-      }
-   }
-   
-   thermique
-   {
-      parametre_equation parametre_diffusion_implicite
+        modele_turbulence null { }
+        solveur_pression GCP { precond ssor { omega 1.5 } seuil 1e-14 impr }
+        convection { quick }
+        diffusion { }
+        conditions_initiales { vitesse champ_uniforme 2 0. 0. }
+        projection_initiale 0
+        dt_projection 1.e-10 1.e-18
+        equation_interfaces_proprietes_fluide interf
+        equation_temperature_mpoint thermique
+        equation_temperature_mpoint_vapeur thermique_vapeur
+        new_mass_source   # -> it's a flag, when not activated, the variable is 0 #
+        # when new_mass_source is used, it forces the use of the new jump(1/rho)*ai*mp as a source term in the RHS of Poisson instead of the historical div(delta_u) #
+        interpol_indic_pour_dI_dt interp_modifiee # interp_ai_based #
+        OutletCorrection_pour_dI_dt CORRECTION_GHOST_INDIC
+        terme_gravite grad_I
+        boussinesq_approximation
+        boundary_conditions
+        {
+            right   sortie_libre_rho_variable champ_front_fonc_xyz 1 0. # -958.37*9.81*(Y-0.009) cela depend de l'option terme_gravite #
+            bot     paroi_fixe
+            up      sortie_libre_rho_variable champ_front_uniforme 1 0.
+            left    Symetrie
+        }
+    }
+    interf
+    {
+        type_indic_faces standard # interpolation to faces of indic : { STANDARD, MODIFIEE, AI_BASED } #
+        # interpolation_repere_local #
+        methode_interpolation_v vdf_lineaire
+        methode_transport vitesse_interpolee hydraulique
+        conditions_initiales { fonction 1. }
+        VOFlike_correction_volume 1 # Flag to activate the VOF-like volume conservation (dI/dt) #
+        nb_iterations_correction_volume 1 # to get the correct dI/dt #
+        nb_lissage_correction_volume 1 # To smooth the dI/dt correction to avoid pikes on the interface #
+        n_iterations_distance 8
+        # Bloc Remesh Best #
+        remaillage {
+            pas 1e-12
+            nb_iter_remaillage 3
+            critere_arete 0.35
+            pas_lissage 1e-12
+            relax_barycentrage 0.1
+            facteur_longueur_ideale 1.0
+            nb_iter_barycentrage 1
+            nb_iter_correction_volume 3
+            seuil_dvolume_residuel 1e-15
+            lissage_courbure_coeff -0.02
+            lissage_courbure_iterations_systematique 1
+            lissage_courbure_iterations_si_remaillage 5
+        }
+        # End Remesh Best #
+        collisions
+        {
+            active
+            juric_pour_tout
+            juric_local  phase_continue 1
+            type_remaillage Juric { source_isovaleur indicatrice }
+        }
+        parcours_interface { Correction_Parcours_Thomas }
+        boundary_conditions
+        {
+            bot    Paroi_FT_disc constant champ_front_fonc_xyz 1 @theta@*(x_ge_200.e-6)+135*(x_lt_200.e-6) # to pinch contact line #
+            right  Paroi_FT_disc Symetrie
+            up     Paroi_FT_disc Symetrie
+            left   Paroi_FT_disc Symetrie
+        }
+    }
+
+    thermique
+    {
+        parametre_equation parametre_diffusion_implicite
         {
             solveur petsc gcp { precond block_jacobi_ilu { level 0 } rtol 1.e-13 impr }
         }
@@ -301,7 +303,7 @@ Ou pas a saturation:
         {
             solveur petsc gcp { precond block_jacobi_ilu { level 0 } rtol 1.e-13 impr }
         }
-        # Pb quand on fait ça, il ne calcul pas le dt_stab de convection en FTD?? #
+        # Pb quand on fait ca, il ne calcul pas le dt_stab de convection en FTD?? #
         # Parametre_equation parametre_implicite { resolution_explicite } #
         equation_interface interf
         equation_navier_stokes hydraulique
@@ -376,9 +378,10 @@ Ou pas a saturation:
                 PE elem
                 PE_LOCAL elem
             }
-    }   
-   }
-   sauvegarde binaire steady.sauv
+        }
+    }
+
+    sauvegarde binaire steady.sauv
 # resume_last_time binaire ../R0/source.sauv #
 
 }
@@ -408,7 +411,7 @@ Read pb2
     {
         Format lata
         fichier slata/steady
-        fields dt_post 2.0e-1
+        fields dt_post 1.0e-4
         {
             temperature elem
         }

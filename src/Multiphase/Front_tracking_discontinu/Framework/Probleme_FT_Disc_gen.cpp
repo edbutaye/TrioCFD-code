@@ -114,18 +114,10 @@ void Probleme_FT_Disc_gen::lire_solved_equations(Entree& is)
     if (eq_types[i].debute_par("TRANSPORT_INTERFACES"))
       add_FT_equation(eq_name[i], eq_types[i]);
 
-  /* Add Transport_Interfaces at second */
-  for (auto& itr : solved_eqs)
-    if (Nom(itr.second).debute_par("TRANSPORT_INTERFACES"))
-      add_FT_equation(itr.first, itr.second);
-
   /* Add the remaining */
   for (int i = 0; i < static_cast<int>(eq_types.size()); i++)
     if (eq_types[i] != "NAVIER_STOKES_FT_DISC" && !eq_types[i].debute_par("TRANSPORT_INTERFACES"))
       add_FT_equation(eq_name[i], eq_types[i]);
- /* for (auto& itr : solved_eqs)
-    if (itr.second != "NAVIER_STOKES_FT_DISC" && !Nom(itr.second).debute_par("TRANSPORT_INTERFACES"))
-      add_FT_equation(itr.first, itr.second);  */
 }
 
 void Probleme_FT_Disc_gen::typer_lire_milieu(Entree& is)
@@ -365,12 +357,6 @@ bool Probleme_FT_Disc_gen::updateGivenFields()
 {
   // add: fill the lists of TCL model if actived, Which will be used for updated the BCs
   if (tcl().is_activated())
-    {
-      ArrOfInt elems_with_CL_contrib, faces_with_CL_contrib;
-      ArrOfDouble mpoint_from_CL, Q_from_CL;
-      tcl().compute_TCL_fluxes_in_all_boundary_cells(elems_with_CL_contrib, faces_with_CL_contrib, mpoint_from_CL, Q_from_CL);
-    }
-  // BCs are also updated by updateGivenFields(), firstly fill tcl list, then update BCs
     tcl().compute_TCL_fluxes_in_all_boundary_cells();
   return Probleme_base::updateGivenFields();
 }

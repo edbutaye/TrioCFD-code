@@ -210,16 +210,6 @@ static void FT_disc_calculer_champs_rho_mu_nu_mono(const Domaine_dis_base& zdis,
     }
 }
 
-Navier_Stokes_FT_Disc::Navier_Stokes_FT_Disc()
-{
-  variables_internes_ = new Navier_Stokes_FT_Disc_interne;
-}
-
-Navier_Stokes_FT_Disc::~Navier_Stokes_FT_Disc()
-{
-  delete variables_internes_;
-}
-
 Sortie& Navier_Stokes_FT_Disc::printOn(Sortie& os) const
 {
   return Navier_Stokes_std::printOn(os);
@@ -2266,8 +2256,7 @@ void Navier_Stokes_FT_Disc::calculer_dI_dt(DoubleVect& dI_dt, const DoubleTab& t
   if (delta_rho != 0)
     rho_0_sur_delta_rho = rho_0 / delta_rho;
 
-  const DoubleTab& tab_vitesse = inconnue().valeurs();
-  const IntTab& face_voisins = domaine_dis().face_voisins();
+  const IntTab& face_voisins = domaine_dis()->face_voisins();
 
   OBS_PTR(Transport_Interfaces_FT_Disc) &refeq_transport = variables_internes().ref_eq_interf_proprietes_fluide;
   const Transport_Interfaces_FT_Disc& eq_transport = refeq_transport.valeur();
@@ -2803,7 +2792,7 @@ void Navier_Stokes_FT_Disc::compute_boussinesq_additional_gravity(const Convecti
   const int phase_eq = eq.get_phase();
   const DoubleTab& temperature_eq = eq.inconnue().valeurs();
   const Fluide_Incompressible& fluide_phase_eq = fluide_dipha.fluide_phase(phase_eq);
-  const DoubleTab& tab_beta_th_phase_eq = fluide_phase_eq.beta_t().valeurs();
+  const DoubleTab& tab_beta_th_phase_eq = fluide_phase_eq.beta_t()->valeurs();
   const double beta_th_phase_eq = tab_beta_th_phase_eq(0, 0);
 
   for (int face = 0; face < gravite_face.dimension(0); face++)
@@ -2850,7 +2839,7 @@ DoubleTab& Navier_Stokes_FT_Disc::derivee_en_temps_inco(DoubleTab& vpoint)
       {
         FT_disc_calculer_champs_rho_mu_nu_dipha(domaine_dis(), fluide_diphasique(), refeq_transport->inconnue().valeurs(),
                                                 // (indicatrice)
-                                                champ_rho_elem_.valeur().valeurs(), champ_nu_.valeur().valeurs(), champ_mu_.valeur().valeurs(), champ_rho_faces_.valeur().valeurs());
+                                                champ_rho_elem_->valeurs(), champ_nu_->valeurs(), champ_mu_->valeurs(), champ_rho_faces_->valeurs());
       }
     else
       {
@@ -2875,10 +2864,10 @@ DoubleTab& Navier_Stokes_FT_Disc::derivee_en_temps_inco(DoubleTab& vpoint)
   //                div (mu * (grad(v)+tr(grad(v))))
   //                (on a associe "mu" a la "diffusivite" de l'operateur,
   //                 voir Navier_Stokes_FT_Disc::lire)
-  terme_diffusif.calculer(la_vitesse.valeurs(), variables_internes().terme_diffusion.valeur().valeurs());
+  terme_diffusif.calculer(la_vitesse->valeurs(), variables_internes().terme_diffusion->valeurs());
   if (correction_diffusion_pch_)
     {
-      DoubleTab& diffusion = variables_internes().terme_diffusion.valeur().valeurs();
+      DoubleTab& diffusion = variables_internes().terme_diffusion->valeurs();
       DoubleTab diffusion_liq(diffusion);
       DoubleTab diffusion_vap(diffusion);
       REF(Transport_Interfaces_FT_Disc) & refeq_transport =
@@ -2891,7 +2880,6 @@ DoubleTab& Navier_Stokes_FT_Disc::derivee_en_temps_inco(DoubleTab& vpoint)
           if (variables_internes().ref_equation_mpoint_.non_nul())
             {
               const Convection_Diffusion_Temperature_FT_Disc& eq_temp = variables_internes().ref_equation_mpoint_.valeur();
-              eq_temp.vitesse_pour_transport().valeurs();
               phase_liq = eq_temp.get_phase();
               terme_diffusif.calculer(eq_temp.vitesse_pour_transport().valeurs(),
                                       diffusion_liq);
@@ -2899,7 +2887,6 @@ DoubleTab& Navier_Stokes_FT_Disc::derivee_en_temps_inco(DoubleTab& vpoint)
           if (variables_internes().ref_equation_mpoint_vap_.non_nul())
             {
               const Convection_Diffusion_Temperature_FT_Disc& eq_temp = variables_internes().ref_equation_mpoint_vap_.valeur();
-              eq_temp.vitesse_pour_transport().valeurs();
               phase_vap = eq_temp.get_phase();
               terme_diffusif.calculer(eq_temp.vitesse_pour_transport().valeurs(),
                                       diffusion_vap);
@@ -2990,11 +2977,11 @@ DoubleTab& Navier_Stokes_FT_Disc::derivee_en_temps_inco(DoubleTab& vpoint)
   if (schema_temps().diffusion_implicite() && !calcul_explicite)
     {
       terme_convection_valeurs = 0;
-      derivee_en_temps_conv(terme_convection_valeurs, la_vitesse.valeurs());
+      derivee_en_temps_conv(terme_convection_valeurs, la_vitesse->valeurs());
     }
   else
     {
-      terme_convectif.calculer(la_vitesse.valeurs(), terme_convection_valeurs);
+      terme_convectif.calculer(la_vitesse->valeurs(), terme_convection_valeurs);
     }
   solveur_masse->appliquer(variables_internes().terme_convection->valeurs());
 
@@ -3214,7 +3201,7 @@ DoubleTab& Navier_Stokes_FT_Disc::derivee_en_temps_inco(DoubleTab& vpoint)
 
       DoubleTrav tt(vpoint);
       tt = vpoint;
-      derivee = inconnue().valeurs();
+      derivee = inconnue()->valeurs();
       Equation_base::Gradient_conjugue_diff_impl(tt, derivee);
 
       solveur_masse->set_name_of_coefficient_temporel("no_coeff");

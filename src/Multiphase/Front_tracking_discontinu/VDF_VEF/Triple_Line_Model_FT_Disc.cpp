@@ -160,7 +160,7 @@ void Triple_Line_Model_FT_Disc::set_param(Param& p)
   p.ajouter("initial_CL_xcoord", &initial_CL_xcoord_); // XD_ADD_P floattant Initial interface position (unused)
   p.ajouter("read_via_file", &read_via_file_);
   p.ajouter("Rc_tcl_GridN", &Rc_tcl_GridN_); // XD_ADD_P floattant Radius of nucleate site; [in number of grids]
-  p.ajouter("Rc_inject", &Rc_inject_);
+  p.ajouter("Rc_inject", &Rc_inject_); // XD_ADD_P floattant Radius of bubble reinjected; [in m]
   p.ajouter("thetaC_tcl", &thetaC_tcl_); // XD_ADD_P floattant imposed contact angle [in degree] to force bubble pinching / necking once TCL entre nucleate site
   p.ajouter_flag("reinjection_tcl", &reinjection_tcl_); // XD_ADD_P flag This flag activates the automatic injection of a new nucleate seed with a specified shape when the temperature in the nucleation site becomes higher than a certain threshold (tempC_tcl). The shape of the seed is determined by the radius Rc_tcl_GridN and the contact angle thetaC_tcl. The nucleation site is considered free when there are no bubbles present. The site size is defined by Rc_tcl_GridN. This temperature threshold, termed tempC_tcl, is the activation temperature. Setting this temperature implies a wall temperature, therefore, activating reinjection_tcl is ONLY possible for a simulation coupled with solid conduction. NL2 When reinjection_tcl is activated, the values of tempC_tcl (default 10K), Rc_tcl_GridN (default 4 grid sizes), and thetaC_tcl (default 150 degrees) should be provided. Unless (STRONGLY not recommended), the default values (indicated in parentheses) will be used. NL2 If reinjection_tcl is not activated (by default), the mechanism of Numerically forcing bubble pinching/necking will be used for multi-cycle simulation. Once the Triple Contact Line (TCL) enters the nucleation site, a big contact angle thetaC_tcl is imposed to initiate bubble pinching/necking. After the bubble pinching ends, the large bubble above will depart, leaving the remaining part to serve as the nucleate seed. This process is equivalent to immediately inserting a new seed with a prescribed shape (determined by the nucleation site size and contact angle) once a bubble departs. Site size is defined by Rc_tcl_GridN (default 4 grid sizes). Contact angle thetaC_tcl (default 150 degrees). Useful for a standalone (not coupling with solid conduction) simulation.
   p.ajouter_flag("distri_first_facette", &distri_first_facette_); // XD_ADD_P flag This flag determines whether to distribute the Qtcl into all grids occupied by the first facette according to their area proportions. When set, the flux is redistributed into all grids occupied by the first facette based on their area proportions. Default value is 0, the flux is distributed differently: similar to the Meso zone, it is only distributed to grids within the Micro-zone (where the height of the front y is smaller than the size of Micro ym). The distribution of this flux is logarithmically proportional to y between 5.6nm (here interpreted as the value 0 in logarithm) and ym. In practice, in most cases, it will distribute all the flux locally in the first grid.
@@ -360,10 +360,14 @@ void Triple_Line_Model_FT_Disc::completer()
   // Rc_tcl_GridN_ -= Objet_U::precision_geom;
   Rc_inject_ = std::fmax(Rc_inject_,DMINFLOAT);
 
-  assert(tag_tcl_ == ref_eq_interf_.valeur().maillage_interface().get_mesh_tag());
-  //const Transport_Interfaces_FT_Disc& transport = ref_eq_interf_.valeur();
-  //const Maillage_FT_Disc& maillage = transport.maillage_interface();
-  //tag_tcl_ = maillage.get_mesh_tag();
+  //assert(tag_tcl_ == ref_eq_interf_->maillage_interface().get_mesh_tag());
+  const Transport_Interfaces_FT_Disc& transport = ref_eq_interf_.valeur();
+  const Maillage_FT_Disc& maillage = transport.maillage_interface();
+  assert(tag_tcl_ == maillage.get_mesh_tag());
+  if (maillage.temps()<0.)
+    {
+
+    }
 
   // how to access fluid diphasique? Through (eq_ns or pb)? We have neither so far.
   // const Fluide_Diphasique& fluid_dipha = ref_cast(Fluide_Diphasique, milieu); -> no it's not a Fluide_diphasique
@@ -789,9 +793,9 @@ double Triple_Line_Model_FT_Disc::compute_Qint(const DoubleTab& in_out, const do
     {
       if (thetaC_tcl() >= 90.)
         Process::exit(Nom("Triple_Line_Model_FT_Disc::compute_Qint, BAD critial angle to find Micro Layer ") + thetaC_tcl() + " ! Pls set thetaC_tcl in you dataset" );
-      if ((theta_app_loc/3.1415926*180. < thetaC_tcl()) || (theta_app_loc/3.1415926*180. > 90.))
+      if ((theta_app_loc/M_PI*180. < thetaC_tcl()) || (theta_app_loc/M_PI*180. > 90.))
         {
-          Cerr << "[TCL: MESO:] Micro-Layer detected with slope " << theta_app_loc/3.14159326*180. << " distance to wall "<< (yl+yr)/2. <<finl;
+          Cerr << "[TCL: MESO:] Micro-Layer detected with slope " << theta_app_loc/M_PI*180. << " distance to wall "<< (yl+yr)/2. <<finl;
           const double dx =in_out(1,0)-in_out(0,0);
           const double dy =ytop-ybot;
           const double s_meso = sqrt(dx*dx+dy*dy);
@@ -1206,6 +1210,7 @@ void Triple_Line_Model_FT_Disc::compute_TCL_fluxes_in_all_boundary_cells(ArrOfIn
                 Cerr << "[TCL!!!]: elem number " << elemi<< " | indicatrice " << indica(elemi,0) << finl;
                 Cerr << "[TCL!!!]: index " << index<< " | iteration " << ii << finl;
                 Cerr <<  "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! " << finl;
+                Process::exit( "[TCL]: !!! INDICATTICE and FT are NOT CONSISTENT " );
                 continue;
               }
             // else

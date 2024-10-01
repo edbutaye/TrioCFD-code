@@ -7797,8 +7797,9 @@ void Transport_Interfaces_FT_Disc::mettre_a_jour(double temps)
   // Update normal and distance :
   get_update_distance_interface();
   get_update_normale_interface(); // TODO: GB2024 pense a delete car la ligne d'avant le fait deja.
-  variables_internes_->distance_interface.changer_temps(temps);
-  variables_internes_->normale_interface.changer_temps(temps);
+  // TODO GB 2024 : mettre_a_jour ferait un echange_EV en plus de changer temps. Mieux ou pas?
+  variables_internes_->distance_interface->changer_temps(temps);
+  variables_internes_->normale_interface->changer_temps(temps);
 
   // TODO: GB2024
   // get_compute_indicatrice_faces();
