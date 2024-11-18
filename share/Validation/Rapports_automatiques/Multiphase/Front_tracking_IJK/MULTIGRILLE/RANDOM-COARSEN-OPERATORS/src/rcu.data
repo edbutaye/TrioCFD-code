@@ -1,0 +1,96 @@
+IJK_Grid_Geometry DOM
+Lire DOM
+{
+  nbelem_i 48
+  nbelem_j 48
+  nbelem_k 24
+  uniform_domain_size_i 0.006
+  uniform_domain_size_j 0.006
+  uniform_domain_size_k 0.003
+  perio_i
+  perio_j
+}
+
+IJK_Splitting grid_splitting
+Lire grid_splitting
+{
+  ijk_grid_geometry DOM
+  nproc_i 1
+  nproc_j 1
+  nproc_k 1
+}
+
+IJK_FT_double
+{
+  # disable_diphasique #
+  ijk_splitting grid_splitting
+  ijk_splitting_ft_extension 20
+  timestep 3.31e-4
+  timestep_facsec 1
+  tinit 0
+  nb_pas_dt_max 30
+  Boundary_Conditions {
+    bctype_kmin Paroi
+    bctype_kmax Paroi
+  }
+  # champs_a_postraiter 1 tous #
+  dt_post 100000
+  dt_post_stats_bulles 1000000
+  dt_post_stats_plans 100000
+  t_debut_statistiques 0.0
+  champs_a_postraiter 1 GRAD_P
+  check_stop_file stop.txt
+  dt_sauvegarde 99999999
+
+  multigrid_solver {
+    solver_precision mixed
+    $coarsen_operators
+    $mycoarsen
+    ghost_size 1
+    pre_smooth_steps 1 10
+    smooth_steps 1 10
+    relax_jacobi 1 0.7
+    solveur_grossier GCP { seuil 1e-10  precond ssor { omega 1.5 } impr }
+    seuil 1e-9
+    nb_full_mg_steps 2 4 1
+    impr
+  }
+
+  # LECTURE DES INTERFACES DANS UN FICHIER LATA #
+  interfaces
+  {
+    # Soit un fichier genere externe #
+    # Choix1 #
+    fichier_reprise_interface ../../init.sauv.lata
+    timestep_reprise_interface 1
+    # lata_meshname   FTMESH #
+    # Bary et lissage #
+    remaillage_ft_ijk {
+      nb_iter_barycentrage 1
+      relax_barycentrage 1
+      nb_iter_correction_volume 6
+      lissage_courbure_iterations_systematique 0
+    }
+  }
+  # FIN AJOUT #
+  check_divergence
+  gravite 3 -9.81 0. 0.
+  rho_liquide 1000.
+  mu_liquide 1e-3
+  rho_vapeur 600
+  mu_vapeur 1e-3
+  sigma 0.07
+
+  fichier_reprise_vitesse ../../init.sauv.lata
+  timestep_reprise_vitesse 1
+  expression_p_init
+  0.
+  expression_vx_init
+  0.
+  expression_vy_init
+  0.
+  expression_vz_init
+  0.
+}
+# lata convert #
+Fin
