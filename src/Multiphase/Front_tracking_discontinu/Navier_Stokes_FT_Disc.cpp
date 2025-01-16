@@ -1561,6 +1561,950 @@ double compute_indic_ghost(const int elem, const int num_face, const double indi
   return indic_ghost;
 }
 
+<<<<<<< HEAD
+=======
+
+// debut EB
+// On envoie la liste des composantes reelles aux procs des zones_inf
+IntTabFT echanger_recevoir_list_num_compo(ArrOfInt& liste_compo_reelles_to_send, const ArrOfInt& liste_zone_inf, const Schema_Comm_FT& comm)
+{
+  IntTabFT list_compo_recv;
+  list_compo_recv.set_smart_resize(1);
+  int nb_elem_recv=0;
+  const int nb_compo_reelles_to_send=liste_compo_reelles_to_send.size_array();
+
+  comm.begin_comm();
+
+  for (int ind_pe_dest=0; ind_pe_dest<liste_zone_inf.size_array(); ind_pe_dest++)
+    {
+      int PE_dest=liste_zone_inf(ind_pe_dest);
+      for(int ind_compo=0; ind_compo<nb_compo_reelles_to_send; ind_compo++)
+        {
+          const int num_compo=liste_compo_reelles_to_send(ind_compo);
+          assert(PE_dest!=Process::me());
+          comm.send_buffer(PE_dest)  << num_compo;
+        }
+    }
+  comm.echange_taille_et_messages();
+
+  list_compo_recv.resize_array(0);
+  const ArrOfInt& recv_pe_list = comm.get_recv_pe_list();
+  const int nb_recv_pe = recv_pe_list.size_array();
+  for (int i=0; i<nb_recv_pe; i++)
+    {
+      const int pe_source = recv_pe_list[i];
+      Entree& buffer = comm.recv_buffer(pe_source);
+      while(1)
+        {
+          int num_compo_recv=-1;
+          buffer >> num_compo_recv;
+          if (buffer.eof())
+            break;
+          if (num_compo_recv<0) Process::exit();
+          nb_elem_recv++;
+
+          list_compo_recv.append_array(num_compo_recv);
+        }
+    }
+
+  comm.end_comm();
+  list_compo_recv.set_smart_resize(0);
+  list_compo_recv.resize_array(nb_elem_recv);
+
+  return list_compo_recv;
+
+}
+// fin EB
+
+// HMS
+// EB : modif de la fonction en cours pour integration dans Trio. Done ?
+void Navier_Stokes_FT_Disc::calculer_champ_forces_collisions(const DoubleTab& indicatrice, DoubleTab& valeurs_champ, const Transport_Interfaces_FT_Disc& eq_transport, Transport_Interfaces_FT_Disc& eq_transport_non_const, REF(Transport_Interfaces_FT_Disc)& refeq_transport, const Maillage_FT_Disc& maillage)
+{
+
+  static const Stat_Counter_Id count = statistiques().new_counter(1, "calculer_forces_collisions", 0);
+  statistiques().begin_count(count);
+
+//<editor-fold desc="Determiniations des vitesses et positions de chaques particule">
+  Cerr << "Navier_Stokes_FT_Disc::calculer_champ_forces_collisions" << finl;
+  Process::imprimer_ram_totale();
+  /***********************************************/
+  // ETAPE 0 : On recupere les grandeurs d'interet
+  /***********************************************/
+  Modele_Collision_FT& modele_collision_particule = eq_transport_non_const.collision_interface_particule();
+  int& compteur_collisions=modele_collision_particule.compteur_collisions();
+  compteur_collisions+=1;
+
+  const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis().valeur());
+  const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_dis().valeur());
+  // recuperation des vitesse compo et des centres de gravites
+
+  DoubleTab& positions=refeq_transport.valeur().get_positions_compo();
+  DoubleTab& vitesses=refeq_transport.valeur().get_vitesses_compo();
+  const Fluide_Diphasique& mon_fluide = fluide_diphasique();
+  const Particule_Solide& particule_solide=ref_cast(Particule_Solide,fluide_diphasique().fluide_phase(0));
+  double ed = particule_solide.e_dry();
+  const double& rayon_compo=particule_solide.rayon_collision(); // a modifier pour des particules bidisperses ou de tailles differentes
+  const int nb_facettes = maillage.nb_facettes();
+  IntVect compo_connexes_facettes(nb_facettes); // Init a zero
+
+  int nb_compo_tot=positions.dimension(0);
+
+  static const DoubleTab& positions_bords=modele_collision_particule.position_bords();
+  int nb_bords = positions_bords.dimension(1);
+
+  assert(nb_compo_tot != 0);
+  ArrOfInt elem_cg;
+  domaine_vf.domaine().chercher_elements_FT(positions, elem_cg);
+
+  /***********************************************/
+  // ETAPE 0 : Correspondance num eulerien au temps precedent et mauvais num lagrangien actuel
+  /***********************************************/
+  DoubleTab correct_vitesses(nb_compo_tot, dimension), correct_positions(nb_compo_tot, dimension);
+  IntVect copy_elem_cg, correctNum(nb_compo_tot);
+  DoubleTab& F_now=modele_collision_particule.get_F_now();
+  F_now.resize(nb_compo_tot, nb_compo_tot + nb_bords);
+  F_now=0;
+
+  // EB : F_old et F_new sont necessaires pour savoir si la collision entre 2 particules est deja en cours ou pas
+  // En effet, pour calculer la 2eme raideur du modele de collision,
+  // on calcule un Stokes de collision en utilisant la vitesse d'impact. Il faut garder en memoire ce Stokes d'un pas de temps a l'autre de la collision.
+  // Ces 3 tableaux de sont pas optimal car de taille Np^2, avec N_p le nombre de particules.
+  DoubleTab& F_old=modele_collision_particule.get_F_old();
+  DoubleTab& raideur=modele_collision_particule.get_raideur();
+  DoubleTab& e_eff=modele_collision_particule.get_e_eff();
+
+  /***********************************************/
+  // ETAPE 1 : Initialisation des tableaux s'il n'y a pas encore eu de collisions.
+  // Sinon, permutation des tableaux de positions et de vitesses pour assurer
+  // la correspondance entre le numero eulerien au temps n-1 et le numero
+  // lagrangien au temps n (suite a la renumerotation (voir search_connex_components_local_FT et compute_global_connex_components_FT)
+  /***********************************************/
+  // ATTENTION, il ne faut faire un resize qu'au premier pas de temps (t=0).
+  // Lors d'une reprise, on recupere le "compteur collisions" pour ne pas ecraser les tableaux. Sinon, il y aura une erreur dans le calcul de la 2eme raideur a chaque
+  // reprise de calcul.
+  if (compteur_collisions==1)
+    {
+      F_old.resize(nb_compo_tot, nb_compo_tot + nb_bords);
+      raideur.resize(nb_compo_tot, nb_compo_tot + nb_bords);
+      e_eff.resize(nb_compo_tot, nb_compo_tot + nb_bords);
+
+      F_old = 0;
+      raideur=0;
+      e_eff=0;
+    }
+  /***********************************************/
+  // ETAPE 2 : Mise a jour des tables de Verlet
+  // Methode inspiree du papier : X. Fang, J. Tang, H. Luo., Granular damping analysis using an improved discrete element approach, J. Sound Vib., 2007
+  /***********************************************/
+  static IntLists table_Verlet;
+  static IntLists table_Verlet_bord;
+  static ArrOfIntFT liste_composantes_reelles;
+  ArrOfInt list_compo_to_check;
+  static int nb_compo_reelles;
+  static const int is_LC_on=modele_collision_particule.is_LC_activated();
+  nb_compo_reelles= is_LC_on ? 0: nb_compo_tot;
+  if (modele_collision_particule.is_detection_Verlet()==1)
+    {
+      double s_Verlet = modele_collision_particule.get_s_Verlet(); // initialise dans Transport_Interfaces_FT_Disc::preparer_calcul() par 0.3*2*rayon_compo
+      int& nb_dt_Verlet = modele_collision_particule.get_nb_dt_Verlet();
+      int& dt_compute_Verlet = modele_collision_particule.get_dt_compute_Verlet();
+      int& nb_pas_dt_max_Verlet=modele_collision_particule.get_nb_pas_dt_max_Verlet();
+      if (nb_dt_Verlet >= dt_compute_Verlet || schema_temps().nb_pas_dt()==0)
+        {
+          Cerr << "Mise a jour de la table de Verlet - " ;
+
+          // ETAPE A : mise a jour des Linked Cells (methode LC).
+          // Ici, chaque LC est une zone de calcul d'un processeur. On envoie aux LC des zones inf (pour recevoir les LC des zones sup) le numero des compos reelles
+          // On identifie les elements (particules) reels pour chaque processeur
+          if (is_LC_on)
+            {
+              nb_compo_reelles=0;
+              liste_composantes_reelles.resize_array(0);
+              liste_composantes_reelles.set_smart_resize(1);
+              for (int compo=0; compo<elem_cg.size_array(); compo++)
+                {
+                  if (elem_cg(compo)>-1 && elem_cg(compo)<domaine_vf.nb_elem()) liste_composantes_reelles.append_array(compo), nb_compo_reelles++;
+                }
+              liste_composantes_reelles.set_smart_resize(0);
+              liste_composantes_reelles.resize_array(nb_compo_reelles);
+
+              Process::barrier(); // on est oblige d'attendre que tous les procs aient mis a jour leur liste avant de faire l'echange
+              const ArrOfIntFT& liste_zone_inf=modele_collision_particule.get_liste_zone_inf();
+              const Schema_Comm_FT& schema_com= maillage.get_schema_comm_FT();
+              IntTabFT list_compo_virt=echanger_recevoir_list_num_compo(liste_composantes_reelles, liste_zone_inf, schema_com);
+
+              if (nb_compo_reelles>0)
+                {
+                  list_compo_to_check.resize(liste_composantes_reelles.size_array()+list_compo_virt.size_array());
+                  for (int k=0; k<liste_composantes_reelles.size_array()+list_compo_virt.size_array(); k++)
+                    {
+                      if (k<liste_composantes_reelles.size_array()) list_compo_to_check(k)=liste_composantes_reelles(k);
+                      else list_compo_to_check(k)=list_compo_virt(k-liste_composantes_reelles.size_array());
+                    }
+                }
+            }
+
+          // ETAPE B : mise a jour des tables de Verlet
+          // On calcule la distance entre chaque particule de list_compo_to_check. Si elle est inferieure a s (=0.3 * Dp), alors on garde en memoire la paire
+          double max_vi_glob=0;
+          double max_vi=0.;
+          if (nb_compo_reelles>0)
+            {
+              table_Verlet=0;
+              table_Verlet_bord=0;
+              table_Verlet.dimensionner(nb_compo_reelles);
+              table_Verlet_bord.dimensionner(nb_compo_reelles);
+
+              if (is_LC_on)
+                {
+                  for (int ind_compo_i=0; ind_compo_i< nb_compo_reelles; ind_compo_i++)
+                    {
+                      int compo_i=liste_composantes_reelles(ind_compo_i);
+                      double vi=fabs(sqrt( pow(vitesses(compo_i,0),2)+pow(vitesses(compo_i,1),2)+pow(vitesses(compo_i,2),2) ));
+                      if (vi>max_vi) max_vi=vi;
+                      // distance particule-particule
+                      for (int ind_compo_j=ind_compo_i+1; ind_compo_j< list_compo_to_check.size_array(); ind_compo_j++)
+                        {
+                          int compo_j=list_compo_to_check(ind_compo_j);
+                          double dij=sqrt(pow(positions(compo_j,0)-positions(compo_i,0),2)
+                                          +pow(positions(compo_j,1)-positions(compo_i,1),2)
+                                          +pow(positions(compo_j,2)-positions(compo_i,2),2));
+                          if ((dij-2*rayon_compo)<=s_Verlet) table_Verlet[ind_compo_i].add(compo_j);
+                        }
+
+                      // distance particule-paroi
+                      for (int ind_bord=0; ind_bord<nb_bords; ind_bord++)
+                        {
+                          int ori = ind_bord < dimension ? ind_bord : ind_bord - dimension;
+                          double dij=fabs(positions_bords(compo_i,ind_bord)-positions(compo_i,ori));
+                          if ((dij-2*rayon_compo)<=s_Verlet) table_Verlet_bord[ind_compo_i].add(ind_bord);
+                        }
+                    }
+                }
+              else // Methode Verlet "sequentiel" - tous les procs font les memes operations
+                {
+                  for (int compo_i=0; compo_i< nb_compo_reelles; compo_i++)
+                    {
+                      double vi=fabs(sqrt(pow(vitesses(compo_i,0),2)+pow(vitesses(compo_i,1),2)+pow(vitesses(compo_i,2),2)));
+                      if (vi>max_vi) max_vi=vi;
+                      // distance particule-particule
+                      for (int compo_j=compo_i+1; compo_j< nb_compo_tot; compo_j++)
+                        {
+                          double dij=sqrt(pow(positions(compo_j,0)-positions(compo_i,0),2)
+                                          +pow(positions(compo_j,1)-positions(compo_i,1),2)
+                                          +pow(positions(compo_j,2)-positions(compo_i,2),2));
+                          if ((dij-2*rayon_compo)<=s_Verlet) table_Verlet[compo_i].add(compo_j);
+                        }
+                      // distance particule-paroi
+                      for (int ind_bord=0; ind_bord<nb_bords; ind_bord++)
+                        {
+                          int ori = ind_bord < dimension ? ind_bord : ind_bord - dimension;
+                          double dij=fabs(positions_bords(compo_i,ind_bord)-positions(compo_i,ori));
+                          if ((dij-2*rayon_compo)<=s_Verlet) table_Verlet_bord[compo_i].add(ind_bord);
+                        }
+                    }
+                }
+            }
+
+          max_vi_glob=mp_max(max_vi); // si on fait du LC, alors on prend le max, sinon tous les procs ont la meme valeur donc mp_max(max_vi)=max_vi
+          // calcul du prochain pas de temps ou il faudra remettre a jour les tables de Verlet
+          int pas_dt_compute_min= (max_vi_glob>0) ? static_cast<int>(floor((s_Verlet/(2*max_vi_glob))/schema_temps().pas_de_temps())) : nb_pas_dt_max_Verlet;
+          dt_compute_Verlet=std::min(pas_dt_compute_min,nb_pas_dt_max_Verlet);
+          Cerr << "prochaine mise a jour dans  " <<dt_compute_Verlet << " pas de temps." << finl;
+          nb_dt_Verlet=0;
+        }
+      nb_dt_Verlet++;
+    }
+  /***********************************************/
+  // ETAPE 2 : calcul de la force de contact (discrete, par particule)
+  /***********************************************/
+  static const IntVect& orientation = domaine_vdf.orientation();
+  double dt = schema_temps().pas_de_temps();
+  static const double rho_solide = mon_fluide.fluide_phase(0).masse_volumique().valeurs()(0, 0);
+  static const double rho_fluide = mon_fluide.fluide_phase(1).masse_volumique().valeurs()(0, 0);
+  static const double mu_fluide  = rho_fluide * mon_fluide.fluide_phase(1).viscosite_cinematique().valeur().valeurs()(0, 0);
+
+  static int indic_phase_fluide = 1; //, indic_phase_solide=0;
+  static double d_act = modele_collision_particule.get_d_act_lub(); // a modifier dans un cas bidisperse ou particules de tailles differentes
+  static double d_sat = modele_collision_particule.get_d_sat_lub(); // a modifier dans un cas bidisperse ou particules de tailles differentes
+
+  //<editor-fold desc="Calcule des forces de collisions">
+  DoubleTab& forces_solide=modele_collision_particule.get_forces_solide();
+  forces_solide.resize(nb_compo_tot, dimension);
+  forces_solide=0;
+  DoubleVect& collision_detected=modele_collision_particule.get_collisions_detected();
+  collision_detected.resize(nb_compo_tot) ;
+  collision_detected = 0 ;
+  static const double seuil=1e-10;
+  static double volume_compo = particule_solide.volume_compo();
+  static double masse_compo = particule_solide.masse_compo();
+  //static double volume_compo_voisin = volume_compo;// a modifier pour un cas bidisperse
+  //static double masse_compo_voisin = masse_compo;// a modifier pour un cas bidisperse
+  static int isModeleLubrification =modele_collision_particule.modele_lubrification();
+  DoubleTab dX(dimension), dU(dimension);
+
+  IntTab Collision(nb_compo_tot,nb_compo_tot+nb_bords);
+  if (modele_collision_particule.is_detection_Verlet()==1)
+    {
+      for (int ind_compo_i=0; ind_compo_i< nb_compo_reelles; ind_compo_i++)
+        {
+          int compo_i=is_LC_on ? liste_composantes_reelles(ind_compo_i) : ind_compo_i;
+          // Premiere boucle : Collision Particule-Particule uniquement
+          double rayon_eff = rayon_compo/2;  // a modifier dans un cas bidisperse ou particules de tailles differentes
+          double masse_eff = masse_compo/2;
+          for (int ind_compo_j=0; ind_compo_j< (table_Verlet[ind_compo_i].size()); ind_compo_j++)
+            {
+              int compo_j=table_Verlet[ind_compo_i][ind_compo_j];
+              if (compo_i==compo_j) Process::exit("Navier_Stokes_FT_Disc::calculer_champ_forces_collisions compo_i=compo_j");
+              dX = 0;
+              dU = 0;
+
+              for (int d = 0; d < dimension; d++)
+                {
+                  dX(d) = positions(compo_i, d) - positions(compo_j, d);
+                  dU(d) = vitesses(compo_i, d) - vitesses(compo_j, d);
+                }
+              double dist_cg = sqrt(local_carre_norme_vect(dX));
+              double dist_int = dist_cg - 2 * rayon_compo;
+              F_now(compo_i, compo_j) = 0;
+              //Cerr << "dist_int " << dist_int << finl;
+              if (dist_int <= 0) // contact
+                {
+                  //<editor-fold desc="Calcule de la norme et de la vitesse relative normale">
+                  DoubleTab norm(dimension);
+                  for (int d = 0; d < dimension; d++) norm(d) = dX(d) / dist_cg;
+                  double prod_sacl = local_prodscal(dX,dU);
+                  DoubleTab dUn(dimension);
+                  for (int d = 0; d < dimension; d++) dUn(d) = (prod_sacl / dist_cg) * norm(d);
+                  double vitesseRelNorm =sqrt(local_carre_norme_vect(dUn));
+
+                  //<editor-fold desc="Modele de lubrification">
+                  // Calcul des forces de lubrifications
+
+                  double d_int = fabs(dist_int) / rayon_compo; // a modifier dans un cas bidisperse ou particules de tailles differentes
+
+                  if (isModeleLubrification && d_int <= d_act )
+                    {
+                      double lambda     =  0.5 / d_int - 9 * log(d_int) / 20 - 3 * d_int * log(d_int) / 56 ;
+                      double lambda_act =  0.5 / d_act - 9 * log(d_act) / 20 - 3 * d_act * log(d_act) / 56 ;
+                      double lambda_sat =  0.5 / d_sat - 9 * log(d_sat) / 20 - 3 * d_sat * log(d_sat) / 56 ;
+                      double delta_lambda=0;
+                      if (d_sat < d_int && d_int <= d_act)
+                        delta_lambda= (lambda - lambda_act);
+                      if (0 < d_int && d_int <= d_sat)
+                        delta_lambda= (lambda_sat - lambda_act);
+                      for (int d = 0; d < dimension; d++)
+                        {
+                          double force_lubrification = -6 * M_PI * mu_fluide * rayon_compo * dUn(d) * delta_lambda; // a modifier dans un cas bidisperse ou particules de tailles differentes
+                          continue;
+                          forces_solide(compo_i, d) += +force_lubrification / volume_compo;
+                          forces_solide(compo_j, d) += -force_lubrification / volume_compo;
+                        }
+                    }
+                  //remplisage de l'indicateur de collisions
+                  collision_detected(compo_i) +=  1 ;
+                  collision_detected(compo_j) +=  1 ;
+
+                  F_now(compo_i, compo_j) = 1;
+                  // EB : F_now et F_old : pour savoir dans quelle partie de la collision on est (pour le modele hybride)
+                  int isFirstStepOfCollision = F_now(compo_i, compo_j) > F_old(compo_i, compo_j);
+                  //<editor-fold desc="schema semi implicte">
+                  // EB : A l'endroit de la collision : le mur apparait comme une sphere de rayon rayon_compo(compo) (methode de HMS)
+                  DoubleTab next_dX(dimension);
+                  for (int d = 0; d < dimension; d++) next_dX(d) = dX(d) + dt * dU(d);
+                  double next_dist_cg = sqrt(local_carre_norme_vect(next_dX));
+                  /*double next_dist_int = CollisionParticuleParticule ? next_dist_cg -
+                  					 (rayon_compo + rayons_compo_(voisin)) :
+                  					 next_dist_cg - 2 * rayons_compo_(compo); */
+                  double next_dist_int = next_dist_cg - 2 * rayon_compo; // a modifier par la ligne precedente dans un cas bidisperse ou particules de tailles different
+                  double Stb = rho_solide * 2 * rayon_eff * vitesseRelNorm / (9 * mu_fluide);
+                  DoubleTab force_contact(dimension);
+                  modele_collision_particule.calculer_force_contact(force_contact, isFirstStepOfCollision, dist_int, next_dist_int, norm, dUn, masse_eff, compo_i, compo_j, Stb, ed, vitesseRelNorm, dt, prod_sacl);
+
+                  for (int d = 0; d < dimension; d++)
+                    {
+                      forces_solide(compo_i, d) += fabs(force_contact(d))<=seuil ? 0 : force_contact(d) / volume_compo;
+                      forces_solide(compo_j, d) -= fabs(force_contact(d))<=seuil ? 0 :  force_contact(d) / volume_compo;
+                    }
+                  Collision(compo_i,compo_j)=1;
+                }
+              F_old(compo_i, compo_j) = F_now(compo_i, compo_j);
+            }
+          rayon_eff = rayon_compo;  // a modifier dans un cas bidisperse ou particules de tailles differentes
+          masse_eff = masse_compo;
+
+          // Deuxieme boucle : Collision Particule-Paroi
+          for (int ind_bord=0; ind_bord < (table_Verlet_bord[ind_compo_i].size()); ind_bord++)
+            {
+              int bord = table_Verlet_bord[ind_compo_i][ind_bord];
+              dU=0;
+              dX=0;
+              int ori = bord < dimension ? bord : bord - dimension;
+              dX(ori) = positions(compo_i, ori) - positions_bords(compo_i,bord);
+
+              for (int d = 0; d < dimension; d++) dU(d) = vitesses(compo_i, d);
+              double dist_cg = sqrt(local_carre_norme_vect(dX));
+              double dist_int = dist_cg - 2 * rayon_compo;
+
+              F_now(compo_i,nb_compo_tot+bord) = 0;
+              if (dist_int <= 0) //contact
+                {
+                  //<editor-fold desc="Calcule de la norme et de la vitesse relative normale">
+                  DoubleTab norm(dimension);
+                  for (int d = 0; d < dimension; d++) norm(d) = dX(d) / dist_cg;
+                  double prod_sacl = local_prodscal(dX,dU);
+                  DoubleTab dUn(dimension);
+                  for (int d = 0; d < dimension; d++) dUn(d) = (prod_sacl / dist_cg) * norm(d);
+                  double vitesseRelNorm =sqrt(local_carre_norme_vect(dUn));
+
+                  //<editor-fold desc="Modele de lubrification">
+                  // Calcul des forces de lubrifications
+                  double d_int = fabs(dist_int) / rayon_compo; // a modifier dans un cas bidisperse ou particules de tailles differentes
+
+                  if (isModeleLubrification && d_int <= d_act )
+                    {
+                      double lambda     = 1 / d_int - log(d_int) / 5 - d_int * log(d_int) / 21;
+                      double lambda_act = 1 / d_act - log(d_act) / 5 - d_act * log(d_act) / 21;
+                      double lambda_sat = 1 / d_sat - log(d_sat) / 5 - d_sat * log(d_sat) / 21;
+                      double delta_lambda=0;
+                      if (d_sat < d_int && d_int <= d_act)
+                        delta_lambda= (lambda - lambda_act);
+
+                      if (0 < d_int && d_int <= d_sat)
+                        delta_lambda= (lambda_sat - lambda_act);
+
+                      for (int d = 0; d < dimension; d++)
+                        {
+                          double force_lubrification = -6 * M_PI * mu_fluide * rayon_compo * dUn(d) * delta_lambda; // a modifier dans un cas bidisperse ou particules de tailles differentes
+                          continue;
+                          forces_solide(compo_i, d) += +force_lubrification / volume_compo;
+                        }
+                    }
+
+                  // EB : Si dist_int <0 alors il faut appliquer la collision
+                  collision_detected(compo_i) +=  0.1 ;
+                  F_now(compo_i, nb_compo_tot+bord) = 1;
+                  // EB : F_now et F_old : pour savoir dans quelle partie de la collision on est (pour le modele hybride)
+                  int isFirstStepOfCollision = F_now(compo_i,nb_compo_tot+bord) > F_old(compo_i,nb_compo_tot+bord);
+                  // EB : A l'endroit de la collision : le mur apparait comme une sphere de rayon rayon_compo(compo) (methode de HMS)
+                  DoubleTab next_dX(dimension);
+                  for (int d = 0; d < dimension; d++) next_dX(d) = dX(d) + dt * dU(d);
+                  double next_dist_cg = sqrt(local_carre_norme_vect(next_dX));
+                  /*double next_dist_int = CollisionParticuleParticule ? next_dist_cg -
+                  					 (rayon_compo + rayons_compo_(voisin)) :
+                  					 next_dist_cg - 2 * rayons_compo_(compo); */
+                  double next_dist_int = next_dist_cg - 2 * rayon_compo; // a modifier par la ligne precedente dans un cas bidisperse ou particules de tailles differentes
+
+                  double Stb = rho_solide * 2 * rayon_eff * vitesseRelNorm / (9 * mu_fluide);
+                  DoubleTab force_contact(dimension);
+                  int voisin=nb_compo_tot+bord;
+                  modele_collision_particule.calculer_force_contact(force_contact, isFirstStepOfCollision, dist_int, next_dist_int, norm, dUn, masse_eff, compo_i, voisin, Stb, ed, vitesseRelNorm, dt, prod_sacl);
+                  for (int d = 0; d < dimension; d++)
+                    {
+                      forces_solide(compo_i, d) +=  fabs(force_contact(d))<=seuil ? 0 : force_contact(d) / volume_compo;
+                    }
+
+                  Collision(compo_i,nb_compo_tot+bord)=1;
+                }
+              F_old(compo_i, nb_compo_tot+bord) = F_now(compo_i, nb_compo_tot+bord);
+              if (F_old(compo_i, nb_compo_tot+bord)>1) F_old(compo_i, nb_compo_tot+bord) =1;
+            }
+        }
+      if (is_LC_on)
+        {
+          mp_max_for_each_item(Collision);
+          mp_sum_for_each_item(forces_solide);
+          mp_sum_for_each_item(collision_detected);
+          mp_max_for_each_item(F_old);
+          mp_max_for_each_item(F_now);
+          mp_max_for_each_item(raideur);
+          mp_max_for_each_item(e_eff);
+        }
+    }
+  else
+    {
+      //const DoubleVect& rayons_compo_=eq_transport.get_rayons_compo();
+      double volume_compo_voisin=0;
+      double delta_n = modele_collision_particule.delta_n();
+      for (int compo = 0; compo < nb_compo_tot; compo++)
+        {
+          //volume_compo = 4 * M_PI * pow(rayons_compo_[compo], 3) / 3;
+          //masse_compo = volume_compo* rho_solide;
+          for (int voisin = compo + 1; voisin < nb_compo_tot + nb_bords; voisin++)
+            {
+              if (voisin<nb_compo_tot)
+                {
+                  volume_compo_voisin = volume_compo;//4 * M_PI * pow(rayons_compo_(voisin), 3) / 3;
+                }
+              //<editor-fold desc="Calcule de la distance entre deux interfaces">
+              // EB : On calcule les distances entre les particules et entre particules et parois pour savoir si
+              // on active la collision ou non
+              dX = 0;
+              dU = 0;
+              int CollisionParticuleParticule = voisin < nb_compo_tot;
+              if (CollisionParticuleParticule)
+                {
+                  for (int d = 0; d < dimension; d++)
+                    {
+                      dX(d) = positions(compo, d) - positions(voisin, d);
+                      dU(d) = vitesses(compo, d) - vitesses(voisin, d);
+                    }
+                }
+              else
+                {
+                  int bord = voisin - nb_compo_tot;
+                  int ori = bord < dimension ? bord : bord - dimension;
+                  dX(ori) = positions(compo, ori) - positions_bords(compo,bord);
+                  for (int d = 0; d < dimension; d++) dU(d) = vitesses(compo, d);
+                }
+              double dist_cg = sqrt(local_carre_norme_vect(dX));
+              if (dist_cg == 0)
+                {
+                  Cerr << "ERROR : dist_cg = 0 entre " << compo << " et " << voisin << finl;
+                  exit();
+                }
+
+              //double dist_int = CollisionParticuleParticule ? dist_cg - (rayons_compo_(compo) + rayons_compo_(voisin)) :
+              //                dist_cg - 2 * rayons_compo_(compo);
+              double dist_int = dist_cg - 2 * rayon_compo;
+
+              //Calcule de la norme et de la vitesse relative normale">
+              DoubleTab norm(dimension);
+              for (int d = 0; d < dimension; d++) norm(d) = dX(d) / dist_cg;
+              double prod_sacl = local_prodscal(dX,dU);
+              DoubleTab dUn(dimension);
+              for (int d = 0; d < dimension; d++) dUn(d) = (prod_sacl / dist_cg) * norm(d);
+              double vitesseRelNorm =sqrt(local_carre_norme_vect(dUn));
+
+              //<editor-fold desc="Modele de lubrification">
+              // Calcul des forces de lubrifications
+              double d_int = fabs(dist_int) / rayon_compo;
+              d_act = 2.0 * delta_n / rayon_compo;
+              d_sat = 0.1 * delta_n /rayon_compo;
+
+              if (isModeleLubrification && d_int <= d_act )
+                {
+                  double lambda     = CollisionParticuleParticule ? 0.5 / d_int - 9 * log(d_int) / 20 - 3 * d_int * log(d_int) / 56 : 1 / d_int - log(d_int) / 5 - d_int * log(d_int) / 21;
+                  double lambda_act = CollisionParticuleParticule ? 0.5 / d_act - 9 * log(d_act) / 20 - 3 * d_act * log(d_act) / 56 : 1 / d_act - log(d_act) / 5 - d_act * log(d_act) / 21;
+                  double lambda_sat = CollisionParticuleParticule ? 0.5 / d_sat - 9 * log(d_sat) / 20 - 3 * d_sat * log(d_sat) / 56 : 1 / d_sat - log(d_sat) / 5 - d_sat * log(d_sat) / 21;
+
+                  double delta_lambda=0;
+
+                  if (d_sat < d_int && d_int <= d_act)
+                    delta_lambda= (lambda - lambda_act);
+
+                  if (0 < d_int && d_int <= d_sat)
+                    delta_lambda= (lambda_sat - lambda_act);
+
+                  for (int d = 0; d < dimension; d++)
+                    {
+                      double force_lubrification = -6 * M_PI * mu_fluide * rayon_compo * dUn(d) * delta_lambda;;
+                      continue;
+                      forces_solide(compo, d) += +force_lubrification / volume_compo;
+                      if (!CollisionParticuleParticule) continue; //collision avec un bord -> pas de force sur le bord
+                      forces_solide(voisin, d) += -force_lubrification / volume_compo_voisin;
+                    }
+                }
+              //</editor-fold>
+              F_now(compo, voisin) = 0;
+              // EB : Si dist_int <0 alors il faut appliquer la collision
+              if (dist_int <= 0) //contact
+                {
+                  //remplisage de l'indicateur de collisions
+                  if (CollisionParticuleParticule)
+                    {
+                      collision_detected(compo) +=  1 ;
+                      collision_detected(voisin) +=  1 ;
+                    }
+                  else
+                    {
+                      collision_detected(compo) +=  0.1 ;
+                    }
+
+                  F_now(compo, voisin) = 1;
+                  // EB : F_now et F_old : pour savoir dans quelle partie de la collision on est (pour le modele hybride)
+                  int isFirstStepOfCollision = F_now(compo, voisin) > F_old(compo, voisin);
+                  //<editor-fold desc="schema semi implicte">
+                  // EB : A l'endroit de la collision : le mur apparait comme une sphere de rayon rayon_compo(compo) (methode de HMS)
+                  DoubleTab next_dX(dimension);
+                  for (int d = 0; d < dimension; d++) next_dX(d) = dX(d) + dt * dU(d);
+                  double next_dist_cg = sqrt(local_carre_norme_vect(next_dX));
+                  //double next_dist_int = CollisionParticuleParticule ? next_dist_cg -
+                  //                     (rayons_compo_(compo) + rayons_compo_(voisin)) :
+                  //                   next_dist_cg - 2 * rayons_compo_(compo);
+                  double next_dist_int = next_dist_cg - 2 * rayon_compo; // a modifier par la ligne precedente dans un cas bidisperse ou particules de tailles differentes
+                  //</editor-fold>
+                  //new writing
+                  if(1)
+                    {
+                      double rayon_eff = CollisionParticuleParticule ? rayon_compo/2
+                                         : rayon_compo; //bord // a modifier dans un cas bidisperse ou particules de tailles differentes
+                      double masse_eff = CollisionParticuleParticule ? masse_compo/2
+                                         : masse_compo; //bord // a modifier dans un cas bidisperse ou particules de tailles differentes
+                      double Stb = rho_solide * 2 * rayon_eff * vitesseRelNorm / (9 * mu_fluide);
+                      DoubleTab force_contact(dimension);
+                      modele_collision_particule.calculer_force_contact(force_contact, isFirstStepOfCollision, dist_int, next_dist_int, norm, dUn, masse_eff, compo, voisin, Stb, ed, vitesseRelNorm, dt, prod_sacl);
+
+                      for (int d = 0; d < dimension; d++)
+                        {
+                          forces_solide(compo, d) += fabs(force_contact(d))<=seuil ? 0 : force_contact(d) / volume_compo;
+                          if (!CollisionParticuleParticule) continue; // collision avec un bord -> pas de force sur le bord
+                          forces_solide(voisin, d) -= fabs(force_contact(d))<=seuil ? 0 :  force_contact(d) / volume_compo_voisin;
+                        }
+                    }
+                  Collision(compo,voisin)=1;
+                }
+              F_old(compo, voisin) = F_now(compo, voisin);
+            } // fin boucle parti
+        } // fin boucle compo
+    }
+
+  if (Process::je_suis_maitre()&& schema_temps().limpr_fpi() && nb_compo_tot>1)
+    {
+      SFichier Liste_Collision;
+      const Navier_Stokes_FT_Disc& mon_eq = *this;
+      ouvrir_fichier(Liste_Collision,"liste_collision",1,mon_eq);
+      schema_temps().imprimer_temps_courant(Liste_Collision);
+      for (int compo_i=0; compo_i<nb_compo_tot; compo_i++)
+        {
+          for (int compo_j=0; compo_j<nb_compo_tot+nb_bords; compo_j++)
+            {
+              if (Collision(compo_i,compo_j)>0) Liste_Collision << " " << compo_i << "-" << compo_j;
+            }
+        }
+      Liste_Collision << finl;
+    }
+
+  /***********************************************/
+  // ETAPE 3 : Correspondance entre le numero eulerien de la compo au temps n et le numero eulerien au temps n-1
+  // Pour cela, on "marque" les elements fluide par -1 et les elements solide par 1 avant de rentrer dans search_connex_components_local
+  // et compute_global_connex_components
+  /***********************************************/
+
+  //<editor-fold desc="Application des forces de collisions sur les faces du domaine">
+  static const DoubleVect& volumes_entrelaces = domaine_vf.volumes_entrelaces();
+  static const int nb_elem = domaine_vf.domaine().nb_elem();
+
+  const DoubleTab& valeurs_v = inconnue().valeur().valeurs();
+
+  DoubleTab& rms_vitesse=refeq_transport.valeur().get_rms_vitesses_compo();
+  rms_vitesse.resize(nb_compo_tot,dimension);
+  DoubleTab& moy_vitesse=refeq_transport.valeur().get_moy_vitesses_compo();
+  moy_vitesse.resize(nb_compo_tot,dimension);
+  DoubleTab& moy_vitesse_solide_carre=refeq_transport.valeur().get_moy_vitesses_carre_compo();
+  moy_vitesse_solide_carre.resize(nb_compo_tot,dimension);
+
+  double volume_solide=0;
+  double vmoy_face=0;
+
+  rms_vitesse=0.;
+  moy_vitesse=0.;
+  moy_vitesse_solide_carre=0.;
+
+  DoubleTrav num_compo;
+  domaine_vf.domaine().creer_tableau_elements(num_compo);
+
+  IntVect num_lagrange(nb_compo_tot);
+
+  // EB : on marque les elements eulerien avant renumerotation locale dans dans search_connex_components_local
+  // puis globale dans compute_global_connex_components
+  for (int elem = 0; elem < nb_elem; elem++)
+    {
+      if (modele_collision_particule.force_elem_diphasique())
+        {
+          //les elements diphasiques sont compris dans num compo
+          num_compo[elem] = (indicatrice[elem] == indic_phase_fluide) ? -1 : 1;
+        }
+      else
+        {
+          //les elements diphasiques ne sont pas compris dans num compo
+          num_compo[elem] = (indicatrice[elem] != 1 - indic_phase_fluide ) ? -1 : 1;
+        }
+    }
+  num_compo.echange_espace_virtuel();
+
+  const IntTab& elem_faces = domaine_vf.elem_faces();
+  const IntTab& faces_elem = domaine_vf.face_voisins();
+  const DoubleTab& indicatrice_faces = refeq_transport.valeur().get_compute_indicatrice_faces().valeurs();
+  const int nb_local_connex_components = search_connex_components_local(elem_faces, faces_elem, num_compo);
+  nb_compo_tot = compute_global_connex_components(num_compo, nb_local_connex_components);
+
+  // on s'assure que le numero eulerien corresepond au bon numero lagrangien
+  //remplissage du tableau de corespandance indice interface lagrange
+
+  for (int compo = 0; compo < nb_compo_tot; compo++)
+    {
+      int elem = elem_cg[compo];
+      if (elem != -1)
+        {
+          int num_euler = static_cast<int>(num_compo[elem]);
+          num_lagrange[num_euler] = compo;
+        }
+    }
+  mp_max_for_each_item(num_lagrange);
+
+  //syncronisation entre les indice lagrangien et eulerien dans num_compo
+  //on parcour toutes les cellules du maillage, on identifie son indice eulerien
+  // on utilise l'indice eulerien  pour trouver l'indice lagrangien correspandant
+  // on remplace l'indice eulerien par l'indice lagrengien
+
+  /***********************************************/
+  // ETAPE 4 : permutation de num compo suivant l'etape precedente et calcul de la vitesse moyenne et rms des compos
+  /***********************************************/
+  const DoubleVect& volumes_maille = domaine_vf.volumes();
+  DoubleTab volumes_euler(nb_compo_tot);
+
+  for (int elem = 0; elem < nb_elem; elem++)
+    {
+      if (num_compo[elem] != -1)
+        {
+          num_compo[elem] =  static_cast<double>(num_lagrange[static_cast<int>(num_compo[elem])]);
+        }
+
+      if (indicatrice(elem) != 1)
+        {
+          //volume au elements
+          volumes_euler[0] += (1 - indicatrice[elem]) * volumes_maille[elem];
+          //Cerr << finl << elem << " " << indicatrice[elem] << " " << volumes_maille[elem] << " ";
+          //volume au face
+        }
+      if (indicatrice[elem]==0)
+        {
+          for (int dim=0; dim<dimension; dim++)
+            {
+              int compo= static_cast<int>(num_compo[elem]);
+              vmoy_face=0.5*(valeurs_v(elem_faces(elem,dim))+valeurs_v(elem_faces(elem,dim+dimension))); // vmoy_face est plutot un vmoy_elem ici, revoir les notations
+              moy_vitesse(compo,dim) +=vmoy_face*volumes_maille(elem);
+              moy_vitesse_solide_carre(compo,dim) +=pow(vmoy_face,2)*volumes_maille(elem);
+            }
+          volume_solide+=volumes_maille(elem);
+        }
+    }
+
+  double vol_solide=mp_sum(volume_solide);
+
+  moy_vitesse/=vol_solide;
+  moy_vitesse_solide_carre/=vol_solide;
+
+  mp_sum_for_each_item(moy_vitesse);
+  mp_sum_for_each_item(moy_vitesse_solide_carre);
+
+
+  if (Process::je_suis_maitre())
+    {
+      for (int dim=0; dim<dimension; dim++)
+        {
+          for (int compo=0; compo<nb_compo_tot; compo++)
+            {
+              if (moy_vitesse_solide_carre(compo,dim)>0)
+                {
+                  rms_vitesse(compo,dim)=sqrt(fabs(pow(moy_vitesse(compo,dim),2)-moy_vitesse_solide_carre(compo,dim)));
+                  //Cerr << "Vmoy au carre Vcarre moy " <<pow(moy_vitesse(dim),2) <<"\t"<< moy_vitesse_solide_carre(dim) << finl;
+                }
+              else
+                {
+                  rms_vitesse(compo,dim)=0;
+                }
+            }
+        }
+    }
+
+
+  /***********************************************/
+  // ETAPE 5 : Application de la force de contact sur les faces euleriennes. La force "discrete" est appliquee de maniere volumique
+  // sur les faces euleriennes constituant les particules.
+  /***********************************************/
+  for (int elem = 0; elem < nb_elem; elem++)
+    {
+      int compo = static_cast<int>(num_compo[elem]);
+      if (compo != -1)
+        {
+          for (int ifac = 0; ifac < 2 * dimension; ifac++)
+            {
+              int face = elem_faces(elem, ifac);
+              int ori = orientation(face);
+              valeurs_champ(face) =
+                (1 - indicatrice_faces(face)) * volumes_entrelaces(face) * forces_solide(compo, ori);
+
+            }
+        }
+    }
+  valeurs_champ.echange_espace_virtuel();
+  variables_internes().num_compo.valeur().valeurs() = num_compo;  // champ pret pour postraitement
+// fin
+  Cerr << "FIN Navier_Stokes_FT_Disc::calculer_champ_forces_collisions" << finl;
+
+  statistiques().end_count(count);
+}
+
+// EB
+/*! @brief calcule la force de correction hydrodynamique a appliquer pour compenser la sous resolution des gradients de vitesse et de pression a l'interface
+ * fluide - particule. La correction est de la force Fc=F_stokes * alpha/(N^beta). F_stokes = 6pi*mu_f*r_p*u_inf : force theorique de stokes (egale a la force
+ * hydrodynamique calcule sur maillage fin. Dans le cas de stokes, le calcul de la force est convergee a 40 mailles par diametre). alpha et beta, des coefficients
+ * de correlation. N : nombre de mailles par diametre de particule. /!\ Pour le moment, la methode est uniquement validee pour une particule en sedimentation dans un milieu infini, pour Re<=0.1.
+ * Pour plus de details, voir la publi :
+ *  E.Butaye, A. Toutant, S. Mer and F. Bataille. Development of Particle Resolved - Subgrid Corrected Simulations: Hydrodynamics force calculation and flow sub-resolution corrections. Computers and Fluids, 2023.
+ */
+void Navier_Stokes_FT_Disc::calculer_correction_trainee( DoubleTab& valeurs_champ, const Transport_Interfaces_FT_Disc& eq_transport,Transport_Interfaces_FT_Disc& eq_transport_non_const, REF(Transport_Interfaces_FT_Disc)& refeq_transport, const Maillage_FT_Disc& maillage)
+{
+  static const Stat_Counter_Id count = statistiques().new_counter(1, "calculer_correction_trainee", 0);
+  statistiques().begin_count(count);
+
+  Cerr << "Navier_Stokes_FT_Disc::calculer_correction_trainee" << finl;
+  const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis().valeur());
+  const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_dis().valeur());
+  //const Domaine& domaine = domaine_vf.domaine();
+  const DoubleVect& volumes_entrelaces = domaine_vf.volumes_entrelaces();
+  //const DoubleVect& volume = domaine_vf.volumes();
+  const Fluide_Diphasique& mon_fluide = fluide_diphasique();
+  const Particule_Solide& particule_solide=ref_cast(Particule_Solide,mon_fluide.fluide_phase(0));
+  const DoubleVect& rayon_compo=eq_transport.get_rayons_compo();
+  const double mu_f = mon_fluide.fluide_phase(1).viscosite_dynamique().valeur().valeurs()(0, 0);
+  const double mu_p = particule_solide.viscosite_dynamique().valeur().valeurs()(0,0);
+  const double phi_mu=mu_p/mu_f;
+  const double rho_f = mon_fluide.fluide_phase(1).masse_volumique().valeurs()(0, 0);
+  const double rho_p = particule_solide.masse_volumique().valeurs()(0, 0);
+  const IntTab& face_voisins = domaine_vf.face_voisins();
+  const IntVect& orientation = domaine_vdf.orientation();
+
+  const DoubleTab& indicatrice_faces = refeq_transport.valeur().get_compute_indicatrice_faces().valeurs();
+
+  const DoubleTab& vitesses =eq_transport.get_vitesses_compo();
+  DoubleVect vitesse_compo(dimension);
+  int nb_compo_tot = vitesses.dimension(0);
+
+  const DoubleTab& force_pression= get_force_tot_pression_interf();
+  const DoubleTab& force_frottements= get_force_tot_pression_interf();
+  DoubleVect correction_trainee(nb_compo_tot);
+
+  DoubleVect& longueurs = Modele_Collision_FT::get_longueurs();
+  IntVect& nb_noeuds=Modele_Collision_FT::get_nb_noeuds();
+
+  DoubleTab& gravite = milieu().gravite().valeurs();
+  DoubleVect vect_g(dimension);
+  for (int i=0; i<dimension; i++) vect_g(i)=gravite(0,i);
+  const double norme_g = sqrt(local_carre_norme_vect(vect_g));
+
+  // vitesse de sedimentation dans le cas d'un ecoulement de stokes
+
+  // coeff definit par une fonction d'optimisation sur python
+  const double alpha=variables_internes().alpha_correction_trainee_;
+  const double beta=variables_internes().beta_correction_trainee_;
+
+
+  double Re_p=0., Cd_p_Abraham=0.;
+
+  DoubleVect& tab_num_compo=variables_internes().num_compo.valeur().valeurs();
+
+  // On calcule la direction des particules pour application la correction de la trainee
+  DoubleTab direction_compo(nb_compo_tot,dimension);
+  const int correction_proportionnelle=variables_internes().proportionnel_;
+  const int extension_reynolds=variables_internes().extension_reynolds_;
+
+  // La condition qui suit separe deux methodes de calcul. On pourrait simplifier en regroupant les parties communes mais cela impliquerait
+  // de faire deux boucles sur le nombre de composantes au lieu d'une.
+  if (!correction_proportionnelle) // on calcule la direction de la particule avec sa vitesse
+    {
+      double norme_vitesse=0.;
+      for (int compo=0; compo<nb_compo_tot; compo++)
+        {
+          double N=(nb_noeuds(0)-1)/(longueurs(0)/(2.*rayon_compo(compo)));
+          double u_inf=2./3.*(pow(rayon_compo(compo),2)*norme_g/mu_f)*((1+phi_mu)/(2.+3.*phi_mu)*(rho_f-rho_p));
+          for (int dim=0; dim<dimension; dim++) vitesse_compo(dim)=vitesses(compo,dim);
+          norme_vitesse=sqrt(local_carre_norme_vect(vitesse_compo));
+          for (int dim=0; dim<dimension; dim++)
+            {
+              if(norme_vitesse>0) direction_compo(compo,dim)=vitesses(compo,dim)/norme_vitesse;
+              else direction_compo(compo,dim)=0.;
+            }
+
+          correction_trainee(compo)=fabs(6.*M_PI*mu_f*rayon_compo(compo)*u_inf*(alpha/pow(N,beta)));
+          Cerr << "Correction trainee "<<correction_trainee(compo)<< finl;
+          if (extension_reynolds)
+            {
+              Re_p=rho_f*norme_vitesse*2.*rayon_compo(compo)/mu_f;
+              Cd_p_Abraham = (norme_vitesse>0) ? (24./(pow(9.06,2)))*pow(9.06/sqrt(Re_p)+1.,2) : 0.;
+              correction_trainee(compo)*=Cd_p_Abraham;
+            }
+
+        }
+    }
+  else // on calcule direction d'application de la correction avec les composantes de la force de trainee
+    {
+      double norme_vitesse=0.;
+      double norme_force_trainee=0.;
+      for (int compo=0; compo<nb_compo_tot; compo++)
+        {
+          DoubleVect la_force_trainee(dimension);
+          if (schema_temps().nb_pas_dt()>0)
+            {
+              for (int dim=0; dim<dimension; dim++) la_force_trainee(dim)=force_pression(compo,dim)+force_frottements(compo,dim);
+            }
+          else la_force_trainee=0;
+
+          norme_force_trainee=sqrt(local_carre_norme_vect(la_force_trainee));
+          for (int dim=0; dim<dimension; dim++)
+            {
+              if(norme_force_trainee>0) direction_compo(compo,dim)=-la_force_trainee(dim)/norme_force_trainee; // - car la trainee s'oppose a la vitesse
+              else direction_compo(compo,dim)=0.;
+            }
+          double N=(nb_noeuds(0)-1)/(longueurs(0)/(2.*rayon_compo(compo)));
+          correction_trainee(compo)=norme_force_trainee*(alpha/pow(N,beta));
+          if (extension_reynolds)
+            {
+              for (int dim=0; dim<dimension; dim++) vitesse_compo(dim)=vitesses(compo,dim);
+              norme_vitesse=sqrt(local_carre_norme_vect(vitesse_compo));
+              Re_p=rho_f*norme_vitesse*2.*rayon_compo(compo)/mu_f;
+              Cd_p_Abraham = (norme_vitesse>0) ? (24./(pow(9.06,2)))*pow(9.06/sqrt(Re_p)+1.,2) : 0.;
+              correction_trainee(compo)*=Cd_p_Abraham;
+            }
+        }
+
+    }
+  const int faces_diphasiques= variables_internes().faces_diphasiques_;
+  int nb_faces=domaine_vdf.nb_faces();
+
+  const ArrOfInt& faces_doubles = domaine_vdf.faces_doubles();
+  DoubleVect somme_volume_particule(dimension);
+  somme_volume_particule= 0.;
+  valeurs_champ=0;
+
+  // On discretise la correction sur les faces solide et diphasiques
+  for (int face=0; face<nb_faces; face++)
+    {
+      if ((indicatrice_faces(face)<1 && faces_diphasiques) || (indicatrice_faces(face)==1 && !faces_diphasiques) )
+        {
+          double contribution_face=(faces_doubles[face] == 1) ? 0.5 : 1.;
+
+          int elem_gauche=face_voisins(face,0);
+          int elem_droite=face_voisins(face,1);
+          // si on a pas acces a l'element, ie elem=-1, alors on prend tab_num_compo(elem)=-1 car tab_num_compo(-1) non defini
+          int num_compo_gauche=elem_gauche>=0 ? static_cast<int>(tab_num_compo(elem_gauche)) : -1;
+          int num_compo_droite=elem_droite>=0 ? static_cast<int>(tab_num_compo(elem_droite)) : -1;
+          int max_num_compo=std::max(num_compo_gauche,num_compo_droite);
+          valeurs_champ(face)=-(1-indicatrice_faces(face))*volumes_entrelaces(face)*correction_trainee(max_num_compo)*direction_compo(max_num_compo,orientation(face))*contribution_face; // On met un signe "-" car la correction appliquee doit etre opposee a la direction de la particule
+
+          somme_volume_particule(orientation(face))+=(1.-indicatrice_faces(face))*volumes_entrelaces(face)*contribution_face;
+
+        }
+    }
+  mp_sum_for_each_item(somme_volume_particule);
+
+  for (int face=0; face<nb_faces; face++)
+    {
+      if (indicatrice_faces(face)<1)
+        {
+          valeurs_champ(face)/=somme_volume_particule(orientation(face));
+        }
+    }
+  valeurs_champ.echange_espace_virtuel();
+
+  statistiques().end_count(count);
+
+}
+
+
+>>>>>>> c8d6b763f (old change)
 /*! @brief Calcul du gradient de l'indicatrice.
  *
  * Ce gradient est utilise pour calculer le second membre de l'equation de qdm,
