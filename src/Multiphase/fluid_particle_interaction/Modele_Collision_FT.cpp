@@ -185,7 +185,7 @@ void ecrire_tableau_donnee_modele_collision(Sortie& os, const DoubleTab& tab)
 {
   const int dim0 = tab.dimension(0);
   if (Process::je_suis_maitre())
-    os << dim0 << space << tab.dimension(1) << finl;
+    os << dim0 << tspace << tab.dimension(1) << finl;
   os.put(tab.addr(), tab.size_array());
   os.syncfile();
 }
