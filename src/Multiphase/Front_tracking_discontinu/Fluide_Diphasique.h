@@ -24,6 +24,10 @@
 #include <Objet_U.h>
 #include <Fluide_Incompressible.h>
 #include <Milieu_base.h>
+// EB
+#include <Particule_Solide.h>
+
+// fin EB
 
 class Entree;
 class Motcle;
@@ -64,8 +68,9 @@ public:
 protected:
 
 private:
-
-  Fluide_Incompressible phase0_;
+  int is_particule_solide_; // EB
+  Particule_Solide phase0_PS_; // EB
+  Fluide_Incompressible phase0_; // EB
   Fluide_Incompressible phase1_;
   // Tension de surface (J/m^2)
   Champ_Don sigma_;

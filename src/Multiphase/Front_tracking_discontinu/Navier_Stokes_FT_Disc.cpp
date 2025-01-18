@@ -33,9 +33,11 @@
 #include <Schema_Temps_base.h>
 #include <Domaine_VDF.h>
 #include <Debog.h>
+#include <Op_Dift_VDF_Face_leaves.h>
 // Ces includes seront a retirer quand on aura clairement separe les operations
 // specifiques au VDF et VEF
 #include <Domaine_VF.h>
+#include <Convection_Diffusion_Temperature_FT_Disc.h>
 #include <Terme_Source_Constituant_Vortex_VEF_Face.h>
 #include <TRUSTTrav.h>
 #include <Matrice_Morse_Sym.h>
@@ -53,6 +55,30 @@
 //#include <Dirichlet_homogene.h>
 #endif
 #define NS_VERBOSE 0 // To activate verbose mode on err ...
+// EB
+#include <Modele_Collision_FT.h>
+#include <Particule_Solide.h>
+#include <Matrice_Dense.h>
+#include <Matrice_Diagonale.h>
+#include <Maillage_FT_Disc.h>
+#include <Postraitement_Forces_Interfaces_FT.h>
+#include <MD_Vector_tools.h>
+#include <EcritureLectureSpecial.h>
+#include <Avanc.h>
+#include <iostream>
+#include <vector>
+#include <Statistiques.h>
+#include <Connex_components_FT.h>
+#include <Connex_components.h>
+
+#include <fstream>
+#include <iomanip>
+#include <SFichier.h>
+#include <EFichier.h>
+#include <sys/stat.h>
+// fin EB
+// #include <chrono>
+// using namespace std::chrono;
 
 Implemente_instanciable_sans_constructeur_ni_destructeur(Navier_Stokes_FT_Disc,"Navier_Stokes_FT_Disc",Navier_Stokes_Turbulent);
 
@@ -65,6 +91,12 @@ public:
     mpointv_inactif(0),   // Par defaut, mpointv  cree un saut de vitesse
     matrice_pression_invariante(0),   // Par defaut, recalculer la matrice pression
     clipping_courbure_interface(1e40),// Par defaut, pas de clipping
+    flag_correction_trainee_(0), // EB : Par defaut, pas de correction de trainee
+    alpha_correction_trainee_(0.), // EB
+    beta_correction_trainee_(0.), // EB
+    faces_diphasiques_(1), // EB
+    extension_reynolds_(0), // EB
+    proportionnel_(0), // EB
     terme_gravite_(GRAVITE_GRAD_I),   // Par defaut terme gravite ft sans courants parasites
     is_explicite(1),                  // Par defaut, calcul explicite de vpoint etape predicition
     is_boussinesq_(0),                // Par defaut, l'hypothese de Boussinesq n'est pas utilisee pour la flottabilite dans les phases.
@@ -104,7 +136,11 @@ public:
   Champ_Fonc derivee_temporelle_indicatrice;
   Champ_Fonc ai; // Eulerian interfacial area.
   Champ_Inc vitesse_jump0_; // Extended Velocity of phase 0.
-
+  Champ_Fonc terme_source_collisions; // HMS
+  Champ_Fonc  num_compo; // HMS
+  Champ_Fonc vitesse_stokes_th_; // EB
+  Champ_Fonc pression_stokes_th_; // EB
+  Champ_Fonc terme_correction_trainee; // EB
   LIST(REF(Champ_base)) liste_champs_compris;
 
   // Si matrice_pression_invariante != 0,
@@ -127,6 +163,17 @@ public:
   // terme source de tension de surface (clipping si valeur superieur)
   double clipping_courbure_interface;
 
+  int flag_correction_trainee_; // EB
+  double alpha_correction_trainee_; // EB
+  double beta_correction_trainee_; // EB
+  int faces_diphasiques_; // EB
+  int extension_reynolds_; // EB
+  int proportionnel_; // EB
+
+  //-----------
+  //enum Modele_collisions { RESSORT_AMORTI_VVA, RESSORT_AMORTI_ESI, RESSORT_AMORTI_EE, MOHAGHEG,HYBRID_EE, HYBRID_ESI, HYBRID_RK3, HYBRID_VVA, BREUGEM };
+  //Modele_collisions modele_collisions;
+  //-----------
   enum Terme_Gravite { GRAVITE_RHO_G, GRAVITE_GRAD_I };
   Terme_Gravite terme_gravite_;
   Noms equations_concentration_source_fluide_;
@@ -159,6 +206,40 @@ public:
   double x_pfl_imp;
   double y_pfl_imp;
   double z_pfl_imp;
+
+  DoubleTab force_pression_interf_; // EB pression locale pour chaque fa7
+  DoubleTab force_frottements_interf_; // EB force de frottement locale pour chaque fa7
+  DoubleTab pression_interf_; // EB pression a l'interface locale pour chaque fa7
+  DoubleVect surface_tot_interf_; // EB
+  DoubleTab force_pression_tot_interf_; // EB
+  DoubleTab force_frottements_tot_interf_; // EB
+  DoubleTab force_pression_tot_interf_stokes_th_; // EB
+  DoubleTab force_frottements_tot_interf_stokes_th_; // EB
+  DoubleTab force_pression_tot_interf_stokes_th_dis_; // EB
+  DoubleTab force_frottements_tot_interf_stokes_th_dis_; // EB
+
+
+  DoubleTab sigma_xx_interf_, sigma_xy_interf_, sigma_xz_interf_, sigma_yx_interf_, sigma_yy_interf_, sigma_yz_interf_, sigma_zx_interf_, sigma_zy_interf_, sigma_zz_interf_; // EB tenseur des contraintes local pour c
+  DoubleTab sigma_xx_interf_stokes_th_dis_, sigma_xy_interf_stokes_th_dis_, sigma_xz_interf_stokes_th_dis_, sigma_yx_interf_stokes_th_dis_, sigma_yy_interf_stokes_th_dis_, sigma_yz_interf_stokes_th_dis_, sigma_zx_interf_stokes_th_dis_, sigma_zy_interf_stokes_th_dis_, sigma_zz_interf_stokes_th_dis_; // EB tenseur des contraintes local pour c
+
+  DoubleTab sigma_xx_interf_stokes_th_, sigma_xy_interf_stokes_th_, sigma_xz_interf_stokes_th_, sigma_yy_interf_stokes_th_, sigma_yz_interf_stokes_th_, sigma_zz_interf_stokes_th_;
+  DoubleTab dUdx_P1_, dUdy_P1_, dUdz_P1_, dVdx_P1_, dVdy_P1_, dVdz_P1_, dWdx_P1_, dWdy_P1_, dWdz_P1_;
+  DoubleTab dUdx_P2_, dUdy_P2_, dUdz_P2_, dVdx_P2_, dVdy_P2_, dVdz_P2_, dWdx_P2_, dWdy_P2_, dWdz_P2_;
+  DoubleTab dUdx_P1_th_, dUdy_P1_th_, dUdz_P1_th_, dVdx_P1_th_, dVdy_P1_th_, dVdz_P1_th_, dWdx_P1_th_, dWdy_P1_th_, dWdz_P1_th_;
+  DoubleTab dUdx_P2_th_, dUdy_P2_th_, dUdz_P2_th_, dVdx_P2_th_, dVdy_P2_th_, dVdz_P2_th_, dWdx_P2_th_, dWdy_P2_th_, dWdz_P2_th_;
+  DoubleTab dUdx_P1_th_dis_, dUdy_P1_th_dis_, dUdz_P1_th_dis_, dVdx_P1_th_dis_, dVdy_P1_th_dis_, dVdz_P1_th_dis_, dWdx_P1_th_dis_, dWdy_P1_th_dis_, dWdz_P1_th_dis_;
+  DoubleTab dUdx_P2_th_dis_, dUdy_P2_th_dis_, dUdz_P2_th_dis_, dVdx_P2_th_dis_, dVdy_P2_th_dis_, dVdz_P2_th_dis_, dWdx_P2_th_dis_, dWdy_P2_th_dis_, dWdz_P2_th_dis_;
+
+  DoubleTab force_pression_stokes_th_, force_pression_stokes_th_dis_;
+  DoubleTab force_frottements_stokes_th_, force_frottements_stokes_th_dis_;
+  DoubleTab pression_interf_stokes_th_dis_;
+
+  DoubleTab U_P1_, U_P2_, U_P1_th_, U_P2_th_, U_P1_th_dis_, U_P2_th_dis_;
+  DoubleTab U_P2_moy_; // vitesse moyenne en P2 pour les points de calcul le permettant (fluide ou solide)
+  DoubleTab Indic_elem_P2_, Prop_P2_fluide_compo_; // Indic de l'element dans lequel se trouve P2, proportion de points P2 fluide par compo
+  DoubleTab Proportion_fa7_ok_UP2_;  // Nb_fa7_ok_prop_ : pourcentage de fa7 pour lesquelles on a pu calculer la vitesse moyenne
+  IntTab list_elem_P1_, list_elem_diph_, list_elem_P1_all_; // EB list_elem_P1_ : liste des elements dans lesquels se trouvent les points P1, list_elem_diph_ : liste des elements traverses par l'interface,
+  // list_elem_P1_all_ : liste de tous les elements - PUREMENT FLUIDE UNIQUEMENT - ayant servis a l'interpolation des champs en P1
 };
 
 /*! @brief Calcul de champ_rho_faces_ et champ_rho_elem_ en fonction de l'indicatrice: rho_elem_ = indicatrice * ( rho(phase_1) - rho(phase_0) ) + rho(phase_0)
@@ -172,10 +253,11 @@ public:
 static void FT_disc_calculer_champs_rho_mu_nu_dipha(const Domaine_dis_base&      domaine_dis_base,
                                                     const Fluide_Diphasique& fluide,
                                                     const DoubleVect&         indicatrice_elem,
+                                                    Transport_Interfaces_FT_Disc&         eq_transport,
                                                     DoubleVect& rho_elem,
                                                     DoubleVect& nu_elem,
                                                     DoubleVect& mu_elem,
-                                                    DoubleVect& rho_faces)
+                                                    DoubleVect& rho_faces, const double temps_courant, const int calcul_precis)
 {
   const Fluide_Incompressible& phase_0 = fluide.fluide_phase(0);
   const Fluide_Incompressible& phase_1 = fluide.fluide_phase(1);
@@ -211,7 +293,7 @@ static void FT_disc_calculer_champs_rho_mu_nu_dipha(const Domaine_dis_base&     
           {
           case 0: // standard default method (will be removed)
             {
-              mu  = nu * rho;
+              mu  = nu*rho ;
             }
             break;
           case 1: // Arithmetic average
@@ -222,6 +304,11 @@ static void FT_disc_calculer_champs_rho_mu_nu_dipha(const Domaine_dis_base&     
           case 2: // Harmonic average
             {
               mu  = (mu_phase_0 * mu_phase_1)/(mu_phase_1 - indic * delta_mu);
+            }
+            break;
+          case 3: // Staircase Average
+            {
+              mu =  indic==0 ? mu_phase_0 : mu_phase_1;
             }
             break;
           default:
@@ -241,27 +328,41 @@ static void FT_disc_calculer_champs_rho_mu_nu_dipha(const Domaine_dis_base&     
     nu_elem.echange_espace_virtuel();
   }
 
-  // Calcul de rho aux faces (on suppose que la vitesse est aux faces)
-  {
-    assert(rho_elem.size() == domaine_dis_base.nb_elem());
-    const IntTab& face_voisins = domaine_dis_base.face_voisins();
-    const int nfaces = face_voisins.dimension(0);
-    assert(rho_faces.size() == nfaces);
-    for (int i = 0; i < nfaces; i++)
-      {
-        const int elem0 = face_voisins(i, 0);
-        const int elem1 = face_voisins(i, 1);
-        double rho = 0.;
-        if (elem0 >= 0)
-          rho = rho_elem[elem0];
-        if (elem1 >= 0)
-          rho += rho_elem[elem1];
-        if (elem0 >= 0 && elem1 >= 0)
-          rho *= 0.5;
-        rho_faces[i] = rho;
-      }
-    rho_faces.echange_espace_virtuel();
-  }
+// Calcul de rho aux faces (on suppose que la vitesse est aux faces)
+  if (calcul_precis && temps_courant>0)
+    {
+      const DoubleTab& indicatrice_face_elem=eq_transport.get_compute_indicatrice_faces().valeurs();
+      assert(rho_elem.size() == domaine_dis_base.nb_elem());
+      const IntTab& face_voisins = domaine_dis_base.face_voisins();
+      const int nfaces = face_voisins.dimension(0);
+      assert(rho_faces.size() == nfaces);
+      for (int i = 0; i < nfaces; i++)
+        {
+          const double indic =  indicatrice_face_elem[i];
+          rho_faces[i] = indic * delta_rho  + rho_phase_0;
+        }
+    }
+  else
+    {
+      assert(rho_elem.size() == domaine_dis_base.nb_elem());
+      const IntTab& face_voisins = domaine_dis_base.face_voisins();
+      const int nfaces = face_voisins.dimension(0);
+      assert(rho_faces.size() == nfaces);
+      for (int i = 0; i < nfaces; i++)
+        {
+          const int elem0 = face_voisins(i, 0);
+          const int elem1 = face_voisins(i, 1);
+          double rho = 0.;
+          if (elem0 >= 0)
+            rho = rho_elem[elem0];
+          if (elem1 >= 0)
+            rho += rho_elem[elem1];
+          if (elem0 >= 0 && elem1 >= 0)
+            rho *= 0.5;
+          rho_faces[i] = rho;
+        }
+    }
+  rho_faces.echange_espace_virtuel();
 }
 
 static void FT_disc_calculer_champs_rho_mu_nu_mono(const Domaine_dis_base& zdis,
@@ -387,6 +488,7 @@ void Navier_Stokes_FT_Disc::set_param(Param& param)
   param.ajouter("correction_courbure_ordre", &variables_internes().correction_courbure_ordre_);
   param.ajouter_non_std("interpol_indic_pour_dI_dt", (this));
   param.ajouter_non_std("OutletCorrection_pour_dI_dt", (this));
+  param.ajouter_non_std("correction_trainee",(this)); // EB
 }
 
 int Navier_Stokes_FT_Disc::lire_motcle_non_standard(const Motcle& mot, Entree& is)
@@ -408,8 +510,25 @@ int Navier_Stokes_FT_Disc::lire_motcle_non_standard(const Motcle& mot, Entree& i
             }
         }
       else
-        lire_op_diff_turbulent(is);
+        {
+          // debut EB
+          const Nom dis=discretisation().que_suis_je();
 
+          if (dis=="VDF+")
+            {
+              Nom type="Op_Dift_VDF_Face_FT";
+              terme_diffusif.typer(type);
+              terme_diffusif.l_op_base().associer_eqn(*this);
+              Cerr << terme_diffusif.valeur().que_suis_je() << finl;
+              terme_diffusif->associer_diffusivite(terme_diffusif.diffusivite());
+              Motcle motbidon;
+              is >>  motbidon; // on passe les 2 accolades
+              is >>  motbidon;
+              // fin EB
+            }
+          else
+            lire_op_diff_turbulent(is);
+        }
       // Le coefficient de diffusion est une viscosite dynamique.
       // Il faut le diviser par rho pour calculer le pas de temps de stabilite.
       terme_diffusif.valeur().
@@ -586,6 +705,79 @@ int Navier_Stokes_FT_Disc::lire_motcle_non_standard(const Motcle& mot, Entree& i
           Process::exit();
         }
     }
+  else if (mot=="correction_trainee")
+    {
+      Cerr << "Lecture des parametres de la correction de la trainee : ";
+      Motcles mots;
+      mots.add("alpha"); // constante correlation
+      mots.add("beta"); // puissance correlation
+      mots.add("faces_diphasiques"); // 1 : correction appliquee sur les faces d'indicatrice strictement inferieure a 1,
+      //0: correction appliquee sur les faces d'indicatrice nulle -> initialisee a 1
+      mots.add("extension_reynolds"); // 1 : on multiplie la correction par la correlation d'Abraham, 0 : on n'en tient pas compte -> intialise a 0
+      mots.add("proportionnel"); // 1 : la correction est definie comme proportionnelle a la force de trainee calculee, 0 : la correction est egale
+      // a la force de stokes a un facteur multiplicatif pres. Dans les deux cas, les expressions sont obtenues par une fonction d'interpolation python
+      // -> initialisee a 0
+      Motcle motbis;
+      Motcle accouverte = "{" , accfermee = "}" ;
+      is >> motbis;
+      if (motbis == accouverte)
+        {
+          is >> variables_internes().flag_correction_trainee_;
+          is >> motbis;
+          while (motbis != accfermee)
+            {
+              int rang = mots.search(motbis);
+              switch(rang)
+                {
+                case 0:
+                  {
+                    is >> variables_internes().alpha_correction_trainee_;
+                    Cerr << "\talpha = " << variables_internes().alpha_correction_trainee_;
+                    break;
+                  }
+                case 1:
+                  {
+                    is >> variables_internes().beta_correction_trainee_;
+                    Cerr << "\tbeta = " << variables_internes().beta_correction_trainee_ << finl;
+                    break;
+                  }
+                case 2:
+                  {
+                    is >> variables_internes().faces_diphasiques_;
+                    if (variables_internes().faces_diphasiques_) Cerr << "La correction de la trainee sera appliquee sur les faces"
+                                                                        "solides et diphasiques." << finl;
+                    else Cerr << "La correction de la trainee sera appliquee sur les faces solides uniquement." << finl;
+                    break;
+                  }
+                case 3:
+                  {
+                    is >> variables_internes().extension_reynolds_;
+                    if (variables_internes().extension_reynolds_) Cerr << "On utilise la correlation d'Abraham pour etendre"
+                                                                         "la correction de la force de trainee a plus haut reynolds." << finl;
+                    break;
+                  }
+                case 4:
+                  {
+                    is >> variables_internes().proportionnel_;
+                    if (variables_internes().proportionnel_) Cerr << "On utilise la forme F_PR-DNS = F_PR-SCS x g(D/delta_x)" << finl;
+                    else  Cerr << "On utilise la forme F_PR-DNS = F_PR-SCS + F_stokes x (1-h(D/delta_x))." << finl;
+                    break;
+                  }
+                default:
+                  Cerr << "Erreur, on attendait " << mots << " On a trouve : " << motbis << finl;
+                  barrier();
+                  exit();
+                }
+              is >> motbis;
+            }
+        }
+      else
+        {
+          Cerr << "Erreur, on attendait " << accouverte << "On a trouve : " << motbis << finl;
+          barrier();
+          exit();
+        }
+    }
   else if (mot =="interpol_indic_pour_dI_dt")
     {
       Motcles motcles2(9);
@@ -683,6 +875,7 @@ int Navier_Stokes_FT_Disc::lire_motcle_non_standard(const Motcle& mot, Entree& i
                    << " Additionally, ui_ext is used."  << finl;
             return 1;
           }
+
         default:
           Cerr << "Transport_Interfaces_FT_Disc::lire\n"
                << "The options for methode_transport are :\n"
@@ -744,10 +937,277 @@ int Navier_Stokes_FT_Disc::lire_motcle_non_standard(const Motcle& mot, Entree& i
           Process::exit();
         }
     }
+
   else
     return Navier_Stokes_Turbulent::lire_motcle_non_standard(mot,is);
   return 1;
 }
+
+// debut EB
+
+// Description:
+//    Sauvegarde num_compo
+//    sur un flot de sortie.
+// Precondition:
+// Parametre:Sortie& os
+//    Signification: un flot de sortie
+//    Valeurs par defaut:
+//    Contraintes:
+//    Acces: entree/sortie
+// Retour: int
+//    Signification: renvoie toujours 1
+//    Contraintes:
+// Exception:
+// Effets de bord:
+// Postcondition: la methode ne modifie pas l'objet
+int Navier_Stokes_FT_Disc::sauvegarder(Sortie& os) const
+{
+  int bytes=0;
+  bytes += Navier_Stokes_Turbulent::sauvegarder(os);
+  const REF(Transport_Interfaces_FT_Disc) & refeq_transport = variables_internes().ref_eq_interf_proprietes_fluide;
+  if (refeq_transport.non_nul())
+    {
+      const Transport_Interfaces_FT_Disc& eq_transport = refeq_transport.valeur();
+      if (eq_transport.is_solid_particle())
+        {
+          bytes+=variables_internes().num_compo.sauvegarder(os);
+          assert(bytes % 4 == 0);
+        }
+    }
+  return bytes;
+}
+
+int Navier_Stokes_FT_Disc::reprendre(Entree& is)
+{
+  Navier_Stokes_Turbulent::reprendre(is);
+  const REF(Transport_Interfaces_FT_Disc) & refeq_transport = variables_internes().ref_eq_interf_proprietes_fluide;
+  const Transport_Interfaces_FT_Disc& eq_transport = refeq_transport.valeur();
+  if (eq_transport.is_solid_particle())
+    {
+      double temps = schema_temps().temps_courant();
+      Nom ident_num_compo(variables_internes().num_compo.le_nom());
+      ident_num_compo += variables_internes().num_compo.valeur().que_suis_je();
+      ident_num_compo+= probleme().domaine().le_nom();
+      ident_num_compo+=Nom(temps,probleme().reprise_format_temps());
+
+      avancer_fichier(is,ident_num_compo);
+      variables_internes().num_compo.reprendre(is);
+    }
+  return 1;
+}
+void ouvrir_fichier(SFichier& os,const Nom& type, const int& flag, const Navier_Stokes_FT_Disc& equation)
+{
+  // flag nul on n'ouvre pas le fichier
+  if (flag==0)
+    return ;
+  int rang = -1;
+  Nom fichier=Objet_U::nom_du_cas();
+  if (type=="forces_particule")
+    {
+      fichier+="_Forces_Particule_";
+      rang = 0;
+    }
+  else if( type=="forces_particule_th" )
+    {
+      fichier+= "_Forces_Particule_theoriques_";
+      rang = 1;
+    }
+  else if (type=="forces_particule_lit")
+    {
+      fichier+= "_Forces_Particules_Lit_";
+      rang = 2;
+    }
+  else if (type=="liste_collision")
+    {
+      fichier+= "_Liste_Collision_Lit_";
+      rang = 3;
+    }
+
+
+  else
+    {
+      Cerr << "Le fichier " << type << " n est pas compris par Navier_Stokes_FT_Disc::ouvrir_fichier. "
+           << "Cela semble du a une erreur d'implementation au sein de votre BALTIK." << finl;
+    }
+
+  fichier+=equation.le_nom();
+  fichier+=".out";
+  const Schema_Temps_base& sch=equation.probleme().schema_temps();
+  const int& precision=sch.precision_impr();
+  // On cree le fichier a la premiere impression avec l'en tete ou si le fichier n'existe pas
+
+  struct stat f;
+  //const int rang=fichier.search(type);
+  if (stat(fichier,&f) && (sch.nb_impr_fpi()==1 && !equation.probleme().reprise_effectuee()))
+    {
+      os.ouvrir(fichier,ios::app);
+      SFichier& file=os;
+      Nom espace="\t";
+
+      if (rang==0)
+        {
+          file << "###################################" << finl;
+          file << "# Hydrodynamic force computation #"  << finl;
+          file << "###################################" << finl;
+          file << finl;
+          file << "# Time [s]"<< espace << "Particle surface [m^2]" << espace << "Pressure force [N] (fpx fpy fpz)" << espace << "Friction force [N] (ffx ffy ffz)" << finl;
+          file << finl;
+        }
+      if (rang==1)
+        {
+          file << "#####################################################################" << finl;
+          file << "# Hydrodynamic force computation - Stokes theoretical configuration #"  << finl;
+          file << "#####################################################################" << finl;
+          file << "# Time [s]"<< finl;
+          file << "# Stokes theoretical PRESSURE FORCE computed from the integration, on the lagrangian mesh, of the discretized analytical solution [N] (fpx_th fpy_th fpz_th)" << finl;
+          file << "# Stokes PRESSURE FORCE computed with the developed method on the theoretical pressure field discretized on the eulerian mesh [N] (fpx_th_interp fpy_th_interp fpz_th_interp)" << finl;
+          file << "# Stokes theoretical FRICTION FORCE computed from the integration, on the lagrangian mesh, of the discretized analytical solution [N] (ffx_th ffy_th ffz_th)" << finl;
+          file << "# Stokes FRICTION FORCE computed with the developed method on the theoretical velocity field discretized on the eulerian mesh [N] (ffx_th_interp ffy_th_interp ffz_th_interp)" << finl;
+          file << finl;
+          file << "# Time" << espace << "fpx_th fpy_th fpz_th" << espace << "fpx_th_interp fpy_th_interp fpz_th_interp" << espace << "ffx_th ffy_th ffz_th" << espace << "ffx_th_interp ffy_th_interp ffz_th_interp" << finl;
+          file << finl;
+        }
+      if (rang==2)
+        {
+          file << "#########################################################" << finl;
+          file << "# Hydrodynamic force computation in a particle assembly #"  << finl;
+          file << "#########################################################" << finl;
+          file << finl;
+          file << "# Time [s]" << espace << "num_compo" << "Pressure force [N] (fpx fpy fpz)" << espace << "Friction force [N] (ffx ffy ffz)" << espace << "Percentage of facets for which forces were computable" << espace << "Average fluid velocity in P2" << "Percentage of purely fluid cells in P2"<<  finl;
+          file << finl;
+        }
+      if (rang==3)
+        {
+          file << "# List of colliding particle pairs" << finl;
+          file << finl;
+        }
+    }
+  else
+    {
+      os.ouvrir(fichier,ios::app);
+    }
+  os.precision(precision);
+  os.setf(ios::scientific);
+}
+
+void Navier_Stokes_FT_Disc::imprimer(Sortie& os) const
+{
+  Navier_Stokes_Turbulent::imprimer(os);
+}
+
+// EB
+/*! @brief imprile les forces de pression et de frottements, la surface totale de l'interface
+ *  Pour le multi-particule (>5), imprime egalement le pourcentage des fa7, par particule, pour lesquels le calcul des efforts est possible,
+ *  la vitesse moyenne aux points P1 et P2 (en ne prenant en compte que les facettes pour lesquelles l'interpolation est possible),
+ *  ainsi que la proportion des elements P2 (elements contenant les points P2) qui sont purement fluide.
+ */
+int Navier_Stokes_FT_Disc::impr_fpi(Sortie& os) const
+{
+  const REF(Transport_Interfaces_FT_Disc) & refeq_transport = variables_internes().ref_eq_interf_proprietes_fluide;
+  if (refeq_transport.non_nul())
+    {
+      const Transport_Interfaces_FT_Disc& eq_transport = refeq_transport.valeur();
+      if (eq_transport.is_solid_particle())
+        {
+          const Postraitement_Forces_Interfaces_FT& les_post_interf=eq_transport.postraitement_forces_interf();
+
+          if (les_post_interf.postraiter_forces())
+            {
+              if (Process::je_suis_maitre())
+                {
+                  const DoubleTab& force_pression_tot_interf=get_force_tot_pression_interf(); // EB
+                  const DoubleTab& force_frottements_tot_interf=get_force_tot_frottements_interf(); // EB
+                  const DoubleVect& surface_tot_interf=get_surface_tot_interf();
+
+                  Nom espace= " ";
+                  int dim_max_impr=5; // on imprime pas les valeurs si il y a plus de 5 particules dans le domaine
+
+                  int nb_compo = force_pression_tot_interf.dimension(0); //
+                  // On imprime les forces exercees par le fluide sur les particules
+                  if (nb_compo<dim_max_impr)
+                    {
+                      SFichier Force_Particule;
+                      const Navier_Stokes_FT_Disc& mon_eq = *this;
+                      ouvrir_fichier(Force_Particule,"forces_particule",1,mon_eq);
+                      schema_temps().imprimer_temps_courant(Force_Particule);
+
+                      for (int compo=0; compo<nb_compo; compo++)
+                        {
+                          Force_Particule << espace << surface_tot_interf(compo) << espace;
+                          for (int dim=0; dim<dimension; dim++) Force_Particule << espace << force_pression_tot_interf(compo,dim);
+                          Force_Particule << espace;
+                          for (int dim=0; dim<dimension; dim++) Force_Particule << espace << force_frottements_tot_interf(compo,dim);
+                          Force_Particule << espace;
+                        }
+
+                      Force_Particule << finl;
+                    }
+                  else
+                    {
+                      SFichier Forces_Particule_Lit;
+                      const Navier_Stokes_FT_Disc& mon_eq = *this;
+                      ouvrir_fichier(Forces_Particule_Lit,"forces_particule_lit",1,mon_eq);
+                      Forces_Particule_Lit << "TIME ";
+                      schema_temps().imprimer_temps_courant(Forces_Particule_Lit);
+                      Forces_Particule_Lit << finl;
+                      const DoubleTab& U_P2_moy = variables_internes().U_P2_moy_;
+                      const DoubleTab& Nb_fa7_ok_prop = variables_internes().Proportion_fa7_ok_UP2_;
+                      const DoubleTab& Prop_indic_fluide_P2 = variables_internes().Prop_P2_fluide_compo_;
+                      for (int compo = 0; compo < nb_compo; compo++)
+                        {
+                          int dim;
+                          Forces_Particule_Lit << compo ;
+                          Forces_Particule_Lit << espace << surface_tot_interf(compo) << espace;
+                          for (dim=0; dim<dimension; dim++) Forces_Particule_Lit << espace << force_pression_tot_interf(compo,dim);
+                          Forces_Particule_Lit << espace;
+                          for (dim=0; dim<dimension; dim++) Forces_Particule_Lit << espace << force_frottements_tot_interf(compo,dim);
+                          Forces_Particule_Lit << espace;
+                          for (dim=0; dim<dimension; dim++) Forces_Particule_Lit << espace << Nb_fa7_ok_prop(compo,dim);
+                          for (dim=0; dim<dimension; dim++) Forces_Particule_Lit << espace << U_P2_moy(compo,dim);
+                          Forces_Particule_Lit << espace << Prop_indic_fluide_P2(compo);
+                          Forces_Particule_Lit << finl;
+                        }
+                    }
+
+                  // On imprime les forces exercees par le fluide sur les particules - donnees theoriques issues de la resoluton de
+                  // l'ecoulement de Stokes
+                  if (les_post_interf.calcul_forces_theoriques_stokes_ && schema_temps().nb_pas_dt()==1)
+                    {
+                      const DoubleTab& force_pression_tot_interf_stokes_th=get_force_pression_tot_interf_stokes_th(); // EB
+                      const DoubleTab& force_frottements_tot_interf_stokes_th=get_force_frottements_tot_interf_stokes_th(); // EB
+                      const DoubleTab& force_pression_tot_interf_stokes_th_dis=get_force_pression_tot_interf_stokes_th_dis(); // EB
+                      const DoubleTab& force_frottements_tot_interf_stokes_th_dis=get_force_frottements_tot_interf_stokes_th_dis(); // EB
+
+                      if (nb_compo<dim_max_impr)
+                        {
+                          SFichier Force_Particule_th;
+                          const Navier_Stokes_FT_Disc& mon_eq = *this;
+                          ouvrir_fichier(Force_Particule_th,"forces_particule_th",1,mon_eq);
+                          schema_temps().imprimer_temps_courant(Force_Particule_th);
+                          for (int compo=0; compo<nb_compo; compo++)
+                            {
+                              Force_Particule_th << espace;
+                              for (int dim=0; dim<dimension; dim++) Force_Particule_th << espace << force_pression_tot_interf_stokes_th(compo,dim);
+                              Force_Particule_th << espace;
+                              for (int dim=0; dim<dimension; dim++) Force_Particule_th << espace << force_pression_tot_interf_stokes_th_dis(compo,dim);
+                              Force_Particule_th << espace;
+                              for (int dim=0; dim<dimension; dim++) Force_Particule_th << espace << force_frottements_tot_interf_stokes_th(compo,dim);
+                              Force_Particule_th << espace;
+                              for (int dim=0; dim<dimension; dim++) Force_Particule_th << espace << force_frottements_tot_interf_stokes_th_dis(compo,dim);
+                              Force_Particule_th << finl;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+  return 1;
+}
+
+
+// fin EB
+
 
 const Champ_Don& Navier_Stokes_FT_Disc::diffusivite_pour_transport() const
 {
@@ -958,9 +1418,16 @@ void Navier_Stokes_FT_Disc::discretiser()
   dis.discretiser_champ("pression", mon_dom_dis,
                         "derivee_temporelle_indicatrice", "",
                         1 /* composante */, temps,
-                        variables_internes().derivee_temporelle_indicatrice);
+                        variables_internes().derivee_temporelle_indicatrice); // nombre de composantes invalide en VEF
   champs_compris.add(variables_internes().derivee_temporelle_indicatrice.valeur());
   champs_compris_.ajoute_champ(variables_internes().derivee_temporelle_indicatrice);
+  //HMS
+  dis.discretiser_champ("vitesse", mon_dom_dis,
+                        "terme_source_collisions", "",
+                        1 /* 1 nb composante */, temps,
+                        variables_internes().terme_source_collisions);
+  champs_compris.add(variables_internes().terme_source_collisions.valeur());
+  champs_compris_.ajoute_champ(variables_internes().terme_source_collisions);
 
   // Eulerian Interfacial area :
   dis.discretiser_champ("champ_elem", mon_dom_dis,
@@ -970,6 +1437,24 @@ void Navier_Stokes_FT_Disc::discretiser()
   champs_compris.add(variables_internes().ai.valeur());
   champs_compris_.ajoute_champ(variables_internes().ai);
 
+  dis.discretiser_champ("pression", mon_dom_dis,
+                        "num_compo", "",
+                        1 /* composante */ , temps,
+                        variables_internes().num_compo);
+  champs_compris.add(variables_internes().num_compo.valeur());
+  champs_compris_.ajoute_champ(variables_internes().num_compo);
+  //fin HMS
+
+
+  // debut EB
+  dis.discretiser_champ("vitesse", mon_dom_dis,
+                        "terme_correction_trainee", "",
+                        1 , temps,
+                        variables_internes().terme_correction_trainee);
+  champs_compris.add(variables_internes().terme_correction_trainee.valeur());
+  champs_compris_.ajoute_champ(variables_internes().terme_correction_trainee);
+
+// fin EB
   // Velocity jump "u0" computed for phase 0 :
   Nom nom = Nom("vitesse_jump0_") + le_nom();
   dis.discretiser_champ("vitesse", mon_dom_dis, nom, "m/s", -1 /* nb composantes par defaut */,1,  temps,
@@ -988,7 +1473,7 @@ void Navier_Stokes_FT_Disc::discretiser()
 void Navier_Stokes_FT_Disc::discretiser_assembleur_pression()
 {
   const Discretisation_base& dis = discretisation();
-  if (dis.que_suis_je() == "VDF")
+  if (dis.que_suis_je() == "VDF" || dis.que_suis_je()=="VDF+")
     {
       // Assembleur pression generique (prevu pour rho_variable)
       assembleur_pression_.typer("Assembleur_P_VDF");
@@ -1038,6 +1523,38 @@ int Navier_Stokes_FT_Disc::preparer_calcul()
     REF(Transport_Interfaces_FT_Disc) & ref_equation =
       variables_internes().ref_eq_interf_proprietes_fluide;
 
+    // debut EB
+    if (ref_equation.non_nul())
+      {
+        Transport_Interfaces_FT_Disc& eq_transport = ref_equation.valeur();
+        // Pour utiliser l'indicatrice aux aretes, il faut renseigner les proprietes du fluide pour l'operateur (terme_diffusif->associer_proprietes_fluide)
+        // Il faut absolument utiliser une discretisation VDF+ pour avoir le bon operateur de diffusion (Op_Dift_VDF_var_Face_FT)
+        // On pourrait l'utiliser pour autre chose que des particules solides mais il faudrait le valider
+        //
+        if (eq_transport.is_solid_particle())
+          {
+            // TODO FIXME WILL NOT WORK FOR VEF .... should test subtype ... // EB : test not required because the baltik fluid_particle_interaction (is_solid_particle=1) should only be used in VDF
+            //ref_cast(Op_Dift_VDF_Face_FT, terme_diffusif.valeur()).associer_indicatrices(eq_transport.inconnue().valeurs(),eq_transport.get_indicatrice_aretes());
+            terme_diffusif->associer_indicatrices(eq_transport.inconnue().valeurs(),eq_transport.get_indicatrice_aretes());
+            const int formule_mu=fluide_diphasique().formule_mu();
+            const double mu_fluide  =  fluide_diphasique().fluide_phase(1).viscosite_dynamique().valeur().valeurs()(0, 0);
+            const double mu_particule  = fluide_diphasique().fluide_phase(0).viscosite_dynamique().valeur().valeurs()(0, 0);
+            //ref_cast(Op_Dift_VDF_Face_FT, terme_diffusif.valeur()).associer_proprietes_fluide(formule_mu,mu_particule,mu_fluide);
+            terme_diffusif->associer_proprietes_fluide(formule_mu,mu_particule,mu_fluide);
+            /*
+            const Particule_Solide& particule_solide=ref_cast(Particule_Solide,fluide_diphasique().fluide_phase(0));  // a modifier pour des particules bidisperses ou de tailles differentes
+            const double rayon_compo=eq_transport.get_rayons_compo()(0); // a modifier pour des particules bidisperses ou de tailles differentes
+            // Les lignes suivantes seront utiles tant que l'on fera du monodisperse, cela evite de tout recalculer a chaque fois et evite des tableaux inutiles et lourds.
+            particule_solide.set_rayon(rayon_compo);
+            particule_solide.set_diametre(2*rayon_compo);
+            particule_solide.set_volume_compo(4 * M_PI * pow(rayon_compo, 3) / 3);
+            particule_solide.set_masse_compo((4 * M_PI * pow(rayon_compo, 3) / 3)*rho_solide);
+
+            */ // EB : Voir Particule_Solide::set_param
+          }
+      }
+    // fin EB
+
     if (ref_equation.non_nul())
       {
 
@@ -1050,14 +1567,16 @@ int Navier_Stokes_FT_Disc::preparer_calcul()
                  << " based on the indicatrice field of the equation " << ref_equation.valeur().le_nom() << finl;
 
           }
+        const int calcul_precis_indic_face=ref_equation.valeur().calcul_precis_indic_faces();
         FT_disc_calculer_champs_rho_mu_nu_dipha(domaine_dis().valeur(),
                                                 fluide_diphasique(),
                                                 ref_equation.valeur().
                                                 get_update_indicatrice().valeurs(), // indicatrice
+                                                ref_equation.valeur(), // EB : eq_transport
                                                 champ_rho_elem_.valeur().valeurs(),
                                                 champ_nu_.valeur().valeurs(),
                                                 champ_mu_.valeur().valeurs(),
-                                                champ_rho_faces_.valeur().valeurs());
+                                                champ_rho_faces_.valeur().valeurs(), schema_temps().temps_courant(), calcul_precis_indic_face);
       }
     else
       {
@@ -1132,6 +1651,34 @@ int Navier_Stokes_FT_Disc::preparer_calcul()
       le_traitement_particulier.preparer_calcul_particulier();
     }
 
+// debut EB
+  const Discretisation_base& dis = discretisation();
+  REF(Transport_Interfaces_FT_Disc) & refeq_transport = variables_internes().ref_eq_interf_proprietes_fluide;
+  if (refeq_transport.non_nul())
+    {
+      const Transport_Interfaces_FT_Disc& eq_transport = refeq_transport.valeur();
+      const Postraitement_Forces_Interfaces_FT& les_post_interf=eq_transport.postraitement_forces_interf();
+      const double temps = schema_temps().temps_courant();
+      const Domaine_dis_base& mon_domaine_dis = domaine_dis().valeur();
+      LIST(REF(Champ_base)) & champs_compris = variables_internes().liste_champs_compris;
+      if (les_post_interf.calcul_forces_theoriques_stokes_)
+        {
+          dis.discretiser_champ("vitesse", mon_domaine_dis,
+                                "vitesse_stokes_th", "m/s",
+                                3 , temps,
+                                variables_internes().vitesse_stokes_th_);
+          champs_compris.add(variables_internes().vitesse_stokes_th_.valeur());
+          champs_compris_.ajoute_champ(variables_internes().vitesse_stokes_th_);
+
+          dis.discretiser_champ("pression", mon_domaine_dis,
+                                "pression_stokes_th", "pa",
+                                1 , temps,
+                                variables_internes().pression_stokes_th_);
+          champs_compris.add(variables_internes().pression_stokes_th_.valeur());
+          champs_compris_.ajoute_champ(variables_internes().pression_stokes_th_);
+        }
+    }
+  // fin EB
   return 1;
 }
 
@@ -1177,6 +1724,7 @@ void Navier_Stokes_FT_Disc::mettre_a_jour(double temps)
   champ_rho_faces_.mettre_a_jour(temps);
   champ_mu_.mettre_a_jour(temps);
   champ_nu_.mettre_a_jour(temps);
+  variables_internes().num_compo.mettre_a_jour(temps); // EB
 }
 
 const SolveurSys& Navier_Stokes_FT_Disc::get_solveur_pression() const
@@ -1197,7 +1745,7 @@ const SolveurSys& Navier_Stokes_FT_Disc::get_solveur_pression() const
  * @param (champ) le champ aux faces (meme discretisation que la vitesse) ou on stocke le terme source des forces superficielles.
  */
 //
-//  The method is no longer const because it changes a member of variables_internes() to store the Eulerian interfacial Area.
+//  The method is no inter const because it changes a member of variables_internes() to store the Eulerian interfacial Area.
 void Navier_Stokes_FT_Disc::calculer_champ_forces_superficielles(const Maillage_FT_Disc& maillage,
                                                                  const Champ_base& gradient_indicatrice,
                                                                  Champ_base& potentiel_elements,
@@ -2323,7 +2871,6 @@ void Navier_Stokes_FT_Disc::calculer_champ_forces_collisions(const DoubleTab& in
               int ori = orientation(face);
               valeurs_champ(face) =
                 (1 - indicatrice_faces(face)) * volumes_entrelaces(face) * forces_solide(compo, ori);
-
             }
         }
     }
@@ -2500,7 +3047,6 @@ void Navier_Stokes_FT_Disc::calculer_correction_trainee( DoubleTab& valeurs_cham
   statistiques().end_count(count);
 
 }
-
 
 
 /*! @brief Calcul du gradient de l'indicatrice.
@@ -3974,7 +4520,6 @@ void Navier_Stokes_FT_Disc::compute_boussinesq_additional_gravity(
       gravite_face(face)-=volumes_entrelaces(face)*g(orientation[face])*coef*beta_th_phase_eq;
     }
 }
-
 
 
 // EB
@@ -6079,7 +6624,6 @@ void Navier_Stokes_FT_Disc::calcul_forces_interface_stokes_th()
 }
 // fin EB
 
-
 /*! @brief Calcul de la derivee en temps de la vitesse.
  *
  */
@@ -6090,27 +6634,46 @@ DoubleTab& Navier_Stokes_FT_Disc::derivee_en_temps_inco(DoubleTab& vpoint)
   // on ne recalcule pas les proprietes.
   {
     REF(Transport_Interfaces_FT_Disc) & refeq_transport = variables_internes().ref_eq_interf_proprietes_fluide;
+
     if (refeq_transport.non_nul())
       {
+        const int calcul_precis_indic_face=refeq_transport.valeur().calcul_precis_indic_faces();
         FT_disc_calculer_champs_rho_mu_nu_dipha(domaine_dis().valeur(),
                                                 fluide_diphasique(),
                                                 refeq_transport.valeur().inconnue().valeur().valeurs(),
                                                 // (indicatrice)
+                                                refeq_transport.valeur(), // indicatrice_face
                                                 champ_rho_elem_.valeur().valeurs(),
                                                 champ_nu_.valeur().valeurs(),
                                                 champ_mu_.valeur().valeurs(),
-                                                champ_rho_faces_.valeur().valeurs());
+                                                champ_rho_faces_.valeur().valeurs(), schema_temps().temps_courant(),calcul_precis_indic_face);
       }
     else
       {
-        const Fluide_Incompressible& phase_0 = ref_cast(Fluide_Incompressible,milieu());
-        const Domaine_dis_base& zdis = domaine_dis().valeur();
-        FT_disc_calculer_champs_rho_mu_nu_mono(zdis,
-                                               phase_0,
-                                               champ_rho_elem_,
-                                               champ_mu_,
-                                               champ_nu_,
-                                               champ_rho_faces_);
+
+        if (sub_type(Fluide_Incompressible,milieu()))
+          {
+            const Domaine_dis_base& zdis = domaine_dis().valeur();
+            const Fluide_Incompressible& phase_0 = ref_cast(Fluide_Incompressible,milieu());
+            FT_disc_calculer_champs_rho_mu_nu_mono(zdis,
+                                                   phase_0,
+                                                   champ_rho_elem_,
+                                                   champ_mu_,
+                                                   champ_nu_,
+                                                   champ_rho_faces_);
+          }
+        else if (sub_type(Particule_Solide,milieu()))
+          {
+            const Particule_Solide& phase_0 = ref_cast(Particule_Solide,milieu());//EB
+            const Domaine_dis_base& zdis = domaine_dis().valeur();
+            FT_disc_calculer_champs_rho_mu_nu_mono(zdis,
+                                                   phase_0,
+                                                   champ_rho_elem_,
+                                                   champ_mu_,
+                                                   champ_nu_,
+                                                   champ_rho_faces_);
+          }
+
       }
   }
 
@@ -6129,6 +6692,16 @@ DoubleTab& Navier_Stokes_FT_Disc::derivee_en_temps_inco(DoubleTab& vpoint)
   //                div (mu * (grad(v)+tr(grad(v))))
   //                (on a associe "mu" a la "diffusivite" de l'operateur,
   //                 voir Navier_Stokes_FT_Disc::lire)
+
+  // EB
+  {
+    REF(Transport_Interfaces_FT_Disc) & refeq_transport = variables_internes().ref_eq_interf_proprietes_fluide; // EB
+    if (refeq_transport.non_nul())
+      {
+        const int calcul_precis_indic_arete=refeq_transport.valeur().calcul_precis_indic_aretes(); // EB
+        if (calcul_precis_indic_arete) refeq_transport.valeur().get_compute_indicatrice_aretes_internes();
+      }
+  }
   terme_diffusif.calculer(la_vitesse.valeurs(),
                           variables_internes().terme_diffusion.valeur().valeurs());
   solveur_masse.appliquer(variables_internes().terme_diffusion.valeur().valeurs());
@@ -6139,6 +6712,24 @@ DoubleTab& Navier_Stokes_FT_Disc::derivee_en_temps_inco(DoubleTab& vpoint)
   //                INTEGRALE                    | -- (rho * v)  |    //
   //                (sur le volume de controle)  \ dt            /    //
 
+  // HMS // EB
+  int flag_correction_trainee,is_solid_particle=0;
+  DoubleTab& terme_source_collisions=variables_internes().terme_source_collisions.valeur().valeurs() ;
+  terme_source_collisions=0;
+
+  DoubleTab& terme_correction_trainee=variables_internes().terme_correction_trainee.valeur().valeurs() ;
+  terme_correction_trainee=0;
+  flag_correction_trainee=variables_internes().flag_correction_trainee_; // EB
+  {
+    REF(Transport_Interfaces_FT_Disc) & refeq_transport =
+      variables_internes().ref_eq_interf_proprietes_fluide;
+    if (refeq_transport.non_nul())
+      {
+        const Transport_Interfaces_FT_Disc& eq_transport = refeq_transport.valeur();
+        is_solid_particle=eq_transport.is_solid_particle(); // EB
+      }
+  }
+
   {
     // Si une equation de transport est associee aux proprietes du fluide,
     // on ajoute le terme de tension de surface.
@@ -6148,11 +6739,13 @@ DoubleTab& Navier_Stokes_FT_Disc::derivee_en_temps_inco(DoubleTab& vpoint)
     if (refeq_transport.non_nul())
       {
         const Champ_base& indicatrice = refeq_transport.valeur().get_update_indicatrice();
+        //const Champ_base& indicatrice_faces = refeq_transport.valeur().get_compute_indicatrice_faces();
         Champ_base& gradient_i = variables_internes().gradient_indicatrice.valeur();
         // Note:
         // On appelle la version const de maillage_interface() (qui est publique) car
         // on passe par const Transport_Interfaces_FT_Disc :
         const Transport_Interfaces_FT_Disc& eq_transport = refeq_transport.valeur();
+        Transport_Interfaces_FT_Disc& eq_transport_non_const = refeq_transport.valeur();
         const Maillage_FT_Disc& maillage = eq_transport.maillage_interface();
         const DoubleTab& distance_interface_sommets =
           eq_transport.get_update_distance_interface_sommets();
@@ -6165,6 +6758,9 @@ DoubleTab& Navier_Stokes_FT_Disc::derivee_en_temps_inco(DoubleTab& vpoint)
                                              variables_internes().potentiel_elements,
                                              variables_internes().potentiel_faces,
                                              variables_internes().terme_source_interfaces);
+
+        if (is_solid_particle) calculer_champ_forces_collisions(indicatrice.valeurs(), terme_source_collisions, eq_transport, eq_transport_non_const, refeq_transport, maillage); //HMS
+        if (flag_correction_trainee) calculer_correction_trainee(terme_correction_trainee, eq_transport, eq_transport_non_const, refeq_transport, maillage);
       }
     else
       {
@@ -6172,7 +6768,8 @@ DoubleTab& Navier_Stokes_FT_Disc::derivee_en_temps_inco(DoubleTab& vpoint)
       }
   }
   solveur_masse.appliquer(variables_internes().terme_source_interfaces.valeur().valeurs());
-
+  if (is_solid_particle) solveur_masse.appliquer(terme_source_collisions); //HMS
+  if (flag_correction_trainee)  solveur_masse.appliquer(terme_correction_trainee); // EB
   // Autres termes sources (acceleration / repere mobile)
   //  Valeurs homogenes a
   //                                             / d       \          //
@@ -6418,7 +7015,7 @@ DoubleTab& Navier_Stokes_FT_Disc::derivee_en_temps_inco(DoubleTab& vpoint)
       const double rho_face = tab_rho_faces(i);
 
       for (int j = 0; j < m; j++)
-        vpoint(i, j) = ( - flag_gradP(i) * gradP(i,j) + flag_diff * tab_diffusion(i,j) + coef_TSF(i) * termes_sources_interf(i,j) ) / rho_face
+        vpoint(i, j) = ( - flag_gradP(i) * gradP(i,j) + flag_diff * tab_diffusion(i,j) + coef_TSF(i) *termes_sources_interf(i,j) + is_solid_particle*terme_source_collisions(i) + flag_correction_trainee*terme_correction_trainee(i)) / rho_face
                        + tab_convection(i,j) + termes_sources(i,j) + gravite_face(i,j);
     }
   vpoint.echange_espace_virtuel();
@@ -6774,7 +7371,7 @@ DoubleTab& Navier_Stokes_FT_Disc::derivee_en_temps_inco(DoubleTab& vpoint)
       Cerr << "Integral of secmem2 before TCL and /DT : " << int_sec_mem2 << finl; */
 
       // Now that the correction "corriger_mpoint" is performed directly into Convection_Diffusion_Temperature_FT_Disc,
-      // it is no longer required to compute it here. The correction should propagate to calculer_delta_vitesse (in the discreete sense),
+      // it is no inter required to compute it here. The correction should propagate to calculer_delta_vitesse (in the discreete sense),
       // and subsequently to secmem2. So that in the end, the whole TCL contribution should be accounted for naturally.
       // However, in the discretized version, It is still required to correct secmem2 even though mpoint was corrected itself.
       // It is because of the way secmem is computed (as the div( delta u)) that is using part of cells not crossed by the interface
@@ -7202,7 +7799,6 @@ int Navier_Stokes_FT_Disc::is_terme_gravite_rhog() const
   else
     return 0;
 }
-
 
 const Champ_Fonc& Navier_Stokes_FT_Disc::get_num_compo() const
 {
