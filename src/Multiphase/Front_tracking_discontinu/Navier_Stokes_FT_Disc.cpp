@@ -1561,8 +1561,6 @@ double compute_indic_ghost(const int elem, const int num_face, const double indi
   return indic_ghost;
 }
 
-<<<<<<< HEAD
-=======
 
 // debut EB
 // On envoie la liste des composantes reelles aux procs des zones_inf
@@ -2504,7 +2502,7 @@ void Navier_Stokes_FT_Disc::calculer_correction_trainee( DoubleTab& valeurs_cham
 }
 
 
->>>>>>> c8d6b763f (old change)
+
 /*! @brief Calcul du gradient de l'indicatrice.
  *
  * Ce gradient est utilise pour calculer le second membre de l'equation de qdm,
@@ -3978,8 +3976,7 @@ void Navier_Stokes_FT_Disc::compute_boussinesq_additional_gravity(
 }
 
 
-<<<<<<< HEAD
-=======
+
 // EB
 /*! @brief Cette fonction calcule les composantes du tenseur gradU aux points P1 pour chaque facette du maillage lagrangien.
  *  En entree: indicatrice_face, valeurs_champs (tableau de vitesse), coord : coordonnes xyz des points P1 pour chaque facette lagrangienne, resu : composantes
@@ -6082,7 +6079,7 @@ void Navier_Stokes_FT_Disc::calcul_forces_interface_stokes_th()
 }
 // fin EB
 
->>>>>>> 282fc085e (suppression espaces)
+
 /*! @brief Calcul de la derivee en temps de la vitesse.
  *
  */
@@ -7205,8 +7202,7 @@ int Navier_Stokes_FT_Disc::is_terme_gravite_rhog() const
   else
     return 0;
 }
-<<<<<<< HEAD
-=======
+
 
 const Champ_Fonc& Navier_Stokes_FT_Disc::get_num_compo() const
 {
@@ -8323,7 +8319,7 @@ void Navier_Stokes_FT_Disc::compute_num_compo(DoubleTab& num_compo,const DoubleT
 
 }
 
->>>>>>> 09c9f0ce0 ([FIX] methode_interpolation_v:VITESSE_SOLIDE_MOYENNE_ELEM corrigee pour les cas multi-particules)
+
 /*
 void Navier_Stokes_FT_Disc::corriger_mpoint()
 {

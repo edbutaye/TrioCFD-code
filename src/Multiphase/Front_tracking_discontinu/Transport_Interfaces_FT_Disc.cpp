@@ -500,8 +500,7 @@ int Transport_Interfaces_FT_Disc::lire_motcle_non_standard(const Motcle& un_mot,
           variables_internes_->methode_interpolation_v =
             Transport_Interfaces_FT_Disc_interne::VDF_LINEAIRE;
           break;
-<<<<<<< HEAD
-=======
+
           // debut EB
         case 2:
           variables_internes_->methode_interpolation_v =
@@ -528,7 +527,6 @@ int Transport_Interfaces_FT_Disc::lire_motcle_non_standard(const Motcle& un_mot,
 
           break;
           // fin EB
->>>>>>> 09c9f0ce0 ([FIX] methode_interpolation_v:VITESSE_SOLIDE_MOYENNE_ELEM corrigee pour les cas multi-particules)
         default:
           Cerr << "Transport_Interfaces_FT_Disc::lire\n"
                << "The options for " << un_mot << " are :\n"
@@ -2223,8 +2221,7 @@ void Transport_Interfaces_FT_Disc::calculer_vitesse_transport_interpolee(
         maillage.desc_sommets().echange_espace_virtuel(vitesse_noeuds);
         break;
       }
-<<<<<<< HEAD
-=======
+
       // debut EB
     case Transport_Interfaces_FT_Disc_interne::VITESSE_SOLIDE_MOYENNE_FA7:
       {
@@ -2485,7 +2482,7 @@ void Transport_Interfaces_FT_Disc::calculer_vitesse_transport_interpolee(
         maillage.desc_sommets().echange_espace_virtuel(vitesse_noeuds);
         break;
       }
->>>>>>> 09c9f0ce0 ([FIX] methode_interpolation_v:VITESSE_SOLIDE_MOYENNE_ELEM corrigee pour les cas multi-particules)
+
     default:
       {
         Cerr << "Transport_Interfaces_FT_Disc::calculer_vitesse_transport_interpolee\n"

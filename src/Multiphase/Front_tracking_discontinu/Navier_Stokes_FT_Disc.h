@@ -74,12 +74,9 @@ public:
 
   int is_terme_gravite_rhog() const;
   const Champ_Fonc& champ_rho_faces() const;
-<<<<<<< HEAD
-=======
   const Champ_Fonc& get_num_compo() const;
   Champ_Fonc& get_num_compo();
   void reprendre_num_compo(Entree& is) ;
->>>>>>> 09c9f0ce0 ([FIX] methode_interpolation_v:VITESSE_SOLIDE_MOYENNE_ELEM corrigee pour les cas multi-particules)
 
   virtual void calculer_dI_dt(DoubleVect& dI_dt); // const;
   const int& get_is_penalized() const;
@@ -91,8 +88,7 @@ public:
   //void corriger_mpoint(); // Apply correction based on TCL model
 
   const SolveurSys& get_solveur_pression() const;
-<<<<<<< HEAD
-=======
+
   const DoubleTab& get_force_pression_interf() const; // EB
   const DoubleTab& get_force_frottements_interf() const; // EB
   const DoubleTab& get_pression_interf() const; // EB
@@ -336,7 +332,6 @@ public:
   int trilinear_interpolation_elem(const DoubleTab& indicatrice, const DoubleTab& valeurs_champ, DoubleTab& coord, DoubleTab& resu, const int is_P2, const int discr);
   // Interpolation trilineaire de valeurs_champs aux sommets du maillage lagrangien. Valeurs_champs contient les infos aux faces du maillage eulerien.
   int trilinear_interpolation_face_sommets(const DoubleTab& indicatrice_faces, const DoubleTab& valeurs_champ, DoubleTab& coord, DoubleTab& resu); // EB // on le declare public car on en a besoin dans Transport_Interfaces_FT_Disc:calculer_vitesse_transport_interpolee
->>>>>>> 09c9f0ce0 ([FIX] methode_interpolation_v:VITESSE_SOLIDE_MOYENNE_ELEM corrigee pour les cas multi-particules)
 
 protected:
   // Methode surchargee de Navier_Stokes_std :

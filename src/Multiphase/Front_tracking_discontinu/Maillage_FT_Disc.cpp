@@ -1083,8 +1083,6 @@ void Maillage_FT_Disc::calcul_indicatrice(DoubleVect& indicatrice,
   statistiques().end_count(stat_counter);
 }
 
-<<<<<<< HEAD
-=======
 // EB idem mais aux aretes
 /*! @brief Calcul de la fonction indicatrice aux aretes du maillage eulerien (on suppose que "indicatrice_arete" a la structure d'un tableau de valeurs aux faces, on ne remplit
  *
@@ -1512,7 +1510,7 @@ void Maillage_FT_Disc::calcul_indicatrice_arete(const DoubleVect& indicatrice, D
 
 }
 // fin EB
->>>>>>> fc9eae94b (correction bug indic arete lorsqu'on va chercher un element hors du domaine)
+
 /*! @brief Deplace les sommets de l'interface d'un vecteur "deplacement" fourni, Change eventuellement les sommets de processeur, cree eventuellement
  *
  *   des lignes de contact et detecte les collisions.
@@ -1608,8 +1606,7 @@ void Maillage_FT_Disc::remplir_structure(const DoubleTab& soms)
 
   Descripteur_FT& espace_distant = desc_sommets_.espace_distant();
   Descripteur_FT& espace_virtuel = desc_sommets_.espace_virtuel();
-<<<<<<< HEAD
-=======
+
   //int nb_som_tot=def_noeud.dimension(0);
   //def_noeud.resize(nb_som_tot,8);
   //  def_noeud(i,5) = numero de la face de normale x qui contient le sommet (-1 sinon) // EB
@@ -1646,7 +1643,6 @@ void Maillage_FT_Disc::remplir_structure(const DoubleTab& soms)
   //const Zone_dis& zone_dis = refzone_dis_.valeur(); // EB
   //const Zone_VF& zone_vf = ref_cast(Zone_VF, zone_dis.valeur());  // EB
   //const int nb_faces_reelles=zone_vf.nb_faces(); // EB
->>>>>>> f8333f9c1 (ajout d'espace dans des commentaires pour un schema)
 
   int nb_noeuds = def_noeud.dimension(0);
   for (int noeud=0; noeud<nb_noeuds; noeud++)
@@ -6955,8 +6951,6 @@ void Maillage_FT_Disc::creer_tableau_elements(Array_base& x, RESIZE_OPTIONS opt)
   const MD_Vector& md = desc_facettes().get_md_vector();
   MD_Vector_tools::creer_tableau_distribue(md, x, opt);
 }
-<<<<<<< HEAD
-=======
 
 Schema_Comm_FT Maillage_FT_Disc::get_schema_comm_FT() const
 {
@@ -6971,4 +6965,3 @@ int Maillage_FT_Disc::is_solid_particle()
   return is_solid_particle_;
 }
 
->>>>>>> 09c9f0ce0 ([FIX] methode_interpolation_v:VITESSE_SOLIDE_MOYENNE_ELEM corrigee pour les cas multi-particules)
