@@ -1964,8 +1964,6 @@ int Transport_Interfaces_FT_Disc::preparer_calcul(void)
           ArrOfInt& liste_zone_sup=modele_collision_particule.get_liste_zone_sup();
           ArrOfInt& liste_zone_inf=modele_collision_particule.get_liste_zone_inf();
 
-          liste_zone_sup.set_smart_resize(1);
-          liste_zone_inf.set_smart_resize(1);
 
           int nsup=0;
           int ninf=0;
@@ -1988,8 +1986,6 @@ int Transport_Interfaces_FT_Disc::preparer_calcul(void)
           // Premierement, chaque proc envoie les coordonnees de son premier element aux autres procs
           DoubleTabFT list_coord_recv(0,dimension);
           IntTabFT list_pe_recv(0);
-          list_coord_recv.set_smart_resize(1);
-          list_pe_recv.set_smart_resize(1);
           Cerr << "list_coord_recv.dimensions " << list_coord_recv.dimension(0) << " " << list_coord_recv.dimension(1) << finl;
           int nb_elem_recv=0;
           const Schema_Comm_FT& schema_com= maillage_interface().get_schema_comm_FT();
@@ -2020,8 +2016,6 @@ int Transport_Interfaces_FT_Disc::preparer_calcul(void)
                 }
             }
           schema_com.end_comm();
-          list_coord_recv.set_smart_resize(0);
-          list_pe_recv.set_smart_resize(0);
           list_coord_recv.resize(nb_elem_recv,dimension);
           list_pe_recv.resize(nb_elem_recv);
 
@@ -2041,8 +2035,6 @@ int Transport_Interfaces_FT_Disc::preparer_calcul(void)
 
             }
 
-          liste_zone_sup.set_smart_resize(0);
-          liste_zone_inf.set_smart_resize(0);
           liste_zone_sup.resize_array(nsup);
           liste_zone_inf.resize_array(ninf);
 
@@ -2779,7 +2771,7 @@ void Transport_Interfaces_FT_Disc::calculer_vitesse_transport_interpolee(
         // (il faudrait calculer les compo connexes sur les sommets, et ensuite passer aux faces
         //  ce serait plus simple, voire calculer les deux en meme temps)
         IntVect compo_sommets;
-        maillage.creer_tableau_sommets(compo_sommets, Array_base::NOCOPY_NOINIT);
+        maillage.creer_tableau_sommets(compo_sommets, RESIZE_OPTIONS::NOCOPY_NOINIT);
         compo_sommets = -1;
         {
           const int dim = vitesse_noeuds.dimension(1);
@@ -2922,7 +2914,7 @@ void Transport_Interfaces_FT_Disc::calculer_vitesse_transport_interpolee(
         variables_internes_ -> positions_compo = Positions_compo;
         // identification du numero de compo des sommets lagrangiens
         IntVect compo_sommets;
-        maillage.creer_tableau_sommets(compo_sommets, Array_base::NOCOPY_NOINIT);
+        maillage.creer_tableau_sommets(compo_sommets, RESIZE_OPTIONS::NOCOPY_NOINIT);
         compo_sommets = -1;
         {
           const int dim = vitesse_noeuds.dimension(1);

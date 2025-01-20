@@ -1391,7 +1391,6 @@ void Maillage_FT_Disc::calcul_indicatrice(DoubleVect& indicatrice,
     // sinon le resultat depend de l'ordre de parcours des faces
     // Liste des faces a mettre a changer (colonne 0) et valeur a mettre (colonne 1)
     IntTab faces_to_change(0,2);
-    faces_to_change.set_smart_resize(1);
     const int nb_faces_face = elem_faces.line_size();
     const ArrOfInt& index_face_x = intersections_face_facettes_x_.index_face();
     const ArrOfInt& index_face_y = intersections_face_facettes_y_.index_face();
@@ -1798,7 +1797,6 @@ void Maillage_FT_Disc::calcul_indicatrice_arete(const DoubleVect& indicatrice, D
   //  si moyenne >0.5, mettre a 1 sinon mettre a 0
   {
     IntTab aretes_to_change(0,2);
-    aretes_to_change.set_smart_resize(1);
     const int nb_faces_arete = 2*dimension;
     const ArrOfInt& index_arete_x = intersections_arete_facettes_x_.index_arete();
     const ArrOfInt& index_arete_y = intersections_arete_facettes_y_.index_arete();

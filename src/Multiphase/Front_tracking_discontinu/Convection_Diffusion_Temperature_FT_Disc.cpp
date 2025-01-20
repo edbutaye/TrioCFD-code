@@ -645,13 +645,9 @@ int remove_duplicate(const IntTab& list, ArrOfInt& list_elem_unique, ArrOfInt& l
   ArrOfInt list_elem_to_send(0);
   ArrOfInt list_pe_send(0);
   ArrOfInt list_num_compo_to_send(0);
-  list_elem_to_send.set_smart_resize(1);
-  list_pe_send.set_smart_resize(1);
-  list_num_compo_to_send.set_smart_resize(1);
 
   ArrOfIntFT list_elem_recv;
   ArrOfIntFT list_num_compo_recv;
-  list_elem_recv.set_smart_resize(1);
 
   const IntTab& elem_virt_pe_num=domaine.elem_virt_pe_num();
   int nb_elem_to_send=0;
@@ -659,8 +655,6 @@ int remove_duplicate(const IntTab& list, ArrOfInt& list_elem_unique, ArrOfInt& l
 
   ArrOfInt list_elem_reels(0);
   ArrOfInt list_num_compo_reels(0);
-  list_elem_reels.set_smart_resize(1);
-  list_num_compo_reels.set_smart_resize(1);
   int nb_elems_reels=0;
 
   // On identifie les elements virtuels a envoyer
@@ -686,15 +680,10 @@ int remove_duplicate(const IntTab& list, ArrOfInt& list_elem_unique, ArrOfInt& l
         }
     }
 
-  list_elem_to_send.set_smart_resize(0);
-  list_pe_send.set_smart_resize(0);
-  list_num_compo_to_send.set_smart_resize(0);
   list_elem_to_send.resize_array(nb_elem_to_send);
   list_pe_send.resize_array(nb_elem_to_send);
   list_num_compo_to_send.resize_array(nb_elem_to_send);
 
-  list_elem_reels.set_smart_resize(0);
-  list_num_compo_reels.set_smart_resize(0);
   list_elem_reels.resize(nb_elems_reels);
   list_num_compo_reels.resize(nb_elems_reels);
 
@@ -750,16 +739,12 @@ int remove_duplicate(const IntTab& list, ArrOfInt& list_elem_unique, ArrOfInt& l
   Cerr << "list_pe_send " << list_pe_send << finl;
   */
 
-  list_elem_recv.set_smart_resize(0);
-  list_num_compo_recv.set_smart_resize(0);
   if (nb_elem_recv>0)
     {
       list_elem_recv.resize(nb_elem_recv);
       list_num_compo_recv.resize(nb_elem_recv);
     }
 
-  list_elem_unique.set_smart_resize(1);
-  list_num_compo_unique.set_smart_resize(1);
 
   int nb_elem_unique=0;
   int elem,num_compo;
@@ -792,8 +777,6 @@ int remove_duplicate(const IntTab& list, ArrOfInt& list_elem_unique, ArrOfInt& l
 
     }
 
-  list_elem_unique.set_smart_resize(0);
-  list_num_compo_unique.set_smart_resize(0);
   list_elem_unique.resize_array(nb_elem_unique);
   list_num_compo_unique.resize_array(nb_elem_unique);
 

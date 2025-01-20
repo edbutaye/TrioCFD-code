@@ -2115,7 +2115,6 @@ double compute_indic_ghost(const int elem, const int num_face, const double indi
 IntTabFT echanger_recevoir_list_num_compo(ArrOfInt& liste_compo_reelles_to_send, const ArrOfInt& liste_zone_inf, const Schema_Comm_FT& comm)
 {
   IntTabFT list_compo_recv;
-  list_compo_recv.set_smart_resize(1);
   int nb_elem_recv=0;
   const int nb_compo_reelles_to_send=liste_compo_reelles_to_send.size_array();
 
@@ -2154,7 +2153,6 @@ IntTabFT echanger_recevoir_list_num_compo(ArrOfInt& liste_compo_reelles_to_send,
     }
 
   comm.end_comm();
-  list_compo_recv.set_smart_resize(0);
   list_compo_recv.resize_array(nb_elem_recv);
 
   return list_compo_recv;
@@ -2266,12 +2264,10 @@ void Navier_Stokes_FT_Disc::calculer_champ_forces_collisions(const DoubleTab& in
             {
               nb_compo_reelles=0;
               liste_composantes_reelles.resize_array(0);
-              liste_composantes_reelles.set_smart_resize(1);
               for (int compo=0; compo<elem_cg.size_array(); compo++)
                 {
                   if (elem_cg(compo)>-1 && elem_cg(compo)<domaine_vf.nb_elem()) liste_composantes_reelles.append_array(compo), nb_compo_reelles++;
                 }
-              liste_composantes_reelles.set_smart_resize(0);
               liste_composantes_reelles.resize_array(nb_compo_reelles);
 
               Process::barrier(); // on est oblige d'attendre que tous les procs aient mis a jour leur liste avant de faire l'echange
@@ -5290,7 +5286,6 @@ int Navier_Stokes_FT_Disc::trilinear_interpolation_elem(const DoubleTab& indicat
   if (sauv_list_P1_all)
     {
       list_elem_P1_all.resize(0,2); // En (j,0) on stocke le num de l'element, en (j,1) on stocke le num de la particule
-      list_elem_P1_all.set_smart_resize(1);
       nb_elem_P1_all=0;
     }
   const DoubleTab& cg_fa7=maillage.cg_fa7();
@@ -5362,7 +5357,6 @@ int Navier_Stokes_FT_Disc::trilinear_interpolation_elem(const DoubleTab& indicat
     }
   if (sauv_list_P1_all)
     {
-      list_elem_P1_all.set_smart_resize(0);
       list_elem_P1_all.resize(nb_elem_P1_all,2);
     }
   return 1;
@@ -8914,7 +8908,6 @@ void Navier_Stokes_FT_Disc::compute_num_compo(DoubleTab& num_compo,const DoubleT
   compute_global_connex_components(num_compo, nb_local_connex_components);
 
 }
-
 
 /*
 void Navier_Stokes_FT_Disc::corriger_mpoint()
