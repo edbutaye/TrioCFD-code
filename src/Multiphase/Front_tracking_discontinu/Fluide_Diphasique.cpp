@@ -53,7 +53,7 @@ Entree& Fluide_Diphasique::readOn(Entree& is)
 void Fluide_Diphasique::set_param(Param& param)
 {
   param.ajouter("sigma",&sigma_,Param::REQUIRED); // XD_ADD_P champ_don_base surfacic tension (J/m2)
-  param.ajouter_non_std("fluide0",(this),Param::REQUIRED); // XD_ADD_P chaine first phase fluid
+  param.ajouter_non_std("fluide0",(this),Param::REQUIRED); // XD_ADD_P chaine first phase fluid. If fluide0 refers to a Particule_Solide, it MUST be called "particule_solide"
   param.ajouter_non_std("fluide1",(this),Param::REQUIRED); // XD_ADD_P chaine second phase fluid
   param.ajouter("chaleur_latente",&chaleur_latente_); // XD_ADD_P champ_don_base phase changement enthalpy h(phase1_) - h(phase0_) (J/kg/K)
   param.ajouter("formule_mu",&formule_mu_); // XD_ADD_P chaine (into=[standard,arithmetic,harmonic]) formula used to calculate average
@@ -67,11 +67,28 @@ int Fluide_Diphasique::lire_motcle_non_standard(const Motcle& mot, Entree& is)
       Nom nom_objet;
       is >> nom_objet;
       const Objet_U& objet = Interprete::objet(nom_objet);
-      const Fluide_Incompressible& fluide = ref_cast(Fluide_Incompressible,objet);
+      // EB
       if (mot=="fluide0")
-        phase0_ = fluide;
+        {
+          is_particule_solide_=0;
+          if (nom_objet=="particule_solide")
+            {
+              const Particule_Solide& fluide = ref_cast(Particule_Solide,objet);
+              phase0_PS_ = fluide;
+              is_particule_solide_=1;
+            }
+          else
+            {
+              const Fluide_Incompressible& fluide = ref_cast(Fluide_Incompressible,objet);
+              phase0_ = fluide;
+            }
+        }
       else if (mot=="fluide1")
-        phase1_ = fluide;
+        {
+          const Fluide_Incompressible& fluide = ref_cast(Fluide_Incompressible,objet);
+          phase1_ = fluide;
+        }
+      // fin EB
       return 1;
     }
   else
@@ -111,7 +128,7 @@ Fluide_Diphasique::fluide_phase(int phase) const
 {
   assert(phase == 0 || phase == 1);
   if (phase == 0)
-    return phase0_;
+    return is_particule_solide_ ? phase0_PS_ : phase0_ ; // EB C'est moche mais bon...
   else
     return phase1_;
 }
@@ -141,6 +158,8 @@ int Fluide_Diphasique::formule_mu() const
     return 1;
   else if ((formule_mu_ == "harmonique") or (formule_mu_ == "harmonic"))
     return 2;
+  else if ((formule_mu_ == "escalier") or (formule_mu_ == "staircase"))
+    return 3;
   else
     return -1;
 }
@@ -148,7 +167,7 @@ int Fluide_Diphasique::formule_mu() const
 
 int Fluide_Diphasique::initialiser(const double temps)
 {
-  phase0_.initialiser(temps);
+  is_particule_solide_ ? phase0_PS_.initialiser(temps) : phase0_.initialiser(temps);
   phase1_.initialiser(temps);
   initialiser_porosite(temps);
   return 1;
@@ -158,13 +177,13 @@ void Fluide_Diphasique::mettre_a_jour(double temps)
 {
   // en particulier, mise a jour de g qui peut dependre de t...
   Milieu_base::mettre_a_jour(temps);
-  phase0_.mettre_a_jour(temps);
+  is_particule_solide_ ? phase0_PS_.mettre_a_jour(temps) : phase0_.mettre_a_jour(temps);
   phase1_.mettre_a_jour(temps);
 }
 void Fluide_Diphasique::discretiser(const Probleme_base& pb, const  Discretisation_base& dis)
 {
   // sigma chaleur latente phase_0 phase_1  diffusivite revoir
-  phase0_.discretiser(pb,dis);
+  is_particule_solide_ ? phase0_PS_.discretiser(pb,dis) : phase0_.discretiser(pb,dis);
   phase1_.discretiser(pb,dis);
   discretiser_porosite(pb,dis);
   discretiser_diametre_hydro(pb, dis);
@@ -254,4 +273,3 @@ Champ_Don& Fluide_Diphasique::beta_t()
   exit();
   throw;
 }
-
