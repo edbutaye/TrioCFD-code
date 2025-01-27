@@ -28,6 +28,11 @@
 #include <Objet_U.h>
 #include <Milieu.h>
 
+// EB
+#include <Particule_Solide.h>
+
+// fin EB
+
 class Fluide_Diphasique: public Milieu_base
 {
   Declare_instanciable_sans_constructeur(Fluide_Diphasique);
@@ -75,6 +80,18 @@ private:
     Cerr << "Invalid call to the method Fluide_Diphasique::" << nom_funct << " !!!" << finl;
     throw;
   }
+  /*
+  int is_particule_solide_; // EB
+  Particule_Solide phase0_PS_; // EB
+  Fluide_Incompressible phase0_; // EB
+  Fluide_Incompressible phase1_;
+  // Tension de surface (J/m^2)
+  Champ_Don sigma_;
+  // Enthalpie de changement de phase h(phase1_) - h(phase0_) (J/kg/K)
+  Champ_Don chaleur_latente_;
+  // Formule utilisee pour le calcul de la moyenne de mu
+  Motcle formule_mu_;
+  */
 };
 
 #endif /* Fluide_Diphasique_included */
