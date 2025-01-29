@@ -29,8 +29,8 @@
 #include <Assembleur_base.h>
 #include <TRUST_Ref.h>
 
-#include <Navier_Stokes_FT_Disc.h> // EB
-#include <Maillage_FT_Disc.h> // EB
+//#include <Navier_Stokes_FT_Disc.h> // EB
+#include <Schema_Comm_FT.h> // EB
 
 class Fluide_Diphasique;
 class Navier_Stokes_std;
