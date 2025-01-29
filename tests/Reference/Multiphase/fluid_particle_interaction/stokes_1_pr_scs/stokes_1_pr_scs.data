@@ -1,0 +1,243 @@
+# SEQUENTIAL ONLY #
+
+dimension 3
+domaine dom
+Probleme_FT_Disc_gen pb
+
+Mailler dom
+{
+	Pave Cavite
+		{
+		Origine -7.8e-5 -7.8e-5 -7.8e-5
+	        Nombre_de_Noeuds 16 16 16
+		Longueurs 15.6e-5 15.6e-5 15.6e-5
+		}
+		{
+		Bord Derriere           X =  -7.8e-5	   	-7.8e-5 <= Y <= +7.8e-5 		-7.8e-5 <= Z <= +7.8e-5
+		Bord Droit              Y =  +7.8e-5 	        -7.8e-5 <= X <= +7.8e-5	        -7.8e-5 <= Z <= +7.8e-5
+		Bord Gauche             Y =  -7.8e-5	        -7.8e-5 <= X <= +7.8e-5	        -7.8e-5 <= Z <= +7.8e-5
+		Bord Devant   	         X =  +7.8e-5	        -7.8e-5 <= Y <= +7.8e-5 		-7.8e-5 <= Z <= +7.8e-5
+		Bord Bas	         Z =  -7.8e-5	    	-7.8e-5 <= X <= +7.8e-5	        -7.8e-5 <= Y <= +7.8e-5
+		Bord Haut	         Z =  +7.8e-5	        -7.8e-5 <= X <= +7.8e-5	        -7.8e-5 <= Y <= +7.8e-5
+		}
+}
+
+VDF dis
+
+Schema_Euler_explicite sch
+Lire sch
+{
+	tinit 0.
+	tmax 1e-3
+ 	# nb_pas_dt_max 10 #
+        dt_min 4e-11
+	dt_max 1e-6
+	dt_start dt_min
+	diffusion_implicite 1
+    	seuil_diffusion_implicite 1e-11
+    	impr_diffusion_implicite 1
+	dt_impr 0.01
+	dt_impr_fpi 1e-11
+	dt_sauv 100
+	seuil_statio -1
+}
+system "mkdir -p lata"
+system "rm -f *.txt"
+
+Particule_Solide particule_solide
+Lire particule_solide
+{
+
+	mu  Champ_Uniforme 1 3e0
+ 	rho Champ_Uniforme 1 1e4
+    	e_dry 0.97
+	monodisperse 1
+	rayon_frottements 2.6e-5 rayon_collision 2.6e-5
+}
+
+Fluide_Incompressible fluide
+Lire fluide
+{
+	mu  Champ_Uniforme 1 3e-3
+ 	rho Champ_Uniforme 1 1e3
+}
+
+Fluide_Diphasique fluide_diph
+Lire fluide_diph
+{
+	fluide0 particule_solide
+	fluide1 fluide
+	sigma   Champ_Uniforme 1 0
+  	formule_mu harmonique
+}
+
+Champ_Uniforme gravite
+Lire gravite 3 0. 0.  -10
+Associate fluide_diph gravite
+
+
+Navier_Stokes_FT_Disc              hydraulique
+Transport_Interfaces_FT_Disc       interf
+
+Associate pb hydraulique
+Associate pb interf
+
+Associate pb dom
+Associate pb sch
+Associate pb fluide_diph
+
+Discretize pb dis
+
+
+Lire pb
+{
+	hydraulique
+	{
+		modele_turbulence sous_maille_wale
+		{
+			Cw               0.
+			turbulence_paroi negligeable
+		}
+		solveur_pression GCP { precond ssor { omega 1.5 } seuil 1.e-11 impr }
+		convection           { centre }
+		diffusion            { }
+		clipping_courbure_interface 100				  
+		projection_initiale 0
+		correction_trainee { 1 alpha 9.79 beta 1.95 faces_diphasiques 1 extension_reynolds 0 proportionnel 0 }
+		dt_projection 1.e-10 1.e-18
+		# terme_gravite rho_g # 
+		conditions_initiales { vitesse Champ_fonc_xyz dom 3 (-4.508168e-03*z*x*((2+3*1e3)/(1+1e3)*(2.6e-5)/(4*((x^2+y^2+z^2)^1.5))-3*1e3/(1+1e3)*(2.6e-5)^3/(4*(x^2+y^2+z^2)^2.5)))*((x^2+y^2+z^2)^0.5]2.6e-5)-4.508168e-03/(2*(2.6e-5)^2)*(1/(1+1e3))*x*z*((x^2+y^2+z^2)^0.5<2.6e-5) (-4.508168e-03*z*y*((2+3*1e3)/(1+1e3)*(2.6e-5)/(4*((x^2+y^2+z^2)^1.5))-3*1e3/(1+1e3)*(2.6e-5)^3/(4*(x^2+y^2+z^2)^2.5)))*((x^2+y^2+z^2)^0.5]2.6e-5)-4.508168e-03/(2*(2.6e-5)^2)*(1/(1+1e3))*y*z*((x^2+y^2+z^2)^0.5<2.6e-5) 4.508168e-03*(+(z^2)*(1/(x^2+y^2+z^2)-(2+3*1e3)/(1+1e3)*(2.6e-5)/(2*(x^2+y^2+z^2)^1.5)+1e3/(1+1e3)*(2.6e-5)^3/(2*(x^2+y^2+z^2)^2.5))+(1-z^2/(x^2+y^2+z^2))*(1-(2+3*1e3)/(1+1e3)*2.6e-5/(4*(x^2+y^2+z^2)^0.5)-1e3/(1+1e3)*2.6e-5^3/(4*(x^2+y^2+z^2)^1.5)))*((x^2+y^2+z^2)^0.5]2.6e-5)-4.508168e-03/(2*(1+1e3))*(1+z^2/((2.6e-5)^2)-2*(x^2+y^2+z^2)/((2.6e-5)^2))*((x^2+y^2+z^2)^0.5<2.6e-5)
+					pression Champ_fonc_xyz dom 1 (-3e-3*4.508168e-03*((2+3*1e3)/(1+1e3))*1/2*2.6e-5*z/((x^2+y^2+z^2)^1.5))*((x^2+y^2+z^2)^0.5]2.6e-5)-(3e0*4.508168e-03*5/((1+1e3)*((2.6e-5)^2))*z)*((x^2+y^2+z^2)^0.5<2.6e-5)
+		}
+		equation_interfaces_proprietes_fluide interf  
+		boundary_conditions
+		{
+			Haut frontiere_ouverte_pression_imposee Champ_Front_Fonc_xyz 1 (-3e-3*4.508168e-03*((2+3*1e3)/(1+1e3))*1/2*2.6e-5*z/((x^2+y^2+z^2)^1.5))*((x^2+y^2+z^2)^0.5]2.6e-5)-(3e0*4.508168e-03*5/((1+1e3)*((2.6e-5)^2))*z)*((x^2+y^2+z^2)^0.5<2.6e-5)
+			
+			Bas frontiere_ouverte_vitesse_imposee Champ_Front_Fonc_xyz 3 (-4.508168e-03*z*x*((2+3*1e3)/(1+1e3)*(2.6e-5)/(4*((x^2+y^2+z^2)^1.5))-3*1e3/(1+1e3)*(2.6e-5)^3/(4*(x^2+y^2+z^2)^2.5)))*((x^2+y^2+z^2)^0.5]2.6e-5)-4.508168e-03/(2*(2.6e-5)^2)*(1/(1+1e3))*x*z*((x^2+y^2+z^2)^0.5<2.6e-5) (-4.508168e-03*z*y*((2+3*1e3)/(1+1e3)*(2.6e-5)/(4*((x^2+y^2+z^2)^1.5))-3*1e3/(1+1e3)*(2.6e-5)^3/(4*(x^2+y^2+z^2)^2.5)))*((x^2+y^2+z^2)^0.5]2.6e-5)-4.508168e-03/(2*(2.6e-5)^2)*(1/(1+1e3))*y*z*((x^2+y^2+z^2)^0.5<2.6e-5) 4.508168e-03*(+(z^2)*(1/(x^2+y^2+z^2)-(2+3*1e3)/(1+1e3)*(2.6e-5)/(2*(x^2+y^2+z^2)^1.5)+1e3/(1+1e3)*(2.6e-5)^3/(2*(x^2+y^2+z^2)^2.5))+(1-z^2/(x^2+y^2+z^2))*(1-(2+3*1e3)/(1+1e3)*2.6e-5/(4*(x^2+y^2+z^2)^0.5)-1e3/(1+1e3)*2.6e-5^3/(4*(x^2+y^2+z^2)^1.5)))*((x^2+y^2+z^2)^0.5]2.6e-5)-4.508168e-03/(2*(1+1e3))*(1+z^2/((2.6e-5)^2)-2*(x^2+y^2+z^2)/((2.6e-5)^2))*((x^2+y^2+z^2)^0.5<2.6e-5)
+			
+			
+			Gauche	frontiere_ouverte_vitesse_imposee Champ_Front_Fonc_xyz 3 (-4.508168e-03*z*x*((2+3*1e3)/(1+1e3)*(2.6e-5)/(4*((x^2+y^2+z^2)^1.5))-3*1e3/(1+1e3)*(2.6e-5)^3/(4*(x^2+y^2+z^2)^2.5)))*((x^2+y^2+z^2)^0.5]2.6e-5)-4.508168e-03/(2*(2.6e-5)^2)*(1/(1+1e3))*x*z*((x^2+y^2+z^2)^0.5<2.6e-5) (-4.508168e-03*z*y*((2+3*1e3)/(1+1e3)*(2.6e-5)/(4*((x^2+y^2+z^2)^1.5))-3*1e3/(1+1e3)*(2.6e-5)^3/(4*(x^2+y^2+z^2)^2.5)))*((x^2+y^2+z^2)^0.5]2.6e-5)-4.508168e-03/(2*(2.6e-5)^2)*(1/(1+1e3))*y*z*((x^2+y^2+z^2)^0.5<2.6e-5) 4.508168e-03*(+(z^2)*(1/(x^2+y^2+z^2)-(2+3*1e3)/(1+1e3)*(2.6e-5)/(2*(x^2+y^2+z^2)^1.5)+1e3/(1+1e3)*(2.6e-5)^3/(2*(x^2+y^2+z^2)^2.5))+(1-z^2/(x^2+y^2+z^2))*(1-(2+3*1e3)/(1+1e3)*2.6e-5/(4*(x^2+y^2+z^2)^0.5)-1e3/(1+1e3)*2.6e-5^3/(4*(x^2+y^2+z^2)^1.5)))*((x^2+y^2+z^2)^0.5]2.6e-5)-4.508168e-03/(2*(1+1e3))*(1+z^2/((2.6e-5)^2)-2*(x^2+y^2+z^2)/((2.6e-5)^2))*((x^2+y^2+z^2)^0.5<2.6e-5)
+
+			Droit	frontiere_ouverte_vitesse_imposee Champ_Front_Fonc_xyz 3 (-4.508168e-03*z*x*((2+3*1e3)/(1+1e3)*(2.6e-5)/(4*((x^2+y^2+z^2)^1.5))-3*1e3/(1+1e3)*(2.6e-5)^3/(4*(x^2+y^2+z^2)^2.5)))*((x^2+y^2+z^2)^0.5]2.6e-5)-4.508168e-03/(2*(2.6e-5)^2)*(1/(1+1e3))*x*z*((x^2+y^2+z^2)^0.5<2.6e-5) (-4.508168e-03*z*y*((2+3*1e3)/(1+1e3)*(2.6e-5)/(4*((x^2+y^2+z^2)^1.5))-3*1e3/(1+1e3)*(2.6e-5)^3/(4*(x^2+y^2+z^2)^2.5)))*((x^2+y^2+z^2)^0.5]2.6e-5)-4.508168e-03/(2*(2.6e-5)^2)*(1/(1+1e3))*y*z*((x^2+y^2+z^2)^0.5<2.6e-5) 4.508168e-03*(+(z^2)*(1/(x^2+y^2+z^2)-(2+3*1e3)/(1+1e3)*(2.6e-5)/(2*(x^2+y^2+z^2)^1.5)+1e3/(1+1e3)*(2.6e-5)^3/(2*(x^2+y^2+z^2)^2.5))+(1-z^2/(x^2+y^2+z^2))*(1-(2+3*1e3)/(1+1e3)*2.6e-5/(4*(x^2+y^2+z^2)^0.5)-1e3/(1+1e3)*2.6e-5^3/(4*(x^2+y^2+z^2)^1.5)))*((x^2+y^2+z^2)^0.5]2.6e-5)-4.508168e-03/(2*(1+1e3))*(1+z^2/((2.6e-5)^2)-2*(x^2+y^2+z^2)/((2.6e-5)^2))*((x^2+y^2+z^2)^0.5<2.6e-5)
+
+			Devant frontiere_ouverte_vitesse_imposee Champ_Front_Fonc_xyz 3 (-4.508168e-03*z*x*((2+3*1e3)/(1+1e3)*(2.6e-5)/(4*((x^2+y^2+z^2)^1.5))-3*1e3/(1+1e3)*(2.6e-5)^3/(4*(x^2+y^2+z^2)^2.5)))*((x^2+y^2+z^2)^0.5]2.6e-5)-4.508168e-03/(2*(2.6e-5)^2)*(1/(1+1e3))*x*z*((x^2+y^2+z^2)^0.5<2.6e-5) (-4.508168e-03*z*y*((2+3*1e3)/(1+1e3)*(2.6e-5)/(4*((x^2+y^2+z^2)^1.5))-3*1e3/(1+1e3)*(2.6e-5)^3/(4*(x^2+y^2+z^2)^2.5)))*((x^2+y^2+z^2)^0.5]2.6e-5)-4.508168e-03/(2*(2.6e-5)^2)*(1/(1+1e3))*y*z*((x^2+y^2+z^2)^0.5<2.6e-5) 4.508168e-03*(+(z^2)*(1/(x^2+y^2+z^2)-(2+3*1e3)/(1+1e3)*(2.6e-5)/(2*(x^2+y^2+z^2)^1.5)+1e3/(1+1e3)*(2.6e-5)^3/(2*(x^2+y^2+z^2)^2.5))+(1-z^2/(x^2+y^2+z^2))*(1-(2+3*1e3)/(1+1e3)*2.6e-5/(4*(x^2+y^2+z^2)^0.5)-1e3/(1+1e3)*2.6e-5^3/(4*(x^2+y^2+z^2)^1.5)))*((x^2+y^2+z^2)^0.5]2.6e-5)-4.508168e-03/(2*(1+1e3))*(1+z^2/((2.6e-5)^2)-2*(x^2+y^2+z^2)/((2.6e-5)^2))*((x^2+y^2+z^2)^0.5<2.6e-5)
+
+			Derriere frontiere_ouverte_vitesse_imposee Champ_Front_Fonc_xyz 3 (-4.508168e-03*z*x*((2+3*1e3)/(1+1e3)*(2.6e-5)/(4*((x^2+y^2+z^2)^1.5))-3*1e3/(1+1e3)*(2.6e-5)^3/(4*(x^2+y^2+z^2)^2.5)))*((x^2+y^2+z^2)^0.5]2.6e-5)-4.508168e-03/(2*(2.6e-5)^2)*(1/(1+1e3))*x*z*((x^2+y^2+z^2)^0.5<2.6e-5) (-4.508168e-03*z*y*((2+3*1e3)/(1+1e3)*(2.6e-5)/(4*((x^2+y^2+z^2)^1.5))-3*1e3/(1+1e3)*(2.6e-5)^3/(4*(x^2+y^2+z^2)^2.5)))*((x^2+y^2+z^2)^0.5]2.6e-5)-4.508168e-03/(2*(2.6e-5)^2)*(1/(1+1e3))*y*z*((x^2+y^2+z^2)^0.5<2.6e-5) 4.508168e-03*(+(z^2)*(1/(x^2+y^2+z^2)-(2+3*1e3)/(1+1e3)*(2.6e-5)/(2*(x^2+y^2+z^2)^1.5)+1e3/(1+1e3)*(2.6e-5)^3/(2*(x^2+y^2+z^2)^2.5))+(1-z^2/(x^2+y^2+z^2))*(1-(2+3*1e3)/(1+1e3)*2.6e-5/(4*(x^2+y^2+z^2)^0.5)-1e3/(1+1e3)*2.6e-5^3/(4*(x^2+y^2+z^2)^1.5)))*((x^2+y^2+z^2)^0.5]2.6e-5)-4.508168e-03/(2*(1+1e3))*(1+z^2/((2.6e-5)^2)-2*(x^2+y^2+z^2)/((2.6e-5)^2))*((x^2+y^2+z^2)^0.5<2.6e-5)
+		}
+	}
+	interf
+	{
+		is_solid_particle 1
+		interpolation_repere_local
+		methode_transport vitesse_interpolee hydraulique
+		conditions_initiales
+		{
+		   get_radius
+		   fonction  (+1*((x)^2+(y)^2+(z)^2-(2.6e-5)^2))
+
+       		}
+        	iterations_correction_volume 6
+        	n_iterations_distance 3
+		parcours_interface { correction_parcours_thomas }
+       		methode_interpolation_v VDF_lineaire
+
+		remaillage
+		{
+			pas 1e15
+     			nb_iter_barycentrage 1
+     			relax_barycentrage 1.00000000000000000e+00
+     			# critere_arete 3.49999999999999978e-01 #
+     			seuil_dvolume_residuel 0.00000000000000000e+00
+     			nb_iter_correction_volume 6
+     			nb_iter_remaillage 1
+      			facteur_longueur_ideale  1
+   			# equilateral 1 #
+     			lissage_courbure_coeff -0.1
+     			lissage_courbure_iterations_systematique 0
+     			lissage_courbure_iterations_si_remaillage 10
+		}
+
+	calcul_grandeurs_interface 
+		{
+			calcul_forces 1
+			methode_calcul_force_pression trilineaire_lineaire
+			methode_calcul_force_frottements trilineaire_tenseur_projete
+			localisation_tenseur_contraintes elements
+			distance_interpolation_pression_P1 1. # en nombre de delta (largeur d'une maille) #
+			distance_interpolation_pression_P2 2. # en nombre de delta (largeur d'une maille) #
+			distance_interpolation_gradU_P1 1.
+			distance_interpolation_gradU_P2 2.
+			pression_facettes 1
+			force_pression_facettes 1
+			force_frottements_facettes 1
+			tenseur_contraintes_facettes 1
+			calcul_forces_theoriques_stokes 1
+		}
+		boundary_conditions
+		{
+			Haut	Paroi_FT_disc symetrie
+			Bas 	Paroi_FT_disc symetrie
+			Gauche	Paroi_FT_disc symetrie
+			Droit	Paroi_FT_disc symetrie
+			Devant	Paroi_FT_disc symetrie
+			Derriere Paroi_FT_disc symetrie
+		}
+	}
+
+        Postraitement
+        {
+                Champs dt_post 1e-4
+                {
+                        pression elem
+                        vitesse elem
+                        indicatrice_interf elem
+                }
+        }
+
+        liste_postraitements
+        {
+                Postraitement_ft_lata post2
+                {
+                        fichier lata/post_dom
+                        format lata_v2
+
+                        champs dt_post 1e-4
+                        {
+                                indicatrice_interf elem
+                                vitesse elem
+                                num_compo elem
+                                pression elem
+                                vitesse faces
+                                terme_source_collisions faces
+				terme_correction_trainee faces
+                        }
+                        interfaces interf
+                        {
+                                vitesse som
+                                courbure som
+                                pe elem
+                                pe_local elem
+                                normale_unitaire elem
+                                force_frottements elem
+                                force_pression elem
+                                pression_interf elem
+				
+				# Le postraitement des grandeurs ci-dessous est uniquement possible par activation du calcul des forces #
+				# On Visualise les grandeurs en P1 et P2 sur les fa7 lagrangiennes associees (il faut bien un support...) #
+				U_P1 elem
+				U_P2 elem
+				U_P1_th_interp elem
+				U_P2_th_interp elem
+				U_P1_th elem
+				U_P2_th elem
+                        }
+                }
+
+        }
+	
+	sauvegarde_simple formatte backupfile.sauv
+}
+
+Solve pb
+Fin

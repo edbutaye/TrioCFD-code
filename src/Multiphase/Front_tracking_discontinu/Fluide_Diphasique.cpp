@@ -42,6 +42,7 @@ void Fluide_Diphasique::set_param(Param& param)
   param.ajouter("fluide1", &phase1_, Param::REQUIRED); // XD_ADD_P chaine second phase fluid
   param.ajouter("chaleur_latente", &chaleur_latente_); // XD_ADD_P champ_don_base phase changement enthalpy h(phase1_) - h(phase0_) (J/kg/K)
   param.ajouter("formule_mu", &formule_mu_); // XD_ADD_P chaine (into=[standard,arithmetic,harmonic]) formula used to calculate average
+  if  sub_type(Particule_Solide, phase0_.valeur()) is_solid_particle_=true;
   Milieu_base::set_additional_params(param); // XD ref gravite field_base
 }
 
@@ -87,7 +88,7 @@ void Fluide_Diphasique::verifier_coherence_champs(int& err, Nom& msg)
 const Fluide_Incompressible& Fluide_Diphasique::fluide_phase(int phase) const
 {
   assert(phase == 0 || phase == 1);
-  return (phase == 0) ? ref_cast(Fluide_Incompressible, phase0_.valeur()) : ref_cast(Fluide_Incompressible, phase1_.valeur());
+  return (phase == 0) ? ref_cast(Fluide_Incompressible, phase0_.valeur())  : ref_cast(Fluide_Incompressible, phase1_.valeur());
 }
 
 double Fluide_Diphasique::sigma() const
@@ -114,6 +115,8 @@ int Fluide_Diphasique::formule_mu() const
     return 1;
   else if ((formule_mu_ == "harmonique") or (formule_mu_ == "harmonic"))
     return 2;
+  else if ((formule_mu_ == "escalier") or (formule_mu_ == "staircase"))
+    return 3;
   else
     return -1;
 }
@@ -139,3 +142,5 @@ void Fluide_Diphasique::discretiser(const Probleme_base& pb, const Discretisatio
   discretiser_porosite(pb, dis);
   discretiser_diametre_hydro(pb, dis);
 }
+
+
