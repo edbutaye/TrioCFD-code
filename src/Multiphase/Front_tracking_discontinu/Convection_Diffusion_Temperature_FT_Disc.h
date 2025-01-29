@@ -29,10 +29,14 @@
 #include <Assembleur_base.h>
 #include <TRUST_Ref.h>
 
+#include <Navier_Stokes_FT_Disc.h> // EB
+#include <Maillage_FT_Disc.h> // EB
+
 class Fluide_Diphasique;
 class Navier_Stokes_std;
 class Transport_Interfaces_FT_Disc;
-
+class Navier_Stokes_FT_Disc; // EB
+class Maillage_FT_Disc; // EB
 
 class Convection_Diffusion_Temperature_FT_Disc: public Convection_Diffusion_Temperature
 {
@@ -54,11 +58,14 @@ public:
   void get_flux_and_Twall(const int num_face,
                           double& flux, double& Twall) const;
   double get_Twall(const int num_face) const;
+  void		   calculer_correction_flux_thermique(DoubleTab& valeurs_champ, const Navier_Stokes_FT_Disc& eq_ns, Transport_Interfaces_FT_Disc& eq_transport, const Maillage_FT_Disc& maillage); // EB
   virtual void suppression_interfaces(const IntVect& num_compo, const ArrOfInt& flags_compo_a_supprimer, int nouvelle_phase);
   void                associer_milieu_base(const Milieu_base& milieu) override;
   Milieu_base&        milieu() override;
   const Milieu_base& milieu() const override;
   const Champ_base& vitesse_pour_transport() const override;
+  const Champ_base& vitesse_pour_transport_non_const();
+
   void    discretiser(void) override;
 
   int get_phase() const;
@@ -90,6 +97,18 @@ public:
   void calculer_grad_t();
   void calculer_mpoint(Champ_base& mpoint);
   void calculer_mpoint();
+  // debut EB
+  void calcul_flux_interface();
+  const DoubleTab& get_flux_conductif_interf() const;
+  const DoubleVect& get_flux_conductif_tot_interf() const;
+  DoubleTab& get_flux_conductif_interf();
+  DoubleVect& get_T_P2_moy();
+  const DoubleVect& get_T_P2_moy() const;
+  void init_champ_flux_conductif_interf();
+  virtual int impr_fpi(Sortie& os) const override;
+  //int reprendre(Entree&);
+  int get_discretization_correction();
+  // fin EB
 protected:
   void correct_mpoint();
   // Quelle phase cette equation concerne-t-elle ? 0 ou 1
@@ -103,7 +122,7 @@ protected:
   bool is_prescribed_mpoint_;
   double prescribed_mpoint_;
   ArrOfInt correction_mpoint_diff_conv_energy_ ; // on attend trois flags 0 ou 1
-
+  Champ_Fonc terme_correction_flux_thermique_; // EB
   REF(Fluide_Diphasique) fluide_dipha_;
 
   // Champs compris par le postraitement
@@ -112,8 +131,9 @@ protected:
   // Reference a l'equation de transport de l'interface pour l'indicatrice de phase
   REF(Transport_Interfaces_FT_Disc) ref_eq_interface_;
   // Reference a l'equation de navier_stokes pour le champ de vitesse (convection)
-  REF(Navier_Stokes_std) ref_eq_ns_;
+  REF(Navier_Stokes_FT_Disc) ref_eq_ns_;
 
+  Schema_Comm_FT schema_comm_zone_; // EB
   // Gradient normal de temperature a l'interface phase 0
   // (grad T scalaire normale a l'interface, normale dirigee
   //  vers la phase 1)
@@ -140,5 +160,16 @@ protected:
   ArrOfDouble lost_fluxes_diffu_;
   ArrOfInt mixed_elems_conv_;
   ArrOfDouble lost_fluxes_conv_;
+  // debut EB
+  DoubleTab flux_conductif_interf_;
+  DoubleVect flux_conductif_tot_interf_;
+  DoubleVect T_P2_moy_;
+  int flag_correction_flux_thermique_;
+  double phi_ref_correction_flux_thermique_;
+  double alpha_correction_flux_thermique_;
+  double beta_correction_flux_thermique_;
+  enum Discretization_correction { P1, ELEM_DIPH, P1_ALL };
+  Discretization_correction discretization_correction_;
+  // fin EB
 };
 #endif
