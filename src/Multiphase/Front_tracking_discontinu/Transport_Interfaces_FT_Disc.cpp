@@ -2860,7 +2860,7 @@ void Transport_Interfaces_FT_Disc::calculer_vitesse_transport_interpolee(
         surfaces_compo=0;
         Equation_base& eqn_hydraulique = variables_internes_->refequation_vitesse_transport.valeur();
         Navier_Stokes_FT_Disc& ns = ref_cast(Navier_Stokes_FT_Disc, eqn_hydraulique);
-        DoubleTab& num_compo = ns.get_num_compo().valeur().valeurs();
+        DoubleTab& num_compo = ns.get_num_compo()->valeurs();
         const DoubleTab& tab_vitesse=champ_vitesse.valeurs();
         const Domaine_dis_base& mon_dom_dis = domaine_dis().valeur();
         const Domaine_VDF&   zone_vdf       = ref_cast(Domaine_VDF, mon_dom_dis);
@@ -3512,8 +3512,8 @@ const Champ_base& Transport_Interfaces_FT_Disc::get_compute_indicatrice_faces()
       const int tag = maillage_interface().get_mesh_tag();
       if (tag != variables_internes_->indicatrice_face_cache_tag)
         {
-          DoubleVect& valeurs_indicatrice_face = variables_internes_->indicatrice_face_cache.valeur().valeurs();
-          const DoubleVect& valeurs_indicatrice = variables_internes_->indicatrice_face_cache.valeur().valeurs();
+          DoubleVect& valeurs_indicatrice_face = variables_internes_->indicatrice_face_cache->valeurs();
+          const DoubleVect& valeurs_indicatrice = variables_internes_->indicatrice_face_cache->valeurs();
           maillage_interface().parcourir_maillage();
           maillage_interface().calcul_indicatrice_face(valeurs_indicatrice, valeurs_indicatrice_face,
                                                        valeurs_indicatrice_face);
@@ -3530,8 +3530,8 @@ const Champ_base& Transport_Interfaces_FT_Disc::get_compute_indicatrice_faces()
       const IntTab& face_voisins = mon_domaine_dis.face_voisins();
       calcul_indicatrice_faces(indicatrice,face_voisins);
       const int tag = maillage_interface().get_mesh_tag();
-      DoubleVect& valeurs_indicatrice_face = variables_internes_->indicatrice_face_cache.valeur().valeurs();
-      const DoubleVect& valeurs_indicatrice = indicatrice_faces_.valeur().valeurs();
+      DoubleVect& valeurs_indicatrice_face = variables_internes_->indicatrice_face_cache->valeurs();
+      const DoubleVect& valeurs_indicatrice = indicatrice_faces_->valeurs();
       maillage_interface().parcourir_maillage();
       maillage_interface().calcul_indicatrice_face(valeurs_indicatrice, valeurs_indicatrice_face,
                                                    valeurs_indicatrice_face);
@@ -7478,7 +7478,7 @@ void  Transport_Interfaces_FT_Disc::permuter_positions_particules()
   // On permetute les particules pour assurer la correspandance entre le bon numero eulerian au temps precedant et le mauvais numero lagrangien actuel
   ArrOfInt elem_cg;
   domaine_vf.domaine().chercher_elements_FT(positions, elem_cg);
-  const DoubleVect& old_num_compo = ns.get_num_compo().valeur().valeurs();
+  const DoubleVect& old_num_compo = ns.get_num_compo()->valeurs();
   {
     // EB : ici on fait une copie de old_num_compo dans correctNum et on prend le max sur chaque proc
     // "old_num_compo est connu par tous les procs en utilisant correctNum"

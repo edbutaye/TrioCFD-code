@@ -1470,7 +1470,7 @@ DoubleTab& Convection_Diffusion_Temperature_FT_Disc::derivee_en_temps_inco(Doubl
   DoubleTab& temperature = inconnue()->valeurs();
   Transport_Interfaces_FT_Disc& eq_interface = ref_eq_interface_.valeur();
   const Maillage_FT_Disc& maillage_interface = eq_interface.maillage_interface();
-  DoubleTab& terme_correction_flux_thermique =  terme_correction_flux_thermique_.valeur().valeurs();
+  DoubleTab& terme_correction_flux_thermique =  terme_correction_flux_thermique_->valeurs();
   const Navier_Stokes_FT_Disc& ns_const = ref_cast(Navier_Stokes_FT_Disc, ref_eq_ns_.valeur());
   const int flag_correction_thermique = flag_correction_flux_thermique_;
   if (flag_correction_thermique) calculer_correction_flux_thermique(terme_correction_flux_thermique, ns_const, eq_interface, maillage_interface); // EB
@@ -2183,7 +2183,7 @@ void Convection_Diffusion_Temperature_FT_Disc::calcul_flux_interface()
   Navier_Stokes_FT_Disc& eq_ns = refeq_ns.valeur();
 
   const DoubleTab& indicatrice = refeq_transport.valeur().get_update_indicatrice().valeurs();
-  const DoubleTab& temperature = inconnue().valeur().valeurs();
+  const DoubleTab& temperature = inconnue()->valeurs();
 
   const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_dis().valeur());
   const Domaine& domaine = domaine_vdf.domaine();
