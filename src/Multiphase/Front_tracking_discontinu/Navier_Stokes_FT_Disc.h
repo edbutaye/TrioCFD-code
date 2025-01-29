@@ -652,4 +652,3 @@ inline void Navier_Stokes_FT_Disc::chercher_faces_voisines_xyz (DoubleVect& coor
 
 }
 #endif
->>>>>>> fpi194_patch
