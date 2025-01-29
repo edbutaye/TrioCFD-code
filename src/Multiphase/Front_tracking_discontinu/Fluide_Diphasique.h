@@ -30,7 +30,7 @@
 
 // EB
 #include <Particule_Solide.h>
-
+#include <type_traits>
 // fin EB
 
 class Fluide_Diphasique: public Milieu_base
@@ -42,9 +42,11 @@ public:
   {
     indic_rayo_ = NONRAYO;
     formule_mu_ = "standard";
+    is_solid_particle_=false;
   }
 
-  const Fluide_Incompressible& fluide_phase(int la_phase) const;
+  const Fluide_Incompressible& fluide_phase(int phase) const;
+
   double sigma() const;
   double chaleur_latente() const;
   int formule_mu() const;
@@ -68,6 +70,8 @@ public:
   const Champ_Don& beta_t() const override  { return invalid_<const Champ_Don&>(__func__); }
   Champ_Don& beta_t() override { return invalid_<Champ_Don&>(__func__); }
 
+  bool is_solid_particle_; // EB
+
 private:
   Milieu phase0_, phase1_;
   Champ_Don sigma_; // Tension de surface (J/m^2)
@@ -80,18 +84,7 @@ private:
     Cerr << "Invalid call to the method Fluide_Diphasique::" << nom_funct << " !!!" << finl;
     throw;
   }
-  /*
-  int is_particule_solide_; // EB
-  Particule_Solide phase0_PS_; // EB
-  Fluide_Incompressible phase0_; // EB
-  Fluide_Incompressible phase1_;
-  // Tension de surface (J/m^2)
-  Champ_Don sigma_;
-  // Enthalpie de changement de phase h(phase1_) - h(phase0_) (J/kg/K)
-  Champ_Don chaleur_latente_;
-  // Formule utilisee pour le calcul de la moyenne de mu
-  Motcle formule_mu_;
-  */
+
 };
 
 #endif /* Fluide_Diphasique_included */
