@@ -438,12 +438,12 @@ void Domaine_VDF_plus::modifier_pour_Cl(const Conds_lim& conds_lim)
     {
       Joint& joint     = joints[voisin];
       //const int pe = joint.PEvoisin();
-      ArrOfInt& items_communs = joint.set_joint_item(Joint::ARETE).set_items_communs(); // arete multiple
+      ArrOfInt& items_communs = joint.set_joint_item(JOINT_ITEM::ARETE).set_items_communs(); // arete multiple
       items_communs.resize(0);
       int compteur_aretes_joint=0;
 
       const ArrOfInt& indices_sommets =
-        joint.joint_item(Joint::SOMMET).items_communs();
+        joint.joint_item(JOINT_ITEM::SOMMET).items_communs();
 
       for (int ind_S1=0; ind_S1< indices_sommets.size_array(); ind_S1++)
         {
@@ -464,7 +464,7 @@ void Domaine_VDF_plus::modifier_pour_Cl(const Conds_lim& conds_lim)
       items_communs.append_array(-1);
       items_communs.resize(compteur_aretes_joint);
     }
-  Scatter::calculer_renum_items_communs(joints,Joint::ARETE); // EB
+  Scatter::calculer_renum_items_communs(joints,JOINT_ITEM::ARETE); // EB
 
   Domaine_VF::marquer_aretes_multiple_contrib(conds_lim); // EB
 
