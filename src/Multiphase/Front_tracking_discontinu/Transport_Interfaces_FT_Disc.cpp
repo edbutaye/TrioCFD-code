@@ -8578,14 +8578,14 @@ int Transport_Interfaces_FT_Disc::sauvegarder(Sortie& os) const
   {
     int special, afaire;
     const int format_xyz = EcritureLectureSpecial::is_ecriture_special(special, afaire);
-    
+
     double temps=inconnue()->temps();
     // debut EB
     const Schema_Temps_base& sch=probleme().schema_temps();
     const int& precision=sch.precision_impr();
     variables_internes_->precision_impr_=precision;
     // fin EB
-    
+
     Nom mon_ident("variables_internes_transport");
     mon_ident += Nom(temps,"%e");
     if (format_xyz)
