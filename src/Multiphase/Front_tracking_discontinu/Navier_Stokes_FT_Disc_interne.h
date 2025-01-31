@@ -32,6 +32,12 @@ public:
     mpointv_inactif(0),   // Par defaut, mpointv  cree un saut de vitesse
     matrice_pression_invariante(0),   // Par defaut, recalculer la matrice pression
     clipping_courbure_interface(1e40),   // Par defaut, pas de clipping
+    flag_correction_trainee_(0), // EB : Par defaut, pas de correction de trainee
+    alpha_correction_trainee_(0.), // EB
+    beta_correction_trainee_(0.), // EB
+    faces_diphasiques_(1), // EB
+    extension_reynolds_(0), // EB
+    proportionnel_(0), // EB
     terme_gravite_(GRAVITE_GRAD_I),   // Par defaut terme gravite ft sans courants parasites
     is_explicite(1),                  // Par defaut, calcul explicite de vpoint etape predicition
     is_boussinesq_(0),                // Par defaut, l'hypothese de Boussinesq n'est pas utilisee pour la flottabilite dans les phases.
@@ -71,7 +77,11 @@ public:
   Champ_Fonc derivee_temporelle_indicatrice;
   Champ_Fonc ai; // Eulerian interfacial area.
   Champ_Inc vitesse_jump0_; // Extended Velocity of phase 0.
-
+  Champ_Fonc terme_source_collisions; // HMS
+  Champ_Fonc  num_compo; // HMS
+  Champ_Fonc vitesse_stokes_th_; // EB
+  Champ_Fonc pression_stokes_th_; // EB
+  Champ_Fonc terme_correction_trainee; // EB
   LIST(REF(Champ_base)) liste_champs_compris;
 
   // Si matrice_pression_invariante != 0,
@@ -93,6 +103,13 @@ public:
   // Valeur maximale de courbure autorisee pour calculer le
   // terme source de tension de surface (clipping si valeur superieur)
   double clipping_courbure_interface;
+
+  int flag_correction_trainee_; // EB
+  double alpha_correction_trainee_; // EB
+  double beta_correction_trainee_; // EB
+  int faces_diphasiques_; // EB
+  int extension_reynolds_; // EB
+  int proportionnel_; // EB
 
   enum Terme_Gravite
   {
@@ -132,6 +149,40 @@ public:
   double x_pfl_imp;
   double y_pfl_imp;
   double z_pfl_imp;
+
+  DoubleTab force_pression_interf_; // EB pression locale pour chaque fa7
+  DoubleTab force_frottements_interf_; // EB force de frottement locale pour chaque fa7
+  DoubleTab pression_interf_; // EB pression a l'interface locale pour chaque fa7
+  DoubleVect surface_tot_interf_; // EB
+  DoubleTab force_pression_tot_interf_; // EB
+  DoubleTab force_frottements_tot_interf_; // EB
+  DoubleTab force_pression_tot_interf_stokes_th_; // EB
+  DoubleTab force_frottements_tot_interf_stokes_th_; // EB
+  DoubleTab force_pression_tot_interf_stokes_th_dis_; // EB
+  DoubleTab force_frottements_tot_interf_stokes_th_dis_; // EB
+
+
+  DoubleTab sigma_xx_interf_, sigma_xy_interf_, sigma_xz_interf_, sigma_yx_interf_, sigma_yy_interf_, sigma_yz_interf_, sigma_zx_interf_, sigma_zy_interf_, sigma_zz_interf_; // EB tenseur des contraintes local pour c
+  DoubleTab sigma_xx_interf_stokes_th_dis_, sigma_xy_interf_stokes_th_dis_, sigma_xz_interf_stokes_th_dis_, sigma_yx_interf_stokes_th_dis_, sigma_yy_interf_stokes_th_dis_, sigma_yz_interf_stokes_th_dis_, sigma_zx_interf_stokes_th_dis_, sigma_zy_interf_stokes_th_dis_, sigma_zz_interf_stokes_th_dis_; // EB tenseur des contraintes local pour c
+
+  DoubleTab sigma_xx_interf_stokes_th_, sigma_xy_interf_stokes_th_, sigma_xz_interf_stokes_th_, sigma_yy_interf_stokes_th_, sigma_yz_interf_stokes_th_, sigma_zz_interf_stokes_th_;
+  DoubleTab dUdx_P1_, dUdy_P1_, dUdz_P1_, dVdx_P1_, dVdy_P1_, dVdz_P1_, dWdx_P1_, dWdy_P1_, dWdz_P1_;
+  DoubleTab dUdx_P2_, dUdy_P2_, dUdz_P2_, dVdx_P2_, dVdy_P2_, dVdz_P2_, dWdx_P2_, dWdy_P2_, dWdz_P2_;
+  DoubleTab dUdx_P1_th_, dUdy_P1_th_, dUdz_P1_th_, dVdx_P1_th_, dVdy_P1_th_, dVdz_P1_th_, dWdx_P1_th_, dWdy_P1_th_, dWdz_P1_th_;
+  DoubleTab dUdx_P2_th_, dUdy_P2_th_, dUdz_P2_th_, dVdx_P2_th_, dVdy_P2_th_, dVdz_P2_th_, dWdx_P2_th_, dWdy_P2_th_, dWdz_P2_th_;
+  DoubleTab dUdx_P1_th_dis_, dUdy_P1_th_dis_, dUdz_P1_th_dis_, dVdx_P1_th_dis_, dVdy_P1_th_dis_, dVdz_P1_th_dis_, dWdx_P1_th_dis_, dWdy_P1_th_dis_, dWdz_P1_th_dis_;
+  DoubleTab dUdx_P2_th_dis_, dUdy_P2_th_dis_, dUdz_P2_th_dis_, dVdx_P2_th_dis_, dVdy_P2_th_dis_, dVdz_P2_th_dis_, dWdx_P2_th_dis_, dWdy_P2_th_dis_, dWdz_P2_th_dis_;
+
+  DoubleTab force_pression_stokes_th_, force_pression_stokes_th_dis_;
+  DoubleTab force_frottements_stokes_th_, force_frottements_stokes_th_dis_;
+  DoubleTab pression_interf_stokes_th_dis_;
+
+  DoubleTab U_P1_, U_P2_, U_P1_th_, U_P2_th_, U_P1_th_dis_, U_P2_th_dis_;
+  DoubleTab U_P2_moy_; // vitesse moyenne en P2 pour les points de calcul le permettant (fluide ou solide)
+  DoubleTab Indic_elem_P2_, Prop_P2_fluide_compo_; // Indic de l'element dans lequel se trouve P2, proportion de points P2 fluide par compo
+  DoubleTab Proportion_fa7_ok_UP2_;  // Nb_fa7_ok_prop_ : pourcentage de fa7 pour lesquelles on a pu calculer la vitesse moyenne
+  IntTab list_elem_P1_, list_elem_diph_, list_elem_P1_all_; // EB list_elem_P1_ : liste des elements dans lesquels se trouvent les points P1, list_elem_diph_ : liste des elements traverses par l'interface,
+  // list_elem_P1_all_ : liste de tous les elements - PUREMENT FLUIDE UNIQUEMENT - ayant servis a l'interpolation des champs en P1
 };
 
 #endif /* Navier_Stokes_FT_Disc_interne_included */
