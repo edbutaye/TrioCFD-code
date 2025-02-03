@@ -3724,7 +3724,7 @@ void Maillage_FT_Disc::update_sommet_arete()
 {
   assert(dimension==3);
   const Domaine_dis& domaine_dis = refdomaine_dis_.valeur();
-  const Domaine& domaine = domaine_dis.domaine();
+  const Domaine& domaine = domaine_dis->domaine();
   const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis.valeur());
   const int nb_som=sommets_.dimension(0);
   sommet_arete_.resize(nb_som,dimension);

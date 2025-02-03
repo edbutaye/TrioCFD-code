@@ -89,7 +89,7 @@ const Parcours_interface& Parcours_interface::operator=(const Parcours_interface
 void Parcours_interface::associer_domaine_dis(const Domaine_dis& domaine_dis)
 {
   const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis.valeur());
-  const Domaine& domaine = ref_cast(Domaine, domaine_dis.domaine()); // EB
+  //const Domaine& domaine = ref_cast(Domaine, domaine_dis.domaine()); // EB
   assert(! refdomaine_vf_.non_nul());
   refdomaine_vf_ = domaine_vf;
   nb_faces_elem_ = domaine_vf.domaine().nb_faces_elem();
@@ -108,7 +108,7 @@ void Parcours_interface::associer_domaine_dis(const Domaine_dis& domaine_dis)
   drapeaux_faces_parcourues_z_.resize_array(nb_faces_reelles_);
   drapeaux_faces_parcourues_z_ = 0;
 
-  nb_aretes_reelles_=domaine.aretes_som().dimension(0);
+  nb_aretes_reelles_=domaine_vf.domaine().aretes_som().dimension(0);
   drapeaux_aretes_parcourues_x_.resize_array(nb_aretes_reelles_);
   drapeaux_aretes_parcourues_x_ = 0;
   drapeaux_aretes_parcourues_y_.resize_array(nb_aretes_reelles_);

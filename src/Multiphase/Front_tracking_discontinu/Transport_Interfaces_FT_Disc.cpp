@@ -1659,7 +1659,7 @@ void Transport_Interfaces_FT_Disc::discretiser(void)
                         1 /* composantes */, 1 /* valeur temporelle */,
                         temps,
                         variables_internes_->indicatrice_face_cache);
-  variables_internes_->indicatrice_face_cache.associer_eqn(*this);
+  variables_internes_->indicatrice_face_cache->associer_eqn(*this);
   champs_compris_.ajoute_champ(variables_internes_->indicatrice_face_cache);
 
 
@@ -1903,7 +1903,7 @@ int Transport_Interfaces_FT_Disc::preparer_calcul(void)
   indicatrice_->valeurs() = get_update_indicatrice().valeurs();
   variables_internes_->indicatrice_face_cache->changer_temps(temps); // EB
   //calcul de l'indicatrice
-  if (calcul_precis_indic_faces()) indicatrice_faces_.valeurs() = get_compute_indicatrice_faces().valeurs(); // EB
+  if (calcul_precis_indic_faces()) indicatrice_faces_->valeurs() = get_compute_indicatrice_faces().valeurs(); // EB
   if (calcul_precis_indic_aretes()) indicatrice_arete_ = get_compute_indicatrice_aretes_internes(); // EB
 
   get_update_distance_interface();
@@ -2686,7 +2686,7 @@ void Transport_Interfaces_FT_Disc::calculer_vitesse_transport_interpolee(
         int nb_compo_tot=compute_global_connex_components_FT(maillage, compo_connexes_fa7, n);
         Equation_base& eqn_hydraulique = variables_internes_->refequation_vitesse_transport.valeur();
         Navier_Stokes_FT_Disc& ns = ref_cast(Navier_Stokes_FT_Disc, eqn_hydraulique);
-        const DoubleTab& indicatrice_faces = indicatrice_faces_.valeurs();
+        const DoubleTab& indicatrice_faces = indicatrice_faces_->valeurs();
         const DoubleTab& les_cg_fa7=maillage.cg_fa7();
         DoubleVect normale_fa7(dimension);
         const DoubleVect& rayons_compo = get_rayons_compo();
@@ -2795,7 +2795,7 @@ void Transport_Interfaces_FT_Disc::calculer_vitesse_transport_interpolee(
         ArrOfInt compo_connexes_fa7(nb_fa7);
         Equation_base& eqn_hydraulique = variables_internes_->refequation_vitesse_transport.valeur();
         Navier_Stokes_FT_Disc& ns = ref_cast(Navier_Stokes_FT_Disc, eqn_hydraulique);
-        const DoubleTab& indicatrice_faces = indicatrice_faces_.valeurs();
+        const DoubleTab& indicatrice_faces = indicatrice_faces_->valeurs();
         vitesse_noeuds.resize(nb_pos_tot, dimension);
         DoubleTab coord_sommets_interne(nb_pos_tot,dimension);
         DoubleTabFT normale_sommets;
@@ -2836,7 +2836,7 @@ void Transport_Interfaces_FT_Disc::calculer_vitesse_transport_interpolee(
         const DoubleTab& sommets = maillage.sommets();
         int n = search_connex_components_local_FT(maillage, compo_connexes_fa7);
         int nb_compo_tot=compute_global_connex_components_FT(maillage, compo_connexes_fa7, n);
-        const DoubleTab& indicatrice = indicatrice_.valeurs();
+        const DoubleTab& indicatrice = indicatrice_->valeurs();
         const ArrOfInt& sommets_elem = maillage.sommet_elem();
         const IntTab& facettes = maillage.facettes();
         DoubleTab Vitesses_compo(nb_compo_tot,dimension);
@@ -3500,7 +3500,7 @@ const Champ_base& Transport_Interfaces_FT_Disc::get_compute_indicatrice_faces()
       if (tag != variables_internes_->indicatrice_face_cache_tag)
         {
           DoubleVect& valeurs_indicatrice_face = variables_internes_->indicatrice_face_cache->valeurs();
-          const DoubleVect& valeurs_indicatrice = variables_internes_->indicatrice_face_cache->valeurs();
+          const DoubleVect& valeurs_indicatrice = variables_internes_->indicatrice_face_cache->valeurs(); // EB ?? verifier que ce n'est pas plutot  indicatrice_faces_->valeurs();
           maillage_interface().parcourir_maillage();
           maillage_interface().calcul_indicatrice_face(valeurs_indicatrice, valeurs_indicatrice_face,
                                                        valeurs_indicatrice_face);
@@ -3508,7 +3508,7 @@ const Champ_base& Transport_Interfaces_FT_Disc::get_compute_indicatrice_faces()
           variables_internes_->indicatrice_face_cache_tag = tag;
         }
 
-      return variables_internes_->indicatrice_face_cache.valeur();
+      return variables_internes_->indicatrice_face_cache;
     }
   else if (nb_pas_dt==0 && temps>0 && calcul_precis_indicatrice_face_ ) // sur une reprise de calcul, on calcule successivement l'indicatrice 2 fois
     {
@@ -8163,7 +8163,7 @@ void Transport_Interfaces_FT_Disc::mettre_a_jour(double temps)
   //  C'est ici qu'on copie le contenu de indicatrice_cache dans indicatrice :
   int calc_precis_iface=calcul_precis_indic_faces();
   int calc_precis_iarete=calcul_precis_indic_aretes();
-  if (calc_precis_iface) indicatrice_faces_.valeurs() = get_compute_indicatrice_faces().valeurs();
+  if (calc_precis_iface) indicatrice_faces_->valeurs() = get_compute_indicatrice_faces().valeurs();
   variables_internes_->indicatrice_face_cache->changer_temps(temps);
   indicatrice_faces_->changer_temps(temps);
   if (calc_precis_iarete)
@@ -8184,7 +8184,7 @@ void Transport_Interfaces_FT_Disc::mettre_a_jour(double temps)
       }
     if (calc_precis_iface)
       {
-        const DoubleVect volume_phase_0_faces = calculer_integrale_indicatrice_face(indicatrice_faces_.valeurs());
+        const DoubleVect volume_phase_0_faces = calculer_integrale_indicatrice_face(indicatrice_faces_->valeurs());
         Cerr << "Volume_phase_0_indic_x " << Nom(volume_phase_0_faces(0), "%20.14g") << finl;
         Cerr << "Volume_phase_0_indic_y " << Nom(volume_phase_0_faces(1), "%20.14g") << finl;
         Cerr << "Volume_phase_0_indic_z " << Nom(volume_phase_0_faces(2), "%20.14g") << finl;

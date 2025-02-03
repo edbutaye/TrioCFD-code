@@ -2190,7 +2190,7 @@ void Convection_Diffusion_Temperature_FT_Disc::calcul_flux_interface()
 
   // prop du fluide
   const Fluide_Diphasique& mon_fluide = eq_ns.fluide_diphasique();
-  double lambda_f=mon_fluide.fluide_phase(1).conductivite().valeurs()(0, 0);
+  double lambda_f=mon_fluide.fluide_phase(1).conductivite()->valeurs()(0, 0);
 
   // grandeurs interface
   const Maillage_FT_Disc& maillage = eq_transport.maillage_interface_pour_post();

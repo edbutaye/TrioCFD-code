@@ -758,7 +758,7 @@ int Navier_Stokes_FT_Disc::sauvegarder(Sortie& os) const
       const Transport_Interfaces_FT_Disc& eq_transport = refeq_transport.valeur();
       if (eq_transport.is_solid_particle())
         {
-          bytes+=variables_internes().num_compo.sauvegarder(os);
+          bytes+=variables_internes().num_compo->sauvegarder(os);
           assert(bytes % 4 == 0);
         }
     }
@@ -779,7 +779,7 @@ int Navier_Stokes_FT_Disc::reprendre(Entree& is)
       ident_num_compo+=Nom(temps,probleme().reprise_format_temps());
 
       avancer_fichier(is,ident_num_compo);
-      variables_internes().num_compo.reprendre(is);
+      variables_internes().num_compo->reprendre(is);
     }
   return 1;
 }
@@ -1254,7 +1254,7 @@ int Navier_Stokes_FT_Disc::preparer_calcul()
           {
             // TODO FIXME WILL NOT WORK FOR VEF .... should test subtype ... // EB : test not required because the baltik fluid_particle_interaction (is_solid_particle=1) should only be used in VDF
             //ref_cast(Op_Dift_VDF_Face_FT, terme_diffusif.valeur()).associer_indicatrices(eq_transport.inconnue().valeurs(),eq_transport.get_indicatrice_aretes());
-            terme_diffusif->associer_indicatrices(eq_transport.inconnue().valeurs(),eq_transport.get_indicatrice_aretes());
+            terme_diffusif->associer_indicatrices(eq_transport.inconnue()->valeurs(),eq_transport.get_indicatrice_aretes());
             const int formule_mu=fluide_diphasique().formule_mu();
             const double mu_fluide  =  fluide_diphasique().fluide_phase(1).viscosite_dynamique()->valeurs()(0, 0);
             const double mu_particule  = fluide_diphasique().fluide_phase(0).viscosite_dynamique()->valeurs()(0, 0);
@@ -1432,7 +1432,7 @@ void Navier_Stokes_FT_Disc::mettre_a_jour(double temps)
   champ_rho_faces_->mettre_a_jour(temps);
   champ_mu_->mettre_a_jour(temps);
   champ_nu_->mettre_a_jour(temps);
-  variables_internes().num_compo.mettre_a_jour(temps); // EB
+  variables_internes().num_compo->mettre_a_jour(temps); // EB
 }
 
 const SolveurSys& Navier_Stokes_FT_Disc::get_solveur_pression() const
@@ -2064,8 +2064,8 @@ void Navier_Stokes_FT_Disc::calculer_champ_forces_collisions(const DoubleTab& in
   /***********************************************/
   static const IntVect& orientation = domaine_vdf.orientation();
   double dt = schema_temps().pas_de_temps();
-  static const double rho_solide = mon_fluide.fluide_phase(0).masse_volumique().valeurs()(0, 0);
-  static const double rho_fluide = mon_fluide.fluide_phase(1).masse_volumique().valeurs()(0, 0);
+  static const double rho_solide = mon_fluide.fluide_phase(0).masse_volumique()->valeurs()(0, 0);
+  static const double rho_fluide = mon_fluide.fluide_phase(1).masse_volumique()->valeurs()(0, 0);
   static const double mu_fluide  = rho_fluide * mon_fluide.fluide_phase(1).viscosite_cinematique()->valeurs()(0, 0);
 
   static int indic_phase_fluide = 1; //, indic_phase_solide=0;
@@ -2605,12 +2605,12 @@ void Navier_Stokes_FT_Disc::calculer_correction_trainee( DoubleTab& valeurs_cham
   const double mu_f = mon_fluide.fluide_phase(1).viscosite_dynamique()->valeurs()(0, 0);
   const double mu_p = particule_solide.viscosite_dynamique()->valeurs()(0,0);
   const double phi_mu=mu_p/mu_f;
-  const double rho_f = mon_fluide.fluide_phase(1).masse_volumique().valeurs()(0, 0);
-  const double rho_p = particule_solide.masse_volumique().valeurs()(0, 0);
+  const double rho_f = mon_fluide.fluide_phase(1).masse_volumique()->valeurs()(0, 0);
+  const double rho_p = particule_solide.masse_volumique()->valeurs()(0, 0);
   const IntTab& face_voisins = domaine_vf.face_voisins();
   const IntVect& orientation = domaine_vdf.orientation();
 
-  const DoubleTab& indicatrice_faces = refeq_transport.valeur().get_compute_indicatrice_faces().valeurs();
+  const DoubleTab& indicatrice_faces = refeq_transport->get_compute_indicatrice_faces().valeurs();
 
   const DoubleTab& vitesses =eq_transport.get_vitesses_compo();
   DoubleVect vitesse_compo(dimension);
@@ -4363,7 +4363,7 @@ int Navier_Stokes_FT_Disc::trilinear_interpolation_gradU_elem(const DoubleTab& i
   const Transport_Interfaces_FT_Disc& eq_transport = refeq_transport.valeur();
   const Maillage_FT_Disc& maillage = eq_transport.maillage_interface();
   int nb_voisins=8;
-  const double rho_fluide = fluide_diphasique().fluide_phase(1).masse_volumique().valeurs()(0, 0);
+  const double rho_fluide = fluide_diphasique().fluide_phase(1).masse_volumique()->valeurs()(0, 0);
   const double mu_fluide =rho_fluide * fluide_diphasique().fluide_phase(1).viscosite_cinematique()->valeurs()(0, 0);
 
   for (int fa7=0; fa7<coord.dimension(0); fa7++)
@@ -4701,7 +4701,7 @@ int Navier_Stokes_FT_Disc::trilinear_interpolation_gradU_elem_P1(const DoubleTab
  */
 double Navier_Stokes_FT_Disc::calculer_viscosite_arete(int face1, int face2, int compo)
 {
-  const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, Domaine_dis().valeur());
+  const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_dis().valeur());
   REF(Transport_Interfaces_FT_Disc) & refeq_transport = variables_internes().ref_eq_interf_proprietes_fluide;
   const Transport_Interfaces_FT_Disc& eq_transport = refeq_transport.valeur();
   const DoubleTab& positions_compo=eq_transport.get_positions_compo();
@@ -5041,7 +5041,7 @@ void Navier_Stokes_FT_Disc::calcul_forces_interface()
   int n = search_connex_components_local_FT(maillage, compo_connexes_fa7);
   int nb_compo_tot=compute_global_connex_components_FT(maillage, compo_connexes_fa7, n);
   const Fluide_Diphasique& mon_fluide = fluide_diphasique();
-  double mu_f=mon_fluide.fluide_phase(1).viscosite_dynamique().valeurs()(0, 0);
+  double mu_f=mon_fluide.fluide_phase(1).viscosite_dynamique()->valeurs()(0, 0);
 
   surface_tot_interf.resize(nb_compo_tot);
   force_pression_tot_interf.resize(nb_compo_tot,dimension);
@@ -5239,7 +5239,7 @@ void Navier_Stokes_FT_Disc::calcul_forces_interface()
       DoubleTab pression_P1(nb_fa7);
       DoubleTab pression_P2(nb_fa7);
 
-      if (trilinear_interpolation_elem(indicatrice, la_pression.valeurs(), coord_voisin_fluide_fa7_pression_1, pression_P1, 0, discr) && trilinear_interpolation_elem(indicatrice, la_pression.valeurs(), coord_voisin_fluide_fa7_pression_2, pression_P2,1,0)) // soit on est capable d'interpoler en P1 et P1 et on calcule la force de p
+      if (trilinear_interpolation_elem(indicatrice, la_pression->valeurs(), coord_voisin_fluide_fa7_pression_1, pression_P1, 0, discr) && trilinear_interpolation_elem(indicatrice, la_pression->valeurs(), coord_voisin_fluide_fa7_pression_2, pression_P2,1,0)) // soit on est capable d'interpoler en P1 et P1 et on calcule la force de p
         {
           DoubleTab pression_extrapolee(nb_fa7);
           Prop_P2_fluide_compo=0;
@@ -5302,13 +5302,13 @@ void Navier_Stokes_FT_Disc::calcul_forces_interface()
           int interp_gradU_P2_ok=0;
           if (les_post_interf.localisation_tenseur_contraintes_== Postraitement_Forces_Interfaces_FT::FACES_NORMALE_X)
             {
-              interp_gradU_P1_ok=trilinear_interpolation_gradU_face(indicatrice_faces, la_vitesse.valeurs(), coord_voisin_fluide_fa7_gradU_1, grad_U_P1);
-              interp_gradU_P2_ok=trilinear_interpolation_gradU_face(indicatrice_faces, la_vitesse.valeurs(), coord_voisin_fluide_fa7_gradU_2, grad_U_P2);
+              interp_gradU_P1_ok=trilinear_interpolation_gradU_face(indicatrice_faces, la_vitesse->valeurs(), coord_voisin_fluide_fa7_gradU_1, grad_U_P1);
+              interp_gradU_P2_ok=trilinear_interpolation_gradU_face(indicatrice_faces, la_vitesse->valeurs(), coord_voisin_fluide_fa7_gradU_2, grad_U_P2);
             }
           else if (les_post_interf.localisation_tenseur_contraintes_== Postraitement_Forces_Interfaces_FT::ELEMENTS)
             {
-              interp_gradU_P1_ok=trilinear_interpolation_gradU_elem(indicatrice_faces, indicatrice, la_vitesse.valeurs(), coord_voisin_fluide_fa7_gradU_1, grad_U_P1);
-              interp_gradU_P2_ok=trilinear_interpolation_gradU_elem(indicatrice_faces, indicatrice, la_vitesse.valeurs(), coord_voisin_fluide_fa7_gradU_2, grad_U_P2);
+              interp_gradU_P1_ok=trilinear_interpolation_gradU_elem(indicatrice_faces, indicatrice, la_vitesse->valeurs(), coord_voisin_fluide_fa7_gradU_1, grad_U_P1);
+              interp_gradU_P2_ok=trilinear_interpolation_gradU_elem(indicatrice_faces, indicatrice, la_vitesse->valeurs(), coord_voisin_fluide_fa7_gradU_2, grad_U_P2);
             }
           if ( interp_gradU_P1_ok==1 && interp_gradU_P2_ok==1 )
             {
@@ -5426,8 +5426,8 @@ void Navier_Stokes_FT_Disc::calcul_forces_interface()
           if (les_post_interf.localisation_tenseur_contraintes_== Postraitement_Forces_Interfaces_FT::ELEMENTS)
             {
               // 1. On calcule (interpolation trilineaire) la vitesse en P1 et P2 en coord cartesiennes
-              interp_U_P1_ok=trilinear_interpolation_face(indicatrice_faces, la_vitesse.valeurs(), coord_voisin_fluide_fa7_gradU_1, U_P1);
-              interp_U_P2_ok=trilinear_interpolation_face(indicatrice_faces, la_vitesse.valeurs(), coord_voisin_fluide_fa7_gradU_2, U_P2);
+              interp_U_P1_ok=trilinear_interpolation_face(indicatrice_faces, la_vitesse->valeurs(), coord_voisin_fluide_fa7_gradU_1, U_P1);
+              interp_U_P2_ok=trilinear_interpolation_face(indicatrice_faces, la_vitesse->valeurs(), coord_voisin_fluide_fa7_gradU_2, U_P2);
             }
           if ( interp_U_P1_ok && interp_U_P2_ok )
             {
@@ -5597,8 +5597,8 @@ void Navier_Stokes_FT_Disc::calcul_forces_interface_stokes_th()
   const Fluide_Diphasique& mon_fluide = fluide_diphasique();
   const Particule_Solide& particule_solide=ref_cast(Particule_Solide,mon_fluide.fluide_phase(0));
   const double rayon_particule =eq_transport.get_rayons_compo()(0); // On ne se sert de cette fonction que lorsqu'il y a une seule particule dans le domaine
-  double mu_p=particule_solide.viscosite_dynamique().valeurs()(0, 0);
-  double mu_f=mon_fluide.fluide_phase(1).viscosite_dynamique().valeurs()(0, 0);
+  double mu_p=particule_solide.viscosite_dynamique()->valeurs()(0, 0);
+  double mu_f=mon_fluide.fluide_phase(1).viscosite_dynamique()->valeurs()(0, 0);
   double phi_mu=mu_p/mu_f;
 
   DoubleTab& force_pression_tot_interf_stokes_th=variables_internes().force_pression_tot_interf_stokes_th_;
@@ -5624,8 +5624,8 @@ void Navier_Stokes_FT_Disc::calcul_forces_interface_stokes_th()
   DoubleVect vect_g(dimension);
   for (int i=0; i<dimension; i++) vect_g(i)=gravite(0,i);
   const double norme_g = sqrt(local_carre_norme_vect(vect_g));
-  const double rho_f = mon_fluide.fluide_phase(1).masse_volumique().valeurs()(0, 0);
-  const double rho_p = particule_solide.masse_volumique().valeurs()(0, 0);
+  const double rho_f = mon_fluide.fluide_phase(1).masse_volumique()->valeurs()(0, 0);
+  const double rho_p = particule_solide.masse_volumique()->valeurs()(0, 0);
   const double& v_inf_stokes=2./3.*(pow(rayon_particule,2)*norme_g/mu_f)*((1+phi_mu)/(2.+3.*phi_mu)*(rho_f-rho_p));
   const DoubleTab& indicatrice = refeq_transport.valeur().get_update_indicatrice().valeurs();
   const DoubleTab& indicatrice_faces = refeq_transport.valeur().get_compute_indicatrice_faces().valeurs();
@@ -5700,8 +5700,8 @@ void Navier_Stokes_FT_Disc::calcul_forces_interface_stokes_th()
       force_frottements_th_dis.resize(nb_fa7,dimension);
       force_frottements_th_dis=3e15;
 
-      const DoubleTab& la_vitesse_stokes_th=variables_internes().vitesse_stokes_th_.valeurs();
-      const DoubleTab& la_pression_stokes_th=variables_internes().pression_stokes_th_.valeurs();
+      const DoubleTab& la_vitesse_stokes_th=variables_internes().vitesse_stokes_th_->valeurs();
+      const DoubleTab& la_pression_stokes_th=variables_internes().pression_stokes_th_->valeurs();
 
       DoubleTab& sigma_xx_interf_stokes_th_dis = variables_internes().sigma_xx_interf_stokes_th_dis_;
       DoubleTab& sigma_xy_interf_stokes_th_dis = variables_internes().sigma_xy_interf_stokes_th_dis_;
