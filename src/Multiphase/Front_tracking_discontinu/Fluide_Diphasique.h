@@ -28,6 +28,11 @@
 #include <Objet_U.h>
 #include <Milieu_base.h>
 
+// EB
+#include <Particule_Solide.h>
+#include <type_traits>
+// fin EB
+
 class Fluide_Diphasique: public Milieu_base
 {
   Declare_instanciable_sans_constructeur(Fluide_Diphasique);
@@ -37,9 +42,11 @@ public:
   {
     indic_rayo_ = NONRAYO;
     formule_mu_ = "standard";
+    is_solid_particle_=false;
   }
 
-  const Fluide_Incompressible& fluide_phase(int la_phase) const;
+  const Fluide_Incompressible& fluide_phase(int phase) const;
+
   double sigma() const;
   double chaleur_latente() const;
   int formule_mu() const;
@@ -63,6 +70,8 @@ public:
   const Champ_Don_base& beta_t() const override  { return invalid_<const Champ_Don_base&>(__func__); }
   Champ_Don_base& beta_t() override { return invalid_<Champ_Don_base&>(__func__); }
 
+  bool is_solid_particle_; // EB
+
 private:
   OWN_PTR(Milieu_base) phase0_, phase1_;
   OWN_PTR(Champ_Don_base) sigma_; // Tension de surface (J/m^2)
@@ -75,6 +84,7 @@ private:
     Cerr << "Invalid call to the method Fluide_Diphasique::" << nom_funct << " !!!" << finl;
     throw;
   }
+
 };
 
 #endif /* Fluide_Diphasique_included */
