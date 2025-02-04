@@ -853,7 +853,7 @@ void Maillage_FT_Disc::parcourir_maillage()
 }
 
 // debut EB
-void Maillage_FT_Disc::remplir_equation_plan_faces_aretes_internes(Domaine_dis& domaine_dis)
+void Maillage_FT_Disc::remplir_equation_plan_faces_aretes_internes(Domaine_dis_base& domaine_dis)
 {
   Parcours_interface& p = refparcours_interface_.valeur();
   p.remplir_equation_plan_faces_aretes_internes(domaine_dis);
@@ -1136,8 +1136,8 @@ void Maillage_FT_Disc::calcul_indicatrice(DoubleVect& indicatrice,
   assert(statut_ >= PARCOURU);
   static const Stat_Counter_Id stat_counter = statistiques().new_counter(3, "Calculer_Indicatrice_Face", "FrontTracking");
   statistiques().begin_count(stat_counter);
-  const Domaine_dis& domaine_dis = refdomaine_dis_.valeur();
-  const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis.valeur());
+  const Domaine_dis_base& domaine_dis = refdomaine_dis_.valeur();
+  const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis);
   const int nb_face = domaine_vf.nb_faces();
   const int nb_face_tot = domaine_vf.nb_faces_tot();
   const IntTab& elem_faces = domaine_vf.elem_faces();
@@ -1526,8 +1526,8 @@ void Maillage_FT_Disc::calcul_indicatrice_arete(const DoubleVect& indicatrice, D
   assert(statut_ >= PARCOURU);
   static const Stat_Counter_Id stat_counter = statistiques().new_counter(3, "Calculer_Indicatrice_Arete", "FrontTracking");
   statistiques().begin_count(stat_counter);
-  const Domaine_dis& domaine_dis = refdomaine_dis_.valeur();
-  const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_dis.valeur());
+  const Domaine_dis_base& domaine_dis = refdomaine_dis_.valeur();
+  const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_dis);
   const int nb_aretes_reelles = domaine_vdf.nb_aretes_reelles();
   const IntVect& orientation_aretes=domaine_vdf.orientation_aretes();
   const Domaine& domaine=domaine_vdf.domaine();
@@ -3691,8 +3691,8 @@ void Maillage_FT_Disc::echanger_sommets_PE(const ArrOfInt& liste_sommets,
 }
 void Maillage_FT_Disc::update_sommet_face()
 {
-  const Domaine_dis& domaine_dis = refdomaine_dis_.valeur();
-  const Domaine_VF& domaine_vf = ref_cast(Domaine_VF,domaine_dis.valeur());
+  const Domaine_dis_base& domaine_dis = refdomaine_dis_.valeur();
+  const Domaine_VF& domaine_vf = ref_cast(Domaine_VF,domaine_dis);
   const int nb_som=sommets_.dimension(0);
   sommet_face_.resize(nb_som,dimension);
 
@@ -3724,9 +3724,9 @@ void Maillage_FT_Disc::update_sommet_face()
 void Maillage_FT_Disc::update_sommet_arete()
 {
   assert(dimension==3);
-  const Domaine_dis& domaine_dis = refdomaine_dis_.valeur();
-  const Domaine& domaine = domaine_dis->domaine();
-  const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis.valeur());
+  const Domaine_dis_base& domaine_dis = refdomaine_dis_.valeur();
+  const Domaine& domaine = domaine_dis.domaine();
+  const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis);
   const int nb_som=sommets_.dimension(0);
   sommet_arete_.resize(nb_som,dimension);
   int nb_arete_elem=12;
@@ -4465,8 +4465,8 @@ void Maillage_FT_Disc::echanger_facettes_face_x(const ArrOfInt& liste_facettes,
   static ArrOfIntFT liste_pe_dest_x;
   const Desc_Structure_FT& desc_facettes_const = desc_facettes();
   const Descripteur_FT& espace_distant = desc_facettes_const.espace_distant();
-  const Domaine_dis& domaine_dis = refdomaine_dis_.valeur();
-  const Domaine_VF& le_domaine_vf = ref_cast(Domaine_VF,domaine_dis.valeur());
+  const Domaine_dis_base& domaine_dis = refdomaine_dis_.valeur();
+  const Domaine_VF& le_domaine_vf = ref_cast(Domaine_VF,domaine_dis);
   const ArrOfInt& faces_doubles = le_domaine_vf.faces_doubles();
   const IntTab& faces_doubles_pe_num = le_domaine_vf.faces_doubles_pe_num();
   const IntTab& faces_doubles_virt_pe_num = le_domaine_vf.faces_doubles_virt_pe_num();
@@ -4745,8 +4745,8 @@ void Maillage_FT_Disc::echanger_facettes_face_y(const ArrOfInt& liste_facettes,
   static ArrOfIntFT liste_pe_dest_y;
   const Desc_Structure_FT& desc_facettes_const = desc_facettes();
   const Descripteur_FT& espace_distant = desc_facettes_const.espace_distant();
-  const Domaine_dis& domaine_dis = refdomaine_dis_.valeur();
-  const Domaine_VF& le_domaine_vf = ref_cast(Domaine_VF, domaine_dis.valeur());
+  const Domaine_dis_base& domaine_dis = refdomaine_dis_.valeur();
+  const Domaine_VF& le_domaine_vf = ref_cast(Domaine_VF, domaine_dis);
 
   const ArrOfInt& faces_doubles = le_domaine_vf.faces_doubles();
   const IntTab& faces_doubles_pe_num = le_domaine_vf.faces_doubles_pe_num();
@@ -5010,8 +5010,8 @@ void Maillage_FT_Disc::echanger_facettes_face_z(const ArrOfInt& liste_facettes,
   static ArrOfIntFT liste_pe_dest_z;
   const Desc_Structure_FT& desc_facettes_const = desc_facettes();
   const Descripteur_FT& espace_distant = desc_facettes_const.espace_distant();
-  const Domaine_dis& domaine_dis = refdomaine_dis_.valeur();
-  const Domaine_VF& le_domaine_vf = ref_cast(Domaine_VF,domaine_dis.valeur());
+  const Domaine_dis_base& domaine_dis = refdomaine_dis_.valeur();
+  const Domaine_VF& le_domaine_vf = ref_cast(Domaine_VF,domaine_dis);
 
   const ArrOfInt& faces_doubles = le_domaine_vf.faces_doubles();
   const IntTab& faces_doubles_pe_num = le_domaine_vf.faces_doubles_pe_num();
@@ -5272,8 +5272,8 @@ void Maillage_FT_Disc::echanger_facettes_arete_x(const ArrOfInt& liste_facettes,
   static ArrOfIntFT liste_pe_dest_aretex;
   const Desc_Structure_FT& desc_facettes_const = desc_facettes();
   const Descripteur_FT& espace_distant = desc_facettes_const.espace_distant();
-  const Domaine_dis& domaine_dis = refdomaine_dis_.valeur();
-  const Domaine_VF& le_domaine_vf = ref_cast(Domaine_VF,domaine_dis.valeur());
+  const Domaine_dis_base& domaine_dis = refdomaine_dis_.valeur();
+  const Domaine_VF& le_domaine_vf = ref_cast(Domaine_VF,domaine_dis);
   const IntVect& aretes_multiples = le_domaine_vf.aretes_multiples();
   const IntTab& arete_virt_pe_num = le_domaine_vf.arete_virt_pe_num();
   //const IntTab& aretes_multiples_pe_num = le_domaine_vf.aretes_multiples_pe_num();
@@ -5562,8 +5562,8 @@ void Maillage_FT_Disc::echanger_facettes_arete_y(const ArrOfInt& liste_facettes,
   static ArrOfIntFT liste_pe_dest_aretey;
   const Desc_Structure_FT& desc_facettes_const = desc_facettes();
   const Descripteur_FT& espace_distant = desc_facettes_const.espace_distant();
-  const Domaine_dis& domaine_dis = refdomaine_dis_.valeur();
-  const Domaine_VF& le_domaine_vf = ref_cast(Domaine_VF,domaine_dis.valeur());
+  const Domaine_dis_base& domaine_dis = refdomaine_dis_.valeur();
+  const Domaine_VF& le_domaine_vf = ref_cast(Domaine_VF,domaine_dis);
   const IntVect& aretes_multiples = le_domaine_vf.aretes_multiples();
   const IntTab& arete_virt_pe_num = le_domaine_vf.arete_virt_pe_num();
   //const IntTab& aretes_multiples_pe_num = le_domaine_vf.aretes_multiples_pe_num();
@@ -5850,8 +5850,8 @@ void Maillage_FT_Disc::echanger_facettes_arete_z(const ArrOfInt& liste_facettes,
   static ArrOfIntFT liste_pe_dest_aretez;
   const Desc_Structure_FT& desc_facettes_const = desc_facettes();
   const Descripteur_FT& espace_distant = desc_facettes_const.espace_distant();
-  const Domaine_dis& domaine_dis = refdomaine_dis_.valeur();
-  const Domaine_VF& le_domaine_vf = ref_cast(Domaine_VF,domaine_dis.valeur());
+  const Domaine_dis_base& domaine_dis = refdomaine_dis_.valeur();
+  const Domaine_VF& le_domaine_vf = ref_cast(Domaine_VF,domaine_dis);
   const IntVect& aretes_multiples = le_domaine_vf.aretes_multiples();
   const IntTab& arete_virt_pe_num = le_domaine_vf.arete_virt_pe_num();
   //const IntTab& aretes_multiples_pe_num = le_domaine_vf.aretes_multiples_pe_num();

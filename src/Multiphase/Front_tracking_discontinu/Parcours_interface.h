@@ -67,7 +67,7 @@ public:
 
   void calculer_normale_face_bord(int num_face, double x, double y, double z,
                                   double& nx_, double& ny_, double& nz_) const;
-  void remplir_equation_plan_faces_aretes_internes(const Domaine_dis& domaine_dis); // EB
+  void remplir_equation_plan_faces_aretes_internes(const Domaine_dis_base& domaine_dis); // EB
 
 protected:
   // Ceci est le point d'entree pour le parcours de l'interface.

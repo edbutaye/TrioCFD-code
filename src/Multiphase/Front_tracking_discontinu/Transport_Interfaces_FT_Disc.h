@@ -381,7 +381,7 @@ protected:
   // L'inconnue du probleme
   OWN_PTR(Champ_Inc_base) indicatrice_;
   OWN_PTR(Champ_Inc_base) indicatrice_faces_;
-  
+
   void calcul_indicatrice_aretes(const DoubleTab& indicatrice); // EB
   void postraiter_forces_interface();  // EB
 
@@ -501,7 +501,7 @@ public:
   // Les membres suivantes sont sauvegardes et repris:
   OWN_PTR(Champ_Inc_base)        indicatrice_cache;     // L'indicatrice calculee par get_update_indicatrice
   int           indicatrice_cache_tag; // Le tag du maillage correspondant
-  Champ_Inc        indicatrice_face_cache; // EB
+  OWN_PTR(Champ_Inc_base)        indicatrice_face_cache; // EB
   int 			indicatrice_face_cache_tag; // EB
   DoubleTab        indicatrice_arete_cache; // EB
   int 			indicatrice_arete_cache_tag; // EB

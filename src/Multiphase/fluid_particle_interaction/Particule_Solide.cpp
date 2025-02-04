@@ -36,7 +36,7 @@ Entree& Particule_Solide::readOn(Entree& is)
     {
       set_diametre(2*rayon_collision_);
       set_volume_compo(4 * M_PI * pow(rayon_collision_, 3) / 3);
-      const double rho_solide = masse_volumique()->valeurs()(0, 0);
+      const double rho_solide = masse_volumique().valeurs()(0, 0);
       set_masse_compo((4 * M_PI * pow(rayon_collision_, 3) / 3)*rho_solide);
     }
   return is;

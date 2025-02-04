@@ -1830,9 +1830,9 @@ void Transport_Interfaces_FT_Disc::discretiser()
   le_dom_Cl_dis->associer_eqn(*this);
   le_dom_Cl_dis->associer_inconnue(inconnue());
   // debut EB
-  if (sub_type(Domaine_VDF,domaine_dis().valeur()))
+  if (sub_type(Domaine_VDF,domaine_dis()))
     {
-      const Domaine_VDF  dvdf = ref_cast(Domaine_VDF, domaine_dis().valeur());
+      const Domaine_VDF  dvdf = ref_cast(Domaine_VDF, domaine_dis());
       const Nom la_dis = discretisation().que_suis_je();
       if (la_dis=="VDF+")
         {
@@ -1928,8 +1928,8 @@ int Transport_Interfaces_FT_Disc::preparer_calcul()
         }
 
       Modele_Collision_FT& modele_collision_particule = collision_interface_particule();
-      Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis().valeur());
-      Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_dis().valeur());
+      Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis());
+      Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_dis());
       modele_collision_particule.associer_equation_transport(*this);
       modele_collision_particule.set_param_geom(domaine_vdf);
       const double delta_n = modele_collision_particule.delta_n();
@@ -2456,7 +2456,7 @@ double Transport_Interfaces_FT_Disc::calculer_integrale_indicatrice(const Double
 DoubleVect Transport_Interfaces_FT_Disc::calculer_integrale_indicatrice_face(const DoubleVect& indicatrice_face) const
 {
   // EB : contrairement a l'integrale aux elements, on calcule ici le volume de la phase 0
-  const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis().valeur());
+  const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis());
   const DoubleVect& volumes = domaine_vf.volumes_entrelaces();
   const ArrOfInt& faces_doubles = domaine_vf.faces_doubles();
   int face, nb_faces = indicatrice_face.size();
@@ -2480,7 +2480,7 @@ DoubleVect Transport_Interfaces_FT_Disc::calculer_integrale_indicatrice_arete(co
 {
   Cerr << "Transport_Interfaces_FT_Disc::calculer_integrale_indicatrice_arete" << finl;
   // EB : contrairement a l'integrale aux elements, on calcule ici le volume de la phase 0
-  const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_dis().valeur());
+  const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_dis());
   const DoubleVect& volumes = domaine_vdf.volumes_aretes();
   const IntVect& orientation_arete=domaine_vdf.orientation_aretes();
   const ArrOfInt& aretes_multiples=domaine_vdf.aretes_multiples();
@@ -2852,9 +2852,9 @@ void Transport_Interfaces_FT_Disc::calculer_vitesse_transport_interpolee(
         surfaces_compo=0;
         Equation_base& eqn_hydraulique = variables_internes_->refequation_vitesse_transport.valeur();
         Navier_Stokes_FT_Disc& ns = ref_cast(Navier_Stokes_FT_Disc, eqn_hydraulique);
-        DoubleTab& num_compo = ns.get_num_compo()->valeurs();
+        DoubleTab& num_compo = ns.get_num_compo().valeurs();
         const DoubleTab& tab_vitesse=champ_vitesse.valeurs();
-        const Domaine_dis_base& mon_dom_dis = domaine_dis().valeur();
+        const Domaine_dis_base& mon_dom_dis = domaine_dis();
         const Domaine_VDF&   zone_vdf       = ref_cast(Domaine_VDF, mon_dom_dis);
         const DoubleVect& volumes_maille = zone_vdf.volumes();
         const IntTab& elem_faces = zone_vdf.elem_faces();
@@ -3437,7 +3437,7 @@ void Transport_Interfaces_FT_Disc::calcul_indicatrice_aretes(const DoubleTab& in
 {
   DoubleVect& indicatrice_arete = indicatrice_arete_;
 
-  const Domaine_dis_base& mon_domaine_dis = domaine_dis().valeur();
+  const Domaine_dis_base& mon_domaine_dis = domaine_dis();
   const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF,mon_domaine_dis);
 
   const IntTab& Qdm = domaine_vdf.Qdm();
@@ -3518,7 +3518,7 @@ const Champ_base& Transport_Interfaces_FT_Disc::get_compute_indicatrice_faces()
   else if (nb_pas_dt==0 && temps>0 && calcul_precis_indicatrice_face_ ) // sur une reprise de calcul, on calcule successivement l'indicatrice 2 fois
     {
       const DoubleTab& indicatrice = get_update_indicatrice().valeurs();
-      const Domaine_dis_base& mon_domaine_dis = domaine_dis().valeur();
+      const Domaine_dis_base& mon_domaine_dis = domaine_dis();
       const IntTab& face_voisins = mon_domaine_dis.face_voisins();
       calcul_indicatrice_faces(indicatrice,face_voisins);
       const int tag = maillage_interface().get_mesh_tag();
@@ -3535,7 +3535,7 @@ const Champ_base& Transport_Interfaces_FT_Disc::get_compute_indicatrice_faces()
   else
     {
       const DoubleTab& indicatrice = get_update_indicatrice().valeurs();
-      const Domaine_dis_base& mon_domaine_dis = domaine_dis().valeur();
+      const Domaine_dis_base& mon_domaine_dis = domaine_dis();
       const IntTab& face_voisins = mon_domaine_dis.face_voisins();
       calcul_indicatrice_faces(indicatrice,face_voisins);
       return indicatrice_faces_;
@@ -3547,8 +3547,8 @@ const Champ_base& Transport_Interfaces_FT_Disc::get_compute_indicatrice_faces()
 const DoubleTab& Transport_Interfaces_FT_Disc::get_compute_indicatrice_aretes_internes()
 {
   Cerr << "Transport_Interfaces_FT_Disc::get_compute_indicatrice_aretes " << finl;
-  //const Domaine_dis_base& mon_domaine_dis = domaine_dis().valeur();
-  const Domaine_VDF  dvdf = ref_cast(Domaine_VDF, domaine_dis().valeur());
+  //const Domaine_dis_base& mon_domaine_dis = domaine_dis();
+  const Domaine_VDF  dvdf = ref_cast(Domaine_VDF, domaine_dis());
   double temps=schema_temps().temps_courant();
   double nb_pas_dt=schema_temps().nb_pas_dt();
   if (nb_pas_dt==0) variables_internes_->indicatrice_arete_cache=indicatrice_arete_;
@@ -4031,7 +4031,7 @@ int Transport_Interfaces_FT_Disc::impr_fpi(Sortie& os) const
           SFichier Indicatrice_Aretes;
           ouvrir_fichier(Indicatrice_Aretes, "indicatrice_aretes", 1, *this);
           const DoubleVect& indic_aretes=get_indicatrice_aretes();
-          const Domaine_VDF& zone_vdf = ref_cast(Domaine_VDF, domaine_dis().valeur());
+          const Domaine_VDF& zone_vdf = ref_cast(Domaine_VDF, domaine_dis());
           const DoubleTab& coord_aretes=zone_vdf.xa();
           const IntVect& orientation_aretes=zone_vdf.orientation_aretes();
 
@@ -7459,7 +7459,7 @@ void Transport_Interfaces_FT_Disc::calculer_vitesse_repere_local(const Maillage_
 // search_connex_components_local_FT et compute_global_connex_components_FT.
 void  Transport_Interfaces_FT_Disc::permuter_positions_particules()
 {
-  const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis().valeur());
+  const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis());
   Equation_base& eqn_hydraulique = variables_internes_->refequation_vitesse_transport.valeur();
   Navier_Stokes_FT_Disc& ns = ref_cast(Navier_Stokes_FT_Disc, eqn_hydraulique);
   DoubleTab& positions=get_positions_compo();
@@ -7470,7 +7470,7 @@ void  Transport_Interfaces_FT_Disc::permuter_positions_particules()
   // On permetute les particules pour assurer la correspandance entre le bon numero eulerian au temps precedant et le mauvais numero lagrangien actuel
   ArrOfInt elem_cg;
   domaine_vf.domaine().chercher_elements_FT(positions, elem_cg);
-  const DoubleVect& old_num_compo = ns.get_num_compo()->valeurs();
+  const DoubleVect& old_num_compo = ns.get_num_compo().valeurs();
   {
     // EB : ici on fait une copie de old_num_compo dans correctNum et on prend le max sur chaque proc
     // "old_num_compo est connu par tous les procs en utilisant correctNum"
@@ -8332,7 +8332,7 @@ void Transport_Interfaces_FT_Disc::mettre_a_jour(double temps)
   variables_internes_->statut_calcul_forces_=0; // Le maillage a change, on doit recalculer les efforts sur les fa7 lagrangiennes pour pouvoir les postraiter
   variables_internes_->statut_calcul_flux_thermique_=0;
   if (schema_temps().limpr_fpi()) postraiter_forces_interface();
-  const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis().valeur());
+  const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis());
   const Domaine& domaine = domaine_vf.domaine();
   domaine.reset_cache_elem_pos_FT(); // EB
 
@@ -8443,7 +8443,7 @@ Champ_Inc_base& Transport_Interfaces_FT_Disc::inconnue()
   return indicatrice_;
 }
 // debut EB
-Champ_Inc& Transport_Interfaces_FT_Disc::inconnue_face(void) { return indicatrice_faces_; }
+Champ_Inc_base& Transport_Interfaces_FT_Disc::inconnue_face() { return indicatrice_faces_; }
 // fin EB
 
 Marching_Cubes& Transport_Interfaces_FT_Disc::marching_cubes()
@@ -8616,7 +8616,7 @@ int Transport_Interfaces_FT_Disc::reprendre(Entree& is)
     if (is_solid_particle()) variables_internes_->collision_interface_particule_.associer_equation_transport(*this);
     if (!variables_internes_->indicatrice_arete_cache.get_md_vector().non_nul() && discretisation().que_suis_je()=="VDF+")
       {
-        const Domaine_VDF  dvdf = ref_cast(Domaine_VDF, domaine_dis().valeur());
+        const Domaine_VDF  dvdf = ref_cast(Domaine_VDF, domaine_dis());
         variables_internes_->indicatrice_arete_cache.resize(dvdf.nb_aretes_tot());
         variables_internes_->indicatrice_arete_cache.set_md_vector(dvdf.domaine().aretes_som().get_md_vector());
       }
@@ -8927,7 +8927,7 @@ int Transport_Interfaces_FT_Disc::get_champ_post_FT(const Motcle& champ, Postrai
             if (!ftab || !postraitement_forces_interf().flag_force_pression_facettes_) break; // Pointeur nul : ne pas calculer la valeur du champ.
             const Equation_base& eqn_hydraulique = variables_internes_->refequation_vitesse_transport.valeur();
             const Navier_Stokes_FT_Disc& ns = ref_cast(Navier_Stokes_FT_Disc, eqn_hydraulique);
-            REF(Navier_Stokes_std) ref_ns_std= variables_internes_->refequation_vitesse_transport;
+            OBS_PTR(Navier_Stokes_std) ref_ns_std= variables_internes_->refequation_vitesse_transport;
             Navier_Stokes_FT_Disc& ns2=ref_cast(Navier_Stokes_FT_Disc, ref_ns_std.valeur()); // "oups", il faudra arranger ca plus tard
             ns2.calcul_forces_interface();
             const DoubleTab& valeurs = ns.get_force_pression_interf();
@@ -8950,7 +8950,7 @@ int Transport_Interfaces_FT_Disc::get_champ_post_FT(const Motcle& champ, Postrai
             if (!ftab || !postraitement_forces_interf().flag_force_frottements_facettes_) break; // Pointeur nul : ne pas calculer la valeur du champ.
             const Equation_base& eqn_hydraulique = variables_internes_->refequation_vitesse_transport.valeur();
             const Navier_Stokes_FT_Disc& ns = ref_cast(Navier_Stokes_FT_Disc, eqn_hydraulique);
-            REF(Navier_Stokes_std) ref_ns_std= variables_internes_->refequation_vitesse_transport;
+            OBS_PTR(Navier_Stokes_std) ref_ns_std= variables_internes_->refequation_vitesse_transport;
             Navier_Stokes_FT_Disc& ns2=ref_cast(Navier_Stokes_FT_Disc, ref_ns_std.valeur()); // "oups", il faudra arranger ca plus tard
             ns2.calcul_forces_interface();
             const DoubleTab& valeurs = ns.get_force_frottements_interf();
@@ -10523,7 +10523,7 @@ int Transport_Interfaces_FT_Disc::get_champ_post_FT(const Motcle& champ, Postrai
             if (!ftab || !postraitement_forces_interf().calcul_flux_) break; // Pointeur nul : ne pas calculer la valeur du champ.
             const Equation_base& eqn_temp = variables_internes_->refequation_temperature_.valeur();
             const Convection_Diffusion_Temperature_FT_Disc& temp = ref_cast(Convection_Diffusion_Temperature_FT_Disc, eqn_temp);
-            REF(Convection_Diffusion_Temperature_FT_Disc) ref_eq_temp= variables_internes_->refequation_temperature_;
+            OBS_PTR(Convection_Diffusion_Temperature_FT_Disc) ref_eq_temp= variables_internes_->refequation_temperature_;
             Convection_Diffusion_Temperature_FT_Disc& eqn_temp2=ref_eq_temp.valeur(); // "oups", il faudra arranger ca plus tard
             eqn_temp2.calcul_flux_interface();
             const DoubleTab& valeurs = temp.get_flux_conductif_interf();
@@ -10765,7 +10765,7 @@ const DoubleTab&  Transport_Interfaces_FT_Disc::get_update_distance_interface_ar
     }
   variables_internes_->distance_aretes_cache_tag = tag;
 
-  const Domaine_VF&    domaine_vf = ref_cast(Domaine_VF, domaine_dis().valeur());
+  const Domaine_VF&    domaine_vf = ref_cast(Domaine_VF, domaine_dis());
 
   const DoubleTab& dist_elem = get_update_distance_interface().valeurs();
   const DoubleTab& normale_elem = get_update_normale_interface().valeurs();
@@ -10887,7 +10887,7 @@ void  Transport_Interfaces_FT_Disc::calculer_distance_interface_aretes(const Dou
 {
   static const double distance_aretes_invalides = -1.e30;
 
-  const Domaine_VF&    domaine_vf = ref_cast(Domaine_VF, domaine_dis().valeur());
+  const Domaine_VF&    domaine_vf = ref_cast(Domaine_VF, domaine_dis());
   const IntTab&     Elem_Aretes = domaine_vf.domaine().elem_aretes();
   const DoubleTab&     cg_aretes = domaine_vf.xa();
   const DoubleTab& xp = domaine_vf.xp();
@@ -11589,12 +11589,12 @@ void Transport_Interfaces_FT_Disc::calculer_vmoy_composantes_connexes(const Mail
       {
         Cerr << "Transport avec vcg" << finl;
 
-        const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis().valeur());
+        const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis());
         ArrOfInt elem_cg;
         domaine_vf.domaine().chercher_elements(positions, elem_cg);
 
         const Equation_base& eqn_hydraulique = variables_internes_->refequation_vitesse_transport.valeur();
-        const Champ_base& champ_vitesse = eqn_hydraulique.inconnue().valeur();
+        const Champ_base& champ_vitesse = eqn_hydraulique.inconnue();
 
         FTd_vecteur3 coord;
 

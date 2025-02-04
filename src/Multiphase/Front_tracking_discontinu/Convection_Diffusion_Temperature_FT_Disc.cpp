@@ -795,7 +795,7 @@ void Convection_Diffusion_Temperature_FT_Disc::calculer_correction_flux_thermiqu
   static const Stat_Counter_Id count = statistiques().new_counter(1, "calculer_correction_flux_thermique", 0);
   statistiques().begin_count(count);
 
-  const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_dis().valeur());
+  const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_dis());
   const DoubleVect& volume_elem = domaine_vdf.volumes();
 
   const DoubleVect& rayon_compo=eq_transport.get_rayons_compo();
@@ -2177,20 +2177,20 @@ void Convection_Diffusion_Temperature_FT_Disc::calcul_flux_interface()
 {
   Cerr << "Convection_Diffusion_Temperature_FT_Disc::calcul_flux_interface"  <<  finl;
   // On recupere les equations
-  REF(Transport_Interfaces_FT_Disc) & refeq_transport = ref_eq_interface_;
+  OBS_PTR(Transport_Interfaces_FT_Disc) & refeq_transport = ref_eq_interface_;
   const Transport_Interfaces_FT_Disc& eq_transport = refeq_transport.valeur();
-  REF(Navier_Stokes_FT_Disc) & refeq_ns = ref_eq_ns_;
+  OBS_PTR(Navier_Stokes_FT_Disc) & refeq_ns = ref_eq_ns_;
   Navier_Stokes_FT_Disc& eq_ns = refeq_ns.valeur();
 
   const DoubleTab& indicatrice = refeq_transport.valeur().get_update_indicatrice().valeurs();
-  const DoubleTab& temperature = inconnue()->valeurs();
+  const DoubleTab& temperature = inconnue().valeurs();
 
-  const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_dis().valeur());
+  const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_dis());
   const Domaine& domaine = domaine_vdf.domaine();
 
   // prop du fluide
   const Fluide_Diphasique& mon_fluide = eq_ns.fluide_diphasique();
-  double lambda_f=mon_fluide.fluide_phase(1).conductivite()->valeurs()(0, 0);
+  double lambda_f=mon_fluide.fluide_phase(1).conductivite().valeurs()(0, 0);
 
   // grandeurs interface
   const Maillage_FT_Disc& maillage = eq_transport.maillage_interface_pour_post();
@@ -2350,7 +2350,7 @@ const DoubleVect& Convection_Diffusion_Temperature_FT_Disc::get_T_P2_moy() const
  */
 void Convection_Diffusion_Temperature_FT_Disc::init_champ_flux_conductif_interf()
 {
-  REF(Transport_Interfaces_FT_Disc) &refeq_transport = ref_eq_interface_;
+  OBS_PTR(Transport_Interfaces_FT_Disc) &refeq_transport = ref_eq_interface_;
   const Transport_Interfaces_FT_Disc& eq_transport = refeq_transport.valeur();
   const Maillage_FT_Disc& maillage = eq_transport.maillage_interface();
   const int nb_fa7 = maillage.nb_facettes();
@@ -2425,7 +2425,7 @@ void ouvrir_fichier(SFichier& os,const Nom& type, const int& flag, const Convect
  */
 int Convection_Diffusion_Temperature_FT_Disc::impr_fpi(Sortie& os) const
 {
-  const REF(Transport_Interfaces_FT_Disc) & refeq_transport = ref_eq_interface_;
+  const OBS_PTR(Transport_Interfaces_FT_Disc) & refeq_transport = ref_eq_interface_;
   const Transport_Interfaces_FT_Disc& eq_transport = refeq_transport.valeur();
   if (eq_transport.is_solid_particle())
     {

@@ -112,7 +112,7 @@ public:
   void reset();
   // Amene le maillage dans l'etat PARCOURU
   void parcourir_maillage();
-  void remplir_equation_plan_faces_aretes_internes(Domaine_dis& zone_dis); // EB
+  void remplir_equation_plan_faces_aretes_internes(Domaine_dis_base& zone_dis); // EB
   // Amene le maillage dans l'etat COMPLET
   void completer_maillage();
   // Calcul de l'indicatrice de phase

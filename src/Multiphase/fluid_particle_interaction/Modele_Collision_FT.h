@@ -137,10 +137,10 @@ protected:
   DoubleVect valeurs_decalage;
   int compteur_collisions_;
 
-  REF(Transport_Interfaces_FT_Disc) refequation_transport_;
+  OBS_PTR(Transport_Interfaces_FT_Disc) refequation_transport_;
 
 private:
-  REF(Domaine) ref_domaine;
+  OBS_PTR(Domaine) ref_domaine;
   static DoubleVect Longueurs_modele_collision;
   static IntVect Nb_Noeuds_modele_collision;
   static DoubleVect Origine_modele_collision;

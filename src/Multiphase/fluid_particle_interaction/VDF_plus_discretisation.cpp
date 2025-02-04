@@ -22,9 +22,9 @@ Sortie& VDF_plus_discretisation::printOn(Sortie& s) const
 {
   return s ;
 }
-
-void VDF_plus_discretisation::domaine_Cl_dis(Domaine_dis& d,
-                                             Domaine_Cl_dis& dcl) const
+/*
+void VDF_plus_discretisation::domaine_cl_dis_type(Domaine_dis_base& d,
+                                             Domaine_Cl_dis_base& dcl) const
 {
   Cerr << "Discretisation des conditions limites" << finl;
   Domaine_VDF_plus& domaine_vdf_plus=ref_cast(Domaine_VDF_plus, d.valeur());
@@ -32,3 +32,4 @@ void VDF_plus_discretisation::domaine_Cl_dis(Domaine_dis& d,
   Domaine_Cl_VDF& domaine_cl_vdf=ref_cast(Domaine_Cl_VDF, dcl.valeur());
   domaine_cl_vdf.associer(domaine_vdf_plus);
 }
+*/

@@ -378,8 +378,8 @@ private:
   double minx = -123., maxx = -123., pente = -123.;
   int is_repulsion = 0;
 
-  void calculer_champ_forces_collisions(const DoubleTab& indicatrice, DoubleTab& valeurs_champ,  const Transport_Interfaces_FT_Disc& eq_transport,Transport_Interfaces_FT_Disc& eq_transport_non_const, REF(Transport_Interfaces_FT_Disc)& refeq_transport, const Maillage_FT_Disc& maillage); // HMS
-  void calculer_correction_trainee(DoubleTab& valeurs_champ, const Transport_Interfaces_FT_Disc& eq_transport,Transport_Interfaces_FT_Disc& eq_transport_non_const, REF(Transport_Interfaces_FT_Disc)& refeq_transport, const Maillage_FT_Disc& maillage);// EB
+  void calculer_champ_forces_collisions(const DoubleTab& indicatrice, DoubleTab& valeurs_champ,  const Transport_Interfaces_FT_Disc& eq_transport,Transport_Interfaces_FT_Disc& eq_transport_non_const, OBS_PTR(Transport_Interfaces_FT_Disc)& refeq_transport, const Maillage_FT_Disc& maillage); // HMS
+  void calculer_correction_trainee(DoubleTab& valeurs_champ, const Transport_Interfaces_FT_Disc& eq_transport,Transport_Interfaces_FT_Disc& eq_transport_non_const, OBS_PTR(Transport_Interfaces_FT_Disc)& refeq_transport, const Maillage_FT_Disc& maillage);// EB
   void init_positions_vitesses_FT();
 
 };
@@ -395,9 +395,9 @@ private:
 */
 inline double Navier_Stokes_FT_Disc::chercher_elem_voisins(const DoubleTab& indicatrice, DoubleVect& coord_elem_interp, IntVect& elem_voisins, const int sauv_list_P1, const int num_fa7)
 {
-  const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_dis().valeur());
+  const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_dis());
   const Domaine& domaine = domaine_vdf.domaine();
-  const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis().valeur());
+  const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis());
 
   DoubleVect coord_elem_eulerien(dimension);
   IntTab& list_elem_P1=get_list_elem_P1();
@@ -495,12 +495,12 @@ inline double Navier_Stokes_FT_Disc::chercher_elem_voisins(const DoubleTab& indi
  */
 inline void Navier_Stokes_FT_Disc::chercher_faces_voisines (DoubleVect& coord_elem_interp, IntVect& faces_voisines, int orientation)
 {
-  const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_dis().valeur());
-  const Domaine& domaine = domaine_vdf.domaine();
-  const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis().valeur());
+  const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_dis());
+  //const Domaine& domaine = domaine_vdf.domaine();
+  const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis());
   DoubleVect coord_elem_eulerien(dimension);
 
-  int elem_eulerien=domaine.chercher_elements(coord_elem_interp(0), coord_elem_interp(1),coord_elem_interp(2));
+  int elem_eulerien=domaine_vdf.domaine().chercher_elements(coord_elem_interp(0), coord_elem_interp(1),coord_elem_interp(2));
   if (elem_eulerien<0)
     {
       faces_voisines=-1;

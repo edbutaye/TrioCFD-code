@@ -122,7 +122,7 @@ protected:
   ArrOfInt correction_mpoint_diff_conv_energy_ ; // on attend trois flags 0 ou 1
 
   OBS_PTR(Fluide_Diphasique) fluide_dipha_;
-  Champ_Fonc terme_correction_flux_thermique_; // EB
+  OWN_PTR(Champ_Fonc_base) terme_correction_flux_thermique_; // EB
 
   // Champs compris par le postraitement
   LIST(OBS_PTR(Champ_base)) liste_champs_compris_;
@@ -130,7 +130,7 @@ protected:
   // Reference a l'equation de transport de l'interface pour l'indicatrice de phase
   OBS_PTR(Transport_Interfaces_FT_Disc) ref_eq_interface_;
   // Reference a l'equation de navier_stokes pour le champ de vitesse (convection)
-  OBS_PTR(Navier_Stokes_std) ref_eq_ns_;
+  OBS_PTR(Navier_Stokes_FT_Disc) ref_eq_ns_;
 
   Schema_Comm_FT schema_comm_zone_; // EB
   // Gradient normal de temperature a l'interface phase 0

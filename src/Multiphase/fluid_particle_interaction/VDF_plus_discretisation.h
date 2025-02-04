@@ -17,7 +17,7 @@ class VDF_plus_discretisation : public VDF_discretisation
 
 public:
 
-  void domaine_Cl_dis(Domaine_dis& d, Domaine_Cl_dis& dcl) const override;
+  //void domaine_Cl_dis(Domaine_dis_base& d, Domaine_Cl_dis_base& dcl) const override;
 };
 
 #endif

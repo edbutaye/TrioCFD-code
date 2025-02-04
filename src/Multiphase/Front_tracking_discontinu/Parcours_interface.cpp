@@ -208,7 +208,7 @@ void Parcours_interface::parcourir(Maillage_FT_Disc& maillage) const
   domaine_elem_ptr = & domaine_vf.domaine().les_elems();
   domaine_sommets_ptr = & domaine_vf.domaine().les_sommets();
 
-  const Domaine_dis& domaine_dis = maillage.refdomaine_dis_.valeur();
+  const Domaine_dis_base& domaine_dis = maillage.refdomaine_dis_.valeur();
 
   static int iteration_parcourir_faces=0;
   static int iteration_parcourir_aretes=0;
@@ -583,7 +583,7 @@ void Parcours_interface::parcourir(Maillage_FT_Disc& maillage) const
   if (calcul_precis_indic_arete)
     {
       maillage.update_sommet_arete();
-      const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF,domaine_dis.valeur());
+      const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF,domaine_dis);
       const IntVect& type_arete=domaine_vdf.type_arete();
 
       if (iteration_parcourir_aretes>1|| temps>0) // lors des premieres iterations, bug parce qu'on a pas encore rempli sommet_face_ (fait uniquement apres
@@ -1008,10 +1008,10 @@ inline double Parcours_interface::calcul_eq_plan_face(const Domaine_VF& domaine_
   return ((num_face_face<dimension) ? 1 : -1);
 }
 
-void Parcours_interface::remplir_equation_plan_faces_aretes_internes(const Domaine_dis& domaine_dis)
+void Parcours_interface::remplir_equation_plan_faces_aretes_internes(const Domaine_dis_base& domaine_dis)
 {
 // const Domaine& domaine = domaine_dis.domaine();
-  const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_dis.valeur());
+  const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_dis);
   const IntVect& orientation_aretes=domaine_vdf.orientation_aretes();
   const IntVect& aretes_multiples=domaine_vdf.aretes_multiples();
   const IntVect& type_arete=domaine_vdf.type_arete();
@@ -2131,8 +2131,8 @@ void Parcours_interface::parcours_facette_arete_x(const Domaine_VF& domaine_vf,
   static ArrOfIntFT new_aretes_a_traiter_arete_x;
 
   const Maillage_FT_Disc& maillage_const=maillage;
-  const Domaine_dis& domaine_dis = maillage_const.refdomaine_dis_.valeur();
-  const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_dis.valeur());
+  const Domaine_dis_base& domaine_dis = maillage_const.refdomaine_dis_.valeur();
+  const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_dis);
 
   const IntTab& Elem_Aretes=domaine_vf.domaine().elem_aretes();
   const IntTab& Qdm=domaine_vdf.Qdm();
@@ -2322,8 +2322,8 @@ void Parcours_interface::parcours_facette_arete_y(const Domaine_VF& domaine_vf,
   static ArrOfIntFT new_aretes_a_traiter_arete_y;
 
   const Maillage_FT_Disc& maillage_const=maillage;
-  const Domaine_dis& domaine_dis = maillage_const.refdomaine_dis_.valeur();
-  const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_dis.valeur());
+  const Domaine_dis_base& domaine_dis = maillage_const.refdomaine_dis_.valeur();
+  const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_dis);
 
   const IntTab& Elem_Aretes=domaine_vf.domaine().elem_aretes();
   const IntTab& Qdm=domaine_vdf.Qdm();
@@ -2518,8 +2518,8 @@ void Parcours_interface::parcours_facette_arete_z(const Domaine_VF& domaine_vf,
   static ArrOfIntFT new_aretes_a_traiter_arete_z;
 
   const Maillage_FT_Disc& maillage_const=maillage;
-  const Domaine_dis& domaine_dis = maillage_const.refdomaine_dis_.valeur();
-  const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_dis.valeur());
+  const Domaine_dis_base& domaine_dis = maillage_const.refdomaine_dis_.valeur();
+  const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_dis);
 
   const IntTab& Elem_Aretes=domaine_vf.domaine().elem_aretes();
   const IntTab& Qdm=domaine_vdf.Qdm();
@@ -3661,8 +3661,8 @@ int Parcours_interface::calcul_intersection_facette_face_3D(const Domaine_VF& do
   // *********************************************************************
   // Calcul de l'intersection du polygone avec les plans qui
   // definissent la face
-  Domaine_dis& domaine_dis = maillage.refdomaine_dis_.valeur();
-  Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF,domaine_dis.valeur());
+  Domaine_dis_base& domaine_dis = maillage.refdomaine_dis_.valeur();
+  Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF,domaine_dis);
   for (int num_plan=0; num_plan<nb_faces_elem_; num_plan++) // tout comme les elements, les faces euleriennes ont 6 faces decrivant leur volume de controle
     {
       new_poly_.resize(0,3);
@@ -3988,8 +3988,8 @@ int Parcours_interface::calcul_intersection_facette_arete_3D(const Domaine_VF& d
   // *********************************************************************
   // Calcul de l'intersection du polygone avec les plans qui
   // definissent la face
-  Domaine_dis& domaine_dis = maillage.refdomaine_dis_.valeur();
-  Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF,domaine_dis.valeur());
+  Domaine_dis_base& domaine_dis = maillage.refdomaine_dis_.valeur();
+  Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF,domaine_dis);
 
   //Cerr << "arete " << num_arete << " cg " << domaine_vf.xa(num_arete,0) << " " <<  domaine_vf.xa(num_arete,1) << " " << domaine_vf.xa(num_arete,2) << finl;
   for (int num_plan=0; num_plan<nb_faces_elem_; num_plan++) // tout comme les elements, les faces euleriennes ont 6 faces decrivant leur volume de controle
