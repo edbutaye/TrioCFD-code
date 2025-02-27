@@ -7814,89 +7814,9 @@ void Transport_Interfaces_FT_Disc::injecter_interfaces_par_ajout_phase(double te
 }
 
 void Transport_Interfaces_FT_Disc::injecter_interfaces_pour_TCL(double temps)
-{
-  // PARA re_injection bublle seed
-  Probleme_base& pb = probleme();
-  const int n = pb.nombre_d_equations();
-  for (int ii = 0; ii < n; ii++)
-    {
-      Equation_base& eq = pb.equation(ii);
-      if (sub_type(Convection_Diffusion_Temperature_FT_Disc, eq))
-        {
-          Convection_Diffusion_Temperature_FT_Disc& eq_temp =
-            ref_cast(Convection_Diffusion_Temperature_FT_Disc, eq);
-
-
-          if (eq_temp.is_reinject_activated() && eq_temp.ready_injection())
-            {
-              const double thetac = eq_temp.get_thetaC();
-              const double Rc = eq_temp.get_Rc_inject();
-
-              // const Nom expr = "x^2+(y-8e-05*cos(50.0*pi/180.0))^2-8e-05^2";
-              const Nom expr = Nom("x^2+(y-") + Nom(Rc)
-                               + Nom("*cos(") + Nom(thetac)
-                               + Nom("*pi/180.0))^2-") + Nom(Rc)
-                               + Nom("^2");
-
-              // On essaye d'injecter l'interface
-              Maillage_FT_Disc maillage_tmp;
-              maillage_tmp.associer_equation_transport (*this);
-
-              // By default, inject vapeur, phase 0
-              Maillage_FT_Disc::AjoutPhase phase =
-                0 ?
-                Maillage_FT_Disc::AJOUTE_PHASE1 : Maillage_FT_Disc::AJOUTE_PHASE0;
-
-              DoubleTab sauvegarde (
-                variables_internes_->indicatrice_cache.valeur ().valeurs ());
-
-              const int ok = marching_cubes ().construire_iso (
-                               expr, 0., maillage_tmp,
-                               variables_internes_->indicatrice_cache.valeur ().valeurs (), phase,
-                               variables_internes_->distance_interface_sommets);
-
-              Cerr << "Injection_interface time " << temps << " " << expr;
-              if (ok)
-                {
-                  maillage_interface ().ajouter_maillage (maillage_tmp);
-                  get_update_indicatrice ();
-                  double unused_vol_phase_0 = 0.;
-                  const double volume_phase_1_old = calculer_integrale_indicatrice (
-                                                      sauvegarde, unused_vol_phase_0);
-                  unused_vol_phase_0 = 0.;
-                  const double volume_phase_1 = calculer_integrale_indicatrice (
-                                                  variables_internes_->indicatrice_cache.valeur ().valeurs (),
-                                                  unused_vol_phase_0);
-                  double volume = volume_phase_1 - volume_phase_1_old;
-                  // pow(-1,1-phase) ne compile pas avec xlC sur AIX car n'a que pow(double,int)
-                  volume *= pow (-1., 1 - phase);
-                  Cerr << " volume " << volume << finl;
-                  const Probleme_base&  pb2 = get_probleme_base();
-                  if (sub_type(Probleme_FT_Disc_gen,pb2))
-                    {
-                      Probleme_FT_Disc_gen& pb_ft = ref_cast_non_const(Probleme_FT_Disc_gen, pb);
-                      // injection des interfaces with temperature of activation
-                      if (pb_ft.tcl().lissage_tcl())
-                        {
-                          Schema_Temps_base& sch_tps = schema_temps();
-                          const double t_present_ = sch_tps.temps_courant();
-                          double& t_injection_ = pb_ft.tcl().t_injection();
-                          t_injection_ = t_present_;
-                        }
-                    }
-                }
-              else
-                {
-                  Cerr << " failure: collision" << finl;
-                  variables_internes_->indicatrice_cache.valeur ().valeurs () =
-                    sauvegarde;
-                }
-            }
-
-        }
-    }
-
-  if (sub_type(Probleme_FT_Disc_gen,pb))
+  {
+	  Probleme_base& pb = probleme();
+	  if (sub_type(Probleme_FT_Disc_gen,pb))
     {
       Probleme_FT_Disc_gen& pb_ft = ref_cast_non_const(Probleme_FT_Disc_gen, pb);
       // injection des interfaces with temperature of activation
@@ -7958,6 +7878,86 @@ void Transport_Interfaces_FT_Disc::injecter_interfaces_pour_TCL(double temps)
             }
         }
     }
+
+	  // PARA re_injection bublle seed
+	  const int n = pb.nombre_d_equations();
+	  for (int ii = 0; ii < n; ii++)
+	    {
+	      Equation_base& eq = pb.equation(ii);
+	      if (sub_type(Convection_Diffusion_Temperature_FT_Disc, eq))
+	        {
+	          Convection_Diffusion_Temperature_FT_Disc& eq_temp =
+	            ref_cast(Convection_Diffusion_Temperature_FT_Disc, eq);
+
+
+	          if (eq_temp.is_reinject_activated() && eq_temp.ready_injection())
+	            {
+	              const double thetac = eq_temp.get_thetaC();
+	              const double Rc = eq_temp.get_Rc_inject();
+
+	              // const Nom expr = "x^2+(y-8e-05*cos(50.0*pi/180.0))^2-8e-05^2";
+	              const Nom expr = Nom("x^2+(y-") + Nom(Rc)
+	                               + Nom("*cos(") + Nom(thetac)
+	                               + Nom("*pi/180.0))^2-") + Nom(Rc)
+	                               + Nom("^2");
+
+	              // On essaye d'injecter l'interface
+	              Maillage_FT_Disc maillage_tmp;
+	              maillage_tmp.associer_equation_transport (*this);
+
+	              // By default, inject vapeur, phase 0
+	              Maillage_FT_Disc::AjoutPhase phase =
+	                0 ?
+	                Maillage_FT_Disc::AJOUTE_PHASE1 : Maillage_FT_Disc::AJOUTE_PHASE0;
+
+	              DoubleTab sauvegarde (
+	                variables_internes_->indicatrice_cache.valeur ().valeurs ());
+
+	              const int ok = marching_cubes ().construire_iso (
+	                               expr, 0., maillage_tmp,
+	                               variables_internes_->indicatrice_cache.valeur ().valeurs (), phase,
+	                               variables_internes_->distance_interface_sommets);
+
+	              Cerr << "Injection_interface time " << temps << " " << expr;
+	              if (ok)
+	                {
+	                  maillage_interface ().ajouter_maillage (maillage_tmp);
+	                  get_update_indicatrice ();
+	                  double unused_vol_phase_0 = 0.;
+	                  const double volume_phase_1_old = calculer_integrale_indicatrice (
+	                                                      sauvegarde, unused_vol_phase_0);
+	                  unused_vol_phase_0 = 0.;
+	                  const double volume_phase_1 = calculer_integrale_indicatrice (
+	                                                  variables_internes_->indicatrice_cache.valeur ().valeurs (),
+	                                                  unused_vol_phase_0);
+	                  double volume = volume_phase_1 - volume_phase_1_old;
+	                  // pow(-1,1-phase) ne compile pas avec xlC sur AIX car n'a que pow(double,int)
+	                  volume *= pow (-1., 1 - phase);
+	                  Cerr << " volume " << volume << finl;
+	                  const Probleme_base&  pb2 = get_probleme_base();
+	                  if (sub_type(Probleme_FT_Disc_gen,pb2))
+	                    {
+	                      Probleme_FT_Disc_gen& pb_ft = ref_cast_non_const(Probleme_FT_Disc_gen, pb);
+	                      // injection des interfaces with temperature of activation
+	                      if (pb_ft.tcl().lissage_tcl())
+	                        {
+	                          Schema_Temps_base& sch_tps = schema_temps();
+	                          const double t_present_ = sch_tps.temps_courant();
+	                          double& t_injection_ = pb_ft.tcl().t_injection();
+	                          t_injection_ = t_present_;
+	                        }
+	                    }
+	                }
+	              else
+	                {
+	                  Cerr << " failure: collision" << finl;
+	                  variables_internes_->indicatrice_cache.valeur ().valeurs () =
+	                    sauvegarde;
+	                }
+	            }
+
+	        }
+	    }
 }
 
 void Transport_Interfaces_FT_Disc::mettre_a_jour_hors_deplacement(double temps, const bool update_statio)
