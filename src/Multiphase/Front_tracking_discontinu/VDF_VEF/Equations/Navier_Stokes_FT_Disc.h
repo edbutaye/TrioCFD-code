@@ -52,7 +52,7 @@ public:
   void correct_at_exit_bad_gradient(DoubleTab& u0) const;
   void calculer_delta_u_interface(Champ_base& u0, int phase_pilote, int ordre, const bool future_or_past = false);
   void shift_secmem2(DoubleTab& shift_secmem2);
-  const Champ_Don& diffusivite_pour_transport() const override;
+  const Champ_Don_base& diffusivite_pour_transport() const override;
 
   virtual const Champ_base* get_delta_vitesse_interface() const;
   virtual const Fluide_Diphasique& fluide_diphasique() const;

@@ -57,13 +57,13 @@ static void FT_disc_calculer_champs_rho_mu_nu_dipha(const Domaine_dis_base& doma
 {
   const Fluide_Incompressible& phase_0 = fluide.fluide_phase(0);
   const Fluide_Incompressible& phase_1 = fluide.fluide_phase(1);
-  const DoubleTab& tab_rho_phase_0 = phase_0.masse_volumique()->valeurs();
-  const DoubleTab& tab_rho_phase_1 = phase_1.masse_volumique()->valeurs();
+  const DoubleTab& tab_rho_phase_0 = phase_0.masse_volumique().valeurs();
+  const DoubleTab& tab_rho_phase_1 = phase_1.masse_volumique().valeurs();
   const double rho_phase_0 = tab_rho_phase_0(0, 0);
   const double rho_phase_1 = tab_rho_phase_1(0, 0);
   const double delta_rho = rho_phase_1 - rho_phase_0;
-  const DoubleTab& tab_nu_phase_0 = phase_0.viscosite_cinematique()->valeurs();
-  const DoubleTab& tab_nu_phase_1 = phase_1.viscosite_cinematique()->valeurs();
+  const DoubleTab& tab_nu_phase_0 = phase_0.viscosite_cinematique().valeurs();
+  const DoubleTab& tab_nu_phase_1 = phase_1.viscosite_cinematique().valeurs();
   const double nu_phase_0 = tab_nu_phase_0(0, 0);
   const double nu_phase_1 = tab_nu_phase_1(0, 0);
   const double delta_nu = nu_phase_1 - nu_phase_0;
@@ -147,15 +147,15 @@ static void FT_disc_calculer_champs_rho_mu_nu_mono(const Domaine_dis_base& zdis,
 
   if (sub_type(Champ_Uniforme,champ_rho_elem_) && (sub_type(Champ_Uniforme, champ_nu_)))
     {
-      const DoubleTab& tab_rho_phase_0 = fluide.masse_volumique()->valeurs();
+      const DoubleTab& tab_rho_phase_0 = fluide.masse_volumique().valeurs();
       const double rho = tab_rho_phase_0(0, 0);
       const DoubleTab& tab_nu_phase_0 = fluide.viscosite_cinematique().valeurs();
       const double nu = tab_nu_phase_0(0, 0);
       const double mu = nu * rho;
-      champ_rho_elem_->valeurs() = rho;
-      champ_nu_->valeurs() = nu;
-      champ_mu_->valeurs() = mu;
-      champ_rho_faces_->valeurs() = rho;
+      champ_rho_elem_.valeurs() = rho;
+      champ_nu_.valeurs() = nu;
+      champ_mu_.valeurs() = mu;
+      champ_rho_faces.valeurs() = rho;
     }
   else
     {
@@ -626,7 +626,6 @@ int Navier_Stokes_FT_Disc::lire_motcle_non_standard(const Motcle& mot, Entree& i
     return Navier_Stokes_Turbulent::lire_motcle_non_standard(mot, is);
   return 1;
 }
-
 const Champ_Don_base& Navier_Stokes_FT_Disc::diffusivite_pour_transport() const
 {
   return champ_mu_;
@@ -874,7 +873,7 @@ void Navier_Stokes_FT_Disc::mettre_a_jour_physical_properties(double temps)
     {
       // Couplage Navier-Stokes / Fluide : les interfaces determinent la position des phases.
       // On utilise les proprietes du fluide diphasique
-      if (Process::je_suis_maitre() // TODO: Attention, comment savoir si on vient de reprendre et que faire?
+      if (Process::je_suis_maitre()) // TODO: Attention, comment savoir si on vient de reprendre et que faire?
         Cerr << "Initialisation of the physical properties (rho, mu, ...)\n" << " based on the indicatrice field of the equation " << ref_equation->le_nom() << finl;
 
       // TODO : suite au refactor, on utilise indicatrice_cache (via get_indicatrice) au lieu de indicatrice refeq_transport.valeur().inconnue()
@@ -887,7 +886,7 @@ void Navier_Stokes_FT_Disc::mettre_a_jour_physical_properties(double temps)
     {
       // Pas de couplage Navier-Stokes / Fluide : le fluide est monophasique.
       const Fluide_Incompressible& phase_0 = ref_cast(Fluide_Incompressible, milieu());
-      const Domaine_dis_base& zdis = domaine_dis().valeur();
+      const Domaine_dis_base& zdis = domaine_dis();
       FT_disc_calculer_champs_rho_mu_nu_mono(zdis, phase_0, champ_rho_elem_, champ_mu_, champ_nu_, champ_rho_faces_);
     }
 }
@@ -1153,8 +1152,8 @@ void Navier_Stokes_FT_Disc::calculer_champ_forces_superficielles(const Maillage_
       {
         if (milieu().a_gravite())
           {
-            const double rho_0 = fluide_dipha.fluide_phase(0).masse_volumique()->valeurs()(0, 0);
-            const double rho_1 = fluide_dipha.fluide_phase(1).masse_volumique()->valeurs()(0, 0);
+            const double rho_0 = fluide_dipha.fluide_phase(0).masse_volumique().valeurs()(0, 0);
+            const double rho_1 = fluide_dipha.fluide_phase(1).masse_volumique().valeurs()(0, 0);
             const double delta_rho = rho_1 - rho_0;
 
             // Pour l'instant : gravite uniforme g => phi(s) = - x scalaire g
@@ -1830,8 +1829,8 @@ void Navier_Stokes_FT_Disc::calculer_delta_u_interface(Champ_base& champ_u0, int
   const Fluide_Diphasique& fluide_dipha = fluide_diphasique();
   const Fluide_Incompressible& phase_0 = fluide_dipha.fluide_phase(0);
   const Fluide_Incompressible& phase_1 = fluide_dipha.fluide_phase(1);
-  const DoubleTab& tab_rho_phase_0 = phase_0.masse_volumique()->valeurs();
-  const DoubleTab& tab_rho_phase_1 = phase_1.masse_volumique()->valeurs();
+  const DoubleTab& tab_rho_phase_0 = phase_0.masse_volumique().valeurs();
+  const DoubleTab& tab_rho_phase_1 = phase_1.masse_volumique().valeurs();
   const double rho_0 = tab_rho_phase_0(0, 0);
   const double rho_1 = tab_rho_phase_1(0, 0);
   //const double delta_un_sur_rho = 1. / rho_1 - 1. / rho_0;
@@ -1871,6 +1870,8 @@ void Navier_Stokes_FT_Disc::calculer_delta_u_interface(Champ_base& champ_u0, int
       assert(future_or_past == false); // Code jamais teste en true
       const DoubleTab& normale_elements = future_or_past ? eq_transport.get_normale_interface().futur() : eq_transport.get_normale_interface().valeurs();
       const DoubleTab& interfacial_area = variables_internes().ai->valeurs();
+      const Champ_base& ch_indic = refeq_transport->get_indicatrice();
+      const DoubleTab& indicatrice = ch_indic.valeurs();
       const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis());
       const IntTab& face_voisins = domaine_vf.face_voisins();
       const int nb_faces = face_voisins.dimension(0);
@@ -2121,7 +2122,7 @@ void Navier_Stokes_FT_Disc::calculer_delta_u_interface(Champ_base& champ_u0, int
                 }
             }
           // u0.echange_espace_virtuel();
-          // we do a EV_SOMME_ECHANGE become initially. virtual part are ALL NULL! DO NOT change virtual for the moment
+          // we do a EV_SOMME_ECHANGE become initially. virtual part are ALL zero! DO NOT change virtual for the moment
           MD_Vector_tools::echange_espace_virtuel(u0, MD_Vector_tools::EV_SOMME_ECHANGE);
         }
       return;
@@ -2243,40 +2244,33 @@ void Navier_Stokes_FT_Disc::shift_secmem2(DoubleTab& secmem2)
   secmem2_tmp.echange_espace_virtuel();
   secmem2_loc.echange_espace_virtuel();
 
-
-
   // const DoubleTab& interfacial_area = variables_internes().ai.valeur().valeurs();
-  REF(Transport_Interfaces_FT_Disc) &refeq_transport = variables_internes().ref_eq_interf_proprietes_fluide;
-  const Transport_Interfaces_FT_Disc& eq_transport = refeq_transport.valeur();
+  OBS_PTR(Transport_Interfaces_FT_Disc) &refeq_transport = variables_internes().ref_eq_interf_proprietes_fluide;
+  const Transport_Interfaces_FT_Disc& eq_transport = refeq_transport;
   // use indicatrice to tell if mixed cell BUT NOT ai
   // as ai and indicatrice may not always at the same time, i.e., NO FULL EXPLICIT
-  const DoubleTab& indicatrice = eq_transport.inconnue().valeur().valeurs();
+  const DoubleTab& indicatrice = eq_transport.inconnue().valeurs();
+  // TODO : GB : Voir avec Linkai pourquoi inconnue() plutot que get_indicatrice()
+  // const DoubleTab& indicatrice = eq_transport.get_indicatrice().valeurs();
 
-
-
-  const Domaine_VDF& zvdf = ref_cast(Domaine_VDF, domaine_dis().valeur());
+  const Domaine_VDF& zvdf = ref_cast(Domaine_VDF, domaine_dis());
   const IntVect& orientation = zvdf.orientation();
-  const DoubleTab& normale_elements = eq_transport.get_update_normale_interface().valeurs();
-
-
+  const DoubleTab& normale_elements = eq_transport.get_normale_interface().valeurs();
 
   DoubleTab nb_voisions_vap(secmem2);
   nb_voisions_vap = 0.;
   nb_voisions_vap.echange_espace_virtuel();
 
   // const DoubleTab& interfacial_area = variables_internes().ai.valeur().valeurs();
-  const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis().valeur());
+  const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis());
   const IntTab& face_voisins = domaine_vf.face_voisins();
   const IntTab& elem_faces = domaine_vf.elem_faces();
 
   // const int nb_elem = secmem2.dimension; // nombre d'elems
   const int nb_elem = elem_faces.dimension(0);
 
-
   ArrOfInt list_bc_elems; //elem at BC axis
   ArrOfInt list_bc_faces; //face at BC axis
-
-
   for (int i=0; i< nb_elem; i++)
     {
       if (!est_egal(indicatrice[i],0) && !est_egal(indicatrice[i],1))  // inteface cells ai non null
@@ -2359,7 +2353,7 @@ void Navier_Stokes_FT_Disc::shift_secmem2(DoubleTab& secmem2)
 
 
 
-  MD_Vector_tools::echange_espace_virtuel(secmem2_loc, MD_Vector_tools::EV_SOMME);  // we do a EV_SOMME_ECHANGE become initially. virtual part are ALL NULL! DO NOT change virtual for the moment
+  MD_Vector_tools::echange_espace_virtuel(secmem2_loc, MD_Vector_tools::EV_SOMME);  // we do a EV_SOMME_ECHANGE become initially. virtual part are ALL zero! DO NOT change virtual for the moment
 
   nb_voisions_vap.echange_espace_virtuel();
 
@@ -2672,15 +2666,15 @@ void correct_indicatrice_face_bord(const int num_face, const Maillage_FT_Disc& m
 // !!! the real eq. solved : dI/dt = div.[(rho_v/(rho_v-rho_l) - I) U] !!! Not the same as in existed paper/draft ...
 void Navier_Stokes_FT_Disc::calculer_dI_dt(DoubleVect& dI_dt, const DoubleTab& tab_vitesse) //const
 {
-  const double rho_0 = fluide_diphasique().fluide_phase(0).masse_volumique()->valeurs()(0, 0);
-  const double rho_1 = fluide_diphasique().fluide_phase(1).masse_volumique()->valeurs()(0, 0);
+  const double rho_0 = fluide_diphasique().fluide_phase(0).masse_volumique().valeurs()(0, 0);
+  const double rho_1 = fluide_diphasique().fluide_phase(1).masse_volumique().valeurs()(0, 0);
   const double delta_rho = rho_0 - rho_1;
 
   double rho_0_sur_delta_rho = 0.;
   if (delta_rho != 0)
     rho_0_sur_delta_rho = rho_0 / delta_rho;
 
-  const IntTab& face_voisins = domaine_dis()->face_voisins();
+  const IntTab& face_voisins = domaine_dis().face_voisins();
 
   OBS_PTR(Transport_Interfaces_FT_Disc) &refeq_transport = variables_internes().ref_eq_interf_proprietes_fluide;
   const Transport_Interfaces_FT_Disc& eq_transport = refeq_transport.valeur();
@@ -3256,7 +3250,7 @@ void Navier_Stokes_FT_Disc::compute_boussinesq_additional_gravity(const Convecti
   const int phase_eq = eq.get_phase();
   const DoubleTab& temperature_eq = eq.inconnue().valeurs();
   const Fluide_Incompressible& fluide_phase_eq = fluide_dipha.fluide_phase(phase_eq);
-  const DoubleTab& tab_beta_th_phase_eq = fluide_phase_eq.beta_t()->valeurs();
+  const DoubleTab& tab_beta_th_phase_eq = fluide_phase_eq.beta_t().valeurs();
   const double beta_th_phase_eq = tab_beta_th_phase_eq(0, 0);
 
   for (int face = 0; face < gravite_face.dimension(0); face++)
@@ -3315,7 +3309,7 @@ DoubleTab& Navier_Stokes_FT_Disc::derivee_en_temps_inco(DoubleTab& vpoint)
       DoubleTab& diffusion = variables_internes().terme_diffusion->valeurs();
       DoubleTab diffusion_liq(diffusion);
       DoubleTab diffusion_vap(diffusion);
-      REF(Transport_Interfaces_FT_Disc) & refeq_transport =
+      OBS_PTR(Transport_Interfaces_FT_Disc) & refeq_transport =
         variables_internes().ref_eq_interf_proprietes_fluide;
       if (refeq_transport.non_nul())
         {
@@ -3647,7 +3641,7 @@ DoubleTab& Navier_Stokes_FT_Disc::derivee_en_temps_inco(DoubleTab& vpoint)
 
       DoubleTrav tt(vpoint);
       tt = vpoint;
-      derivee = inconnue()->valeurs();
+      derivee = inconnue().valeurs();
       Equation_base::Gradient_conjugue_diff_impl(tt, derivee);
 
       solveur_masse->set_name_of_coefficient_temporel("no_coeff");

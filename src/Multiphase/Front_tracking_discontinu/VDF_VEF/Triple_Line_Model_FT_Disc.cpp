@@ -2443,11 +2443,10 @@ void Triple_Line_Model_FT_Disc:: correct_theta_app_qtcl(double& theta_v,double& 
   const Fluide_Diphasique& fluide = ns.fluide_diphasique();
   const double sigma = fluide.sigma();
 
-  const DoubleTab& tab_nu_phase_1 = fluide.fluide_phase(1).viscosite_cinematique()->valeurs();
+  const DoubleTab& tab_nu_phase_1 = fluide.fluide_phase(1).viscosite_cinematique().valeurs();
   const double nu_phase_1 = tab_nu_phase_1(0, 0);
   const double Ca = nu_phase_1*v_cl/sigma;
   Cerr << "[TCL-model] Capillary_number = " << Ca  << finl;
-
 
   const double cst_e = exp(1.);
   const double deg_to_rad = M_PI / 180.;
@@ -2465,11 +2464,8 @@ void Triple_Line_Model_FT_Disc:: correct_theta_app_qtcl(double& theta_v,double& 
 
   Cerr << "[TCL-model] Contact_angle after correction= "  <<  theta_v << finl;
 
-
-
   double Twall = 0.;
-  const Domaine_Cl_dis_base& zcldis = ref_cast(
-                                        Domaine_Cl_dis_base, ref_eq_temp_->domaine_Cl_dis ().valeur ());
+  const Domaine_Cl_dis_base& zcldis = ref_cast(Domaine_Cl_dis_base, ref_eq_temp_->domaine_Cl_dis());
   const Domaine_Cl_VDF& zclvdf = ref_cast(Domaine_Cl_VDF, zcldis);
   const Cond_lim& la_cl = zclvdf.la_cl_de_la_face (num_face_wall);
   const Front_VF& le_bord = ref_cast(Front_VF,la_cl->frontiere_dis());
@@ -2500,8 +2496,4 @@ void Triple_Line_Model_FT_Disc:: correct_theta_app_qtcl(double& theta_v,double& 
   // Twall here is (Wall temperature - saturation temperature)..unit of Q_meso is W/m
   qtcl = kl_cond_*(Twall/theta_app)*ln_y; // qtcl of Q_int is W/m
 }
-
-
-
-
 

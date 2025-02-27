@@ -84,6 +84,7 @@ public:
   {
     return ref_eq_interface_.valeur();
   };
+
   Transport_Interfaces_FT_Disc& eq_interface()
   {
     return ref_eq_interface_.valeur();
@@ -143,8 +144,6 @@ protected:
   int Rc_GridN_ = 0;              
   // Par defaut, Not ready to inject the bubble
   bool ready_inject_ = false;
-
-  REF(Fluide_Diphasique) fluide_dipha_;
 
   // Champs compris par le postraitement
   LIST(OBS_PTR(Champ_base)) liste_champs_compris_;

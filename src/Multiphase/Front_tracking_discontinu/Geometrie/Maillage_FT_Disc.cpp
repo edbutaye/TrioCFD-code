@@ -677,9 +677,9 @@ void Maillage_FT_Disc::recopie(const Maillage_FT_Disc& source, Statut_Maillage n
       source.get_update_normale_facettes();
       source.get_update_courbure_sommets();
 
-      mesh_data_cache().surface_facettes_ = mesh_data_cache().surface_facettes_;
-      mesh_data_cache().normale_facettes_ = mesh_data_cache().normale_facettes_;
-      mesh_data_cache().courbure_sommets_ = mesh_data_cache().courbure_sommets_;
+      mesh_data_cache().surface_facettes_ = source.mesh_data_cache().surface_facettes_;
+      mesh_data_cache().normale_facettes_ = source.mesh_data_cache().normale_facettes_;
+      mesh_data_cache().courbure_sommets_ = source.mesh_data_cache().courbure_sommets_;
     }
 
   maillage_modifie(niveau_copie);
@@ -6045,11 +6045,11 @@ void Maillage_FT_Disc::calcul_courbure_sommets(ArrOfDouble& courbure_sommets, co
                   // because sommet_face_bord_ is not well filled for virtual sommets...
                   if(sommet_elem_[som[i2]]<0)
                     {
-                      const Domaine_dis& domaine_dis = refdomaine_dis_.valeur();
-                      const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis.valeur());
+                      const Domaine_dis_base& domaine_dis = refdomaine_dis_;
+                      const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis);
 
                       const Equation_base& eq = equation_transport();
-                      const Domaine_Cl_dis_base& domaine_cl = eq.domaine_Cl_dis().valeur();
+                      const Domaine_Cl_dis_base& domaine_cl = eq.domaine_Cl_dis();
 
                       for (int ii=0; ii<domaine_cl.nb_cond_lim(); ii++)
                         {
