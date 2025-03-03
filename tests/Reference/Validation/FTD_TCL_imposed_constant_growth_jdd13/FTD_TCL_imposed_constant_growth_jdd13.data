@@ -208,7 +208,6 @@ Lire pb
         equation_interface interf
         deactivate
         Qtcl 0.0 # W/m #
-        lv 10.e-9
         ym 5.e-6
         sm 5.e-6 # TestCase at theta_app = 90° => sm=ym #
     }

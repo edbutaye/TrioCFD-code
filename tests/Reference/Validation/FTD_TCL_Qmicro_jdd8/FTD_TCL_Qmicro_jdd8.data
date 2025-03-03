@@ -193,7 +193,6 @@ Lire pb
         equation_interface interf
         distri_first_facette
         Qtcl 50.0 # W/m #
-        lv 10.e-9
         # coeffa -1.9291 #
         # coeffb  4.03634 #
         ym 3.7e-6
