@@ -20,7 +20,7 @@ for CAS in $LISTE_CAS ; do
   if test "$CAS" = "Cas_01" ; then
 	if test "$MESH" = "M1" ; then
 	  cp $SRCMESH $DESTMESH
-	  sed "s/facsec 1./facsec 0.91/;s/PARALLEL ONLY/PARALLEL ONLY 2/" $SRCDATA > $DESTDATA
+	  sed "s/facsec 1./facsec 0.8/;s/PARALLEL ONLY/PARALLEL ONLY 2/" $SRCDATA > $DESTDATA
 
 	elif test "$MESH" = "M2" ; then
 	  sed "s/Nombre_de_Noeuds 43 43 43/Nombre_de_Noeuds 61 61 61/;
