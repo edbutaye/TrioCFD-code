@@ -11,7 +11,7 @@ dimension 3
 Probleme_FT_Disc_gen pb
 
 Domaine DOM
-Read_file DOM ../cylindre_5000elts.geom
+Read_file DOM cylindre_5000elts.geom
 Reorienter_tetraedres DOM
 Dilate DOM 0.0001
 Ecrire_fichier_bin DOM cylindre_bin.geom
@@ -22,14 +22,14 @@ Schema_Euler_explicite  sch
 Lire sch
 {
 tinit 0.0
+	nb_pas_dt_max 3
 tmax  0.05
 dt_start dt_min
 dt_min 1.e-7
-dt_max $dtmax
+dt_max 0.001
 dt_impr 10.
 dt_sauv 100
 seuil_statio -1
-nb_pas_dt_max 150
 }
 
 Associate pb DOM
@@ -113,7 +113,6 @@ bas   Paroi_FT_disc symetrie
 }
 postraitement {
 sondes { v_goutte nodes vitesse periode 0.000001 points 1 0. 0. 0.04 }
-# Pour la reference du cas test, post en lml necessaire #
 format lml
 champs dt_post 0.00005 {
 indicatrice_interf elem
@@ -128,7 +127,7 @@ fichier lata/prepa
 champs dt_post 0.00005 {
 indicatrice_interf elem
 pression som
-vitesse faces
+vitesse
 }
 interfaces interf {
 pe som
