@@ -7241,10 +7241,10 @@ Entree& DNS_QC_double::interpreter(Entree& is)
   timestep_reprise_vitesse_ = -2;
   expression_vitesse_initiale_.dimensionner(3);
   t_debut_statistiques_ = 0.;
-  check_divergence_ = 0;
+  check_divergence_ = false;
   Param param(que_suis_je());
   Nom ijk_splitting_name;
-  reprise_fourier_ = 0;
+  reprise_spectrale_ = false;
   dt_post_ = 2000000000; // jamais de post-traitement
   timestep_facsec_ = 1.;
   timestep_max_ = 1.;
@@ -7288,27 +7288,27 @@ Entree& DNS_QC_double::interpreter(Entree& is)
   sauvegarde_splitting_name_ = "??";
 
   // DD,2016-28-01: statistiques a partir de fichiers lata uniquement
-  sauvegarde_post_instantanes_ = 0;
-  lecture_post_instantanes_ = 0;
-  lecture_post_instantanes_filtrer_u_ = 0;
-  lecture_post_instantanes_filtrer_rho_ = 0;
-  lecture_post_instantanes_filtrer_p_ = 0;
-  lecture_post_instantanes_filtrer_tous_ = 0;
+  sauvegarde_post_instantanes_ = false;
+  lecture_post_instantanes_ = false;
+  lecture_post_instantanes_filtrer_u_ = false;
+  lecture_post_instantanes_filtrer_rho_ = false;
+  lecture_post_instantanes_filtrer_p_ = false;
+  lecture_post_instantanes_filtrer_tous_ = false;
 
   // DD,2016-06-15: changement des pas de temps de stabilite,
-  old_dtstab_ = 0;
+  old_dtstab_ = false;
 
   debit_cible_=0;
   aim_t_bulk_=-1;
   dump_factor_2_=3./100.;
 
-  convection_rho_amont_ = 0;
-  convection_rho_centre2_ = 0;
-  convection_rho_centre4_ = 0;
+  convection_rho_amont_ = false;
+  convection_rho_centre2_ = false;
+  convection_rho_centre4_ = false;
 
-  convection_velocity_amont_ = 0;
-  convection_velocity_centre2_ = 0;
-  convection_velocity_quicksharp_ = 0;
+  convection_velocity_amont_ = false;
+  convection_velocity_centre2_ = false;
+  convection_velocity_quicksharp_ = false;
 
   terme_source_acceleration_=0;
   terme_source_acceleration_constant_=0;
@@ -7332,7 +7332,7 @@ Entree& DNS_QC_double::interpreter(Entree& is)
   turbulent_viscosity_model_constant_ = -1;
   turbulent_viscosity_tensor_coefficients_.resize_array(6);
   turbulent_viscosity_tensor_coefficients_ = 1.;
-  turbulent_viscosity_ = 0;
+  turbulent_viscosity_ = false;
 
   type_scalar_turbulent_diffusion_ = Nom("none");
   turbulent_diffusivity_model_ = Nom("none");
@@ -7340,21 +7340,21 @@ Entree& DNS_QC_double::interpreter(Entree& is)
   turbulent_diffusivity_model_constant_ = -1;
   turbulent_diffusivity_vector_coefficients_.resize_array(3);
   turbulent_diffusivity_vector_coefficients_ = 1.;
-  turbulent_diffusivity_ = 0;
+  turbulent_diffusivity_ = false;
 
   structural_uu_model_ = Nom("none");
   structural_uu_dynamic_type_ = Nom("not_dynamic");
   structural_uu_model_constant_ = -1;
   structural_uu_tensor_coefficients_.resize_array(6);
   structural_uu_tensor_coefficients_ = 1.;
-  structural_uu_ = 0;
+  structural_uu_ = false;
 
   structural_uscalar_model_ = Nom("none");
   structural_uscalar_dynamic_type_ = Nom("not_dynamic");
   structural_uscalar_model_constant_ = -1;
   structural_uscalar_vector_coefficients_.resize_array(3);
   structural_uscalar_vector_coefficients_ = 1.;
-  structural_uscalar_ = 0;
+  structural_uscalar_ = false;
 
   filter_kernel_name_ = Nom("none");
   flag_filtrage_convection_qdm_ = 0;
@@ -7365,8 +7365,8 @@ Entree& DNS_QC_double::interpreter(Entree& is)
 
   large_eddy_simulation_formulation_ = Nom("none");
   Nom geom_name_pour_delta = Nom("__identique_au_maillage__");
-  formulation_velocity_ = 0;
-  formulation_favre_ = 0;
+  formulation_velocity_ = false;
+  formulation_favre_ = false;
 
   param.ajouter("ijk_splitting", &ijk_splitting_name, Param::REQUIRED);
   param.ajouter("tinit", &current_time_);
@@ -7441,7 +7441,7 @@ Entree& DNS_QC_double::interpreter(Entree& is)
   /* stats spectrales */
   param.ajouter("dt_post_spectral", &dt_post_spectral_);
   param.ajouter("spectral_splitting", &post_splitting_name);
-  param.ajouter_flag("reprise_spectrale", &reprise_fourier_);
+  param.ajouter_flag("reprise_spectrale", &reprise_spectrale_);
   /* -------------------- */
 
   /* sauvegarde des lata par plan */
@@ -7649,11 +7649,11 @@ Entree& DNS_QC_double::interpreter(Entree& is)
 
   if ( large_eddy_simulation_formulation_ == Nom("favre") )
     {
-      formulation_favre_ = 1;
+      formulation_favre_ = true;
     }
   else if ( large_eddy_simulation_formulation_ == Nom("velocity") )
     {
-      formulation_velocity_ = 1;
+      formulation_velocity_ = true;
     }
 
   // DD,2017-04-27: diffusion modifie en vue de l'ajout de modeles
@@ -8143,7 +8143,7 @@ void DNS_QC_double::initialise()
                                  ,statistiques_.viscosite_cinematique_moyenne() /* viscosite cinematique moyenne utilisee dans les stats standart */
                                  ,T_paroi_impose_kmax_
                                  ,T_paroi_impose_kmin_
-                                 ,reprise_fourier_);
+                                 ,reprise_spectrale_);
     }
 
 // pour source :
@@ -10472,7 +10472,7 @@ void DNS_QC_double::run()
           envoyer_broadcast(stop, 0);
         }
       if (tstep == nb_timesteps_ - 1)
-        stop = 1;
+        stop = true;
 
       if (tstep % dt_sauvegarde_ == dt_sauvegarde_-1 || stop)
         {
