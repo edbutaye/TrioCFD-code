@@ -1123,25 +1123,10 @@ DoubleTab& Convection_Diffusion_Temperature_FT_Disc::derivee_en_temps_inco(Doubl
       const DoubleTab& val_vitesse_ns = (bool)(explicit_u_NS_) ? vitesse_ns.valeurs(): vitesse_ns.futur();
 
       // vitesse_convection_ is Champ_Inc but never turns the wheel! So the field is always in .valeurs()
-      if (ns.is_shift_secmem2_activated())
-        {
-          if (phase_ == 1)
-            vitesse_convection_->valeurs() = val_vitesse_ns;
-          // if (phase_ == 0 && divergence_free_velocity_extension_vap_)
-          //  compute_divergence_free_velocity_extension_vap();
-          if (phase_ == 0)
-            {
-              ns.calculer_delta_u_interface(vitesse_convection_, phase_, correction_courbure_ordre_);
-              vitesse_convection_->valeurs() += val_vitesse_ns;
-            }
-        }
-      else
-        {
-          ns.calculer_delta_u_interface(vitesse_convection_, phase_, correction_courbure_ordre_);
-          vitesse_convection_->valeurs() += val_vitesse_ns;
-          //Cerr << inconnue()->temps()  << " =! " << vitesse_ns.temps() << " " << vitesse_convection_.temps() << finl;
-          //Process::exit();
-        }
+      ns.calculer_delta_u_interface(vitesse_convection_, phase_, correction_courbure_ordre_);
+      vitesse_convection_->valeurs() += val_vitesse_ns;
+      //Cerr << inconnue()->temps()  << " =! " << vitesse_ns.temps() << " " << vitesse_convection_.temps() << finl;
+      //Process::exit();
     }
   else
     {
