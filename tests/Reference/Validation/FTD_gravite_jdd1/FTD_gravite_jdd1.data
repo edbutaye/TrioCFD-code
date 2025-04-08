@@ -113,6 +113,7 @@ bas   Paroi_FT_disc symetrie
 }
 postraitement {
 sondes { v_goutte nodes vitesse periode 0.000001 points 1 0. 0. 0.04 }
+# Pour la reference du cas test, post en lml necessaire #
 format lml
 champs dt_post 0.00005 {
 indicatrice_interf elem

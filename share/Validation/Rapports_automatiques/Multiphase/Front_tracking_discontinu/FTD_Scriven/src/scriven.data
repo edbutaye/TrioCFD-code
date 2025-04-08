@@ -146,9 +146,9 @@ solved_equations
       methode_interpolation_v vdf_lineaire
       methode_transport vitesse_interpolee hydraulique
       conditions_initiales { fonction x^2+(y-$R*cos(90.0*pi/180.0))^2-$R^2 }
-      VOFlike_correction_volume 1 # Flag to activate the VOF-like volume conservation (dI/dt) #
-      nb_iterations_correction_volume 1 # to get the correct dI/dt #
-      nb_lissage_correction_volume 1 # To smooth the dI/dt correction to avoid pikes on the interface #
+      VOFlike_correction_volume 0 # Flag to activate the VOF-like volume conservation (dI/dt) #
+      nb_iterations_correction_volume 0 # to get the correct dI/dt #
+      nb_lissage_correction_volume 0 # To smooth the dI/dt correction to avoid pikes on the interface #
       n_iterations_distance 8
       # Bloc Remesh Best # 
       remaillage {
@@ -196,7 +196,7 @@ solved_equations
       equation_navier_stokes hydraulique
       phase 1
                 stencil_width 9
-		correction_gradt_ordre 1
+		correction_gradt_ordre 0
                 correction_mpoint_diff_conv_energy 3 0 0 0 # diff conv energy #
                 diffusion { }
                 convection { quick }
