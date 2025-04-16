@@ -494,7 +494,7 @@ void Navier_Stokes_FTD_IJK::maj_indicatrice_rho_mu(const bool parcourir)
           rho_field_(i, j, k) = rho_l * chi_l + (1. - chi_l) * rho_v;
           if (harmonic_nu_in_calc_with_indicatrice_ == 1 and chi_l != 0. and chi_l != 1.)
             {
-              molecular_mu_(i, j, k) = 1. / (mu_l / chi_l + mu_v / (1. - chi_l));
+              molecular_mu_(i, j, k) = 1. / (chi_l / mu_l +  (1. - chi_l) / mu_v);
             }
           else
             {
