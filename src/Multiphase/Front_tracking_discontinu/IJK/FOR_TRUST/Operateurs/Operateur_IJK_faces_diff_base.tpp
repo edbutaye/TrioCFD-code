@@ -302,7 +302,14 @@ void Operateur_IJK_faces_diff_base_double::flux_loop_different_dir_compo_(int i,
         {
           // bottom wall (z=0)
           // nu1 and nu2 are "left" in direction z, hence in the wall:
-          m_nu1 = 0., m_nu2 = 0.;
+          if (harmonic_nu_)
+            {
+              m_nu1 = 1., m_nu2 = -1.;
+            }
+          else
+            {
+              m_nu1 = 0., m_nu2 = 0.;
+            }
           mult_coeff = 0.5;
         }
       // for wall boundary conditions
@@ -310,7 +317,14 @@ void Operateur_IJK_faces_diff_base_double::flux_loop_different_dir_compo_(int i,
         {
           // top wall (z=zmax)
           // nu3 and nu4 are "center" in direction z, hence in the wall:
-          m_nu3 = 0., m_nu4 = 0.;
+          if (harmonic_nu_)
+            {
+              m_nu3 = 1., m_nu4 = -1.;
+            }
+          else
+            {
+              m_nu3 = 0., m_nu4 = 0.;
+            }
           mult_coeff = 0.5;
         }
       // recoding of Eval_Dift_VDF_var_Face::flux_arete_interne
@@ -318,7 +332,8 @@ void Operateur_IJK_faces_diff_base_double::flux_loop_different_dir_compo_(int i,
 
       if (harmonic_nu_)
         {
-          m_nu = 4./(1./m_nu1 + 1./m_nu2 + 1./m_nu3 + 1./m_nu4) ;
+          // 1/mult_coeff = 4 or 2 at the wall
+          m_nu = (1/mult_coeff)/(1./m_nu1 + 1./m_nu2 + 1./m_nu3 + 1./m_nu4) ;
         }
       else
         {
