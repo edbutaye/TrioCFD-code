@@ -87,7 +87,7 @@ Read pb1
 
     Modele_turbulence K_Omega
     {
-      Transport_K_Omega
+      Transport_equation Transport_K_Omega
       {
         convection { muscl }
         diffusion { }

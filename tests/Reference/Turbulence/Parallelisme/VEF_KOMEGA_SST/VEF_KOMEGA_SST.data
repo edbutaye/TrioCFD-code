@@ -88,7 +88,7 @@ Read pb
 
     modele_turbulence K_Omega {
       model_variant sst
-      Transport_K_Omega
+      Transport_equation Transport_K_Omega
       {
         convection { amont }
         diffusion { }
