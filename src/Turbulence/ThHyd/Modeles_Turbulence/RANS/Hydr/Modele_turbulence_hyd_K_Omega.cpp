@@ -46,7 +46,6 @@ Sortie& Modele_turbulence_hyd_K_Omega::printOn(Sortie& s) const
 Entree& Modele_turbulence_hyd_K_Omega::readOn(Entree& s)
 {
   Modele_turbulence_hyd_RANS_K_Omega_base::readOn(s);
-
   is_SST_ = false;
   if (model_variant_ == "SST")
     {
@@ -55,14 +54,13 @@ Entree& Modele_turbulence_hyd_K_Omega::readOn(Entree& s)
       moneq.creer_champ("distance_paroi_globale");
       is_SST_ = true;
     }
-
   return s;
 }
 
 void Modele_turbulence_hyd_K_Omega::set_param(Param& param)
 {
   Modele_turbulence_hyd_RANS_K_Omega_base::set_param(param);
-  param.ajouter_non_std("Transport_K_Omega", (this), Param::REQUIRED); // XD_ADD_P transport_k_omega Keyword to define the (k-omega) transportation equation.
+  param.ajouter_non_std("transport_equation", (this), Param::REQUIRED); // XD_ADD_P Transport_equation Keyword to define the (k-omega) transportation equation.
   param.ajouter("PRANDTL_K", &Prandtl_K_);
   param.ajouter("PRANDTL_Omega", &Prandtl_Omega_);
   param.ajouter("model_variant", &model_variant_, Param::OPTIONAL); // XD_ADD_P chaine Model variant for k-omega (default value STD)
@@ -70,8 +68,12 @@ void Modele_turbulence_hyd_K_Omega::set_param(Param& param)
 
 int Modele_turbulence_hyd_K_Omega::lire_motcle_non_standard(const Motcle& mot, Entree& is)
 {
-  if (mot == "Transport_K_Omega")
+  if (mot == "transport_equation")
     {
+      Motcle typ_eq;
+      is>> typ_eq;
+      Nom name_transport_eq=typ_eq;
+      ptr_eqn_transport_K_Omega_.typer(name_transport_eq);
       eqn_transp_K_Omega().associer_modele_turbulence(*this);
       is >> eqn_transp_K_Omega();
       return 1;
@@ -222,7 +224,7 @@ int Modele_turbulence_hyd_K_Omega::preparer_calcul()
 
 bool Modele_turbulence_hyd_K_Omega::initTimeStep(double dt)
 {
-  return eqn_transport_K_Omega_.initTimeStep(dt);
+  return ptr_eqn_transport_K_Omega_.valeur().initTimeStep(dt);
 }
 
 /*! @brief Performs a time update of the turbulence model.

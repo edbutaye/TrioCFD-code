@@ -60,16 +60,16 @@ public:
   const Equation_base& equation_k_omega(int i) const override
   {
     assert((i == 0));
-    return eqn_transport_K_Omega_;
+    return ptr_eqn_transport_K_Omega_.valeur();
   }
 
-  void controler() { eqn_transport_K_Omega_.controler_K_Omega(); }
+  void controler() { ptr_eqn_transport_K_Omega_.valeur().controler_K_Omega(); }
   virtual Champ_Fonc_base& calculer_viscosite_turbulente(double );
 
   inline bool is_SST() const { return is_SST_ ;};
 
 protected:
-  Transport_K_Omega eqn_transport_K_Omega_;
+  OWN_PTR(Transport_K_Omega_base) ptr_eqn_transport_K_Omega_;
   void fill_turbulent_viscosity_tab(const DoubleTab& K_Omega, DoubleTab& turbulent_viscosity);
   DoubleTab tabF1_; // Blending field for SST model
   DoubleTab tabF2_; // for the turbulent viscosity in the SST model
@@ -87,7 +87,7 @@ protected:
  */
 inline const Champ_Inc_base& Modele_turbulence_hyd_K_Omega::K_Omega() const
 {
-  return eqn_transport_K_Omega_.inconnue();
+  return ptr_eqn_transport_K_Omega_.valeur().inconnue();
 }
 
 /*! @brief Renvoie le champ inconnue du modele de turbulence i.
@@ -99,7 +99,7 @@ inline const Champ_Inc_base& Modele_turbulence_hyd_K_Omega::K_Omega() const
  */
 inline Champ_Inc_base& Modele_turbulence_hyd_K_Omega::K_Omega()
 {
-  return eqn_transport_K_Omega_.inconnue();
+  return ptr_eqn_transport_K_Omega_.valeur().inconnue();
 }
 
 /*! @brief Renvoie l'equation du modele de turbulence i.
@@ -110,7 +110,7 @@ inline Champ_Inc_base& Modele_turbulence_hyd_K_Omega::K_Omega()
  */
 inline Transport_K_Omega_base& Modele_turbulence_hyd_K_Omega::eqn_transp_K_Omega()
 {
-  return eqn_transport_K_Omega_;
+  return ptr_eqn_transport_K_Omega_.valeur();
 }
 
 /*! @brief Renvoie l'equation du modele de turbulence i.
@@ -122,7 +122,7 @@ inline Transport_K_Omega_base& Modele_turbulence_hyd_K_Omega::eqn_transp_K_Omega
  */
 inline const Transport_K_Omega_base& Modele_turbulence_hyd_K_Omega::eqn_transp_K_Omega() const
 {
-  return eqn_transport_K_Omega_;
+  return ptr_eqn_transport_K_Omega_.valeur();
 }
 
 /*! @brief Returns the blending table F1 for SST.
