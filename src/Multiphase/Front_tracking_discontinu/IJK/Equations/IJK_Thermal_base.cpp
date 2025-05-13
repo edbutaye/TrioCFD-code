@@ -1145,9 +1145,12 @@ void IJK_Thermal_base::get_boundary_fluxes(IJK_Field_local_double& boundary_flux
 
 void IJK_Thermal_base::euler_time_step(const double timestep)
 {
-  static Stat_Counter_Id cnt_euler_thermal = statistiques().new_counter(1, "Euler Time Step - Temperature");
-  static Stat_Counter_Id cnt_euler_thermal_post = statistiques().new_counter(2, "Euler Time Step - Temperature post");
-  statistiques().begin_count(cnt_euler_thermal);
+//  statistics().create_custom_counter("Euler Time Step - Temperature",2,"IJK");
+//  statistics().create_custom_counter("Euler Time Step - Temperature post",2,"IJK");
+//  statistics().begin_count("Euler Time Step - Temperature post",statistics().get_last_opened_counter_level()+1);
+  //static Stat_Counter_Id cnt_euler_thermal = //statistiques().new_counter(1, "Euler Time Step - Temperature");
+  //static Stat_Counter_Id cnt_euler_thermal_post = //statistiques().new_counter(2, "Euler Time Step - Temperature post");
+  //statistiques().begin_count(cnt_euler_thermal);
 
   if (debug_)
     Cerr << "Thermal Euler time-step" << finl;
@@ -1163,11 +1166,11 @@ void IJK_Thermal_base::euler_time_step(const double timestep)
   /*
    * Erase the temperature increment (second call)
    */
-  statistiques().begin_count(cnt_euler_thermal_post);
+  //statistiques().begin_count(cnt_euler_thermal_post);
   if (debug_)
     Cerr << "Temperature after increment" << finl;
   post_process_after_temperature_increment();
-  statistiques().end_count(cnt_euler_thermal_post);
+  //statistiques().end_count(cnt_euler_thermal_post);
 
   temperature_->echange_espace_virtuel(temperature_->ghost());
   const double ene_post = compute_global_energy();
@@ -1177,7 +1180,7 @@ void IJK_Thermal_base::euler_time_step(const double timestep)
        << " " << ene_post << " [W.m-3]." << finl;
   source_callback();
 
-  statistiques().end_count(cnt_euler_thermal);
+//  statistiques().end_count(cnt_euler_thermal);
 }
 
 void IJK_Thermal_base::rk3_sub_step(const int rk_step, const double total_timestep,
@@ -1227,15 +1230,15 @@ void IJK_Thermal_base::lire_temperature(const Domaine_IJK& splitting)
 // Mettre rk_step = -1 si schema temps different de rk3.
 void IJK_Thermal_base::calculer_dT(const IJK_Field_vector3_double& velocity)
 {
-  static Stat_Counter_Id cnt_gfm_temperature = statistiques().new_counter(2, "GFM - Temperature");
-  static Stat_Counter_Id cnt_temperature_grad_hess = statistiques().new_counter(2, "Gradient and Hessian Temperature calculation");
-  static Stat_Counter_Id cnt_lrs_temperature = statistiques().new_counter(2, "Solve the LRS thermal problems");
-  static Stat_Counter_Id cnt_lrs_compute_flux = statistiques().new_counter(2, "Compute flux correction from LRS");
-  static Stat_Counter_Id cnt_lrs_prepare_flux = statistiques().new_counter(2, "Prepare flux correction from LRS");
-  static Stat_Counter_Id cnt_cell_temperature_first = statistiques().new_counter(2, "Temperature Cell centre - First call");
-  static Stat_Counter_Id cnt_flux_balance = statistiques().new_counter(2, "Thermal flux balance");
-  static Stat_Counter_Id cnt_upstream_temperature = statistiques().new_counter(2, "Upstream temperature");
-  // static Stat_Counter_Id cnt_cell_temperature_second = statistiques().new_counter(1, "Temperature Cell centre - Second call");
+  //static Stat_Counter_Id cnt_gfm_temperature = //statistiques().new_counter(2, "GFM - Temperature");
+  //static Stat_Counter_Id cnt_temperature_grad_hess = //statistiques().new_counter(2, "Gradient and Hessian Temperature calculation");
+  //static Stat_Counter_Id cnt_lrs_temperature = //statistiques().new_counter(2, "Solve the LRS thermal problems");
+  //static Stat_Counter_Id cnt_lrs_compute_flux = //statistiques().new_counter(2, "Compute flux correction from LRS");
+  //static Stat_Counter_Id cnt_lrs_prepare_flux = //statistiques().new_counter(2, "Prepare flux correction from LRS");
+  //static Stat_Counter_Id cnt_cell_temperature_first = //statistiques().new_counter(2, "Temperature Cell centre - First call");
+  //static Stat_Counter_Id cnt_flux_balance = //statistiques().new_counter(2, "Thermal flux balance");
+  //static Stat_Counter_Id cnt_upstream_temperature = //statistiques().new_counter(2, "Upstream temperature");
+  // //static Stat_Counter_Id cnt_cell_temperature_second = //statistiques().new_counter(1, "Temperature Cell centre - Second call");
 
   const double current_time = ref_ijk_ft_->schema_temps_ijk().get_current_time();
   const double ene_ini = compute_global_energy(*d_temperature_);
@@ -1257,7 +1260,7 @@ void IJK_Thermal_base::calculer_dT(const IJK_Field_vector3_double& velocity)
    * Correct the temperature field using either the ghost-fluid
    * approach or the laminar sub-resolution approach (and zero values for debug)
    */
-  statistiques().begin_count(cnt_gfm_temperature);
+  //statistiques().begin_count(cnt_gfm_temperature);
   if (debug_)
     Cerr << "Start the Ghost-fluid (GFM) approach" << finl;
   if (debug_)
@@ -1274,65 +1277,65 @@ void IJK_Thermal_base::calculer_dT(const IJK_Field_vector3_double& velocity)
   compute_eulerian_bounding_box_fill_compo();
   if (debug_)
     Cerr << "End the Ghost-fluid (GFM) approach" << finl;
-  statistiques().end_count(cnt_gfm_temperature);
+  //statistiques().end_count(cnt_gfm_temperature);
 
   /*
    * Compute gradients and hessian of the temperature after the ghost fluid extension
    */
-  statistiques().begin_count(cnt_temperature_grad_hess);
+  //statistiques().begin_count(cnt_temperature_grad_hess);
   if (debug_)
     Cerr << "Compute temperature derivatives" << finl;
   compute_temperature_gradient_elem();
   compute_temperature_hessian_diag_elem();
   compute_temperature_hessian_cross_elem();
-  statistiques().end_count(cnt_temperature_grad_hess);
+  //statistiques().end_count(cnt_temperature_grad_hess);
 
   /*
    * Compute sub-problems (For Subresolution Child classes only !)
    */
-  statistiques().begin_count(cnt_lrs_temperature);
+  //statistiques().begin_count(cnt_lrs_temperature);
   if (debug_)
     Cerr << "Compute thermal subproblems" << finl;
   compute_thermal_subproblems();
-  statistiques().end_count(cnt_lrs_temperature);
+  //statistiques().end_count(cnt_lrs_temperature);
 
   /*
    * Interpolate a value for the QUICK SCHEME (first call)
    */
 
-  statistiques().begin_count(cnt_cell_temperature_first);
+  //statistiques().begin_count(cnt_cell_temperature_first);
   if (debug_)
     Cerr << "Compute temperature mixed cell centres" << finl;
   compute_temperature_cell_centres(0);
-  statistiques().end_count(cnt_cell_temperature_first);
+  //statistiques().end_count(cnt_cell_temperature_first);
 
   /*
    * Convective and Diffusive fluxes
    */
-  statistiques().begin_count(cnt_lrs_compute_flux);
+  //statistiques().begin_count(cnt_lrs_compute_flux);
   if (debug_)
     Cerr << "Compute thermal convective and diffusive fluxes from subproblems" << finl;
   compute_convective_diffusive_fluxes_face_centre();
-  statistiques().end_count(cnt_lrs_compute_flux);
+  //statistiques().end_count(cnt_lrs_compute_flux);
 
-  statistiques().begin_count(cnt_lrs_prepare_flux);
+  //statistiques().begin_count(cnt_lrs_prepare_flux);
   if (debug_)
     Cerr << "Prepare ij fluxes" << finl;
   if (!conv_temperature_negligible_ || !diff_temperature_negligible_)
     prepare_ij_fluxes_k_layers();
-  statistiques().end_count(cnt_lrs_prepare_flux);
+  //statistiques().end_count(cnt_lrs_prepare_flux);
 
 
-  statistiques().begin_count(cnt_flux_balance);
+  //statistiques().begin_count(cnt_flux_balance);
   if (debug_)
     Cerr << "Compute fluxes balance" << finl;
   compute_temperature_diffusive_fluxes();
   compute_temperature_convective_fluxes(velocity);
   compare_fluxes_thermal_subproblems();
-  statistiques().end_count(cnt_flux_balance);
+  //statistiques().end_count(cnt_flux_balance);
 
 
-  statistiques().begin_count(cnt_upstream_temperature);
+  //statistiques().begin_count(cnt_upstream_temperature);
 
   Navier_Stokes_FTD_IJK& ns = ref_ijk_ft_->eq_ns();
   if (debug_)
@@ -1345,7 +1348,7 @@ void IJK_Thermal_base::calculer_dT(const IJK_Field_vector3_double& velocity)
                                ref_ijk_ft_->get_interface(), nb_diam_upstream_,
                                ns.get_upstream_dir(), ref_ijk_ft_->milieu_ijk().get_direction_gravite(),
                                ns.get_upstream_stencil());
-  statistiques().end_count(cnt_upstream_temperature);
+  //statistiques().end_count(cnt_upstream_temperature);
 
   if (debug_)
     Cerr << "Convection of temperature" << finl;
@@ -1617,11 +1620,11 @@ void IJK_Thermal_base::compute_temperature_hessian_cross_elem()
 
 void IJK_Thermal_base::compute_temperature_convective_fluxes(const IJK_Field_vector3_double& velocity)
 {
-  static Stat_Counter_Id cnt_convective_flux_balance = statistiques().new_counter(2, "Thermal flux balance - Convection");
-  static Stat_Counter_Id cnt_convective_flux_balance_op = statistiques().new_counter(3, "Thermal flux balance - Convection operator");
-  static Stat_Counter_Id cnt_convective_flux_balance_factor = statistiques().new_counter(3, "Thermal flux balance - Convection prefactor");
+  //static Stat_Counter_Id cnt_convective_flux_balance = //statistiques().new_counter(2, "Thermal flux balance - Convection");
+  //static Stat_Counter_Id cnt_convective_flux_balance_op = //statistiques().new_counter(3, "Thermal flux balance - Convection operator");
+  //static Stat_Counter_Id cnt_convective_flux_balance_factor = //statistiques().new_counter(3, "Thermal flux balance - Convection prefactor");
 
-  statistiques().begin_count(cnt_convective_flux_balance);
+  //statistiques().begin_count(cnt_convective_flux_balance);
 
   if (store_flux_operators_for_energy_balance_)
     {
@@ -1633,15 +1636,15 @@ void IJK_Thermal_base::compute_temperature_convective_fluxes(const IJK_Field_vec
           temperature_grad_flux_op_quick_.set_velocity_frame_of_reference(bubbles_velocity);
         }
 
-      statistiques().begin_count(cnt_convective_flux_balance_op);
+      //statistiques().begin_count(cnt_convective_flux_balance_op);
       temperature_grad_flux_op_quick_.calculer_grad_flux(*temperature_,
                                                          velocity[0],
                                                          velocity[1],
                                                          velocity[2],
                                                          rho_cp_u_T_convective_raw_);
-      statistiques().end_count(cnt_convective_flux_balance_op);
+      //statistiques().end_count(cnt_convective_flux_balance_op);
 
-      statistiques().begin_count(cnt_convective_flux_balance_factor);
+      //statistiques().begin_count(cnt_convective_flux_balance_factor);
       const double rhocp = get_rhocp_l();
       const int ni = d_temperature_->ni();
       const int nj = d_temperature_->nj();
@@ -1655,22 +1658,22 @@ void IJK_Thermal_base::compute_temperature_convective_fluxes(const IJK_Field_vec
                   const double convective_flux = rho_cp_u_T_convective_raw_[c](i,j,k);
                   rho_cp_u_T_convective_raw_[c](i,j,k) = convective_flux * rhocp;
                 }
-      statistiques().end_count(cnt_convective_flux_balance_factor);
+      //statistiques().end_count(cnt_convective_flux_balance_factor);
       rho_cp_u_T_convective_raw_.echange_espace_virtuel();
     }
 
-  statistiques().end_count(cnt_convective_flux_balance);
+  //statistiques().end_count(cnt_convective_flux_balance);
 }
 
 // Convect temperature field by the velocity.
 // The output is stored in *d_temperature_ (it is a volume integral over the CV)
 void IJK_Thermal_base::compute_temperature_convection(const IJK_Field_vector3_double& velocity)
 {
-  static Stat_Counter_Id cnt_conv_temp = statistiques().new_counter(2, "FT convection temperature");
-  static Stat_Counter_Id cnt_conv_temp_op = statistiques().new_counter(3, "FT convection temperature operator");
-  static Stat_Counter_Id cnt_conv_temp_factor = statistiques().new_counter(3, "FT convection temperature factor");
+  //static Stat_Counter_Id cnt_conv_temp = //statistiques().new_counter(2, "FT convection temperature");
+  //static Stat_Counter_Id cnt_conv_temp_op = //statistiques().new_counter(3, "FT convection temperature operator");
+  //static Stat_Counter_Id cnt_conv_temp_factor = //statistiques().new_counter(3, "FT convection temperature factor");
 
-  statistiques().begin_count(cnt_conv_temp);
+  //statistiques().begin_count(cnt_conv_temp);
 
   IJK_Field_double& d_temperature = *d_temperature_;
 
@@ -1681,11 +1684,11 @@ void IJK_Thermal_base::compute_temperature_convection(const IJK_Field_vector3_do
     }
   else
     {
-      statistiques().begin_count(cnt_conv_temp_op);
+      //statistiques().begin_count(cnt_conv_temp_op);
       temperature_convection_op_->calculer(*temperature_, velocity[0], velocity[1], velocity[2], d_temperature);
-      statistiques().end_count(cnt_conv_temp_op);
+      //statistiques().end_count(cnt_conv_temp_op);
 
-      statistiques().begin_count(cnt_conv_temp_factor);
+      //statistiques().begin_count(cnt_conv_temp_factor);
       const bool post_pro_u_T_convective = ref_ijk_ft_->get_post().is_post_required("U_T_CONVECTIVE");
       const int ni = d_temperature.ni();
       const int nj = d_temperature.nj();
@@ -1701,10 +1704,10 @@ void IJK_Thermal_base::compute_temperature_convection(const IJK_Field_vector3_do
               if (post_pro_u_T_convective)
                 u_T_convective_(i,j,k) = resu;
             }
-      statistiques().end_count(cnt_conv_temp_factor);
+      //statistiques().end_count(cnt_conv_temp_factor);
     }
 
-  statistiques().end_count(cnt_conv_temp);
+  //statistiques().end_count(cnt_conv_temp);
   DebogIJK::verifier("op_conv(rho)", d_temperature);
   return;
 }
@@ -1755,8 +1758,8 @@ void IJK_Thermal_base::compute_boundary_conditions_thermal()
 
 void IJK_Thermal_base::compute_temperature_diffusive_fluxes()
 {
-  static Stat_Counter_Id cnt_diffusive_flux_balance = statistiques().new_counter(2, "Thermal flux balance - Diffusion");
-  statistiques().begin_count(cnt_diffusive_flux_balance);
+  //static Stat_Counter_Id cnt_diffusive_flux_balance = //statistiques().new_counter(2, "Thermal flux balance - Diffusion");
+  //statistiques().begin_count(cnt_diffusive_flux_balance);
 
   if (store_flux_operators_for_energy_balance_)
     {
@@ -1769,15 +1772,15 @@ void IJK_Thermal_base::compute_temperature_diffusive_fluxes()
       div_coeff_grad_T_raw_.echange_espace_virtuel();
     }
 
-  statistiques().end_count(cnt_diffusive_flux_balance);
+  //statistiques().end_count(cnt_diffusive_flux_balance);
 }
 
 void IJK_Thermal_base::add_temperature_diffusion()
 {
-  static Stat_Counter_Id cnt_diff_temp = statistiques().new_counter(2, "FT diffusion temperature");
-  static Stat_Counter_Id cnt_diff_temp_op = statistiques().new_counter(3, "FT diffusion temperature operator");
-  static Stat_Counter_Id cnt_diff_temp_factor = statistiques().new_counter(3, "FT diffusion temperature factor");
-  statistiques().begin_count(cnt_diff_temp);
+  //static Stat_Counter_Id cnt_diff_temp = //statistiques().new_counter(2, "FT diffusion temperature");
+  //static Stat_Counter_Id cnt_diff_temp_op = //statistiques().new_counter(3, "FT diffusion temperature operator");
+  //static Stat_Counter_Id cnt_diff_temp_factor = //statistiques().new_counter(3, "FT diffusion temperature factor");
+  //statistiques().begin_count(cnt_diff_temp);
 
   compute_boundary_conditions_thermal();
   if (!diff_temperature_negligible_)
@@ -1785,21 +1788,21 @@ void IJK_Thermal_base::add_temperature_diffusion()
       /*
        * Correct the diffusive fluxes here or in the operator ?
        */
-      statistiques().begin_count(cnt_diff_temp_op);
+      //statistiques().begin_count(cnt_diff_temp_op);
       temperature_diffusion_op_->calculer(*temperature_,
                                           *div_coeff_grad_T_volume_,
                                           boundary_flux_kmin_,
                                           boundary_flux_kmax_);
-      statistiques().end_count(cnt_diff_temp_op);
+      //statistiques().end_count(cnt_diff_temp_op);
 
-      statistiques().begin_count(cnt_diff_temp_factor);
+      //statistiques().begin_count(cnt_diff_temp_factor);
       compute_diffusion_increment();
-      statistiques().end_count(cnt_diff_temp_factor);
+      //statistiques().end_count(cnt_diff_temp_factor);
 
       DebogIJK::verifier("div_coeff_grad_T_volume_", *div_coeff_grad_T_volume_);
     }
 
-  statistiques().end_count(cnt_diff_temp);
+  //statistiques().end_count(cnt_diff_temp);
 }
 
 //////////////////////////////////////////
@@ -1821,8 +1824,8 @@ double IJK_Thermal_base::get_rho_cp_u_ijk(const IJK_Field_double& vx, int i, int
 
 void IJK_Thermal_base::add_temperature_source()
 {
-  static Stat_Counter_Id cnt_source_temp = statistiques().new_counter(2, "FT source temperature");
-  statistiques().begin_count(cnt_source_temp);
+  //static Stat_Counter_Id cnt_source_temp = //statistiques().new_counter(2, "FT source temperature");
+  //statistiques().begin_count(cnt_source_temp);
   // Dans le cas ou les flux entrants et sortants sont identiques :
   // DONE: changer cette condition non adaptee
   if (type_T_source_!="??")
@@ -2047,7 +2050,7 @@ void IJK_Thermal_base::add_temperature_source()
            * calculer_temperature_physique_T_dummy();
            */
           temperature_physique_T_.data() = 0.;
-          statistiques().end_count(cnt_source_temp);
+          //statistiques().end_count(cnt_source_temp);
           return;
         }
     }
@@ -2055,7 +2058,7 @@ void IJK_Thermal_base::add_temperature_source()
   else
     {
       Cerr << "no_source_for_temperature" << finl;
-      statistiques().end_count(cnt_source_temp);
+      //statistiques().end_count(cnt_source_temp);
       return;
     }
 }

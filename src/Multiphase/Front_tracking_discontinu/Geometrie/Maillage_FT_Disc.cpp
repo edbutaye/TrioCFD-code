@@ -20,7 +20,6 @@
 #include <Domaine_VF.h>
 #include <Transport_Interfaces_FT_Disc.h>
 #include <Motcle.h>
-#include <Statistiques.h>
 #include <EcritureLectureSpecial.h>
 #include <Champ_base.h>
 #include <Paroi_FT_disc.h>
@@ -35,7 +34,7 @@
 #include <Debog.h>
 #include <Array_tools.h>
 #include <Param.h>
-#include <stat_counters.h>
+
 #include <TRUST_2_PDI.h>
 
 #if TCL_MODEL
@@ -836,11 +835,10 @@ void Maillage_FT_Disc::parcourir_maillage()
   // Remplit la structure intersections_elem_facettes et
   // ajoute des facettes sur les processeurs "pauvres"
   const Parcours_interface& p = refparcours_interface_.valeur();
-
-  static const Stat_Counter_Id counter = statistiques().new_counter(3, "Parcours de l'interface", "FrontTracking");
-  statistiques().begin_count(counter);
+  statistics().create_custom_counter("Parcours de l'interface",2,"FrontTracking");
+  statistics().begin_count("Parcours de l'interface", statistics().get_last_opened_counter_level()+1);
   p.parcourir(*this);
-  statistiques().end_count(counter);
+  statistics().end_count("Parcours de l'interface");
   maillage_modifie(PARCOURU);
 
 }
@@ -884,8 +882,8 @@ void Maillage_FT_Disc::calcul_indicatrice(DoubleVect& indicatrice,
 {
   assert(statut_ >= PARCOURU);
 
-  static const Stat_Counter_Id stat_counter = statistiques().new_counter(3, "Calculer_Indicatrice", "FrontTracking");
-  statistiques().begin_count(stat_counter);
+  statistics().create_custom_counter("Calculer_Indicatrice",2,"FrontTracking");
+  statistics().begin_count("Calculer_Indicatrice",statistics().get_last_opened_counter_level()+1);
 
   const Domaine_dis_base& domaine_dis = refdomaine_dis_.valeur();
   const Domaine& ladomaine = domaine_dis.domaine();
@@ -1095,7 +1093,7 @@ void Maillage_FT_Disc::calcul_indicatrice(DoubleVect& indicatrice,
 
   Debog::verifier("Maillage_FT_Disc::calcul_indicatrice indicatrice=",indicatrice);
   elements_calcules.resize_array(0);
-  statistiques().end_count(stat_counter);
+  statistics().end_count("Calculer_Indicatrice");
 }
 
 /*! @brief Deplace les sommets de l'interface d'un vecteur "deplacement" fourni, Change eventuellement les sommets de processeur, cree eventuellement
@@ -1106,8 +1104,8 @@ void Maillage_FT_Disc::calcul_indicatrice(DoubleVect& indicatrice,
  */
 void Maillage_FT_Disc::transporter(const DoubleTab& deplacement)
 {
-  static const Stat_Counter_Id stat_counter = statistiques().new_counter(3, "Transporter_maillage", "FrontTracking");
-  statistiques().begin_count(stat_counter);
+  statistics().create_custom_counter("Transporter_maillage",2,"FrontTracking");
+  statistics().begin_count("Transporter_maillage",statistics().get_last_opened_counter_level()+1);
 
   assert(deplacement.dimension(0) == sommets_.dimension(0));
   assert(deplacement.dimension(1) == sommets_.dimension(1));
@@ -1150,7 +1148,7 @@ void Maillage_FT_Disc::transporter(const DoubleTab& deplacement)
   corriger_proprietaires_facettes();
 
   maillage_modifie(MINIMAL);
-  statistiques().end_count(stat_counter);
+  statistics().end_count("Transporter_maillage");
 }
 
 //-Remplit un tableau temporaire sommets_tmp de positions
@@ -4137,8 +4135,7 @@ int Maillage_FT_Disc::check_sommets(int error_is_fatal) const
 
 int Maillage_FT_Disc::check_mesh(int error_is_fatal, int skip_facette_pe, int skip_facettes) const
 {
-  static const Stat_Counter_Id stat_counter = statistiques().new_counter(3, "Check_mesh", "FrontTracking");
-  statistiques().begin_count(stat_counter);
+  statistics().create_custom_counter("Check_mesh",2,"FrontTracking");
 
   const double invalid_value = DMAXFLOAT*0.9;
   int i, j;
@@ -4151,6 +4148,7 @@ int Maillage_FT_Disc::check_mesh(int error_is_fatal, int skip_facette_pe, int sk
   if (skip_facettes)
     return return_code;
 
+  statistics().begin_count("Check_mesh",statistics().get_last_opened_counter_level()+1);
   if (return_code < 0 && statut_ == RESET)
     {
       int ok = (nb_facettes() == 0);
@@ -4337,7 +4335,7 @@ int Maillage_FT_Disc::check_mesh(int error_is_fatal, int skip_facette_pe, int sk
               }
         }
     }
-  statistiques().end_count(stat_counter);
+  statistics().end_count("Check_mesh");
 
   return return_code;
 }

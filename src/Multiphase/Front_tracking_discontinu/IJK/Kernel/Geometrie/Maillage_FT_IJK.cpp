@@ -22,7 +22,7 @@
 #include <communications.h>
 #include <TRUSTTabFT.h>
 #include <Comm_Group.h>
-#include <Statistiques.h>
+#include <Perf_counters.h>
 #include <TRUSTTabs.h>
 #include <TRUSTArrays.h>
 #include <Array_tools.h>
@@ -957,8 +957,6 @@ void Maillage_FT_IJK::creer_facettes_virtuelles(const ArrOfInt& liste_facettes,
                                               facettes_recv_pe_list);
 
   // Mise a jour des composantes connexes
-// static Stat_Counter_Id cmpt = statistiques().new_counter(0, "Mise a jour compo connex dans creer facette virt");
-  //statistiques().begin_count(cmpt);
   compo_connexe_facettes_.resize_array(nb_facettes());
   if (!Surfactant_facettes_.get_disable_surfactant())
     Surfactant_facettes_.resize_array(nb_facettes());
@@ -971,7 +969,6 @@ void Maillage_FT_IJK::creer_facettes_virtuelles(const ArrOfInt& liste_facettes,
   // Maillage_FT_Disc::creer_facettes_virtuelles. On la fait ici :
   if (Comm_Group::check_enabled())
     check_mesh(1, 1 /* ne pas tester le proprietaire de la facette */);
-  //statistiques().end_count(cmpt);
 
 }
 

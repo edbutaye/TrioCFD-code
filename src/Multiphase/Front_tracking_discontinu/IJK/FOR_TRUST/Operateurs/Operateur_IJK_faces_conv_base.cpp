@@ -14,6 +14,7 @@
 *****************************************************************************/
 
 #include <Operateur_IJK_faces_conv_base.h>
+#include <Perf_counters.h>
 
 Implemente_base_sans_constructeur(Operateur_IJK_faces_conv_base_double, "Operateur_IJK_faces_conv_base_double", Operateur_IJK_faces_base_double);
 
@@ -48,7 +49,7 @@ void Operateur_IJK_faces_conv_base_double::calculer(const IJK_Field_double& inpu
                                                     const IJK_Field_double& vx, const IJK_Field_double& vy, const IJK_Field_double& vz,
                                                     IJK_Field_double& dvx, IJK_Field_double& dvy, IJK_Field_double& dvz)
 {
-  statistiques().begin_count(convection_counter_);
+  statistics().begin_count(STD_COUNTERS::convection,statistics().get_last_opened_counter_level()+1);
 
   inputx_ = &inputx;
   inputy_ = &inputy;
@@ -60,14 +61,14 @@ void Operateur_IJK_faces_conv_base_double::calculer(const IJK_Field_double& inpu
   compute_set(dvx, dvy, dvz);
 
   vx_ = vy_ = vz_ = inputx_ = inputy_ = inputz_ = nullptr;
-  statistiques().end_count(convection_counter_);
+  statistics().end_count(STD_COUNTERS::convection);
 }
 
 void Operateur_IJK_faces_conv_base_double::ajouter(const IJK_Field_double& inputx, const IJK_Field_double& inputy, const IJK_Field_double& inputz,
                                                    const IJK_Field_double& vx, const IJK_Field_double& vy, const IJK_Field_double& vz,
                                                    IJK_Field_double& dvx, IJK_Field_double& dvy, IJK_Field_double& dvz)
 {
-  statistiques().begin_count(convection_counter_);
+  statistics().begin_count(STD_COUNTERS::convection,statistics().get_last_opened_counter_level()+1);
 
   inputx_ = &inputx;
   inputy_ = &inputy;
@@ -79,5 +80,5 @@ void Operateur_IJK_faces_conv_base_double::ajouter(const IJK_Field_double& input
   compute_add(dvx, dvy, dvz);
 
   vx_ = vy_ = vz_ = inputx_ = inputy_ = inputz_ = nullptr;
-  statistiques().end_count(convection_counter_);
+  statistics().end_count(STD_COUNTERS::convection);
 }

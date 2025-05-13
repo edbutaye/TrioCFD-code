@@ -14,7 +14,7 @@
  *****************************************************************************/
 
 #include <Domaine_IJK.h>
-#include <stat_counters.h>
+#include <Perf_counters.h>
 #include <Operateur_IJK_faces_diff_base.h>
 
 /*
@@ -183,7 +183,7 @@ const IJK_Field_local_double& Operateur_IJK_faces_diff_base_double::get_divergen
 void Operateur_IJK_faces_diff_base_double::ajouter(const IJK_Field_double& vx, const IJK_Field_double& vy, const IJK_Field_double& vz,
                                                    IJK_Field_double& dvx, IJK_Field_double& dvy, IJK_Field_double& dvz)
 {
-  statistiques().begin_count(diffusion_counter_);
+  statistics().begin_count(STD_COUNTERS::diffusion,statistics().get_last_opened_counter_level()+1);
   vx_ = &vx;
   vy_ = &vy;
   vz_ = &vz;
@@ -199,13 +199,13 @@ void Operateur_IJK_faces_diff_base_double::ajouter(const IJK_Field_double& vx, c
   coeff_tensor_zx_ = nullptr;
   coeff_tensor_zy_ = nullptr;
   coeff_tensor_zz_ = nullptr;
-  statistiques().end_count(diffusion_counter_);
+  statistics().end_count(STD_COUNTERS::diffusion);
 }
 
 void Operateur_IJK_faces_diff_base_double::calculer(const IJK_Field_double& vx, const IJK_Field_double& vy, const IJK_Field_double& vz,
                                                     IJK_Field_double& dvx, IJK_Field_double& dvy, IJK_Field_double& dvz)
 {
-  statistiques().begin_count(diffusion_counter_);
+  statistics().begin_count(STD_COUNTERS::diffusion,statistics().get_last_opened_counter_level()+1);
   vx_ = &vx;
   vy_ = &vy;
   vz_ = &vz;
@@ -221,7 +221,7 @@ void Operateur_IJK_faces_diff_base_double::calculer(const IJK_Field_double& vx, 
   coeff_tensor_zx_ = nullptr;
   coeff_tensor_zy_ = nullptr;
   coeff_tensor_zz_ = nullptr;
-  statistiques().end_count(diffusion_counter_);
+  statistics().end_count(STD_COUNTERS::diffusion);
 }
 
 /*

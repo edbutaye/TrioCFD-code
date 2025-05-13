@@ -36,7 +36,7 @@
 #include <communications.h>
 #include <iostream>
 #include <memory>
-#include <stat_counters.h>
+#include <Perf_counters.h>
 #include <Cut_field.h>
 #include <Transport_Interfaces_FT_Disc.h>
 #include <Navier_Stokes_FTD_IJK.h>
@@ -4831,9 +4831,8 @@ void IJK_Interfaces::deplacer_bulle_perio(const ArrOfInt& masque_deplacement_par
 // extended domain
 void IJK_Interfaces::calculer_indicatrice(IJK_Field_double& indic)
 {
-  static Stat_Counter_Id calculer_indicatrice_counter_ =
-    statistiques().new_counter(2, "Calcul rho mu indicatrice: calcul de l'indicatrice");
-  statistiques().begin_count(calculer_indicatrice_counter_);
+  statistics().create_custom_counter("Calcul rho mu indicatrice: calcul de l'indicatrice",2,"IJK");
+  statistics().begin_count("Calcul rho mu indicatrice: calcul de l'indicatrice",statistics().get_last_opened_counter_level()+1);
 
   const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, refdomaine_dis_.valeur());
   const IntTab& elem_faces = domaine_vf.elem_faces();
@@ -4916,9 +4915,8 @@ void IJK_Interfaces::calculer_indicatrice(IJK_Field_double& indic)
       }
   }
 
-  static Stat_Counter_Id search_connex_components_counter_ =
-    statistiques().new_counter(2, "Calcul de l'indicatrice : recherche compo connexes");
-  statistiques().begin_count(search_connex_components_counter_);
+  statistics().create_custom_counter("Calcul de l'indicatrice : recherche compo connexes",2,"IJK");
+  statistics().begin_count("Calcul de l'indicatrice : recherche compo connexes",statistics().get_last_opened_counter_level()+1);
   num_compo_.echange_espace_virtuel();
   // Recherche des composantes connexes sur le maillage eulerien
   int nb_compo_locales = search_connex_components_local(elem_faces, faces_voisins, num_compo_);
@@ -4928,7 +4926,7 @@ void IJK_Interfaces::calculer_indicatrice(IJK_Field_double& indic)
 
   // Il y a au moins une phase continue :
   assert(nb_compo_in_num_compo_ - (nb_bulles_reelles_ + nb_bulles_ghost_) > 0);
-  statistiques().end_count(search_connex_components_counter_);
+  statistics().end_count("Calcul de l'indicatrice : recherche compo connexes");
 
   // Calcul des drapeaux selon la methode la plus robuste :
   ArrOfInt drapeau(nb_compo_in_num_compo_);
@@ -5047,14 +5045,13 @@ void IJK_Interfaces::calculer_indicatrice(IJK_Field_double& indic)
       }
   }
 #endif
-  statistiques().end_count(calculer_indicatrice_counter_);
+  statistics().end_count("Calcul rho mu indicatrice: calcul de l'indicatrice");
 }
 
 void IJK_Interfaces::calculer_indicatrice_optim(IJK_Field_double& indic)
 {
-  static Stat_Counter_Id calculer_indicatrice_counter_ =
-    statistiques().new_counter(2, "Calcul rho mu indicatrice: calcul de l'indicatrice");
-  statistiques().begin_count(calculer_indicatrice_counter_);
+  statistics().create_custom_counter("Calcul rho mu indicatrice: calcul de l'indicatrice",2,"IJK");
+  statistics().begin_count("Calcul rho mu indicatrice: calcul de l'indicatrice",statistics().get_last_opened_counter_level()+1);
 
   const Intersections_Elem_Facettes& intersec = maillage_ft_ijk_.intersections_elem_facettes();
   const Domaine_IJK& s = indic.get_domaine();
@@ -5116,15 +5113,13 @@ void IJK_Interfaces::calculer_indicatrice_optim(IJK_Field_double& indic)
   }
 
   update_indicatrice(indic);
-  statistiques().end_count(calculer_indicatrice_counter_);
+  statistics().end_count("Calcul rho mu indicatrice: calcul de l'indicatrice");
 }
 
 void IJK_Interfaces::calculer_indicatrices(IJK_Field_vector3_double& indic)
 {
-  static Stat_Counter_Id calculer_indicatrice_counter_ =
-    statistiques().new_counter(2, "Calcul rho mu indicatrice: calcul des indicatrices");
-  statistiques().begin_count(calculer_indicatrice_counter_);
-
+  statistics().create_custom_counter("Calcul rho mu indicatrice: calcul des indicatrices",2,"IJK");
+  statistics().begin_count("Calcul rho mu indicatrice: calcul des indicatrices",statistics().get_last_opened_counter_level()+1);
   const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, refdomaine_dis_.valeur());
   const Domaine& domaine = domaine_vf.domaine();
   const IntTab& elem_faces = domaine_vf.elem_faces();
@@ -5221,17 +5216,16 @@ void IJK_Interfaces::calculer_indicatrices(IJK_Field_vector3_double& indic)
   }
 
   ArrOfInt drapeau[max_authorized_nb_of_groups_];
-  static Stat_Counter_Id search_connex_components_counter_ =
-    statistiques().new_counter(2, "Calcul de l'indicatrice : recherche compo connexes");
+  statistics().create_custom_counter("Calcul de l'indicatrice : recherche compo connexes",2,"IJK");
   for (int i = 0; i < nb_groups_; i++)
     {
-      statistiques().begin_count(search_connex_components_counter_);
+      statistics().begin_count("Calcul de l'indicatrice : recherche compo connexes",statistics().get_last_opened_counter_level()+1);
       num_compo[i].echange_espace_virtuel();
       // Recherche des composantes connexes sur le maillage eulerien
       int nb_compo_locales = search_connex_components_local(elem_faces, faces_voisins, num_compo[i]);
       nb_compo_in_num_compo_ = compute_global_connex_components(num_compo[i], nb_compo_locales);
       num_compo[i].echange_espace_virtuel();
-      statistiques().end_count(search_connex_components_counter_);
+      statistics().end_count("Calcul de l'indicatrice : recherche compo connexes");
 
       // Calcul des drapeaux selon la methode la plus robuste :
       drapeau[i].resize_array(nb_compo_in_num_compo_);
@@ -5261,14 +5255,14 @@ void IJK_Interfaces::calculer_indicatrices(IJK_Field_vector3_double& indic)
           }
       }
   }
-  statistiques().end_count(calculer_indicatrice_counter_);
+
+  statistics().end_count("Calcul rho mu indicatrice: calcul des indicatrices");
 }
 
 void IJK_Interfaces::calculer_indicatrices_optim(IJK_Field_vector3_double& indic)
 {
-  static Stat_Counter_Id calculer_indicatrice_counter_ =
-    statistiques().new_counter(2, "Calcul rho mu indicatrice: calcul des indicatrices");
-  statistiques().begin_count(calculer_indicatrice_counter_);
+  statistics().create_custom_counter("Calcul rho mu indicatrice: calcul des indicatrices",2,"IJK");
+  statistics().begin_count("Calcul rho mu indicatrice: calcul des indicatrices",statistics().get_last_opened_counter_level()+1);
 
   const Intersections_Elem_Facettes& intersec = maillage_ft_ijk_.intersections_elem_facettes();
   const Domaine_IJK& s = indic.get_domaine();
@@ -5340,8 +5334,7 @@ void IJK_Interfaces::calculer_indicatrices_optim(IJK_Field_vector3_double& indic
     {
       update_indicatrice(indic[igroup]);
     }
-
-  statistiques().end_count(calculer_indicatrice_counter_);
+  statistics().end_count("Calcul rho mu indicatrice: calcul des indicatrices");
 }
 
 int IJK_Interfaces::update_indicatrice(IJK_Field_double& indic)
@@ -5460,9 +5453,8 @@ int IJK_Interfaces::update_indicatrice(IJK_Field_double& indic)
 // Calcul de l'indicatrice surfacique et du barycentre de la phase sur les faces euleriennes
 void IJK_Interfaces::calculer_indicatrice_surfacique_barycentre_face(IJK_Field_vector3_double& indic_surfacique_face, FixedVector<FixedVector<IJK_Field_double, 2>, 3>& baric_face, IJK_Field_double& indic, IJK_Field_vector3_double& norme)
 {
-  static Stat_Counter_Id calculer_indicatrice_surfacique_face_counter_ =
-    statistiques().new_counter(2, "Calcul rho mu indicatrice: calcul de l'indicatrice surface face");
-  statistiques().begin_count(calculer_indicatrice_surfacique_face_counter_);
+  statistics().create_custom_counter("Calcul rho mu indicatrice: calcul de l'indicatrice surface face",2,"IJK");
+  statistics().begin_count("Calcul rho mu indicatrice: calcul de l'indicatrice surface face",statistics().get_last_opened_counter_level()+1);
 
   const Intersections_Elem_Facettes& intersec = maillage_ft_ijk_.intersections_elem_facettes();
   const Domaine_IJK& s = indic_surfacique_face.get_domaine();
@@ -5640,15 +5632,14 @@ void IJK_Interfaces::calculer_indicatrice_surfacique_barycentre_face(IJK_Field_v
           }
       }
   }
-  statistiques().end_count(calculer_indicatrice_surfacique_face_counter_);
+  statistics().end_count("Calcul rho mu indicatrice: calcul de l'indicatrice surface face");
 }
 
 // Calcul de l'indicatrice surfacique sur les faces euleriennes (sans le barycentre)
 void IJK_Interfaces::calculer_indicatrice_surfacique_face(IJK_Field_vector3_double& indic_surfacique_face, IJK_Field_double& indic, IJK_Field_vector3_double& norme)
 {
-  static Stat_Counter_Id calculer_indicatrice_surfacique_face_counter_ =
-    statistiques().new_counter(2, "Calcul rho mu indicatrice: calcul de l'indicatrice surface face");
-  statistiques().begin_count(calculer_indicatrice_surfacique_face_counter_);
+  statistics().create_custom_counter("Calcul rho mu indicatrice: calcul de l'indicatrice surface face",2,"IJK");
+  statistics().begin_count("Calcul rho mu indicatrice: calcul de l'indicatrice surface face",statistics().get_last_opened_counter_level()+1);
 
   const Intersections_Elem_Facettes& intersec = maillage_ft_ijk_.intersections_elem_facettes();
   const Domaine_IJK& s = indic_surfacique_face.get_domaine();
@@ -5771,16 +5762,14 @@ void IJK_Interfaces::calculer_indicatrice_surfacique_face(IJK_Field_vector3_doub
           }
       }
   }
-  statistiques().end_count(calculer_indicatrice_surfacique_face_counter_);
+  statistics().end_count("Calcul rho mu indicatrice: calcul de l'indicatrice surface face");
 }
 
 
 void IJK_Interfaces::calculer_surface_interface(IJK_Field_double& surf_interface, IJK_Field_double& indic)
 {
-  static Stat_Counter_Id calculer_surface_interface_counter_ =
-    statistiques().new_counter(2, "Calcul rho mu indicatrice: calcul de la surface interfaciale");
-  statistiques().begin_count(calculer_surface_interface_counter_);
-
+  statistics().create_custom_counter("Calcul rho mu indicatrice: calcul de la surface interfaciale",2,"IJK");
+  statistics().begin_count("Calcul rho mu indicatrice: calcul de la surface interfaciale",statistics().get_last_opened_counter_level()+1);
   const Intersections_Elem_Facettes& intersec = maillage_ft_ijk_.intersections_elem_facettes();
   const Domaine_IJK& s = surf_interface.get_domaine();
 
@@ -5844,15 +5833,13 @@ void IJK_Interfaces::calculer_surface_interface(IJK_Field_double& surf_interface
           }
       }
   }
-  statistiques().end_count(calculer_surface_interface_counter_);
+  statistics().end_count("Calcul rho mu indicatrice: calcul de la surface interfaciale");
 }
 
 void IJK_Interfaces::calculer_barycentre(IJK_Field_vector3_double& baric, IJK_Field_double& indic)
 {
-  static Stat_Counter_Id calculer_barycentre_counter_ =
-    statistiques().new_counter(2, "Calcul rho mu indicatrice: calcul du barycentre");
-  statistiques().begin_count(calculer_barycentre_counter_);
-
+  statistics().create_custom_counter("Calcul rho mu indicatrice: calcul du barycentre",2,"IJK");
+  statistics().begin_count("Calcul rho mu indicatrice: calcul du barycentre",statistics().get_last_opened_counter_level()+1);
   const Intersections_Elem_Facettes& intersec = maillage_ft_ijk_.intersections_elem_facettes();
   const Domaine_IJK& s = baric.get_domaine();
 
@@ -5977,7 +5964,7 @@ void IJK_Interfaces::calculer_barycentre(IJK_Field_vector3_double& baric, IJK_Fi
           }
       }
   }
-  statistiques().end_count(calculer_barycentre_counter_);
+  statistics().end_count("Calcul rho mu indicatrice: calcul du barycentre");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -6021,7 +6008,7 @@ void IJK_Interfaces::ajouter_terme_source_interfaces(
   IJK_Field_vector3_double& vabsrepul
 ) const
 {
-  statistiques().begin_count(source_counter_);
+  statistics().begin_count(STD_COUNTERS::rhs,statistics().get_last_opened_counter_level()+1);
 
   const Domaine_IJK& geom = ref_domaine_.valeur();
 
@@ -6321,7 +6308,7 @@ void IJK_Interfaces::ajouter_terme_source_interfaces(
             }
         }
     }
-  statistiques().end_count(source_counter_);
+  statistics().end_count(STD_COUNTERS::rhs);
 }
 
 static inline double determinant(const Vecteur3& v1, const Vecteur3& v2, const Vecteur3& v3)
@@ -6492,9 +6479,8 @@ int IJK_Interfaces::compute_cell_phase_with_interface_normal(int num_elem, int d
 void IJK_Interfaces::compute_drapeaux_vapeur_v4(const IntVect& vecteur_composantes,
                                                 ArrOfInt& drapeau_vapeur) const
 {
-  static Stat_Counter_Id calculs_drapeaux_counter_ =
-    statistiques().new_counter(2, "Calcul de l'indicatrice: calculs des drapeaux");
-  statistiques().begin_count(calculs_drapeaux_counter_);
+  statistics().create_custom_counter("Calcul de l'indicatrice: calculs des drapeaux",2,"IJK");
+  statistics().begin_count("Calcul de l'indicatrice: calculs des drapeaux",statistics().get_last_opened_counter_level()+1);
 
   const Domaine_IJK& split = ref_domaine_.valeur();
   const Maillage_FT_IJK& mesh = maillage_ft_ijk_;
@@ -6723,7 +6709,8 @@ void IJK_Interfaces::compute_drapeaux_vapeur_v4(const IntVect& vecteur_composant
     envoyer_broadcast(drapeau_vapeur, 0);
   }
 #endif
-  statistiques().end_count(calculs_drapeaux_counter_);
+
+  statistics().end_count("Calcul de l'indicatrice: calculs des drapeaux");
 }
 
 static inline double norme_carre(const Vecteur3& x)
@@ -7225,7 +7212,6 @@ void IJK_Interfaces::calculer_distance_autres_compo_connexe2(ArrOfDouble& distan
 {
   const Maillage_FT_IJK& mesh = maillage_ft_ijk_;
   const double distmax=	portee_force_repulsion_;
-  //statistiques().begin_count(cnt_CalculerDistance);
   ArrOfIntFT compo_connexe_sommets;
   mesh.calculer_compo_connexe_sommets(compo_connexe_sommets);
   DoubleTab tmp_sommets = mesh.sommets();
@@ -7242,7 +7228,6 @@ void IJK_Interfaces::calculer_distance_autres_compo_connexe2(ArrOfDouble& distan
                                         distance,
                                         v_closer,
                                         distmax);
-  //statistiques().end_count(cnt_CalculerDistance);
 }
 
 // Methodes outils permettant depuis GDB d'ecrire des fichiers tracables dans gnuplot
@@ -7981,8 +7966,8 @@ void IJK_Interfaces::calculer_indicatrice_next(
 
   Navier_Stokes_FTD_IJK& ns = ref_ijk_ft_->eq_ns();
 
-  static Stat_Counter_Id calculer_indicatrice_next_counter_ = statistiques().new_counter(2, "Calcul Indicatrice Next");
-  statistiques().begin_count(calculer_indicatrice_next_counter_);
+  statistics().create_custom_counter("Calcul Indicatrice Next",2,"IJK");
+  statistics().begin_count("Calcul Indicatrice Next",statistics().get_last_opened_counter_level()+1);
   // En diphasique sans bulle (pour cas tests), on met tout a 1.
   if (get_nb_bulles_reelles() == 0)
     {
@@ -7993,6 +7978,7 @@ void IJK_Interfaces::calculer_indicatrice_next(
 
       if (parcourir)
         parcourir_maillage();
+      statistics().end_count("Calcul Indicatrice Next");
       return;
     }
 
@@ -8207,8 +8193,7 @@ void IJK_Interfaces::calculer_indicatrice_next(
           barycentre_phase1_face_ns_[next()][face_dir][bary_compo].echange_espace_virtuel(barycentre_phase1_face_ns_[next()][face_dir][bary_compo].ghost());
         }
     }
-
-  statistiques().end_count(calculer_indicatrice_next_counter_);
+  statistics().end_count("Calcul Indicatrice Next");
 }
 
 // Dans cette methode on calcule l'indicatrice_intermediaire_ en fonction de
@@ -8225,9 +8210,8 @@ void IJK_Interfaces::calculer_indicatrice_intermediaire(
   // En monophasique, les champs sont a jours donc on zap :
   if (Option_IJK::DISABLE_DIPHASIQUE)
     return;
-
-  static Stat_Counter_Id calculer_indicatrice_next_counter_ = statistiques().new_counter(2, "Calcul Indicatrice Next");
-  statistiques().begin_count(calculer_indicatrice_next_counter_);
+  statistics().create_custom_counter("Calcul Indicatrice Next",2,"IJK");
+  statistics().begin_count("Calcul Indicatrice Next",statistics().get_last_opened_counter_level()+1);
   // En diphasique sans bulle (pour cas tests), on met tout a 1.
   if (get_nb_bulles_reelles() == 0)
     {
@@ -8238,6 +8222,7 @@ void IJK_Interfaces::calculer_indicatrice_intermediaire(
 
       if (parcourir)
         parcourir_maillage();
+      statistics().end_count("Calcul Indicatrice Next");
       return;
     }
 
@@ -8268,7 +8253,7 @@ void IJK_Interfaces::calculer_indicatrice_intermediaire(
     indicatrice_surfacique_intermediaire_face_ns);
   indicatrice_surfacique_intermediaire_face_ns.echange_espace_virtuel();
 
-  statistiques().end_count(calculer_indicatrice_next_counter_);
+  statistics().end_count("Calcul Indicatrice Next");
 }
 
 #if VERIF_INDIC

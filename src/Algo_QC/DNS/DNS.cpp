@@ -25,7 +25,6 @@
 #include <SFichier.h>
 #include <algorithm>
 #include <alloca.h>
-#include <stat_counters.h>
 #include <IJK_Lata_writer.h>
 #include <IJK_Navier_Stokes_tools.h>
 #include <communications.h>
@@ -34,8 +33,7 @@
 #include <EFichier.h>
 #include <Boundary_Conditions.h>
 #include <DebogIJK.h>
-#include <Statistiques.h>
-#include <stat_counters.h>
+#include <Perf_counters.h>
 #include <Turbulent_viscosity.h>
 #include <Filter_kernel.h>
 using std::min;
@@ -10069,12 +10067,11 @@ void DNS_QC_double::run()
   initialise();
   force_zero_normal_velocity_on_walls(velocity_[2]);
 
-  static Stat_Counter_Id cnt_dtstab = statistiques().new_counter(1, "calcul dtstab QC");
-  static Stat_Counter_Id cnt_updtstat = statistiques().new_counter(1, "update statistiques");
-  static Stat_Counter_Id cnt_calctermeacc = statistiques().new_counter(1, "calcul terme acceleration");
-  static Stat_Counter_Id cnt_sauvegarde = statistiques().new_counter(1, "checkpointing");
-  static Stat_Counter_Id fourier_upstat = statistiques().new_counter(1, "TF update");
-
+  statistics().create_custom_counter("calcul dtstab QC",2,"TrioCFD");
+  statistics().create_custom_counter("update statistiques",2,"TrioCFD");
+  statistics().create_custom_counter("calcul terme acceleration",2,"TrioCFD");
+  statistics().create_custom_counter("checkpointing",2,"TrioCFD");
+  statistics().create_custom_counter("TF update",2,"TrioCFD");
   // modif FA AT 16/07/2013 necessaire pour le calcul des derivees
   // dans  statistiques_.update_stat_k(...)
   temperature_.echange_espace_virtuel(1);
@@ -10149,9 +10146,11 @@ void DNS_QC_double::run()
            << "*****************************************************************************" << finl;
     }
 
+  statistics().start_timeloop();
   for (int tstep = 0; tstep < nb_timesteps_ && stop == 0; tstep++)
     {
-      statistiques().begin_count(timestep_counter_);
+      statistics().start_time_step();
+      statistics().begin_count(STD_COUNTERS::timeloop,statistics().get_last_opened_counter_level()+1);
       DebogIJK::verifier("Vitesse_X init", velocity_[0]);
       DebogIJK::verifier("Vitesse_Y init", velocity_[1]);
       DebogIJK::verifier("Vitesse_Z init", velocity_[2]);
@@ -10227,7 +10226,7 @@ void DNS_QC_double::run()
           velocity_[1].echange_espace_virtuel(1); /*, IJK_Field_double::EXCHANGE_GET_AT_RIGHT_J*/
           velocity_[2].echange_espace_virtuel(1); /*, IJK_Field_double::EXCHANGE_GET_AT_RIGHT_K*/
 
-          statistiques().begin_count(cnt_dtstab);
+          statistics().begin_count("calcul dtstab QC",statistics().get_last_opened_counter_level()+1);
           old_timestep_ = timestep_;
 
           double dt_conv    =  conv_qdm_negligeable_  ? 1.e20 : velocity_convection_op_.compute_dtstab_convection_local(velocity_[0], velocity_[1], velocity_[2]);
@@ -10276,7 +10275,7 @@ void DNS_QC_double::run()
                 }
             }
 
-          statistiques().end_count(cnt_dtstab);
+          statistics().end_count("calcul dtstab QC");
           tmp_size3[0] = dt_conv;
           tmp_size3[1] = dt_diff;
           tmp_size3[2] = dt_diff_mu;
@@ -10321,7 +10320,6 @@ void DNS_QC_double::run()
                << " timestep= " << timestep_ << finl;
 
           // // F.A 3 /04/2014 changement de la source est maintenant calculee au debut de rk_sub_step
-          // statistiques().begin_count(cnt_calctermeacc);
           // double v_moy, rho_v_moy;
           // calculer_v_et_rhov_moyen(velocity_[0], rho_, delta_z_local_, volume_total_domaine_, v_moy, rho_v_moy);
           // double derivee_acceleration;
@@ -10338,7 +10336,7 @@ void DNS_QC_double::run()
           // F.A 16/04/14 changement de source (encore ...)
           // calcul de la force de recirculation avant modification des tableaux
 
-          statistiques().begin_count(cnt_calctermeacc);
+          statistics().begin_count("calcul terme acceleration",statistics().get_last_opened_counter_level()+1);
           double debit_old = debit_actuel_;
           calculer_debit(velocity_[0], rho_, delta_z_local_, Lx_tot_, debit_actuel_);
           double old_t_bulk = actual_t_bulk_;
@@ -10405,7 +10403,7 @@ void DNS_QC_double::run()
           // }
           //
 
-          statistiques().end_count(cnt_calctermeacc);
+          statistics().end_count("calcul terme acceleration");
 
           //////////////////////////
           for (int rk_step = 0; rk_step < 3; rk_step++)
@@ -10413,9 +10411,9 @@ void DNS_QC_double::run()
               rk3_sub_step(rk_step, timestep_);
               if (postraiter_sous_pas_de_temps_ && (tstep % dt_sauvegarde_ == dt_sauvegarde_-1))
                 {
-                  statistiques().begin_count(postraitement_counter_);
+                  statistics().begin_count(STD_COUNTERS::postreatment,statistics().get_last_opened_counter_level()+1);
                   posttraiter_champs_instantanes(lata_name, current_time_ + timestep_ * rk_step / 3);
-                  statistiques().end_count(postraitement_counter_);
+                  statistics().end_count(STD_COUNTERS::postreatment);
                 }
             }
         }
@@ -10425,8 +10423,8 @@ void DNS_QC_double::run()
 
       if (current_time_ >= t_debut_statistiques_)
         {
-          statistiques().begin_count(postraitement_counter_);
-          statistiques().begin_count(cnt_updtstat); // timer
+          statistics().begin_count(STD_COUNTERS::postreatment,statistics().get_last_opened_counter_level()+1);
+          statistics().begin_count("update statistiques",statistics().get_last_opened_counter_level()+1);
           statistiques_.update_stat(velocity_, pressure_, temperature_, rho_, molecular_mu_, molecular_lambda_,
                                     delta_z_local_pour_delta_,
                                     flag_nu_anisotropic_, turbulent_viscosity_, ref_turbulent_mu_xx, ref_turbulent_mu_xy, ref_turbulent_mu_xz, ref_turbulent_mu_yy, ref_turbulent_mu_yz, ref_turbulent_mu_zz,
@@ -10437,17 +10435,16 @@ void DNS_QC_double::run()
                                     Cp_gaz_, P_thermodynamique_, timestep_); // stats standard
           if (statistiques_.check_converge())
             statistiques_.update_stat_k(velocity_, pressure_,rho_, molecular_mu_, P_thermodynamique_, terme_source_acceleration_, timestep_);
-
-          statistiques().end_count(cnt_updtstat); // fin timer
-          statistiques().begin_count(fourier_upstat); // timer
+          statistics().end_count("update statistiques");
+          statistics().begin_count("TF update",statistics().get_last_opened_counter_level()+1);
           if ( dt_post_spectral_ > 0 )
             {
               int un_sur_20 = tstep%20;
               if ( !un_sur_20 )
                 partie_fourier_.update(velocity_, pressure_, rho_, molecular_mu_);
             }
-          statistiques().end_count(fourier_upstat); // fin timer
-          statistiques().end_count(postraitement_counter_);
+          statistics().end_count("TF update");
+          statistics().end_count(STD_COUNTERS::postreatment);
         }
 
       if (lecture_post_instantanes_)
@@ -10479,16 +10476,16 @@ void DNS_QC_double::run()
 
       if (tstep % dt_sauvegarde_ == dt_sauvegarde_-1 || stop)
         {
-          statistiques().begin_count(cnt_sauvegarde);
+          statistics().begin_count("checkpointing",statistics().get_last_opened_counter_level()+1);
           sauvegarder_qc(nom_sauvegarde_);
-          statistiques().end_count(cnt_sauvegarde);
+          statistics().end_count("checkpointing");
         }
 
       if (tstep % dt_post_ == dt_post_-1 || stop)
         {
-          statistiques().begin_count(postraitement_counter_);
+          statistics().end_count(STD_COUNTERS::timeloop,0,0);
           posttraiter_champs_instantanes(lata_name, current_time_);
-          statistiques().end_count(postraitement_counter_);
+          statistics().begin_count(STD_COUNTERS::timeloop,statistics().get_last_opened_counter_level()+1);
         }
 
       if (save_current_timestep)
@@ -10497,9 +10494,9 @@ void DNS_QC_double::run()
           // save_next_timestep=false;
           Cerr << "Yanis: Raw data cycle " << finl;
           dt_save_cycle_ += dt_save_oscillating_cycle_raw_data_;
-          statistiques().begin_count(postraitement_counter_);
+          statistics().end_count(STD_COUNTERS::timeloop,0,0);
           save_raw_data(lata_name, current_time_);
-          statistiques().end_count(postraitement_counter_);
+          statistics().begin_count(STD_COUNTERS::timeloop,statistics().get_last_opened_counter_level()+1);
         }
 
       /*
@@ -10507,17 +10504,15 @@ void DNS_QC_double::run()
         {
           Cerr << "Yanis: Raw data cycle " << finl;
           dt_save_cycle_ += dt_save_oscillating_cycle_raw_data_;
-          statistiques().begin_count(postraitement_counter_);
           save_raw_data(lata_name, current_time_);
-          statistiques().end_count(postraitement_counter_);
         }
       */
       if (tstep % dt_raw_data_ == dt_raw_data_-1)
         {
           Cerr << "Yanis: Raw data " << finl;
-          statistiques().begin_count(postraitement_counter_);
+          statistics().end_count(STD_COUNTERS::timeloop,0,0);
           save_raw_data(lata_name, current_time_);
-          statistiques().end_count(postraitement_counter_);
+          statistics().begin_count(STD_COUNTERS::timeloop,statistics().get_last_opened_counter_level()+1);
         }
       if (tstep % dt_stats_ == dt_stats_-1)
         {
@@ -10526,23 +10521,25 @@ void DNS_QC_double::run()
         }
       if ((tstep % dt_post_spectral_ == dt_post_-1 || stop) && (dt_post_spectral_ != -1))
         {
-          statistiques().begin_count(postraitement_counter_);
+          statistics().end_count(STD_COUNTERS::timeloop,0,0);
           Nom Nom_post = "Spectrale_";
           Nom_post += Nom(current_time_);
           partie_fourier_.postraiter(Nom_post);
-          statistiques().end_count(postraitement_counter_);
+          statistics().begin_count(STD_COUNTERS::timeloop,statistics().get_last_opened_counter_level()+1);
         }
       //  calculer_moyennes_flux();
 
-      statistiques().end_count(timestep_counter_);
       if (Process::je_suis_maitre())
         {
           Cerr << "tstep " << tstep
                << " currenttime " << current_time_
-               << " cpu_time " << statistiques().last_time(timestep_counter_) << finl;
+               << " cpu_time " << statistics().get_time_since_last_open(STD_COUNTERS::timeloop) << finl;
         }
+      statistics().end_count(STD_COUNTERS::timeloop);
+      statistics().end_time_step(tstep);
     }
-
+  statistics().end_timeloop();
+  statistics().print_TU_files("Time loop statistics");
   delete kernel_;
 }
 
@@ -11257,19 +11254,20 @@ void DNS_QC_double::calculer_diffusion_scalar(const IJK_Field_double& rho,
 // total_timestep = not the fractionnal timestep !
 void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
 {
-  static Stat_Counter_Id cnt_conv_rho = statistiques().new_counter(1, "qc convection rho");
-  static Stat_Counter_Id cnt_calcul_temp_rho_rhov = statistiques().new_counter(1, "qc calcul pthermo,t,rho_v,etc");
-  static Stat_Counter_Id cnt_diff_v = statistiques().new_counter(1, "qc diffusion vitesse");
-  static Stat_Counter_Id cnt_diff_t = statistiques().new_counter(1, "qc diffusion turbulente vitesse");
-  static Stat_Counter_Id cnt_diff_struct = statistiques().new_counter(1, "qc diffusion vitesse modele structurel");
-  static Stat_Counter_Id cnt_conv_v = statistiques().new_counter(1, "qc convection vitesse");
-  static Stat_Counter_Id cnt_mettre_a_jour_v = statistiques().new_counter(1, "qc rk3 update");
-  static Stat_Counter_Id cnt_diff_temp = statistiques().new_counter(1, "qc diffusion temperature");
-  static Stat_Counter_Id cnt_kappa_t = statistiques().new_counter(1, "qc turbulent diffusivity");
-  static Stat_Counter_Id cnt_kappa_struct = statistiques().new_counter(1, "qc turbulent diffusivity structurel");
-  static Stat_Counter_Id cnt_prepare_rhs = statistiques().new_counter(1, "qc prepare rhs");
-  static Stat_Counter_Id cnt_resoudre_systeme_poisson = statistiques().new_counter(1, "qc resoudre systeme");
-  static Stat_Counter_Id cnt_ajouter_grad_p = statistiques().new_counter(1, "qc ajouter grad p");
+  statistics().create_custom_counter("qc convection rho",2,"TrioCFD");
+  statistics().create_custom_counter("qc calcul pthermo,t,rho_v,etc",2,"TrioCFD");
+  statistics().create_custom_counter("qc diffusion vitesse",2,"TrioCFD");
+  statistics().create_custom_counter("qc diffusion turbulente vitesse",2,"TrioCFD");
+  statistics().create_custom_counter("qc diffusion vitesse modele structurel",2,"TrioCFD");
+  statistics().create_custom_counter("qc convection vitesse",2,"TrioCFD");
+  statistics().create_custom_counter("qc rk3 update",2,"TrioCFD");
+  statistics().create_custom_counter("qc diffusion temperature",2,"TrioCFD");
+  statistics().create_custom_counter("qc turbulent diffusivity",2,"TrioCFD");
+  statistics().create_custom_counter("qc turbulent diffusivity structurel",2,"TrioCFD");
+  statistics().create_custom_counter("qc prepare rhs",2,"TrioCFD");
+  statistics().create_custom_counter("qc resoudre systeme",2,"TrioCFD");
+  statistics().create_custom_counter("qc ajouter grad p",2,"TrioCFD");
+
 
   const double fractionnal_timestep = compute_fractionnal_timestep_rk3(total_timestep, rk_step);
 
@@ -11292,7 +11290,7 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
   // Convection du champ de masse volumique
   //
   // L'operateur de convection calcule drho/dt integre sur le volume de controle:
-  statistiques().begin_count(cnt_conv_rho);
+  statistics().begin_count("qc convection rho",statistics().get_last_opened_counter_level()+1);
   if (conv_rho_negligeable_) // cas ou la convection de rho serait negligeable
     {
       d_rho_.data()=0;
@@ -11317,7 +11315,7 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
           rho_convection_op_.calculer(rho_, velocity_[0], velocity_[1], velocity_[2], d_rho_);
         }
     }
-  statistiques().end_count(cnt_conv_rho);
+  statistics().end_count("qc convection rho");
 
   DebogIJK::verifier("op_conv(rho)", d_rho_);
 
@@ -11325,8 +11323,7 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
     {
       if (turbulent_diffusivity_)
         {
-          statistiques().begin_count(cnt_kappa_t);
-
+          statistics().begin_count("qc turbulent diffusivity",statistics().get_last_opened_counter_level()+1);
           if (flag_kappa_vectorial_)
             {
               calculer_turbulent_mu_vector(flag_kappa_anisotropic_,
@@ -11355,13 +11352,12 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
                                            flag_turbulent_kappa_filtre_, turbulent_kappa_filtre_,
                                            turbulent_kappa_, domaine_);
             }
-          statistiques().end_count(cnt_kappa_t);
+          statistics().end_count("qc turbulent diffusivity");
         }
 
       if (structural_uscalar_)
         {
-          statistiques().begin_count(cnt_kappa_struct);
-
+          statistics().begin_count("qc turbulent diffusivity structurel",statistics().get_last_opened_counter_level()+1);
           calculer_structural_uscalar(structural_uscalar_model_, structural_uscalar_model_constant_,
                                       structural_uscalar_vector_coefficients_,
                                       rho_,
@@ -11373,7 +11369,7 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
                                       flag_structural_uscalar_filtre_, structural_uscalar_filtre_vector_,
                                       structural_uscalar_vector_);
 
-          statistiques().end_count(cnt_kappa_struct);
+          statistics().end_count("qc turbulent diffusivity structurel");
         }
 
       if (flag_kappa_vectorial_)
@@ -11405,7 +11401,7 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
 
       if (turbulent_diffusivity_)
         {
-          statistiques().begin_count(cnt_kappa_t);
+          statistics().begin_count("qc turbulent diffusivity",statistics().get_last_opened_counter_level()+1);
           if (flag_kappa_vectorial_)
             {
               turbulent_kappa_vector_[0].echange_espace_virtuel(1);
@@ -11458,15 +11454,14 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
                                         d_rho_,
                                         boundary_flux_kmin_, boundary_flux_kmax_);
             }
-          statistiques().end_count(cnt_kappa_t);
-
+          statistics().end_count("qc turbulent diffusivity");
           DebogIJK::verifier("rho", rho_);
           DebogIJK::verifier("op_conv(rho)_kappa", d_rho_);
         }
 
       if (structural_uscalar_)
         {
-          statistiques().begin_count(cnt_kappa_struct);
+          statistics().begin_count("qc turbulent diffusivity structurel",statistics().get_last_opened_counter_level()+1);
 
           structural_uscalar_vector_[0].echange_espace_virtuel(1);
           structural_uscalar_vector_[1].echange_espace_virtuel(1);
@@ -11498,7 +11493,7 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
                                                               d_rho_,
                                                               boundary_flux_kmin_, boundary_flux_kmax_);
 
-          statistiques().end_count(cnt_kappa_struct);
+          statistics().end_count("qc turbulent diffusivity structurel");
 
           DebogIJK::verifier("op_conv(rho)_struct", d_rho_);
         }
@@ -11520,7 +11515,7 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
   //  pour calculer l'epaisseur 1 de la temperature et de mu/lambda.
   rho_.echange_espace_virtuel(1);
 
-  statistiques().begin_count(cnt_calcul_temp_rho_rhov);
+  statistics().begin_count("qc calcul pthermo,t,rho_v,etc",statistics().get_last_opened_counter_level()+1);
   // Resoudre EDO Pthermo: calcul de P_th_final et de la temperature en fonction de rho_
   const double P_th_initial = P_thermodynamique_;
   double P_th_final;
@@ -11530,8 +11525,7 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
     {
       if (turbulent_diffusivity_)
         {
-          statistiques().begin_count(cnt_kappa_t);
-
+          statistics().begin_count("qc turbulent diffusivity",statistics().get_last_opened_counter_level()+1);
           if (flag_kappa_vectorial_)
             {
               calculer_turbulent_mu_vector(flag_kappa_anisotropic_,
@@ -11560,13 +11554,12 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
                                            flag_turbulent_kappa_filtre_, turbulent_kappa_filtre_,
                                            turbulent_kappa_, domaine_);
             }
-          statistiques().end_count(cnt_kappa_t);
+          statistics().end_count("qc turbulent diffusivity");
         }
 
       if (structural_uscalar_)
         {
-          statistiques().begin_count(cnt_kappa_struct);
-
+          statistics().begin_count("qc turbulent diffusivity structurel",statistics().get_last_opened_counter_level()+1);
           calculer_structural_uscalar(structural_uscalar_model_, structural_uscalar_model_constant_,
                                       structural_uscalar_vector_coefficients_,
                                       rho_,
@@ -11578,7 +11571,7 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
                                       flag_structural_uscalar_filtre_, structural_uscalar_filtre_vector_,
                                       structural_uscalar_vector_);
 
-          statistiques().end_count(cnt_kappa_struct);
+          statistics().end_count("qc turbulent diffusivity structurel");
         }
 
       if (flag_kappa_vectorial_)
@@ -11610,8 +11603,7 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
 
       if (turbulent_diffusivity_)
         {
-          statistiques().begin_count(cnt_kappa_t);
-
+          statistics().begin_count("qc turbulent diffusivity",statistics().get_last_opened_counter_level()+1);
           if (flag_kappa_vectorial_)
             {
               // we multiply by rho cp = rho (r/Pth) (Pth CP/r):
@@ -11638,13 +11630,12 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
 
               turbulent_kappa_.echange_espace_virtuel(1);
             }
-          statistiques().end_count(cnt_kappa_t);
+          statistics().end_count("qc turbulent diffusivity");
         }
 
       if (structural_uscalar_)
         {
-          statistiques().begin_count(cnt_kappa_struct);
-
+          statistics().begin_count("qc turbulent diffusivity structurel",statistics().get_last_opened_counter_level()+1);
           // we multiply by rho cp = rho (r/Pth) (Pth CP/r):
           //  * r/Pth: because we use grad T instead of grad 1/rho
           //  * Pth Cp/r: because div_lambda_grad_T will be multiplied by r/Cp/Pth
@@ -11658,7 +11649,7 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
           structural_uscalar_vector_[1].echange_espace_virtuel(1);
           structural_uscalar_vector_[2].echange_espace_virtuel(1);
 
-          statistiques().end_count(cnt_kappa_struct);
+          statistics().end_count("qc turbulent diffusivity structurel");
         }
     }
 
@@ -11687,7 +11678,7 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
   DebogIJK::verifier("rho_v_X", rho_v_[0]);
   DebogIJK::verifier("rho_v_Y", rho_v_[1]);
   DebogIJK::verifier("rho_v_Z", rho_v_[2]);
-  statistiques().end_count(cnt_calcul_temp_rho_rhov);
+  statistics().end_count("qc calcul pthermo,t,rho_v,etc");
 
   // Pour l'operateur de convection, on a besoin d'une epaisseur 2 sur la quantite convectee:
   rho_v_[0].echange_espace_virtuel(2);
@@ -11696,7 +11687,7 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
   // on a besoin de l'epaisseur 1 sur mu et lambda
 
   // Le coefficient de diffusion est mu => resultat homogene a d(rho_v)/dt
-  statistiques().begin_count(cnt_diff_v);
+  statistics().begin_count("qc diffusion vitesse",statistics().get_last_opened_counter_level()+1);
   if(diff_qdm_negligeable_) // si la diffusion est negligable
     {
       d_velocity_[0].data()=0;
@@ -11741,7 +11732,7 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
           Process::exit();
         }
     }
-  statistiques().end_count(cnt_diff_v);
+  statistics().end_count("qc diffusion vitesse");
   DebogIJK::verifier("op_diff(velocity)X", d_velocity_[0]);
   DebogIJK::verifier("op_diff(velocity)Y", d_velocity_[1]);
   DebogIJK::verifier("op_diff(velocity)Z", d_velocity_[2]);
@@ -11750,7 +11741,7 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
     {
       if (turbulent_viscosity_)
         {
-          statistiques().begin_count(cnt_diff_t);
+          statistics().begin_count("qc diffusion turbulente vitesse",statistics().get_last_opened_counter_level()+1);
 
           if (flag_nu_tensorial_)
             {
@@ -11780,12 +11771,12 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
                                            flag_turbulent_mu_filtre_, turbulent_mu_filtre_,
                                            turbulent_mu_, domaine_);
             }
-          statistiques().end_count(cnt_diff_t);
+          statistics().end_count("qc diffusion turbulente vitesse");
         }
 
       if (structural_uu_)
         {
-          statistiques().begin_count(cnt_diff_struct);
+          statistics().begin_count("qc diffusion vitesse modele structurel",statistics().get_last_opened_counter_level()+1);
           calculer_structural_uu(structural_uu_model_, structural_uu_model_constant_,
                                  structural_uu_tensor_coefficients_,
                                  rho_,
@@ -11795,7 +11786,7 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
                                  kernel_, tmp_b_, tmp_a_, structural_uu_tmp_tensor_,
                                  flag_structural_uu_filtre_, structural_uu_filtre_tensor_,
                                  structural_uu_tensor_);
-          statistiques().end_count(cnt_diff_struct);
+          statistics().end_count("qc diffusion vitesse modele structurel");
         }
 
       if (flag_nu_tensorial_)
@@ -11827,7 +11818,7 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
 
       if (turbulent_viscosity_)
         {
-          statistiques().begin_count(cnt_diff_t);
+          statistics().begin_count("qc diffusion turbulente vitesse",statistics().get_last_opened_counter_level()+1);
 
           if (flag_nu_tensorial_)
             {
@@ -11875,7 +11866,7 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
                                                    d_velocity_tmp_,
                                                    d_velocity_);
             }
-          statistiques().end_count(cnt_diff_t);
+          statistics().end_count("qc diffusion turbulente vitesse");
 
           DebogIJK::verifier("op_difft(velocity)X", d_velocity_[0]);
           DebogIJK::verifier("op_difft(velocity)Y", d_velocity_[1]);
@@ -11884,7 +11875,7 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
 
       if (structural_uu_)
         {
-          statistiques().begin_count(cnt_diff_struct);
+          statistics().begin_count("qc diffusion vitesse modele structurel",statistics().get_last_opened_counter_level()+1);
 
           multiplier_champ(rho_, structural_uu_tensor_[0]);
           multiplier_champ_rho_arete_ij(rho_, structural_uu_tensor_[1]);
@@ -11907,8 +11898,7 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
                                                 d_velocity_tmp_,
                                                 d_velocity_);
 
-          statistiques().end_count(cnt_diff_struct);
-
+          statistics().end_count("qc diffusion vitesse modele structurel");
           DebogIJK::verifier("op_diffstruct(velocity)X", d_velocity_[0]);
           DebogIJK::verifier("op_diffstruct(velocity)Y", d_velocity_[1]);
           DebogIJK::verifier("op_diffstruct(velocity)Z", d_velocity_[2]);
@@ -11916,7 +11906,7 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
     }
 
   // On transporte le champ rho_v par le champ v
-  statistiques().begin_count(cnt_conv_v);
+  statistics().begin_count("qc convection vitesse",statistics().get_last_opened_counter_level()+1);
   if (conv_qdm_negligeable_ || flag_convection_qdm_sans_rho_)
     {
       u_div_rho_u_.data()=0;
@@ -11931,7 +11921,7 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
                                   d_velocity_,
                                   u_div_rho_u_);
     }
-  statistiques().end_count(cnt_conv_v);
+  statistics().end_count("qc convection vitesse");
   DebogIJK::verifier("op_conv(velocity)X", d_velocity_[0]);
   DebogIJK::verifier("op_conv(velocity)Y", d_velocity_[1]);
   DebogIJK::verifier("op_conv(velocity)Z", d_velocity_[2]);
@@ -11971,7 +11961,7 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
   //     amplitude_oscillating_boundary_2_,
   //     frequency_oscillating_boundary_2_
   // );
-  statistiques().begin_count(cnt_mettre_a_jour_v);
+  statistics().begin_count("qc rk3 update",statistics().get_last_opened_counter_level()+1);
   for (int dir = 0; dir < 3; dir++)
     {
       const int kmax = d_velocity_[dir].nk();
@@ -12001,7 +11991,7 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
     }
 
   // On transporte le champ v par le champ v
-  statistiques().begin_count(cnt_conv_v);
+  statistics().begin_count("qc convection vitesse",statistics().get_last_opened_counter_level()+1);
   if (flag_convection_qdm_sans_rho_ && (!conv_qdm_negligeable_))
     {
       // on calcule u div(u) comme div(u u) - u div(u)
@@ -12013,7 +12003,7 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
                                   d_velocity_,
                                   u_div_rho_u_);
     }
-  statistiques().end_count(cnt_conv_v);
+  statistics().end_count("qc convection vitesse");
   DebogIJK::verifier("op_conv(velocity)X", d_velocity_[0]);
   DebogIJK::verifier("op_conv(velocity)Y", d_velocity_[1]);
   DebogIJK::verifier("op_conv(velocity)Z", d_velocity_[2]);
@@ -12022,7 +12012,7 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
     {
       if (turbulent_viscosity_)
         {
-          statistiques().begin_count(cnt_diff_t);
+          statistics().begin_count("qc diffusion turbulente vitesse",statistics().get_last_opened_counter_level()+1);
 
           if (flag_nu_tensorial_)
             {
@@ -12053,12 +12043,12 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
                                            turbulent_mu_, domaine_);
             }
 
-          statistiques().end_count(cnt_diff_t);
+          statistics().end_count("qc diffusion turbulente vitesse");
         }
 
       if (structural_uu_)
         {
-          statistiques().begin_count(cnt_diff_struct);
+          statistics().begin_count("qc diffusion vitesse modele structurel",statistics().get_last_opened_counter_level()+1);
           Cerr << "avant calculer_structural_uu" << finl;
           calculer_structural_uu(structural_uu_model_, structural_uu_model_constant_,
                                  structural_uu_tensor_coefficients_,
@@ -12069,8 +12059,7 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
                                  kernel_, tmp_b_, tmp_a_, structural_uu_tmp_tensor_,
                                  flag_structural_uu_filtre_, structural_uu_filtre_tensor_,
                                  structural_uu_tensor_);
-
-          statistiques().end_count(cnt_diff_struct);
+          statistics().end_count("qc diffusion vitesse modele structurel");
         }
 
       if (flag_nu_tensorial_)
@@ -12102,8 +12091,7 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
 
       if (turbulent_viscosity_)
         {
-          statistiques().begin_count(cnt_diff_t);
-
+          statistics().begin_count("qc diffusion turbulente vitesse",statistics().get_last_opened_counter_level()+1);
           if (flag_nu_tensorial_)
             {
               turbulent_mu_tensor_[0].echange_espace_virtuel(1);
@@ -12142,7 +12130,7 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
                                                    d_velocity_);
             }
 
-          statistiques().end_count(cnt_diff_t);
+          statistics().end_count("qc diffusion turbulente vitesse");
 
           DebogIJK::verifier("op_difft(velocity)X", d_velocity_[0]);
           DebogIJK::verifier("op_difft(velocity)Y", d_velocity_[1]);
@@ -12151,7 +12139,7 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
 
       if (structural_uu_)
         {
-          statistiques().begin_count(cnt_diff_struct);
+          statistics().begin_count("qc diffusion vitesse modele structurel",statistics().get_last_opened_counter_level()+1);
 
           structural_uu_tensor_[0].echange_espace_virtuel(1);
           structural_uu_tensor_[1].echange_espace_virtuel(1);
@@ -12167,8 +12155,7 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
                                                 d_velocity_tmp_,
                                                 d_velocity_);
 
-          statistiques().end_count(cnt_diff_struct);
-
+          statistics().end_count("qc diffusion vitesse modele structurel");
           DebogIJK::verifier("op_diffstruct(velocity)X", d_velocity_[0]);
           DebogIJK::verifier("op_diffstruct(velocity)Y", d_velocity_[1]);
           DebogIJK::verifier("op_diffstruct(velocity)Z", d_velocity_[2]);
@@ -12188,7 +12175,7 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
           runge_kutta3_update(d_velocity_[dir], RK3_F_velocity_[dir], velocity_[dir], rk_step, k, total_timestep);
         }
     }
-  statistiques().end_count(cnt_mettre_a_jour_v);
+  statistics().end_count("qc rk3 update");
   DebogIJK::verifier("rk3update(velocity)X", velocity_[0]);
   DebogIJK::verifier("rk3update(velocity)Y", velocity_[1]);
   DebogIJK::verifier("rk3update(velocity)Z", velocity_[2]);
@@ -12222,7 +12209,7 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
   DebogIJK::verifier("temp", temperature_);
   DebogIJK::verifier("lambda", molecular_lambda_);
 
-  statistiques().begin_count(cnt_diff_temp);
+  statistics().begin_count("qc diffusion temperature",statistics().get_last_opened_counter_level()+1);
   if (diff_temp_negligeable_) // si diffusion negligeable
     {
       div_lambda_grad_T_volume_.data()=0;
@@ -12234,7 +12221,7 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
                                                 div_lambda_grad_T_volume_,
                                                 boundary_flux_kmin_, boundary_flux_kmax_);
     }
-  statistiques().end_count(cnt_diff_temp);
+  statistics().end_count("qc diffusion temperature");
 
   DebogIJK::verifier("div_lambda_grad_T_volume", div_lambda_grad_T_volume_);
 
@@ -12242,7 +12229,7 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
     {
       if (turbulent_diffusivity_)
         {
-          statistiques().begin_count(cnt_kappa_t);
+          statistics().begin_count("qc turbulent diffusivity",statistics().get_last_opened_counter_level()+1);
           if (flag_kappa_vectorial_)
             {
               calculer_flux_thermique_bord(temperature_, 0.,
@@ -12287,15 +12274,14 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
                                         div_lambda_grad_T_volume_,
                                         boundary_flux_kmin_, boundary_flux_kmax_);
             }
-          statistiques().end_count(cnt_kappa_t);
-
+          statistics().end_count("qc turbulent diffusivity");
           DebogIJK::verifier("temp", temperature_);
           DebogIJK::verifier("div_lambda_grad_T_volume_kappa", div_lambda_grad_T_volume_);
         }
 
       if (structural_uscalar_)
         {
-          statistiques().begin_count(cnt_kappa_struct);
+          statistics().begin_count("qc turbulent diffusivity structurel",statistics().get_last_opened_counter_level()+1);
 
           calculer_flux_thermique_bord(temperature_, 0.,
                                        0, turbulent_kappa_, flag_kappa_anisotropic_,
@@ -12322,8 +12308,7 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
                                                               div_lambda_grad_T_volume_,
                                                               boundary_flux_kmin_, boundary_flux_kmax_);
 
-          statistiques().end_count(cnt_kappa_struct);
-
+          statistics().end_count("qc turbulent diffusivity structurel");
           DebogIJK::verifier("div_lambda_grad_T_volume_kappa_struct", div_lambda_grad_T_volume_);
         }
     }
@@ -12335,7 +12320,7 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
   velocity_[1].echange_espace_virtuel(1); /*, IJK_Field_double::EXCHANGE_GET_AT_RIGHT_J*/
   velocity_[2].echange_espace_virtuel(1); /*, IJK_Field_double::EXCHANGE_GET_AT_RIGHT_K*/
 
-  statistiques().begin_count(cnt_prepare_rhs);
+  statistics().begin_count("qc prepare rhs",statistics().get_last_opened_counter_level()+1);
 
   compute_divergence_times_constant(velocity_[0], velocity_[1], velocity_[2],
                                     - 1. / fractionnal_timestep, pressure_rhs_);
@@ -12381,23 +12366,22 @@ void DNS_QC_double::rk3_sub_step(const int rk_step, const double total_timestep)
       }
   }
   DebogIJK::verifier("pressure_rhs", pressure_rhs_);
-  statistiques().end_count(cnt_prepare_rhs);
-
+  statistics().end_count("qc prepare rhs");
   // Appel au solveur multigrille:
   if (!disable_solveur_poisson_)
     {
-      statistiques().begin_count(cnt_resoudre_systeme_poisson);
+      statistics().begin_count("qc resoudre systeme",statistics().get_last_opened_counter_level()+1);
       poisson_solver_.set_rho(rho_);
       poisson_solver_.resoudre_systeme_IJK(pressure_rhs_, pressure_);
-      statistiques().end_count(cnt_resoudre_systeme_poisson);
+      statistics().end_count("qc resoudre systeme");
       DebogIJK::verifier("pressure", pressure_);
 
 // pressure gradient requires the "left" value in all directions:
       pressure_.echange_espace_virtuel(1 /*, IJK_Field_double::EXCHANGE_GET_AT_LEFT_IJK*/);
-      statistiques().begin_count(cnt_ajouter_grad_p);
+      statistics().begin_count("qc ajouter grad p",statistics().get_last_opened_counter_level()+1);
       add_gradient_times_constant_over_rho(pressure_, rho_, -fractionnal_timestep,
                                            velocity_[0], velocity_[1], velocity_[2]);
-      statistiques().end_count(cnt_ajouter_grad_p);
+      statistics().end_count("qc ajouter grad p");
     }
 
   // DD,2016-01-20: decalage de la pression en prenant comme reference la moyenne de la pression sur le volume.

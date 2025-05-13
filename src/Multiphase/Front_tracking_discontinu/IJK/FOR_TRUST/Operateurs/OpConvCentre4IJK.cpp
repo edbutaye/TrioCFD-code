@@ -14,6 +14,7 @@
 *****************************************************************************/
 
 #include <OpConvCentre4IJK.h>
+#include <Perf_counters.h>
 
 Implemente_instanciable_sans_constructeur(OpConvCentre4IJK_double, "OpConvCentre4IJK_double", Operateur_IJK_faces_conv_base_double);
 
@@ -137,7 +138,6 @@ void OpConvCentre4IJK_double::ajouter(const IJK_Field_double& inputx, const IJK_
 void OpConvCentre4IJK_double::calculer_div_rhou(const IJK_Field_double& rhovx, const IJK_Field_double& rhovy, const IJK_Field_double& rhovz,
                                                 IJK_Field_double& resu, int k_layer, const Operateur_IJK_data_channel& channel)
 {
-  statistiques().begin_count(convection_counter_);
   const double surface_x = channel.get_delta_y() * channel.get_delta_z()[k_layer];
   const double surface_y = channel.get_delta_x() * channel.get_delta_z()[k_layer];
   const double surface_z = channel.get_delta_x() * channel.get_delta_y();
@@ -153,8 +153,6 @@ void OpConvCentre4IJK_double::calculer_div_rhou(const IJK_Field_double& rhovx, c
           + (rhovz(i,j,k_layer+1) - rhovz(i,j,k_layer)) * surface_z;
         resu(i,j,k_layer) = divergence;
       }
-  statistiques().end_count(convection_counter_);
-
 }
 
 void OpConvCentre4IJK_double::calculer_avec_u_div_rhou(const IJK_Field_double& rhovx, const IJK_Field_double& rhovy, const IJK_Field_double& rhovz,
@@ -162,7 +160,7 @@ void OpConvCentre4IJK_double::calculer_avec_u_div_rhou(const IJK_Field_double& r
                                                        IJK_Field_double& dvx, IJK_Field_double& dvy, IJK_Field_double& dvz,
                                                        IJK_Field_double& div_rho_u)
 {
-  statistiques().begin_count(convection_counter_);
+  statistics().begin_count(STD_COUNTERS::convection,statistics().get_last_opened_counter_level()+1);
 
   vx_ = &vx;
   vy_ = &vy;
@@ -178,7 +176,7 @@ void OpConvCentre4IJK_double::calculer_avec_u_div_rhou(const IJK_Field_double& r
 
   vx_ = vy_ = vz_ = inputx_ = inputy_ = inputz_ = nullptr;
   div_rho_u_ = nullptr;
-  statistiques().end_count(convection_counter_);
+  statistics().end_count(STD_COUNTERS::convection);
 
 }
 
@@ -187,7 +185,7 @@ void OpConvCentre4IJK_double::ajouter_avec_u_div_rhou(const IJK_Field_double& rh
                                                       IJK_Field_double& dvx, IJK_Field_double& dvy, IJK_Field_double& dvz,
                                                       IJK_Field_double& div_rho_u)
 {
-  statistiques().begin_count(convection_counter_);
+  statistics().begin_count(STD_COUNTERS::convection,statistics().get_last_opened_counter_level()+1);
 
   vx_ = &vx;
   vy_ = &vy;
@@ -203,6 +201,6 @@ void OpConvCentre4IJK_double::ajouter_avec_u_div_rhou(const IJK_Field_double& rh
 
   vx_ = vy_ = vz_ = inputx_ = inputy_ = inputz_ = nullptr;
   div_rho_u_ = nullptr;
-  statistiques().end_count(convection_counter_);
+  statistics().end_count(STD_COUNTERS::convection);
 
 }

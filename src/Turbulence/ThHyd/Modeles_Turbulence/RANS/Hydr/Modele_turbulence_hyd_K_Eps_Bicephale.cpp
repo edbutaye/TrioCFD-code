@@ -26,7 +26,7 @@
 #include <Champ_Inc_P0_base.h>
 #include <Champ_Uniforme.h>
 #include <communications.h>
-#include <stat_counters.h>
+#include <Perf_counters.h>
 #include <Probleme_base.h>
 #include <Fluide_base.h>
 #include <TRUSTTrav.h>
@@ -250,11 +250,11 @@ void Modele_turbulence_hyd_K_Eps_Bicephale::mettre_a_jour(double temps)
     sch2.faire_un_pas_de_temps_eqn_base(get_set_eq_transp_Eps());
   get_set_eq_transp_Eps().mettre_a_jour(temps);
 
-  statistiques().begin_count(nut_counter_);
+  statistics().begin_count(STD_COUNTERS::turbulent_viscosity, statistics().get_last_opened_counter_level()+1);
   Debog::verifier("Modele_turbulence_hyd_K_Eps_Bicephale::mettre_a_jour la_viscosite_turbulente before", la_viscosite_turbulente_->valeurs());
   calculate_limit_viscosity<MODELE_TYPE::K_EPS_BICEPHALE>(get_set_K(), get_set_Eps(), LeCmu_);
   Debog::verifier("Modele_turbulence_hyd_K_Eps_Bicephale::mettre_a_jour la_viscosite_turbulente after", la_viscosite_turbulente_->valeurs());
-  statistiques().end_count(nut_counter_);
+  statistics().end_count(STD_COUNTERS::turbulent_viscosity);
 }
 
 bool Modele_turbulence_hyd_K_Eps_Bicephale::has_champ(const Motcle& nom, OBS_PTR(Champ_base)& ref_champ) const

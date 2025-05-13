@@ -26,6 +26,7 @@
 #include <Milieu_base.h>
 #include <Champ_Uniforme.h>
 #include <Debog.h>
+#include <Perf_counters.h>
 
 Implemente_instanciable(Source_rayo_semi_transp_QC_VEF_P1NC,"Source_rayo_semi_transp_QC_VEF_P1NC",Source_rayo_semi_transp_base);
 
@@ -60,7 +61,10 @@ DoubleTab& Source_rayo_semi_transp_QC_VEF_P1NC::calculer(DoubleTab& resu) const
 
 DoubleTab& Source_rayo_semi_transp_QC_VEF_P1NC::ajouter(DoubleTab& resu) const
 {
-  return le_source_rayo.ajouter(resu);
+  statistics().end_count(STD_COUNTERS::rhs,0,0);
+  DoubleTab& res =le_source_rayo.ajouter(resu);
+  statistics().begin_count(STD_COUNTERS::rhs,statistics().get_last_opened_counter_level()+1);
+  return res;
 }
 
 

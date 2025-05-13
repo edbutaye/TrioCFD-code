@@ -39,7 +39,7 @@
 #include <Porosites_champ.h>
 #include <Convection_tools.h>
 #include <CL_Types_include.h>
-
+#include <Perf_counters.h>
 
 Implemente_instanciable( Operateur_Conv_sensibility_VEF, "Op_Conv_sensibility_VEF_P1NC",Operateur_Conv_sensibility ) ;
 
@@ -406,8 +406,6 @@ void Operateur_Conv_sensibility_VEF::ajouter_conv_term(const Champ_Inc_base& vel
   int fac=0,elem1,elem2,comp0;
   int nb_faces_ = domaine_VEF.nb_faces();
   ArrOfInt face(nfac);
-  //statistiques().end_count(m1);
-  //statistiques().begin_count(m2);
 
   // Tableau gradient base sur gradient_elem selon schema
   DoubleTab gradient_elem(nb_elem_tot,ncomp_ch_transporte,dimension);  // (du/dx du/dy dv/dx dv/dy) pour un poly
@@ -767,8 +765,6 @@ void Operateur_Conv_sensibility_VEF::ajouter_conv_term(const Champ_Inc_base& vel
         } // fin de la boucle
       alpha = 1 - alpha;
     } // fin de la boucle
-  //statistiques().end_count(m2);
-  //statistiques().begin_count(m3);
   int voisine;
   nb_faces_perio = 0;
   double diff1,diff2;

@@ -27,7 +27,7 @@
 #include <Discret_Thyd.h>
 #include <Convection_Diffusion_Phase_field.h>
 #include <Assembleur_base.h>
-#include <Statistiques.h>
+#include <Perf_counters.h>
 #include <TRUSTTrav.h>
 #include <Domaine_VF.h>
 #include <Domaine.h>
@@ -39,7 +39,6 @@
 #include <Constituant.h>
 #include <Source_Con_Phase_field.h>
 
-extern Stat_Counter_Id temps_total_execution_counter_;
 Implemente_instanciable_sans_constructeur_ni_destructeur(Navier_Stokes_phase_field,"Navier_Stokes_phase_field",Navier_Stokes_std);
 // XD navier_stokes_phase_field navier_stokes_standard navier_stokes_phase_field -1 Navier Stokes equation for the Phase Field problem.
 
@@ -574,7 +573,7 @@ double Navier_Stokes_phase_field::calculer_pas_de_temps() const
   double tps_init=eq_ns.schema_temps().temps_init();
   double tps_max=eq_ns.schema_temps().temps_max();
 
-  double t_passe=statistiques().last_time(temps_total_execution_counter_);
+  double t_passe=statistics().get_time_since_last_open(STD_COUNTERS::total_execution_time);
   if (tps_courant!=tps_init)
     {
       t_total=t_passe*((tps_max-tps_init)/(tps_courant-tps_init));

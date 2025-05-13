@@ -12,13 +12,6 @@
 * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *
 *****************************************************************************/
-//////////////////////////////////////////////////////////////////////////////
-//
-// File:        Implicite_steady.cpp
-// Directory:   $TRUST_ROOT/../Composants/TrioCFD/Schema_Euler_Implicite_Stationnaire/src/New
-// Version:     /main/29
-//
-//////////////////////////////////////////////////////////////////////////////
 
 #include <Implicit_steady.h>
 #include <Schema_Euler_Implicite_Stationnaire.h>
@@ -32,7 +25,6 @@
 #include <Matrice_Bloc.h>
 #include <Assembleur_base.h>
 #include <Discretisation_base.h>
-#include <Statistiques.h>
 #include <Schema_Temps_base.h>
 #include <TRUSTTrav.h>
 #include <Fluide_Quasi_Compressible.h>

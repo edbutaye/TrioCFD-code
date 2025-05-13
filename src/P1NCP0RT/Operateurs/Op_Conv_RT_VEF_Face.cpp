@@ -16,7 +16,7 @@
 #include <Op_Conv_RT_VEF_Face.h>
 #include <Champ_P1NC.h>
 #include <Porosites_champ.h>
-#include <stat_counters.h>
+#include <Perf_counters.h>
 #include <Domaine_VEF.h>
 #include <CL_Types_include.h>
 
@@ -56,7 +56,6 @@ Entree& Op_Conv_RT_VEF_Face::readOn(Entree& s )
 DoubleTab& Op_Conv_RT_VEF_Face::ajouter(const DoubleTab& transporte,
                                         DoubleTab& resu) const
 {
-  //statistiques().begin_count(m1);
   const Domaine_Cl_VEF& domaine_Cl_VEF = la_zcl_vef.valeur();
   const Domaine_VEF& domaine_VEF = ref_cast(Domaine_VEF, le_dom_vef.valeur());
   const Champ_Inc_base& la_vitesse=vitesse();
@@ -279,7 +278,6 @@ DoubleTab& Op_Conv_RT_VEF_Face::ajouter(const DoubleTab& transporte,
       } // end_if (dim==3)
   } // end_if (type_op==RT)
   modifier_flux(*this);
-  //statistiques().end_count(m3);
   return resu;
 }
 

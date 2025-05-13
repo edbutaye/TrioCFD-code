@@ -25,7 +25,7 @@
 #include <MD_Vector_std.h>
 #include <MD_Vector_tools.h>
 #include <Octree_Double.h>
-#include <stat_counters.h>
+#include <Perf_counters.h>
 #include <SFichier.h>
 
 extern void convert_to(const char *s, double& ob);
@@ -61,7 +61,8 @@ Entree& Champ_Fonc_reprise_IJK::readOn(Entree& s)
     }
 
   // Ouverture du fichier
-  statistiques().begin_count(temporary_counter_);
+  statistics().create_custom_counter("Temporary counter",2,"IJK");
+  statistics().begin_count("Temporary counter",statistics().get_last_opened_counter_level()+1);
   EFichier fic_rep;
   fic_rep.set_bin(1);
   fic_rep.ouvrir(nom_fic);
@@ -106,8 +107,8 @@ Entree& Champ_Fonc_reprise_IJK::readOn(Entree& s)
   // Reading file data:
   reprendre_IJK(fich, le_champ());
 
-  statistiques().end_count(temporary_counter_);
-  Cerr << "End of resuming the file " << nom_fic << " after " << statistiques().last_time(temporary_counter_) << " s" << finl;
+  Cerr << "End of resuming the file " << nom_fic << " after " << statistics().get_time_since_last_open("Temporary counter") << " s" << finl;
+  statistics().end_count("Temporary counter");
 
   return s ;
 }

@@ -40,7 +40,7 @@
 #include <EChaine.h>
 #include <Interprete_bloc.h>
 #include <Domaine_VDF.h>
-#include <stat_counters.h>
+#include <Perf_counters.h>
 #include <TRUST_Ref.h>
 #include <Parametre_implicite.h>
 
@@ -1063,10 +1063,10 @@ DoubleTab& Convection_Diffusion_Temperature_FT_Disc::derivee_en_temps_inco(Doubl
   // We start the timestep by computing :
   // STEP 1. Extend velocity and temperature (via calculer_grad_t which does a linear extrapolation
   // from the values within "phase_")
-  static const Stat_Counter_Id count2 = statistiques().new_counter(1, "calculer_mpoint", 0);
-  statistiques().begin_count(count2);
+  statistics().create_custom_counter("calculer_mpoint",3,"FrontTracking");
+  statistics().begin_count("calculer_mpoint",statistics().get_last_opened_counter_level()+1);
   calculer_mpoint();
-  statistiques().end_count(count2);
+  statistics().end_count("calculer_mpoint");
 
   Navier_Stokes_FT_Disc& ns = ref_cast(Navier_Stokes_FT_Disc, ref_eq_ns_.valeur());
   // Emptying lists for new timestep.
@@ -1079,8 +1079,8 @@ DoubleTab& Convection_Diffusion_Temperature_FT_Disc::derivee_en_temps_inco(Doubl
   // calculer_mpoint (which used to in turns call: calculer_grad_t)
   // Therefore, it is important to have called explicitely the temperature
   // extension before at the begining of the function.
-  static const Stat_Counter_Id count1 = statistiques().new_counter(1, "extend_ui", 0);
-  statistiques().begin_count(count1);
+  statistics().create_custom_counter("extend_ui",3,"FrontTracking");
+  statistics().begin_count("extend_ui", statistics().get_last_opened_counter_level()+1);
   const Champ_Inc_base& vitesse_ns = ns.inconnue();
   if (!divergence_free_velocity_extension_)
     {
@@ -1095,7 +1095,7 @@ DoubleTab& Convection_Diffusion_Temperature_FT_Disc::derivee_en_temps_inco(Doubl
       // Compute vitesse_convection_ which is equal to ns.inconnue() in phase_ and is extended (divergence-free) in the other phase:
       compute_divergence_free_velocity_extension();
     }
-  statistiques().end_count(count1);
+  statistics().end_count("extend_ui");
 
   // Application of 2 operators: convection & diffusion
   // STEP 3: Convection operator
@@ -1108,8 +1108,6 @@ DoubleTab& Convection_Diffusion_Temperature_FT_Disc::derivee_en_temps_inco(Doubl
   derivee = 0.;
 
   // STEP 3: Diffusion operator
-  //  static const Stat_Counter_Id count2 = statistiques().new_counter(1, "terme_diffusif_T", 0);
-  //  statistiques().begin_count(count2);
   bool calcul_explicite = false;
   if (parametre_equation_.non_nul() && sub_type(Parametre_implicite, parametre_equation_.valeur()))
     {
@@ -1125,7 +1123,6 @@ DoubleTab& Convection_Diffusion_Temperature_FT_Disc::derivee_en_temps_inco(Doubl
     {
       terme_diffusif.ajouter(temperature, derivee);
     }
-  //  statistiques().end_count(count2);
   const int nb_diffu=mixed_elems_.size_array();
   // const double temps = schema_temps().temps_courant();
   lost_fluxes_diffu_.resize_array(nb_diffu);
@@ -1144,8 +1141,6 @@ DoubleTab& Convection_Diffusion_Temperature_FT_Disc::derivee_en_temps_inco(Doubl
   }
 
   // STEP 4: Convection operator
-  //  static const Stat_Counter_Id count3 = statistiques().new_counter(1, "convection_T", 0);
-  //  statistiques().begin_count(count3);
   {
     const DoubleTab& rhoCp = get_champ("rho_cp_comme_T").valeurs();
     DoubleTab derivee_tmp(derivee);
@@ -1172,7 +1167,6 @@ DoubleTab& Convection_Diffusion_Temperature_FT_Disc::derivee_en_temps_inco(Doubl
     //    << " Lost= " << total_flux_conv_lost << finl;
 #endif
   }
-  //  statistiques().end_count(count3);
 
   solveur_masse->appliquer(derivee);
   if (schema_temps().diffusion_implicite() && !calcul_explicite)

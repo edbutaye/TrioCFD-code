@@ -19,7 +19,6 @@
 #include <TRUSTTab.h>
 #include <communications.h>
 #include <IJK_Navier_Stokes_tools.h> // pour initialiser les IJK_double
-#include <Statistiques.h>
 #include <Probleme_FTD_IJK_base.h>
 
 Implemente_instanciable_sans_constructeur(Statistiques_dns_ijk,"Statistiques_dns_ijk",Objet_U);

@@ -73,7 +73,9 @@ void Modele_rayo_semi_transp::validateTimeStep()
   eq_rayo().mettre_a_jour(temps);
   calculer_flux_radiatif();
   les_postraitements_.mettre_a_jour(temps);
+  statistics().begin_count(STD_COUNTERS::update_variables,statistics().get_last_opened_counter_level()+1);
   schema_temps().mettre_a_jour();
+  statistics().end_count(STD_COUNTERS::update_variables);
 }
 
 

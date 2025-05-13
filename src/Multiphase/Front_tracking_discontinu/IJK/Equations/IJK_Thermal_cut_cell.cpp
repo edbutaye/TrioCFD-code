@@ -589,8 +589,8 @@ void IJK_Thermal_cut_cell::compute_temperature_convection_cut_cell(const Cut_fie
 {
   const Cut_field_double& cut_field_temperature = static_cast<const Cut_field_double&>(*temperature_);
 
-  static Stat_Counter_Id cnt_conv_temp = statistiques().new_counter(1, "FT convection rho");
-  statistiques().begin_count(cnt_conv_temp);
+  //static Stat_Counter_Id cnt_conv_temp = //statistiques().new_counter(1, "FT convection rho");
+  //statistiques().begin_count(cnt_conv_temp);
   if (conv_temperature_negligible_)
     {
       cut_field_d_temperature.set_to_uniform_value(0);
@@ -605,7 +605,7 @@ void IJK_Thermal_cut_cell::compute_temperature_convection_cut_cell(const Cut_fie
                                            cut_field_d_temperature);
       cut_field_d_temperature.divide_by_scalar(vol_, vol_);
     }
-  statistiques().end_count(cnt_conv_temp);
+  //statistiques().end_count(cnt_conv_temp);
   DebogIJK::verifier("op_conv(rho)", cut_field_d_temperature);
   return;
 }
@@ -671,8 +671,8 @@ void IJK_Thermal_cut_cell::add_temperature_diffusion()
   else
     {
       // Performance counters:
-      static Stat_Counter_Id cnt_diff_temp = statistiques().new_counter(1, "FT diffusion temperature");
-      statistiques().begin_count(cnt_diff_temp);
+      //static Stat_Counter_Id cnt_diff_temp = //statistiques().new_counter(1, "FT diffusion temperature");
+      //statistiques().begin_count(cnt_diff_temp);
       /*
        * Correct the diffusive fluxes here or in the operator ?
        */
@@ -691,7 +691,7 @@ void IJK_Thermal_cut_cell::add_temperature_diffusion()
       const double rho_v = ref_ijk_ft_cut_cell_->milieu_ijk().get_rho_vapour();
       cut_field_d_temperature.divide_by_scalar(rho_l*cp_liquid_*vol_, rho_v*cp_vapour_*vol_);
 
-      statistiques().end_count(cnt_diff_temp);
+      //statistiques().end_count(cnt_diff_temp);
       DebogIJK::verifier("div_coeff_grad_T_volume_", *div_coeff_grad_T_volume_);
     }
 }

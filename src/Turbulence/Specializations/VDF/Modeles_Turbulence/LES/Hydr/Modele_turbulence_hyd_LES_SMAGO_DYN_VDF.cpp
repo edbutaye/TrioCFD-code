@@ -25,7 +25,7 @@
 #include <Schema_Temps_base.h>
 #include <Champ_Face_VDF.h>
 #include <Domaine_Cl_VDF.h>
-#include <stat_counters.h>
+#include <Perf_counters.h>
 #include <Equation_base.h>
 #include <Domaine_VDF.h>
 #include <TRUSTTrav.h>
@@ -139,7 +139,7 @@ int Modele_turbulence_hyd_LES_SMAGO_DYN_VDF::preparer_calcul()
 
 void Modele_turbulence_hyd_LES_SMAGO_DYN_VDF::mettre_a_jour(double temps)
 {
-  statistiques().begin_count(nut_counter_);
+  statistics().begin_count(STD_COUNTERS::turbulent_viscosity, statistics().get_last_opened_counter_level()+1);
   const Domaine_VDF& domaine_VDF = ref_cast(Domaine_VDF, le_dom_VF_.valeur());
   const Domaine_Cl_VDF& domaine_Cl_VDF = ref_cast(Domaine_Cl_VDF, le_dom_Cl_.valeur());
 
@@ -182,7 +182,7 @@ void Modele_turbulence_hyd_LES_SMAGO_DYN_VDF::mettre_a_jour(double temps)
   la_viscosite_turbulente_->valeurs().echange_espace_virtuel();
   Debog::verifier("la_viscosite_turbulente", la_viscosite_turbulente_->valeurs());
 
-  statistiques().end_count(nut_counter_);
+  statistics().end_count(STD_COUNTERS::turbulent_viscosity);
 }
 
 void Modele_turbulence_hyd_LES_SMAGO_DYN_VDF::calculer_cell_cent_vel(DoubleTab& cell_cent_vel, const Domaine_VDF& domaine_VDF, Champ_Inc_base& inco)

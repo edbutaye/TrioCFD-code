@@ -19,7 +19,7 @@
 #include <IJK_Navier_Stokes_tools.h>
 #include <Intersection_Interface_ijk.h>
 #include <Param.h>
-#include <stat_counters.h>
+
 
 Implemente_instanciable( Corrige_flux_FT_temperature_conv, "Corrige_flux_FT_temperature_conv", Corrige_flux_FT_base ) ;
 

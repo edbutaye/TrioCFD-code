@@ -18,9 +18,8 @@
 #include <Cut_cell_FT_Disc.h>
 #include <IJK_Thermal_base.h>
 #include <Process.h>
-#include <stat_counters.h>
 #include <IJK_Navier_Stokes_tools.h>
-
+#include <Perf_counters.h>
 #include <SolveurSys.h>
 #include <Matrice_Morse.h>
 #include <Matrice_Bloc.h>
@@ -243,9 +242,8 @@ void Cut_cell_surface_efficace::calcul_surface_interface_efficace(
   const DoubleTabFT_cut_cell_vector3& normale_deplacement_interface,
   DoubleTabFT_cut_cell_scalar& surface_efficace_interface)
 {
-  static Stat_Counter_Id calculer_surface_efficace_interface_counter_ =
-    statistiques().new_counter(2, "cut_cell: calcul des surfaces efficaces interface");
-  statistiques().begin_count(calculer_surface_efficace_interface_counter_);
+  statistics().create_custom_counter("cut_cell: calcul des surfaces efficaces interface",2,"IJK");
+  statistics().begin_count("cut_cell: calcul des surfaces efficaces interface",statistics().get_last_opened_counter_level()+1);
 
   const Cut_cell_FT_Disc& cut_cell_disc = surface_efficace_interface.get_cut_cell_disc();
   const Domaine_IJK& geom = cut_cell_disc.get_domaine();
@@ -284,8 +282,7 @@ void Cut_cell_surface_efficace::calcul_surface_interface_efficace(
     }
 
   surface_efficace_interface.echange_espace_virtuel();
-
-  statistiques().end_count(calculer_surface_efficace_interface_counter_);
+  statistics().end_count("cut_cell: calcul des surfaces efficaces interface");
 }
 
 // calcul_surface_face_efficace_initiale: version with DoubleTabFT_cut_cell output (use cut-cell structures)
@@ -461,10 +458,8 @@ void Cut_cell_surface_efficace::calcul_surface_face_efficace_iteratif(
   DoubleTabFT_cut_cell_vector6& indicatrice_surfacique_efficace_face_correction,
   DoubleTabFT_cut_cell_scalar& indicatrice_surfacique_efficace_face_absolute_error)
 {
-  static Stat_Counter_Id calculer_surface_efficace_face_counter_ =
-    statistiques().new_counter(2, "cut_cell: calcul des surfaces efficaces");
-  statistiques().begin_count(calculer_surface_efficace_face_counter_);
-
+  statistics().create_custom_counter("cut_cell: calcul des surfaces efficaces",2,"IJK");
+  statistics().begin_count("cut_cell: calcul des surfaces efficaces",statistics().get_last_opened_counter_level()+1);
   const Cut_cell_FT_Disc& cut_cell_disc = indicatrice_surfacique_efficace_face.get_cut_cell_disc();
   const Domaine_IJK& geom = cut_cell_disc.get_domaine();
   const double delta_x = geom.get_constant_delta(0);
@@ -717,8 +712,7 @@ void Cut_cell_surface_efficace::calcul_surface_face_efficace_iteratif(
       solution_not_found = Process::mp_max(solution_locally_not_found);
     }
   while (solution_not_found && iteration_solver_surface_efficace_face < maximum_iteration);
-
-  statistiques().end_count(calculer_surface_efficace_face_counter_);
+  statistics().end_count("cut_cell: calcul des surfaces efficaces");
 }
 
 void Cut_cell_surface_efficace::imprimer_informations_surface_efficace_interface(

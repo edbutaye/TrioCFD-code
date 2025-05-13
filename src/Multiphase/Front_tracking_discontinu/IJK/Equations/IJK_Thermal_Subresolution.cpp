@@ -17,7 +17,7 @@
 #include <Param.h>
 #include <IJK_Navier_Stokes_tools.h>
 #include <DebogIJK.h>
-#include <stat_counters.h>
+#include <Perf_counters.h>
 #include <Probleme_FTD_IJK.h>
 #include <Corrige_flux_FT_base.h>
 #include <OpConvDiscQuickIJKScalar.h>
@@ -1608,14 +1608,14 @@ void IJK_Thermal_Subresolution::compute_mean_liquid_temperature()
 
 void IJK_Thermal_Subresolution::compute_thermal_subproblems()
 {
-  static Stat_Counter_Id cnt_lrs_ini = statistiques().new_counter(3, "Thermal Subresolution LRS - Initialisation");
-  static Stat_Counter_Id cnt_readjust = statistiques().new_counter(3, "Thermal Subresolution LRS - Readjustement");
-  static Stat_Counter_Id cnt_lrs_matrix_op = statistiques().new_counter(3, "Thermal Subresolution LRS - Matrix computation");
-  static Stat_Counter_Id cnt_lrs_temporal_scheme = statistiques().new_counter(3, "Thermal Subresolution LRS - Temporal scheme");
-  static Stat_Counter_Id cnt_lrs_source_terms = statistiques().new_counter(3, "Thermal Subresolution LRS - Source terms");
-  static Stat_Counter_Id cnt_lrs_solver = statistiques().new_counter(3, "Thermal Subresolution LRS - Solver");
-  static Stat_Counter_Id cnt_lrs_post = statistiques().new_counter(3, "Thermal Subresolution LRS - Miscellaneous post");
-  static Stat_Counter_Id cnt_lrs_prepare_corr = statistiques().new_counter(3, "Thermal Subresolution LRS - Prepare temp-flux correction");
+  //static Stat_Counter_ID cnt_lrs_ini = //statistiques().new_counter(3, "Thermal Subresolution LRS - Initialisation");
+  //static Stat_Counter_ID cnt_readjust = //statistiques().new_counter(3, "Thermal Subresolution LRS - Readjustement");
+  //static Stat_Counter_ID cnt_lrs_matrix_op = //statistiques().new_counter(3, "Thermal Subresolution LRS - Matrix computation");
+  //static Stat_Counter_ID cnt_lrs_temporal_scheme = //statistiques().new_counter(3, "Thermal Subresolution LRS - Temporal scheme");
+  //static Stat_Counter_ID cnt_lrs_source_terms = //statistiques().new_counter(3, "Thermal Subresolution LRS - Source terms");
+  //static Stat_Counter_ID cnt_lrs_solver = //statistiques().new_counter(3, "Thermal Subresolution LRS - Solver");
+  //static Stat_Counter_ID cnt_lrs_post = //statistiques().new_counter(3, "Thermal Subresolution LRS - Miscellaneous post");
+  //static Stat_Counter_ID cnt_lrs_prepare_corr = //statistiques().new_counter(3, "Thermal Subresolution LRS - Prepare temp-flux correction");
 
   is_first_time_step_ = (!ref_ijk_ft_->get_reprise()) && (ref_ijk_ft_->schema_temps_ijk().get_tstep()==0);
   first_step_thermals_post_ = (first_step_thermals_post_ && !ref_ijk_ft_->schema_temps_ijk().get_tstep());
@@ -1631,11 +1631,11 @@ void IJK_Thermal_Subresolution::compute_thermal_subproblems()
   if (debug_)
     Cerr << "Initialise thermal subproblems" << finl;
 
-  statistiques().begin_count(cnt_lrs_ini);
+  //statistiques().begin_count(cnt_lrs_ini);
   initialise_thermal_subproblems();
-  statistiques().end_count(cnt_lrs_ini);
+  //statistiques().end_count(cnt_lrs_ini);
 
-  statistiques().begin_count(cnt_readjust);
+  //statistiques().begin_count(cnt_readjust);
   detect_probe_collision();
 
   int varying_probes_length = 1;
@@ -1659,9 +1659,9 @@ void IJK_Thermal_Subresolution::compute_thermal_subproblems()
   if (debug_)
     if(varying_probes && !first_time_step_varying_probes_)
       Cerr << "Probes length is now fixed" << finl;
-  statistiques().end_count(cnt_readjust);
+  //statistiques().end_count(cnt_readjust);
 
-  statistiques().begin_count(cnt_lrs_matrix_op);
+  //statistiques().begin_count(cnt_lrs_matrix_op);
   pre_initialise_thermal_subproblems_any_matrices();
 
   reset_subresolution_distributed_vectors();
@@ -1669,29 +1669,29 @@ void IJK_Thermal_Subresolution::compute_thermal_subproblems()
   if (debug_)
     Cerr << "Compute radial subresolution convection and diffusion operators" << finl;
   compute_radial_subresolution_convection_diffusion_operators();
-  statistiques().end_count(cnt_lrs_matrix_op);
+  //statistiques().end_count(cnt_lrs_matrix_op);
 
-  statistiques().begin_count(cnt_lrs_temporal_scheme);
+  //statistiques().begin_count(cnt_lrs_temporal_scheme);
   if (debug_)
     Cerr << "Compute local substep for the first iter" << finl;
   compute_local_substep();
   prepare_temporal_schemes();
-  statistiques().end_count(cnt_lrs_temporal_scheme);
+  //statistiques().end_count(cnt_lrs_temporal_scheme);
 
-  statistiques().begin_count(cnt_lrs_source_terms);
+  //statistiques().begin_count(cnt_lrs_source_terms);
   if (debug_)
     Cerr << "Prepare boundary conditions, compute source terms and impose boundary conditions" << finl;
   temperature_->echange_espace_virtuel(temperature_->ghost());
   compute_source_terms_impose_subresolution_boundary_conditions();
-  statistiques().end_count(cnt_lrs_source_terms);
+  //statistiques().end_count(cnt_lrs_source_terms);
 
-  statistiques().begin_count(cnt_lrs_solver);
+  //statistiques().begin_count(cnt_lrs_solver);
   if (debug_)
     Cerr << "Solve thermal subproblems" << finl;
   solve_thermal_subproblems();
-  statistiques().end_count(cnt_lrs_solver);
+  //statistiques().end_count(cnt_lrs_solver);
 
-  statistiques().begin_count(cnt_lrs_post);
+  //statistiques().begin_count(cnt_lrs_post);
   if (debug_)
     Cerr << "Compute material derivative (modelling)" << finl;
   approximate_temperature_increment_material_derivative();
@@ -1699,14 +1699,14 @@ void IJK_Thermal_Subresolution::compute_thermal_subproblems()
   if (debug_)
     Cerr << "Store probe temperature" << finl;
   store_previous_temperature_indicator_velocities();
-  statistiques().end_count(cnt_lrs_post);
+  //statistiques().end_count(cnt_lrs_post);
 
-  statistiques().begin_count(cnt_lrs_prepare_corr);
+  //statistiques().begin_count(cnt_lrs_prepare_corr);
   if (debug_)
     Cerr << "Prepare thermal flux correction" << finl;
   update_intersections();
   prepare_thermal_flux_correction();
-  statistiques().end_count(cnt_lrs_prepare_corr);
+  //statistiques().end_count(cnt_lrs_prepare_corr);
 }
 
 void IJK_Thermal_Subresolution::compute_ghost_cell_numbers_for_subproblems(const Domaine_IJK& geom, int ghost_init)
@@ -2210,8 +2210,8 @@ void IJK_Thermal_Subresolution::approximate_temperature_increment_material_deriv
 
 void IJK_Thermal_Subresolution::solve_thermal_subproblems()
 {
-  static Stat_Counter_Id cnt_lrs_solv_lin = statistiques().new_counter(4, "Thermal Subresolution LRS - Solver - Linear");
-  static Stat_Counter_Id cnt_lrs_solv_retrieve_temp = statistiques().new_counter(4, "Thermal Subresolution LRS - Solver - Retrieve temperature");
+  //static Stat_Counter_ID cnt_lrs_solv_lin = //statistiques().new_counter(4, "Thermal Subresolution LRS - Solver - Linear");
+  //static Stat_Counter_ID cnt_lrs_solv_retrieve_temp = //statistiques().new_counter(4, "Thermal Subresolution LRS - Solver - Retrieve temperature");
   if (!disable_subresolution_)
     {
       check_wrong_values_rhs();
@@ -2245,19 +2245,19 @@ void IJK_Thermal_Subresolution::solve_thermal_subproblems()
             }
           else
             {
-              statistiques().begin_count(cnt_lrs_solv_lin);
+              //statistiques().begin_count(cnt_lrs_solv_lin);
               Cerr << "Finite-difference thermal sub-resolution has started !" << finl;
               one_dimensional_advection_diffusion_thermal_solver_.resoudre_systeme((*thermal_subproblems_matrix_assembly_for_solver_ref_).valeur(),
                                                                                    thermal_subproblems_rhs_assembly_,
                                                                                    thermal_subproblems_temperature_solution_);
               Cerr << "Finite-difference thermal sub-resolution has finished !" << finl;
-              statistiques().end_count(cnt_lrs_solv_lin);
+              //statistiques().end_count(cnt_lrs_solv_lin);
             }
         }
     }
-  statistiques().begin_count(cnt_lrs_solv_retrieve_temp);
+  //statistiques().begin_count(cnt_lrs_solv_retrieve_temp);
   retrieve_temperature_solution();
-  statistiques().end_count(cnt_lrs_solv_retrieve_temp);
+  //statistiques().end_count(cnt_lrs_solv_retrieve_temp);
 }
 
 void IJK_Thermal_Subresolution::convert_into_sparse_matrix()
@@ -2360,40 +2360,40 @@ void IJK_Thermal_Subresolution::compute_convective_diffusive_fluxes_face_centre(
   //   thermal_local_subproblems_.dispatch_interfacial_heat_flux(interfacial_heat_flux_dispatched_,
   //                                                             ijk_indices_flux_out_,
   //                                                             thermal_flux_out_);
-  static Stat_Counter_Id cnt_lrs_conv_flux_corr = statistiques().new_counter(3, "Compute convective flux correction from LRS");
-  static Stat_Counter_Id cnt_lrs_diff_flux_corr = statistiques().new_counter(3, "Compute diffusive flux correction from LRS");
-  static Stat_Counter_Id cnt_lrs_dispatch_flux_corr = statistiques().new_counter(3, "Dispatch flux correction from LRS");
-  static Stat_Counter_Id cnt_lrs_complete_flux_cons = statistiques().new_counter(3, "Complete flux conservation from LRS");
-  static Stat_Counter_Id cnt_lrs_min_max_flux = statistiques().new_counter(3, "Compute far fluxes correction from LRS");
+  //static Stat_Counter_ID cnt_lrs_conv_flux_corr = //statistiques().new_counter(3, "Compute convective flux correction from LRS");
+  //static Stat_Counter_ID cnt_lrs_diff_flux_corr = //statistiques().new_counter(3, "Compute diffusive flux correction from LRS");
+  //static Stat_Counter_ID cnt_lrs_dispatch_flux_corr = //statistiques().new_counter(3, "Dispatch flux correction from LRS");
+  //static Stat_Counter_ID cnt_lrs_complete_flux_cons = //statistiques().new_counter(3, "Complete flux conservation from LRS");
+  //static Stat_Counter_ID cnt_lrs_min_max_flux = //statistiques().new_counter(3, "Compute far fluxes correction from LRS");
 
-  statistiques().begin_count(cnt_lrs_conv_flux_corr);
+  //statistiques().begin_count(cnt_lrs_conv_flux_corr);
   if (!conv_temperature_negligible_)
     compute_convective_fluxes_face_centre();
-  statistiques().end_count(cnt_lrs_conv_flux_corr);
+  //statistiques().end_count(cnt_lrs_conv_flux_corr);
 
-  statistiques().begin_count(cnt_lrs_diff_flux_corr);
+  //statistiques().begin_count(cnt_lrs_diff_flux_corr);
   if (!diff_temperature_negligible_)
     compute_diffusive_fluxes_face_centre();
-  statistiques().end_count(cnt_lrs_diff_flux_corr);
+  //statistiques().end_count(cnt_lrs_diff_flux_corr);
 
-  statistiques().begin_count(cnt_lrs_dispatch_flux_corr);
+  //statistiques().begin_count(cnt_lrs_dispatch_flux_corr);
   if (fluxes_correction_conservations_)
     thermal_local_subproblems_.dispatch_interfacial_heat_flux_correction(interfacial_heat_flux_contrib_,
                                                                          ijk_indices_flux_contrib_,
                                                                          thermal_flux_out_contrib_,
                                                                          interfacial_heat_flux_current_);
-  statistiques().end_count(cnt_lrs_dispatch_flux_corr);
+  //statistiques().end_count(cnt_lrs_dispatch_flux_corr);
 
-  statistiques().begin_count(cnt_lrs_complete_flux_cons);
+  //statistiques().begin_count(cnt_lrs_complete_flux_cons);
   complete_thermal_fluxes_face_centre(fluxes_correction_conservations_);
-  statistiques().end_count(cnt_lrs_complete_flux_cons);
+  //statistiques().end_count(cnt_lrs_complete_flux_cons);
 
   corrige_flux_->initialise_cell_neighbours_indices_to_correct();
   corrige_flux_->compute_cell_neighbours_faces_indices_for_spherical_correction(n_iter_distance_);
 
-  statistiques().begin_count(cnt_lrs_min_max_flux);
+  //statistiques().begin_count(cnt_lrs_min_max_flux);
   compute_min_max_reachable_fluxes();
-  statistiques().end_count(cnt_lrs_min_max_flux);
+  //statistiques().end_count(cnt_lrs_min_max_flux);
 }
 
 void IJK_Thermal_Subresolution::compute_convective_fluxes_face_centre()

@@ -840,8 +840,6 @@ void Postprocessing_IJK::posttraiter_champs_instantanes(const char *lata_name, d
 // 2020.03.12. CHOIX : Meme en disable_diphasique, on fait appel a la classe fille stats FT
 void Postprocessing_IJK::posttraiter_statistiques_plans(double current_time)
 {
-  statistiques().begin_count(postraitement_counter_);
-
   if (Process::je_suis_maitre())
     {
       Nom n("");
@@ -885,7 +883,6 @@ void Postprocessing_IJK::posttraiter_statistiques_plans(double current_time)
         }
       statistiques_FT_.postraiter_thermique(current_time); /* moyenne instantanee et temporelle */
     }
-  statistiques().end_count(postraitement_counter_);
 
 }
 
@@ -895,8 +892,6 @@ void Postprocessing_IJK::ecrire_statistiques_bulles(int reset, const Nom& nom_ca
 {
   if (Option_IJK::DISABLE_DIPHASIQUE)
     return;
-
-  statistiques().begin_count(postraitement_counter_);
 
   const DoubleTab& gravite = ref_ijk_ft_->milieu_ijk().gravite().valeurs();
   ArrOfDouble volume;
@@ -1007,8 +1002,6 @@ void Postprocessing_IJK::ecrire_statistiques_bulles(int reset, const Nom& nom_ca
           fic.close();
         }
     }
-  statistiques().end_count(postraitement_counter_);
-
 }
 
 void Postprocessing_IJK::ecrire_statistiques_cisaillement(int reset, const Nom& nom_cas, const double current_time) const
@@ -1016,7 +1009,6 @@ void Postprocessing_IJK::ecrire_statistiques_cisaillement(int reset, const Nom& 
   if (Option_IJK::DISABLE_DIPHASIQUE)
     return;
 
-  statistiques().begin_count(postraitement_counter_);
 
   double v_x_droite;
   double v_y_droite;
@@ -1050,7 +1042,6 @@ void Postprocessing_IJK::ecrire_statistiques_cisaillement(int reset, const Nom& 
       fic << endl;
       fic.close();
     }
-  statistiques().end_count(postraitement_counter_);
 
 }
 
@@ -1058,8 +1049,6 @@ void Postprocessing_IJK::ecrire_statistiques_rmf(int reset, const Nom& nom_cas, 
 {
   if (Option_IJK::DISABLE_DIPHASIQUE)
     return;
-
-  statistiques().begin_count(postraitement_counter_);
 
   double ax_PID, ay_PID, az_PID;
 
@@ -1083,7 +1072,6 @@ void Postprocessing_IJK::ecrire_statistiques_rmf(int reset, const Nom& nom_cas, 
       fic << endl;
       fic.close();
     }
-  statistiques().end_count(postraitement_counter_);
 }
 
 /** Methode qui met a jour l'indicatrice, les termes de repulsion
@@ -1103,8 +1091,8 @@ void Postprocessing_IJK::update_stat_ft(const double dt)
   //ArrOfDouble volume;
   //DoubleTab position;
   //interfaces_.calculer_volume_bulles(volume, position);
-  static Stat_Counter_Id updtstat_counter_ = statistiques().new_counter(2, "update statistiques");
-  statistiques().begin_count(updtstat_counter_);
+//  static Stat_Counter_Id updtstat_counter_ = statistiques().new_counter(2, "update statistiques");
+//  statistiques().begin_count(updtstat_counter_);
   if (Option_IJK::DISABLE_DIPHASIQUE)
     {
       // Calcul du champ grad_P_ est fait dans update_stat
@@ -1150,7 +1138,7 @@ void Postprocessing_IJK::update_stat_ft(const double dt)
           groups_statistiques_FT_[igroup].update_stat(ref_ijk_ft_, dt);
         }
     }
-  statistiques().end_count(updtstat_counter_);
+//  statistiques().end_count(updtstat_counter_);
 }
 
 // Calcul du lambda2 a partir du gradient.
@@ -2148,7 +2136,6 @@ void Postprocessing_IJK::compute_extended_pressures()
     return; // Leave the function if the extended fields are not necessary...
 
   Navier_Stokes_FTD_IJK& ns = ref_ijk_ft_->eq_ns();
-  statistiques().begin_count(postraitement_counter_);
   // The following calculation is defined on the extended domain ft
   const Domaine_IJK& split_ft = domaine_ft_;
   const int ni = split_ft.get_nb_elem_local(DIRECTION_I);
@@ -2359,7 +2346,6 @@ void Postprocessing_IJK::compute_extended_pressures()
 
   extended_pl_.echange_espace_virtuel(extended_pl_.ghost());
   extended_pv_.echange_espace_virtuel(extended_pv_.ghost());
-  statistiques().end_count(postraitement_counter_);
 }
 
 // Methode appelee lorsqu'on a mis "TOUS" dans la liste des champs a postraiter.

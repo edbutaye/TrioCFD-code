@@ -409,8 +409,8 @@ void IJK_Thermal_Onefluid::euler_rustine_step(const double timestep, const doubl
 
 void IJK_Thermal_Onefluid::compute_temperature_convection_conservative(const IJK_Field_vector3_double& velocity)
 {
-  static Stat_Counter_Id cnt_conv_temp = statistiques().new_counter(1, "FT convection rho");
-  statistiques().begin_count(cnt_conv_temp);
+  //static Stat_Counter_Id cnt_conv_temp = //statistiques().new_counter(1, "FT convection rho");
+  //statistiques().begin_count(cnt_conv_temp);
   IJK_Field_double& d_temperature = *d_temperature_;
   if (conv_temperature_negligible_)
     {
@@ -473,15 +473,15 @@ void IJK_Thermal_Onefluid::compute_temperature_convection_conservative(const IJK
             }
       d_temperature.echange_espace_virtuel(d_temperature.ghost());
     }
-  statistiques().end_count(cnt_conv_temp);
+  //statistiques().end_count(cnt_conv_temp);
   DebogIJK::verifier("op_conv(rho)", d_temperature);
   return;
 }
 
 void IJK_Thermal_Onefluid::compute_T_rust(const IJK_Field_vector3_double& velocity)
 {
-  static Stat_Counter_Id cnt_conv_temp = statistiques().new_counter(1, "FT convection rho cp");
-  statistiques().begin_count(cnt_conv_temp);
+  //static Stat_Counter_Id cnt_conv_temp = //statistiques().new_counter(1, "FT convection rho cp");
+  //statistiques().begin_count(cnt_conv_temp);
   const Domaine_IJK& geom = T_rust_.get_domaine();
   // DONE: remplacer rho_cp par un champ rho_cp_ mis a jour dans update_thermal_properties. Necessaire pour que ca marche.
   //On calcule div(rho_cp*v) qu'on stocke dans T_rust
@@ -543,6 +543,6 @@ void IJK_Thermal_Onefluid::compute_T_rust(const IJK_Field_vector3_double& veloci
           const double chi_l = indic(i,j,k);
           T_rust_(i,j,k) *= temperature(i,j,k)/(chi_l*rho_l*cp_liquid_ + (1-chi_l)*rho_v*cp_vapour_);
         }
-  statistiques().end_count(cnt_conv_temp);
+  //statistiques().end_count(cnt_conv_temp);
   return;
 }

@@ -15,7 +15,7 @@
 
 #ifndef Operateur_IJK_faces_diff_base_TPP_included
 #define Operateur_IJK_faces_diff_base_TPP_included
-#include <stat_counters.h>
+
 
 /*
  * Options for CASE

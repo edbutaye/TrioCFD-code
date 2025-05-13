@@ -17,7 +17,7 @@
 #include <IJK_Field_vector.h>
 #include <Probleme_base.h>
 #include <DebogIJK.h>
-#include <stat_counters.h>
+
 #include <Operateur_IJK_elem_diff.h>
 
 static int decoder_numero_bulle(const int code)
@@ -130,8 +130,8 @@ static void extrapolate_with_ijk_indices(const IJK_Field_double& distance,
                                          const int& vapour_mixed_only,
                                          const int& smooth_factor)
 {
-  static const Stat_Counter_Id stat_counter = statistiques().new_counter(3, "GFM - Extrapolate gfm temperature values");
-  statistiques().begin_count(stat_counter);
+  // static const Stat_Counter_Id stat_counter = statistiques().new_counter(3, "GFM - Extrapolate gfm temperature values");
+  // statistiques().begin_count(stat_counter);
 
   int neighbours_i[6] = NEIGHBOURS_I;
   int neighbours_j[6] = NEIGHBOURS_J;
@@ -186,7 +186,7 @@ static void extrapolate_with_ijk_indices(const IJK_Field_double& distance,
             }
       field.echange_espace_virtuel(field.ghost());
     }
-  statistiques().end_count(stat_counter);
+  // statistiques().end_count(stat_counter);
 }
 
 /*
@@ -212,8 +212,8 @@ void compute_eulerian_normal_distance_facet_barycentre_field(const IJK_Interface
    * Compute the normal distance to the interface
    */
   const bool use_ijk = true;
-  static const Stat_Counter_Id stat_counter = statistiques().new_counter(2, "GFM - Compute Eulerian normal distance field");
-  statistiques().begin_count(stat_counter);
+  // static const Stat_Counter_Id stat_counter = statistiques().new_counter(2, "GFM - Compute Eulerian normal distance field");
+  // statistiques().begin_count(stat_counter);
 
   static const double invalid_distance_value = INVALID_TEST;
   const int dim = 3; // in IJK
@@ -804,7 +804,7 @@ void compute_eulerian_normal_distance_facet_barycentre_field(const IJK_Interface
       distance_field.echange_espace_virtuel(distance_field.ghost());
     }
 
-  statistiques().end_count(stat_counter);
+  // statistiques().end_count(stat_counter);
 }
 
 void compute_eulerian_curvature_field_from_distance_field(const IJK_Field_double& distance,
@@ -815,8 +815,8 @@ void compute_eulerian_curvature_field_from_distance_field(const IJK_Field_double
   /*
    * Compute the divergence of the normal vector field or the laplacian of the eulerian distance field
    */
-  static const Stat_Counter_Id stat_counter = statistiques().new_counter(2, "GFM - Compute Eulerian curvature dield from distance field");
-  statistiques().begin_count(stat_counter);
+  // static const Stat_Counter_Id stat_counter = statistiques().new_counter(2, "GFM - Compute Eulerian curvature dield from distance field");
+  // statistiques().begin_count(stat_counter);
 
   // Laplacian operator
   Operateur_IJK_elem_diff laplacian_distance;
@@ -841,7 +841,7 @@ void compute_eulerian_curvature_field_from_distance_field(const IJK_Field_double
         curvature(i,j,k) /= vol;
   curvature.echange_espace_virtuel(curvature.ghost());
 
-  statistiques().end_count(stat_counter);
+  // statistiques().end_count(stat_counter);
 }
 
 void compute_eulerian_curvature_field_from_normal_vector_field(const IJK_Field_vector3_double& normal_vect,
@@ -868,8 +868,8 @@ void compute_eulerian_curvature_field_from_interface(const IJK_Field_vector3_dou
   interfacial_area.echange_espace_virtuel(interfacial_area.ghost());
   curvature.echange_espace_virtuel(curvature.ghost());
 
-  static const Stat_Counter_Id stat_counter = statistiques().new_counter(2, "GFM - Compute Eulerian Curvature field from interface");
-  statistiques().begin_count(stat_counter);
+  // static const Stat_Counter_Id stat_counter = statistiques().new_counter(2, "GFM - Compute Eulerian Curvature field from interface");
+  // statistiques().begin_count(stat_counter);
 
   static const double invalid_curvature_value = INVALID_TEST;
 
@@ -1094,7 +1094,7 @@ void compute_eulerian_curvature_field_from_interface(const IJK_Field_vector3_dou
           curvature.echange_espace_virtuel(curvature.ghost());
         }
     }
-  statistiques().end_count(stat_counter);
+  // statistiques().end_count(stat_counter);
 }
 
 void compute_eulerian_normal_temperature_gradient_interface(const IJK_Field_double& distance,
@@ -1110,8 +1110,8 @@ void compute_eulerian_normal_temperature_gradient_interface(const IJK_Field_doub
    * Compute the normal temperature gradient at the bubble interface
    * Write in the ijk manner !
    */
-  static const Stat_Counter_Id stat_counter = statistiques().new_counter(3, "GFM - Compute Eulerian normal temperature gradient interface");
-  statistiques().begin_count(stat_counter);
+  // static const Stat_Counter_Id stat_counter = statistiques().new_counter(3, "GFM - Compute Eulerian normal temperature gradient interface");
+  // statistiques().begin_count(stat_counter);
 
   int neighbours_i[6] = NEIGHBOURS_I;
   int neighbours_j[6] = NEIGHBOURS_J;
@@ -1161,7 +1161,7 @@ void compute_eulerian_normal_temperature_gradient_interface(const IJK_Field_doub
             }
         }
   grad_T_interface.echange_espace_virtuel(grad_T_interface.ghost());
-  statistiques().end_count(stat_counter);
+  // statistiques().end_count(stat_counter);
   /*
    * Check if indicatrice of the neighbours is zero + interfacial_area to locate the mixed cells
    */
@@ -1212,8 +1212,8 @@ void compute_eulerian_extended_temperature(const IJK_Field_double& indicator,
   /*
    * Compute the extended temperature field using propagated values of the temperature gradient
    */
-  static const Stat_Counter_Id stat_counter = statistiques().new_counter(3, "GFM - Compute Eulerian ghost fluid temperature extension");
-  statistiques().begin_count(stat_counter);
+  // static const Stat_Counter_Id stat_counter = statistiques().new_counter(3, "GFM - Compute Eulerian ghost fluid temperature extension");
+  // statistiques().begin_count(stat_counter);
 
   const double invalid_test = INVALID_TEST;
   const int ni = temperature.ni();
@@ -1243,7 +1243,7 @@ void compute_eulerian_extended_temperature(const IJK_Field_double& indicator,
         }
   temperature.echange_espace_virtuel(temperature.ghost());
 
-  statistiques().end_count(stat_counter);
+  // statistiques().end_count(stat_counter);
 }
 
 void smooth_vector_field(IJK_Field_vector3_double& vector_field,

@@ -354,7 +354,7 @@ const IJK_Field_vector3_double& Probleme_FTD_IJK_base::get_IJK_field_vector(cons
 
 void Probleme_FTD_IJK_base::sauvegarder_probleme(const char *fichier_sauvegarde, const int& stop)  //  const
 {
-  statistiques().begin_count(sauvegarde_counter_);
+  statistics().begin_count(STD_COUNTERS::backup_file, statistics().get_last_opened_counter_level()+1);
 
   const double current_time = schema_temps_ijk().get_current_time();
 
@@ -425,7 +425,7 @@ void Probleme_FTD_IJK_base::sauvegarder_probleme(const char *fichier_sauvegarde,
       fichier << "}\n" ;
       Cerr << "T= " << current_time << " Checkpointing dans le fichier l.1168 " << fichier_sauvegarde << finl;
     }
-  statistiques().end_count(sauvegarde_counter_);
+  statistics().end_count(STD_COUNTERS::backup_file);
 
 }
 
@@ -523,8 +523,8 @@ void Probleme_FTD_IJK_base::deplacer_interfaces(const double timestep, const int
   if (Option_IJK::DISABLE_DIPHASIQUE || get_interface().is_frozen())
     return;
 
-  static Stat_Counter_Id deplacement_interf_counter_ = statistiques().new_counter(1, "Deplacement de l'interface");
-  statistiques().begin_count(deplacement_interf_counter_);
+  statistics().create_custom_counter("Deplacement de l'interface",3,"FrontTracking");
+  statistics().begin_count("Deplacement de l'interface",statistics().get_last_opened_counter_level()+1);
 
   // FIXME
   Navier_Stokes_FTD_IJK& ns = ref_cast(Navier_Stokes_FTD_IJK, equations_.front().valeur());
@@ -563,7 +563,7 @@ void Probleme_FTD_IJK_base::deplacer_interfaces(const double timestep, const int
   // mise a jour de l'indicatrice pour les variables monofluides
   ns.update_indicatrice_variables_monofluides();
 
-  statistiques().end_count(deplacement_interf_counter_);
+  statistics().end_count("Deplacement de l'interface");
 }
 
 // Nouvelle version ou le transport se fait avec les ghost...
@@ -775,8 +775,9 @@ void Probleme_FTD_IJK_base::euler_time_step(ArrOfDouble& var_volume_par_bulle)
   // FIXME
   Navier_Stokes_FTD_IJK& ns = ref_cast(Navier_Stokes_FTD_IJK, equations_.front().valeur());
 
-  static Stat_Counter_Id euler_rk3_counter_ = statistiques().new_counter(2, "Mise a jour de la vitesse");
-  statistiques().begin_count(euler_rk3_counter_);
+  statistics().create_custom_counter("Mise a jour de la vitesse",3,"FrontTracking");
+  statistics().begin_count("Mise a jour de la vitesse",statistics().get_last_opened_counter_level()+1);
+
   if (has_thermals_)
     {
       ns.update_v_or_rhov();
@@ -784,7 +785,7 @@ void Probleme_FTD_IJK_base::euler_time_step(ArrOfDouble& var_volume_par_bulle)
     }
 
   ns.euler_time_step(var_volume_par_bulle);
-  statistiques().end_count(euler_rk3_counter_);
+  statistics().end_count("Mise a jour de la vitesse");
 }
 
 // Perform one sub-step of rk3 for FT algorithm, called 3 times per time step. rk_step = 0, 1 or 2
@@ -792,8 +793,8 @@ void Probleme_FTD_IJK_base::euler_time_step(ArrOfDouble& var_volume_par_bulle)
 void Probleme_FTD_IJK_base::rk3_sub_step(const int rk_step, const double total_timestep, const double fractionnal_timestep, const double time)
 {
   assert(rk_step >= 0 && rk_step < 3);
-  static Stat_Counter_Id euler_rk3_counter_ = statistiques().new_counter(2, "Mise a jour de la vitesse");
-  statistiques().begin_count(euler_rk3_counter_);
+  statistics().create_custom_counter("Mise a jour de la vitesse",3,"FrontTracking");
+  statistics().begin_count("Mise a jour de la vitesse",statistics().get_last_opened_counter_level()+1);
 
   if (has_thermals_)
     get_ijk_thermals().rk3_sub_step(rk_step, total_timestep, time);
@@ -801,7 +802,7 @@ void Probleme_FTD_IJK_base::rk3_sub_step(const int rk_step, const double total_t
   // FIXME
   ref_cast(Navier_Stokes_FTD_IJK, equations_.front().valeur()).rk3_sub_step(rk_step, total_timestep, fractionnal_timestep, time);
 
-  statistiques().end_count(euler_rk3_counter_);
+  statistics().end_count("Mise a jour de la vitesse");
 }
 
 void Probleme_FTD_IJK_base::sauver() const
@@ -1073,30 +1074,23 @@ bool Probleme_FTD_IJK_base::run()
 
   schema_temps_ijk().set_max_timestep(schema_temps_ijk().get_timestep());
 
-  statistiques().end_count(initialisation_calcul_counter_);
-
-  if (!disable_TU)
-    {
-      if (GET_COMM_DETAILS)
-        statistiques().print_communciation_tracking_details("Statistiques d'initialisation du calcul", 0);
-
-      statistiques().dump("Statistiques d'initialisation du calcul", 0);
-      print_statistics_analyse("Statistiques d'initialisation du calcul", 0);
-    }
-  statistiques().reset_counters();
-  statistiques().begin_count(temps_total_execution_counter_);
+  statistics().end_count(STD_COUNTERS::computation_start_up);
+  // Print the initialization CPU statistics
+  statistics().print_TU_files("Computation start-up statistics");
 
   bool ok = true;
   int& tstep = schema_temps_ijk().get_tstep();
 
-
-
+  statistics().start_timeloop();
   for (tstep = 0; tstep < schema_temps_ijk().get_nb_timesteps() && !stop_; tstep++)
     {
+      // Begin the CPU measure of the time step
+      statistics().start_time_step();
+      statistics().begin_count(STD_COUNTERS::timeloop);
+
       // In IJK, the post is done at the begining of the time step - at this point tstep and dt are still coherent.
       // After 'computeTimeStep()' we are in a situation where loop index 'tstep' has not advanced, but 'dt' (double value) has.
       postraiter(stop_);
-      statistiques().begin_count(timestep_counter_);
 
       // max time step is modified in order to land as close as possible to a postpro interval (if using intervals)
       // this is useful to obtain regularly spaced outputs
@@ -1109,7 +1103,6 @@ bool Probleme_FTD_IJK_base::run()
 
       // reset the max_timestep to normal value
       schema_temps_ijk().set_max_timestep(old_max_timestep);
-
 
       /* Contrary to what is done in the classical Probleme_base::run() method, here we do not stop directly
        * we still go through the end of the loop:
@@ -1137,33 +1130,16 @@ bool Probleme_FTD_IJK_base::run()
       else // The resolution was successful, validate and go to the next time step.
         validateTimeStep();
 
-      statistiques().end_count(timestep_counter_);
-
-      if (JUMP_3_FIRST_STEPS && tstep < 3)
-        {
-          //demarrage des compteurs CPU
-          if (tstep == 2)
-            statistiques().set_three_first_steps_elapsed(true);
-        }
-      else
-        statistiques().compute_avg_min_max_var_per_step(tstep);
+      statistics().end_time_step(tstep);
+      statistics().end_count(STD_COUNTERS::timeloop);
     }
+
+  statistics().end_timeloop();
 
   // Last post:
   postraiter(true);
 
-  if (!disable_TU)
-    {
-      if (GET_COMM_DETAILS)
-        statistiques().print_communciation_tracking_details("Statistiques de resolution du probleme", 1);
-
-      statistiques().dump("Statistiques de resolution du probleme", 1);
-      print_statistics_analyse("Statistiques de resolution du probleme", 1);
-    }
-
-  statistiques().reset_counters();
-  statistiques().begin_count(temps_total_execution_counter_);
-
+  statistics().print_TU_files("Time loop statistics");
   return ok;
 }
 

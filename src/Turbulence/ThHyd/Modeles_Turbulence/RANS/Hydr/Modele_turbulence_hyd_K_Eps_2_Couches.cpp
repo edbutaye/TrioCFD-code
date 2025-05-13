@@ -23,7 +23,7 @@
 #include <Schema_Temps_base.h>
 #include <Modifier_pour_fluide_dilatable.h>
 #include <Probleme_base.h>
-#include <stat_counters.h>
+#include <Perf_counters.h>
 #include <Param.h>
 
 Implemente_instanciable(Modele_turbulence_hyd_K_Eps_2_Couches, "Modele_turbulence_hyd_K_Epsilon_2_Couches", Modele_turbulence_hyd_RANS_K_Eps_base);
@@ -117,10 +117,9 @@ void Modele_turbulence_hyd_K_Eps_2_Couches::mettre_a_jour(double temps)
   get_set_eq_transport().domaine_Cl_dis().mettre_a_jour(temps);
   sch.faire_un_pas_de_temps_eqn_base(get_set_eq_transport());
   get_set_eq_transport().mettre_a_jour(temps);
-
-  statistiques().begin_count(nut_counter_);
+  statistics().begin_count(STD_COUNTERS::turbulent_viscosity, statistics().get_last_opened_counter_level()+1);
   calculate_limit_viscosity<MODELE_TYPE::K_EPS_2_COUCHES>(get_set_unknown(), LeCmu_);
-  statistiques().end_count(nut_counter_);
+  statistics().end_count(STD_COUNTERS::turbulent_viscosity);
 }
 
 /*! @brief Simple appel a Transport_K_Eps::completer()

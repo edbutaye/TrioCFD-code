@@ -17,7 +17,7 @@
 #include <Param.h>
 #include <Maillage_FT_Disc.h>
 #include <Comm_Group.h>
-#include <stat_counters.h>
+#include <Perf_counters.h>
 #include <iostream>
 #include <vector>
 #include <cmath>
@@ -221,7 +221,9 @@ static void SPA_choisir_sommets_remplacement(const Maillage_FT_IJK& maillage,
 void Remaillage_FT_IJK::barycentrer_lisser_systematique_ijk(Maillage_FT_IJK& maillage,
                                                             ArrOfDouble& var_volume)
 {
-  static Stat_Counter_Id barycentre_lissage_sys_counter_ = statistiques().new_counter(2, "Remaillage interf: bary/lissage systematiques");
+  statistics().create_custom_counter("Remaillage interf: bary/lissage systematiques",3,"FrontTracking");
+  statistics().begin_count("Remaillage interf: bary/lissage systematiques",statistics().get_last_opened_counter_level()+1);
+
   FT_Field& Surfactant = maillage.Surfactant_facettes_non_const();
   ArrOfDouble surfactant_avant_remaillage ;
   if (!Surfactant.get_disable_surfactant())
@@ -232,7 +234,6 @@ void Remaillage_FT_IJK::barycentrer_lisser_systematique_ijk(Maillage_FT_IJK& mai
       //nettoyer_maillage(maillage);
       Surfactant.passer_variable_intensive(maillage);
     }
-  statistiques().begin_count(barycentre_lissage_sys_counter_);
   regulariser_maillage(maillage,
                        var_volume,
                        relax_barycentrage_,
@@ -249,13 +250,14 @@ void Remaillage_FT_IJK::barycentrer_lisser_systematique_ijk(Maillage_FT_IJK& mai
       ArrOfDouble surfactant_apres_remaillage = Surfactant.check_conservation(maillage);
       Surfactant.correction_conservation_globale(maillage,  surfactant_avant_remaillage,  surfactant_apres_remaillage);
     }
-  statistiques().end_count(barycentre_lissage_sys_counter_);
+  statistics().end_count("Remaillage interf: bary/lissage systematiques");
 }
 
 void Remaillage_FT_IJK::barycentrer_lisser_apres_remaillage(Maillage_FT_IJK& maillage, ArrOfDouble& var_volume)
 {
-  static Stat_Counter_Id barycentre_lissage_apres_counter_ = statistiques().new_counter(2, "Remaillage local: bary/lissage apres remaillage");
-  statistiques().begin_count(barycentre_lissage_apres_counter_);
+  statistics().create_custom_counter("Remaillage local: bary/lissage apres remaillage",3,"FrontTracking");
+  statistics().begin_count("Remaillage local: bary/lissage apres remaillage",statistics().get_last_opened_counter_level()+1);
+
   FT_Field& surfactant = maillage.Surfactant_facettes_non_const();
   if (!surfactant.get_disable_surfactant())
     {
@@ -282,16 +284,18 @@ void Remaillage_FT_IJK::barycentrer_lisser_apres_remaillage(Maillage_FT_IJK& mai
 
   // Dans le doute, je laisse l'appel a nettoyer_maillage :
   nettoyer_maillage(maillage);
-  statistiques().end_count(barycentre_lissage_apres_counter_);
+  statistics().end_count("Remaillage local: bary/lissage apres remaillage");
 }
 
 // Surcharge de Remaillage_FT::diviser_grandes_aretes(Maillage_FT_Disc& maillage) const
 // A la creation des facettes, il faut leur attribuer un numero de compo connexe dans compo_connex_facettes_.
 int Remaillage_FT_IJK::diviser_grandes_aretes(Maillage_FT_IJK& maillage) const
 {
-  static Stat_Counter_Id sup_div_aretes_counter_ = statistiques().new_counter(2, "Remaillage local: suppressions / divisions aretes");
+  statistics().create_custom_counter("Remaillage local: suppressions / divisions aretes",3,"FrontTracking");
+  statistics().begin_count("Remaillage local: suppressions / divisions aretes",statistics().get_last_opened_counter_level()+1);
+
+
   FT_Field& surfactant = maillage.Surfactant_facettes_non_const();
-  statistiques().begin_count(sup_div_aretes_counter_);
   static int compteur = 0;
   static int test_val = -1;
   if (!surfactant.get_disable_surfactant())
@@ -706,7 +710,7 @@ int Remaillage_FT_IJK::diviser_grandes_aretes(Maillage_FT_IJK& maillage) const
   Process::Journal()<< "  nb_aretes_divisees_tot="<< nb_aretes_divis_tot<<finl;
   maillage.maillage_modifie(Maillage_FT_Disc::MINIMAL);
 
-  statistiques().end_count(sup_div_aretes_counter_);
+  statistics().end_count("Remaillage local: suppressions / divisions aretes");
 
   return nb_aretes_divis_tot;
   //  return res;
@@ -723,9 +727,9 @@ int Remaillage_FT_IJK::supprimer_petites_aretes(Maillage_FT_IJK& maillage,
     {
       return Remaillage_FT::supprimer_petites_aretes(maillage,varVolume);
     }
+  statistics().create_custom_counter("Supprimer_petites_aretes",3,"FrontTracking");
+  statistics().begin_count("Supprimer_petites_aretes",statistics().get_last_opened_counter_level()+1);
 
-  static const Stat_Counter_Id stat_counter = statistiques().new_counter(3, "Supprimer_petites_aretes");
-  statistiques().begin_count(stat_counter);
   maillage.check_mesh();
   int nb_sommets_supprimes_tot = 0;
   int nb_sommets_supprimes = 0;
@@ -1143,15 +1147,16 @@ int Remaillage_FT_IJK::supprimer_petites_aretes(Maillage_FT_IJK& maillage,
   maillage.desc_sommets().echange_espace_virtuel(varVolume);
 
   maillage.maillage_modifie(Maillage_FT_Disc::MINIMAL);
-  statistiques().end_count(stat_counter);
+  statistics().end_count("Supprimer_petites_aretes");
   return nb_sommets_supprimes_tot;
 }
 
 void Remaillage_FT_IJK::remaillage_local_interface(double temps, Maillage_FT_IJK& maillage)
 {
-  static Stat_Counter_Id remaillage_loc_interf_counter_ = statistiques().new_counter(2, "Remaillage interf: remaillage local");
+  statistics().create_custom_counter("Remaillage interf: remaillage local",3,"FrontTracking");
+  statistics().begin_count("Remaillage interf: remaillage local",statistics().get_last_opened_counter_level()+1);
+
   FT_Field& surfactant = maillage.Surfactant_facettes_non_const();
-  statistiques().begin_count(remaillage_loc_interf_counter_);
   temps_dernier_remaillage_ = temps_dernier_lissage_ = temps_ = temps;
   ArrOfDouble surfactant_avant_remaillage ;
   if (!surfactant.get_disable_surfactant())
@@ -1227,7 +1232,7 @@ void Remaillage_FT_IJK::remaillage_local_interface(double temps, Maillage_FT_IJK
       surfactant.correction_conservation_globale(maillage, surfactant_avant_remaillage, surfactant_apres_remaillage);
     }
   nettoyer_maillage(maillage);
-  statistiques().end_count(remaillage_loc_interf_counter_);
+  statistics().end_count("Remaillage interf: remaillage local");
 }
 
 Vecteur3 Remaillage_FT_IJK::get_delta_euler(const Maillage_FT_IJK& maillage) const

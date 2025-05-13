@@ -17,6 +17,7 @@
 #include <Probleme_FTD_IJK_base.h>
 #include <EFichier.h>
 #include <Param.h>
+#include <Perf_counters.h>
 
 Implemente_base(Schema_Temps_IJK_base,"Schema_Temps_IJK_base",Schema_Temps_base);
 // XD schema_temps_base_IJK objet_u schema_temps_base_IJK -1 Basic class for time schemes. This scheme will be associated with a problem and the equations of this problem.
@@ -93,7 +94,7 @@ void Schema_Temps_IJK_base::completer()
 // Sinon, il faudrait recommander CFL <= 0.5 et Fo <=0.5 ce qui n'est pas la valeur par defaut...
 double Schema_Temps_IJK_base::find_timestep(const double max_timestep, const double cfl, const double fo, const double oh)
 {
-  statistiques().begin_count(dt_counter_);
+  statistics().begin_count(STD_COUNTERS::compute_dt,statistics().get_last_opened_counter_level()+1);
 
   // XXX pffff pas const car Thermals classe est tout xxxx ....
   Probleme_FTD_IJK_base& pb_ijk = ref_cast(Probleme_FTD_IJK_base, mon_probleme.valeur());
@@ -203,14 +204,14 @@ double Schema_Temps_IJK_base::find_timestep(const double max_timestep, const dou
       fic << finl;
       fic.close();
     }
-  statistiques().end_count(dt_counter_);
+  statistics().end_count(STD_COUNTERS::compute_dt);
 
   /* a bouger un jour dans mettre_a_jour ... existe pas pour le moment */
   if (!ind_temps_cpu_max_atteint)
     ind_temps_cpu_max_atteint = (temps_cpu_ecoule_ >= tcpumax_);
 
   if (je_suis_maitre())
-    temps_cpu_ecoule_ = statistiques().last_time(temps_total_execution_counter_);
+    temps_cpu_ecoule_ = statistics().get_time_since_last_open(STD_COUNTERS::total_execution_time);
 
   envoyer_broadcast(temps_cpu_ecoule_,0);
 

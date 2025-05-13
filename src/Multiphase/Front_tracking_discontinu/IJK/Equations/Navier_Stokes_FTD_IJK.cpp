@@ -22,6 +22,7 @@
 #include <Schema_RK3_IJK.h>
 #include <Option_IJK.h>
 #include <Param.h>
+#include <Perf_counters.h>
 
 #define COMPLEMENT_ANTI_DEVIATION_RESIDU
 // #define VARIABLE_DZ
@@ -456,8 +457,8 @@ void Navier_Stokes_FTD_IJK::maj_indicatrice_rho_mu(const bool parcourir)
   if (Option_IJK::DISABLE_DIPHASIQUE)
     return;
 
-  static Stat_Counter_Id calculer_rho_mu_indicatrice_counter_ = statistiques().new_counter(2, "Calcul Rho Mu Indicatrice");
-  statistiques().begin_count(calculer_rho_mu_indicatrice_counter_);
+//  static Stat_Counter_Id calculer_rho_mu_indicatrice_counter_ = statistiques().new_counter(2, "Calcul Rho Mu Indicatrice");
+//  statistiques().begin_count(calculer_rho_mu_indicatrice_counter_);
 
   const double rho_l = milieu_ijk().get_rho_liquid(), rho_v = milieu_ijk().get_rho_vapour(), mu_l = milieu_ijk().get_mu_liquid(), mu_v = milieu_ijk().get_mu_vapour();
 
@@ -538,7 +539,7 @@ void Navier_Stokes_FTD_IJK::maj_indicatrice_rho_mu(const bool parcourir)
     inv_rho_field_.echange_espace_virtuel(inv_rho_field_.ghost());
   molecular_mu_.echange_espace_virtuel(molecular_mu_.ghost());
 
-  statistiques().end_count(calculer_rho_mu_indicatrice_counter_);
+//  statistiques().end_count(calculer_rho_mu_indicatrice_counter_);
 }
 
 void Navier_Stokes_FTD_IJK::initialise_ns_fields()
@@ -935,15 +936,11 @@ void Navier_Stokes_FTD_IJK::initialise_ijk_fields()
       std::cout << "in initialise i_offset : " << gbz_splitting.get_offset_local(DIRECTION_I) << std::endl;
       std::cout << "Process::me()" << Process::me() << std::endl;
       forcage_.compute_initial_chouippe(nproc_tot, my_geom, my_ni, my_nj, my_nk, gbz_splitting, pb_ijk.nom_sauvegarde());
-
-
-
-
       // TODO (teo.boutin) move this by adding forcage_ to the tree of champs_compris
       champs_compris_.ajoute_champ_vectoriel(forcage_.get_force_ph2());
 
-
-      statistiques().begin_count(m2_counter_);
+      //statistics().create_custom_counter("m2",2,"TrioCFD");
+      //statistics().begin_count("m2",statistics().get_last_opened_counter_level()+1);
       Cout << "AF compute_initial_chouippe" << finl;
     }
 
@@ -1447,18 +1444,15 @@ void Navier_Stokes_FTD_IJK::calculer_terme_source_acceleration(IJK_Field_double&
    * REMARQUE II : On peut envisager de faire une correction qui n'a pas besoin qu'on lui donne vx_terminale en
    *               entree. C'est ce qui a ete explore, mais qui n'a pas aboutit.
    *  */
-  statistiques().begin_count(source_counter_);
   double new_time = time;
-  double v_moy = calculer_v_moyen(vx);
 
   // S'il n'y a pas de derivee, la source est constante donc on peut sortir:
   if (expression_derivee_acceleration_ == Nom("0"))
-    {
-      //    terme_source_acceleration_ = 0.;
-      statistiques().end_count(source_counter_);
-      return;
-    }
+    return;
 
+  statistics().begin_count(STD_COUNTERS::rhs,statistics().get_last_opened_counter_level()+1);
+
+  double v_moy = calculer_v_moyen(vx);
   update_rho_v();
   const int direction_gravite = milieu_ijk().get_direction_gravite();
 
@@ -1655,7 +1649,7 @@ void Navier_Stokes_FTD_IJK::calculer_terme_source_acceleration(IJK_Field_double&
       fic << finl;
       fic.close();
     }
-  statistiques().end_count(source_counter_);
+  statistics().end_count(STD_COUNTERS::rhs);
 }
 
 #ifdef COMPLEMENT_ANTI_DEVIATION_RESIDU
@@ -1882,8 +1876,8 @@ void Navier_Stokes_FTD_IJK::calculer_dv(const double timestep, const double time
     for (int dir = 0; dir < 3; dir++)
       velocity_[dir].data() = 0.; //Velocity reset for test
 
-  static Stat_Counter_Id calcul_dv_counter = statistiques().new_counter(2, "maj vitesse : calcul derivee vitesse");
-  statistiques().begin_count(calcul_dv_counter);
+//  static Stat_Counter_Id calcul_dv_counter = statistiques().new_counter(2, "maj vitesse : calcul derivee vitesse");
+//  statistiques().begin_count(calcul_dv_counter);
   // Calcul d_velocity = convection
 
   const double rho_l = milieu_ijk().get_rho_liquid();
@@ -2347,7 +2341,7 @@ void Navier_Stokes_FTD_IJK::calculer_dv(const double timestep, const double time
   if (!pb_ijk.domaine_ijk().get_periodic_flag(DIRECTION_K))
     force_zero_on_walls(d_velocity_[2]);
 
-  statistiques().end_count(calcul_dv_counter);
+//  statistiques().end_count(calcul_dv_counter);
 }
 
 void Navier_Stokes_FTD_IJK::compute_add_external_forces(const int dir)
@@ -2527,7 +2521,10 @@ void Navier_Stokes_FTD_IJK::write_check_etapes_et_termes(int rk_step)
 void Navier_Stokes_FTD_IJK::compute_add_THI_force(const IJK_Field_vector3_double& vitesse, const int time_iteration, const double dt, //tstep, /!\ ce dt est faux, je ne sais pas pk mais en comparant sa valeur avec celle du dt_ev, je vois que c'est faux
                                                   const double current_time, const Domaine_IJK& my_splitting)
 {
-  statistiques().begin_count(m2_counter_);
+
+  statistics().create_custom_counter("m2",2,"TrioCFD");
+  statistics().create_custom_counter("m3",2,"TrioCFD");
+  statistics().begin_count("m2",statistics().get_last_opened_counter_level()+1);
   if (forcage_.get_forced_advection() == -1)
     {
       ArrOfDouble mean_u_liq;
@@ -2545,9 +2542,8 @@ void Navier_Stokes_FTD_IJK::compute_add_THI_force(const IJK_Field_vector3_double
     }
   forcage_.compute_THI_force(time_iteration, dt, current_time, probleme_ijk().domaine_ijk());
 
-  statistiques().end_count(m2_counter_);
-
-  statistiques().begin_count(m3_counter_);
+  statistics().end_count("m2");
+  statistics().begin_count("m3",statistics().get_last_opened_counter_level()+1);
 
   const IJK_Field_vector3_double& force = forcage_.get_force_ph2();
   for (int dir = 0; dir < 3; dir++)
@@ -2569,13 +2565,13 @@ void Navier_Stokes_FTD_IJK::compute_add_THI_force(const IJK_Field_vector3_double
               velocity_[dir](i, j, k) += force[dir](i, j, k) * inv_cell_mass * dt;
             }
     }
-  statistiques().end_count(m3_counter_);
+  statistics().end_count("m3");
 }
 
 void Navier_Stokes_FTD_IJK::compute_add_THI_force_sur_d_velocity(const IJK_Field_vector3_double& vitesse, const int time_iteration, const double dt, //tstep,  /!\ ce dt est faux, je ne sais pas pk mais en comparant sa valeur avec celle du dt_ev, je vois que c'est faux
                                                                  const double current_time, const Domaine_IJK& my_splitting, const int facteur)
 {
-  statistiques().begin_count(m2_counter_);
+//  statistiques().begin_count(m2_counter_);
   if (forcage_.get_forced_advection() == -1)
     {
       /* Advection du champ de force par mean{u_l}^l */
@@ -2595,9 +2591,9 @@ void Navier_Stokes_FTD_IJK::compute_add_THI_force_sur_d_velocity(const IJK_Field
     forcage_.update_advection_length(dt);
 
   forcage_.compute_THI_force(time_iteration, dt, current_time, probleme_ijk().domaine_ijk());
-  statistiques().end_count(m2_counter_);
-
-  statistiques().begin_count(m3_counter_);
+//  statistiques().end_count(m2_counter_);
+//
+//  statistiques().begin_count(m3_counter_);
 
   const IJK_Field_vector3_double& force = forcage_.get_force_ph2();
 
@@ -2649,7 +2645,7 @@ void Navier_Stokes_FTD_IJK::compute_add_THI_force_sur_d_velocity(const IJK_Field
         }
       d_velocity_[dir].echange_espace_virtuel(d_velocity_[dir].ghost());
     }
-  statistiques().end_count(m3_counter_);
+//  statistiques().end_count(m3_counter_);
   Cout << "end of from_spect_to_phys_opti2_advection" << finl;
 }
 // -----------------------------------------------------------------------------------
@@ -3179,11 +3175,11 @@ void Navier_Stokes_FTD_IJK::rk3_sub_step(const int rk_step, const double total_t
       //statistiques().end_count(projection_counter_);
     }
 
-  if (Process::je_suis_maitre())
-    {
-      Cout << "Timings diff=" << statistiques().last_time(diffusion_counter_) << " conv=" << statistiques().last_time(convection_counter_);
-      Cout << " src=" << statistiques().last_time(source_counter_) << finl;
-    }
+//  if (Process::je_suis_maitre())
+//    {
+//      Cout << "Timings diff=" << statistics().get_last_time(diffusion_counter_) << " conv=" << statistiques().last_time(convection_counter_);
+//      Cout << " src=" << statistics().last_time(source_counter_) << finl;
+//    }
 }
 
 void Navier_Stokes_FTD_IJK::euler_time_step(ArrOfDouble& var_volume_par_bulle)
@@ -3416,8 +3412,8 @@ void Navier_Stokes_FTD_IJK::euler_time_step(ArrOfDouble& var_volume_par_bulle)
   Cerr << "Copy pressure on extended field for probes" << finl;
   copy_field_values(pressure_ghost_cells_, pressure_);
 
-  Cout << "Timings diff=" << statistiques().last_time(diffusion_counter_) << " conv=" << statistiques().last_time(convection_counter_);
-  Cout << " src=" << statistiques().last_time(source_counter_) << finl;
+//  Cout << "Timings diff=" << statistiques().last_time(diffusion_counter_) << " conv=" << statistiques().last_time(convection_counter_);
+//  Cout << " src=" << statistiques().last_time(source_counter_) << finl;
 }
 
 void Navier_Stokes_FTD_IJK::corriger_qdm()
@@ -3639,8 +3635,8 @@ void Navier_Stokes_FTD_IJK::deplacer_interfaces_rk3(const double timestep, const
   Probleme_FTD_IJK_base& pb_ijk = probleme_ijk();
 
   //  Calculer vitesse_ft (etendue) a partir du champ de vitesse.
-  static Stat_Counter_Id deplacement_interf_counter_ = statistiques().new_counter(1, "Deplacement de l'interface");
-  statistiques().begin_count(deplacement_interf_counter_);
+//  static Stat_Counter_Id deplacement_interf_counter_ = statistiques().new_counter(1, "Deplacement de l'interface");
+//  statistiques().begin_count(deplacement_interf_counter_);
 
   calculer_vitesse_ft();
 
@@ -3673,7 +3669,7 @@ void Navier_Stokes_FTD_IJK::deplacer_interfaces_rk3(const double timestep, const
                                                    var_volume_par_bulle, rk_step, schema_temps_ijk().get_current_time());
     }
 
-  statistiques().end_count(deplacement_interf_counter_);
+//  statistiques().end_count(deplacement_interf_counter_);
   // On verra a la fin du pas de temps si certaines bulles reeles sont trop proche du bord
   // du domaine etendu. Pour l'instant, dans les sous dt, on ne les transferts pas.
 

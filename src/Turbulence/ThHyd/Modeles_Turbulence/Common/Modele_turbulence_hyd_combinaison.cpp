@@ -26,7 +26,7 @@
 #include <Champ_Inc_Q1_base.h>
 #include <Equation_base.h>
 #include <Probleme_base.h>
-#include <stat_counters.h>
+#include <Perf_counters.h>
 #include <Domaine_VEF.h>
 #include <Champ_P1NC.h>
 #include <Champ_Q1NC.h>
@@ -84,14 +84,14 @@ int Modele_turbulence_hyd_combinaison::preparer_calcul()
 
 void Modele_turbulence_hyd_combinaison::mettre_a_jour(double temps)
 {
-  statistiques().begin_count(nut_counter_);
+  statistics().begin_count(STD_COUNTERS::turbulent_viscosity, statistics().get_last_opened_counter_level()+1);
   calculer_viscosite_turbulente();
   loipar_->calculer_hyd(la_viscosite_turbulente_, energie_cinetique_turbulente());
   limiter_viscosite_turbulente();
   if (equation().probleme().is_dilatable())
     correction_nut_et_cisaillement_paroi_si_qc(*this);
   la_viscosite_turbulente_->valeurs().echange_espace_virtuel();
-  statistiques().end_count(nut_counter_);
+  statistics().end_count(STD_COUNTERS::turbulent_viscosity);
 }
 
 Champ_Fonc_base& Modele_turbulence_hyd_combinaison::calculer_viscosite_turbulente()

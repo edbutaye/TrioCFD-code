@@ -27,13 +27,8 @@
 #include <Eval_Diff_K_Eps_Bas_Re_VDF_leaves.h>
 #include <Op_Dift_VDF_base.h>
 #include <Iterateur_VDF_Elem.h>
-#include <Statistiques.h>
 #include <Op_VDF_Elem.h>
-
-
-
-
-extern Stat_Counter_Id diffusion_counter_;
+#include <Perf_counters.h>
 
 class Op_Diff_K_Eps_Bas_Re_VDF_base : public Op_Dift_VDF_base, public Op_VDF_Elem
 {
@@ -59,9 +54,9 @@ public:
 
   void ajouter_blocs(matrices_t matrices, DoubleTab& secmem, const tabs_t& semi_impl) const override
   {
-    statistiques().begin_count(diffusion_counter_);
+    statistics().begin_count(STD_COUNTERS::diffusion, statistics().get_last_opened_counter_level()+1);
     iter->ajouter_blocs(matrices,secmem,semi_impl);
-    statistiques().end_count(diffusion_counter_);
+    statistics().end_count(STD_COUNTERS::diffusion);
   }
   inline int has_interface_blocs() const override { return 1; }
 

@@ -20,7 +20,6 @@
 #include <communications.h>
 #include <Param.h>
 #include <IJK_Navier_Stokes_tools.h> // pour initialiser les IJK_double
-#include <Statistiques.h>
 #include <IJK_Lata_writer.h>
 #include <SFichier.h>
 #include <EFichier.h>
@@ -383,7 +382,7 @@ static void recentrer_spectres(IJK_Field_double& field,IJK_Field_double& tmp )
 void Fourier_trans::initialize(const Domaine_IJK& split_origine,const Domaine_IJK& split,VECT(ArrOfDouble) vmoy, ArrOfDouble rhomoy, ArrOfDouble numoy, double T_KMAX , double T_KMIN, int avec_reprise)
 {
 
-  static Stat_Counter_Id cnt_TFprepa = statistiques().new_counter(1, "TF_prepa");
+  // static Stat_Counter_Id cnt_TFprepa = statistiques().new_counter(1, "TF_prepa");
   /* d'abord on initialise la redistribution */
 
   post_splitting_ = split ;
@@ -437,7 +436,7 @@ void Fourier_trans::initialize(const Domaine_IJK& split_origine,const Domaine_IJ
   const int imax  = post_splitting_.get_nb_elem_local(DIRECTION_I);
   const int jmax  = post_splitting_.get_nb_elem_local(DIRECTION_J);
   const int kmax  = post_splitting_.get_nb_elem_local(DIRECTION_K);
-  statistiques().begin_count(cnt_TFprepa);
+  // statistiques().begin_count(cnt_TFprepa);
   //  allou les tableaux des entrees/sortie de la FFT
   in  = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) *(imax*jmax));
   out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) *(imax*jmax));
@@ -543,7 +542,7 @@ void Fourier_trans::initialize(const Domaine_IJK& split_origine,const Domaine_IJ
           TFi_[n].resize_array(taille*kmax);
         }
     } // test pour reprise !!
-  statistiques().end_count(cnt_TFprepa);
+  // statistiques().end_count(cnt_TFprepa);
 }
 
 
@@ -558,8 +557,8 @@ void Fourier_trans::update(const IJK_Field_vector3_double& vitesse_ori,
   // attention pas d'echange espace virtuel possible, dans le cas general ca crash !!!!!
   // ATTENTION ici on declare les tableaux pour stocker les variables temporaires necessaires aux calculs !!
 
-  static Stat_Counter_Id cnt_redistribution = statistiques().new_counter(2, "TF Redistribution");
-  statistiques().begin_count(cnt_redistribution);
+  // static Stat_Counter_Id cnt_redistribution = statistiques().new_counter(2, "TF Redistribution");
+  // statistiques().begin_count(cnt_redistribution);
   /* on recoit les tableaux dans le spliting de resolution */
   /* -------------- conversion -------------------*/
   /* ----------ET mise a jour des ghost ----------*/
@@ -576,11 +575,11 @@ void Fourier_trans::update(const IJK_Field_vector3_double& vitesse_ori,
   pression.echange_espace_virtuel(pression.ghost());
   champ_mu.echange_espace_virtuel(champ_mu.ghost());
 
-  statistiques().end_count(cnt_redistribution);
+  // statistiques().end_count(cnt_redistribution);
 
 
-  static Stat_Counter_Id cnt_tableaux = statistiques().new_counter(2, "TF tableau");
-  statistiques().begin_count(cnt_tableaux);
+  // static Stat_Counter_Id cnt_tableaux = statistiques().new_counter(2, "TF tableau");
+  // statistiques().begin_count(cnt_tableaux);
 
   const int Nval = NVAL_INTER ; // chiffre au hasard pour le moment !!
 
@@ -607,7 +606,7 @@ void Fourier_trans::update(const IJK_Field_vector3_double& vitesse_ori,
   const IJK_Field_double& vitesse_j = vitesse[1];
   const IJK_Field_double& vitesse_k = vitesse[2];
 
-  statistiques().end_count(cnt_tableaux);
+  // statistiques().end_count(cnt_tableaux);
 
   // on calcule les proprietes du fluides sur la Cl :
   /*
@@ -618,8 +617,8 @@ void Fourier_trans::update(const IJK_Field_vector3_double& vitesse_ori,
   double lambda_kmax = calculer_lambda_air(TCL_kmax);
   */
 
-  static Stat_Counter_Id cnt_calcul_termes = statistiques().new_counter(2, "TF_calcul_termes");
-  statistiques().begin_count(cnt_calcul_termes);
+  // static Stat_Counter_Id cnt_calcul_termes = statistiques().new_counter(2, "TF_calcul_termes");
+  // statistiques().begin_count(cnt_calcul_termes);
 
   /* ******** BOUCLE PRINCIPALE ********* */
   /* ATTENTION VOLONTAIREMENT ON NE CALCULE PAS LES BORD  */
@@ -1179,10 +1178,10 @@ void Fourier_trans::update(const IJK_Field_vector3_double& vitesse_ori,
 #undef REMPLIR
         }
   }
-  statistiques().end_count(cnt_calcul_termes);
+  // statistiques().end_count(cnt_calcul_termes);
 
-  static Stat_Counter_Id cnt_TFpure = statistiques().new_counter(2, "TF_PURE");
-  statistiques().begin_count(cnt_TFpure);
+  // static Stat_Counter_Id cnt_TFpure = statistiques().new_counter(2, "TF_PURE");
+  // statistiques().begin_count(cnt_TFpure);
   // Ici on a calculer les valeur maintenant il faut les envoyer aux autres processeur !!!
   // calcule la TF 2D de chaque grandeur et la stocke
   /* EXPLICATION : le retour de la TF est un plan 2D de Ni,Nj points.
@@ -1206,12 +1205,12 @@ void Fourier_trans::update(const IJK_Field_vector3_double& vitesse_ori,
     Traitement_spectral_klayer_direct(Avant_TF[P_FOURIER],Reel_TF[P_FOURIER],Imag_TF[P_FOURIER],KMIN);
     Traitement_spectral_klayer_direct(Avant_TF[P_FOURIER],Reel_TF[P_FOURIER],Imag_TF[P_FOURIER],KMAX-1);
   }
-  static Stat_Counter_Id TF_Combinaisons = statistiques().new_counter(2, "TF Combinaisons");
-  statistiques().begin_count(TF_Combinaisons);
+  // static Stat_Counter_Id TF_Combinaisons = statistiques().new_counter(2, "TF Combinaisons");
+  // statistiques().begin_count(TF_Combinaisons);
   /* Combinaisons des termes spectraux */
   /* Pour le moment, je ne fait pas de fonction car c'est trop compliquer a implemnter a cause du FixedVector
   Combiner_spectres(Reel_TF,Imag_TF); */
-  statistiques().end_count(cnt_TFpure);
+  // statistiques().end_count(cnt_TFpure);
 
   for (int k = 0; k < kmax; k++)
     {
@@ -1592,13 +1591,13 @@ void Fourier_trans::update(const IJK_Field_vector3_double& vitesse_ori,
       for (int j = 0; j < jmax; j++)
         for (int i = 0; i < imax; i++)
           resultat_[val](i,j,k) *= normalisation ;
-  statistiques().end_count(TF_Combinaisons);
+  // statistiques().end_count(TF_Combinaisons);
 
 #define DEBUG 0
   if ( DEBUG )
     {
-      static Stat_Counter_Id TF_lata = statistiques().new_counter(2, "TF lata");
-      statistiques().begin_count(TF_lata);
+      // static Stat_Counter_Id TF_lata = statistiques().new_counter(2, "TF lata");
+      // statistiques().begin_count(TF_lata);
       Cerr << " Attention mode debug dans le post-traitement spectral dump de " << N_RES+Nval*2+1 << " lata par dt " << finl;
       /* ici au besoin pour peut mettre un dump de lata pour avoir l'info complete en cas de debug !!!! */
       Nom lata_name("DEBUG_spectre.lata");
@@ -1622,7 +1621,7 @@ void Fourier_trans::update(const IJK_Field_vector3_double& vitesse_ori,
           dumplata_scalar(lata_name,NOMIMAG, Imag_TF[val], 0);
         }
       dumplata_vector(lata_name,"REVIT", vitesse[0],vitesse[1],vitesse[2], 0);
-      statistiques().end_count(TF_lata);
+      // statistiques().end_count(TF_lata);
     }
   /* toto */
 
@@ -1630,8 +1629,8 @@ void Fourier_trans::update(const IJK_Field_vector3_double& vitesse_ori,
     * Pour ceci on utilise deux tableaux 2D contenant toute l'information pour un dump direct;
     */
 
-  static Stat_Counter_Id TF_tfx_tfy = statistiques().new_counter(2, "TF partie TFx, TFy");
-  statistiques().begin_count(TF_tfx_tfy);
+  // static Stat_Counter_Id TF_tfx_tfy = statistiques().new_counter(2, "TF partie TFx, TFy");
+  // statistiques().begin_count(TF_tfx_tfy);
   for ( int val = 0 ; val < N ; val ++ )
     for (int k = 0; k < kmax; k++)
       {
@@ -1650,10 +1649,10 @@ void Fourier_trans::update(const IJK_Field_vector3_double& vitesse_ori,
             TFy_[val][Indice]+= y;
           }
       }
-  statistiques().end_count(TF_tfx_tfy);
+  // statistiques().end_count(TF_tfx_tfy);
 
-  static Stat_Counter_Id TF_integrale = statistiques().new_counter(2, "TF partie integrale");
-  statistiques().begin_count(TF_integrale);
+  // static Stat_Counter_Id TF_integrale = statistiques().new_counter(2, "TF partie integrale");
+  // statistiques().begin_count(TF_integrale);
 
   const int taille = tri_ki.size_array(); // donne la taille du tableaux
   for ( int val = 0 ; val < N ; val ++ )
@@ -1668,7 +1667,7 @@ void Fourier_trans::update(const IJK_Field_vector3_double& vitesse_ori,
               TFi_[val][Indice]+= x/2.;
             }
       }
-  statistiques().end_count(TF_integrale);
+  // statistiques().end_count(TF_integrale);
 
   // a ne pas oublier
   N_echantillons_++ ;

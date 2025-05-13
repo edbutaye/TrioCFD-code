@@ -1781,8 +1781,6 @@ int get_num_face_den_face(const int num_face, const int elem, const IntTab& elem
  */
 void Navier_Stokes_FT_Disc::calculer_delta_u_interface(Champ_base& champ_u0, int phase_pilote, int ordre)
 {
-  //  static const Stat_Counter_Id count = statistiques().new_counter(1, "calculer_delta_u_interface", 0);
-  //  statistiques().begin_count(count);
   DoubleTab& u0 = champ_u0.valeurs();
   const Fluide_Diphasique& fluide_dipha = fluide_diphasique();
   const Fluide_Incompressible& phase_0 = fluide_dipha.fluide_phase(0);
@@ -3738,7 +3736,10 @@ DoubleTab& Navier_Stokes_FT_Disc::derivee_en_temps_inco(DoubleTab& vpoint)
   assembleur_pression_->modifier_secmem(secmem);
 
   // Resolution du systeme en pression : calcul de la_pression
+  statistics().begin_count(STD_COUNTERS::system_solver,statistics().get_last_opened_counter_level()+1);
   solveur_pression_->resoudre_systeme(matrice_pression_.valeur(), secmem, la_pression->valeurs());
+  statistics().end_count(STD_COUNTERS::system_solver);
+
   assembleur_pression_->modifier_solution(la_pression->valeurs());
   // Calcul d(u)/dt = vpoint + 1/rho*grad(P)
   gradient.calculer(la_pression->valeurs(), gradP);
@@ -3861,9 +3862,6 @@ const Champ_base& Navier_Stokes_FT_Disc::calculer_div_normale_interface()
   DoubleTab& phi = variables_internes().laplacien_d->valeurs();
   DoubleTab u0(inconnue().valeurs());
 
-  //  static const Stat_Counter_Id count = statistiques().new_counter(1, "calculer_div_normale", 0);
-  //  statistiques().begin_count(count);
-
   phi = dist;
 
   const int n = phi.dimension(0);
@@ -3873,21 +3871,12 @@ const Champ_base& Navier_Stokes_FT_Disc::calculer_div_normale_interface()
         phi(i) = 0;
     }
   phi.echange_espace_virtuel();
-  //  static const Stat_Counter_Id count2 = statistiques().new_counter(1, "calculer_gradient", 0);
-  //  statistiques().begin_count(count2);
   gradient.calculer(phi, u0);
   correct_at_exit_bad_gradient(u0);
-  //  statistiques().end_count(count2);
-  //  static const Stat_Counter_Id count4 = statistiques().new_counter(1, "calculer_solveur_masse", 0);
-  //  statistiques().begin_count(count4);
   solveur_masse->appliquer(u0);
-  //  statistiques().end_count(count4);
 
   // Calcul de integrale(div(u0)) sur les mailles:
-  //  static const Stat_Counter_Id count3 = statistiques().new_counter(1, "calculer_div", 0);
-  //  statistiques().begin_count(count3);
   divergence.calculer(u0, phi);
-  //  statistiques().end_count(count3);
   // Division par le volume des mailles:
   const DoubleVect& volumes = ref_cast(Domaine_VF, domaine_dis()).volumes();
   for (int i = 0; i < n; i++)
@@ -3899,8 +3888,6 @@ const Champ_base& Navier_Stokes_FT_Disc::calculer_div_normale_interface()
           phi(i) = p / v;
         }
     }
-
-  //  statistiques().end_count(count);
 
   return variables_internes().laplacien_d.valeur();
 }
@@ -4002,8 +3989,8 @@ void Navier_Stokes_FT_Disc::compute_eulerian_field_contact_forces
 {
   Cerr << "Navier_Stokes_FT_Disc::compute_eulerian_field_contact_forces" << finl;
 
-  static const Stat_Counter_Id count = statistiques().new_counter(1,"compute_eulerian_field_contact_forces", 0);
-  statistiques().begin_count(count);
+  statistics().create_custom_counter("compute_eulerian_field_contact_forces",3,"FrontTracking");
+  statistics().begin_count("compute_eulerian_field_contact_forces",statistics().get_last_opened_counter_level()+1);
 
   auto& eq_transport=variables_internes().ref_eq_interf_proprietes_fluide.valeur();
   const auto& eq_transport_const=variables_internes().ref_eq_interf_proprietes_fluide.valeur();
@@ -4058,5 +4045,5 @@ void Navier_Stokes_FT_Disc::compute_eulerian_field_contact_forces
     particles_eulerian_id_number_,
     contact_force);
 
-  statistiques().end_count(count);
+  statistics().end_count("compute_eulerian_field_contact_forces");
 }

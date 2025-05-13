@@ -25,8 +25,7 @@
 #include <SFichier.h>
 #include <Domaine.h>
 #include <TRUSTList.h>
-#include <Statistiques.h>
-#include <stat_counters.h>
+#include <Perf_counters.h>
 #include <Fluide_Incompressible.h>
 #include <Modele_turbulence_hyd_RANS_K_Eps_base.h>
 #include <Pb_Hydraulique_Turbulent.h>
@@ -175,11 +174,12 @@ void Traitement_particulier_NS_CEG::post_traitement_particulier()
   if (mon_equation->probleme().schema_temps().temps_courant()>=t_deb_ && mon_equation->probleme().schema_temps().temps_courant()<t_fin_)
     {
       Cerr << "Beginning calculation of the criteria..." << finl;
-      statistiques().begin_count(m1_counter_);
+      statistics().create_custom_counter("m1",2,"TrioCFD");
+      statistics().begin_count("m1",statistics().get_last_opened_counter_level()+1);
       // Calcul des 2 criteres
       if (calculer_critere_areva_) critere_areva();
-      statistiques().end_count(m1_counter_);
-      if (debug_) Cout << "CPU AREVA criterion " << statistiques().last_time(m1_counter_) << " s" << finl << finl;
+      if (debug_) Cout << "CPU AREVA criterion " << statistics().get_time_since_last_open("m1") << " s" << finl << finl;
+      statistics().end_count("m1");
       if (calculer_critere_cea_jaea_) critere_cea_jaea();
       dernier_temps_ = mon_equation->probleme().schema_temps().temps_courant();
       Cerr << "End of the calculation of the criteria." << finl;
@@ -279,7 +279,7 @@ void Traitement_particulier_NS_CEG::critere_cea_jaea()
   // DoubleTab critereQ(nb_elem);
   //ref_cast(Champ_P1NC,mon_equation->inconnue()).calcul_critere_Q(critereQ);
   const DoubleTab& critereQ = mon_equation->get_champ("critere_Q").valeurs();
-
+  double t1 = 0. , t2=0. , t3=0.;
 
   // On boucle sur les faces reelles
   // ou Q>0 (domaine potentielle de vortex)
@@ -314,9 +314,10 @@ void Traitement_particulier_NS_CEG::critere_cea_jaea()
   DoubleTab u(nb_dtheta,3);
   int taille_maxi = 0;
   // Boucle tant que la liste d'elements n'est pas vide(tous les vortexes seront alors evalues)
+  statistics().create_custom_counter("m1",2,"TrioCFD");
   while (elements_surface_libre.mp_max_vect()>=0)
     {
-      statistiques().begin_count(m1_counter_);
+      statistics().begin_count("m1",statistics().get_last_opened_counter_level()+1);
       double critereQ_max=0;
       int ind_face_centre_vortex=-1;
       // On boucle sur les elements non evalues pour trouver le plus grand critere Q
@@ -385,13 +386,15 @@ void Traitement_particulier_NS_CEG::critere_cea_jaea()
       // On va cherche le cercle le plus large pour lequel Q>0 et
       // ensuite on calcule les circulations
       // Processus de dichotomie sur R
-      statistiques().end_count(m1_counter_);
+      t1 = statistics().get_time_since_last_open("m1");
+      statistics().end_count("m1");
       double R=R0;
       double dR=R;
       int niter=0;
       int limite_vortex_atteinte=0;
       int points_trouves=0;
-      statistiques().begin_count(m2_counter_);
+      statistics().create_custom_counter("m2",2,"TrioCFD");
+      statistics().begin_count("m2",statistics().get_last_opened_counter_level()+1);
       while (dR>0.01*R0)
         {
           double inside_vortex=1;
@@ -455,8 +458,10 @@ void Traitement_particulier_NS_CEG::critere_cea_jaea()
           niter++;
         }
       R-=dR;
-      statistiques().end_count(m2_counter_);
-      statistiques().begin_count(m3_counter_);
+      t2 = statistics().get_time_since_last_open("m2");
+      statistics().end_count("m2");
+      statistics().create_custom_counter("m3",2,"TrioCFD");
+      statistics().begin_count("m3",statistics().get_last_opened_counter_level()+1);
       // On ne prend que des vortex superieres a N mailles dont toutes les
       // mailles sont dans le domaine fluide (points_trouves==nb_dtheta)
       points_trouves=check_int_overflow(mp_sum(points_trouves));
@@ -523,9 +528,10 @@ void Traitement_particulier_NS_CEG::critere_cea_jaea()
           int elem=elements_surface_libre(ind_face);
           if (elem>=0 && vortex_potentiel(elem)==0) elements_surface_libre(ind_face)=-1;
         }
+      t3 = statistics().get_time_since_last_open("m3");
+      statistics().end_count("m3");
+      if (debug_) Cout << "CPU AREVA criterion m1= " << t1 << " s m2= " << t2 << " s m3= " << t3 << finl;
     }
-  statistiques().end_count(m3_counter_);
-  if (debug_) Cout << "CPU AREVA criterion m1= " << statistiques().last_time(m1_counter_) << " s m2= " << statistiques().last_time(m2_counter_) << " s m3= " << statistiques().last_time(m3_counter_) << finl;
   const Schema_Temps_base& sch=mon_equation->probleme().schema_temps();
   if (nb_vortex==0)
     {

@@ -29,7 +29,7 @@
 #include <Champ_Uniforme.h>
 #include <TRUSTTab_parts.h>
 #include <Probleme_base.h>
-#include <stat_counters.h>
+#include <Perf_counters.h>
 #include <Fluide_base.h>
 #include <TRUSTTrav.h>
 #include <Param.h>
@@ -309,9 +309,9 @@ void Modele_turbulence_hyd_K_Omega::mettre_a_jour(double temps)
     sch.faire_un_pas_de_temps_eqn_base(get_set_eq_transport());
   get_set_eq_transport().mettre_a_jour(temps);
 
-  statistiques().begin_count(nut_counter_);
+  statistics().begin_count(STD_COUNTERS::turbulent_viscosity, statistics().get_last_opened_counter_level()+1);
   Debog::verifier("Modele_turbulence_hyd_K_Omega::mettre_a_jour la_viscosite_turbulente before", la_viscosite_turbulente_->valeurs());
   calculate_limit_viscosity<MODELE_TYPE::K_OMEGA>(get_set_eq_K_Omega(), -123. /* unused */ );
   Debog::verifier("Modele_turbulence_hyd_K_Omega::mettre_a_jour la_viscosite_turbulente after", la_viscosite_turbulente_->valeurs());
-  statistiques().end_count(nut_counter_);
+  statistics().end_count(STD_COUNTERS::turbulent_viscosity);
 }

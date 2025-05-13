@@ -21,14 +21,11 @@
 #include <Discretisation_base.h>
 #include <Navier_Stokes_QC.h>
 #include <Probleme_base.h>
-#include <Statistiques.h>
 #include <Dirichlet.h>
 #include <TRUSTTrav.h>
 #include <EChaine.h>
 #include <Param.h>
-
-extern Stat_Counter_Id assemblage_sys_counter_;
-extern Stat_Counter_Id source_counter_;
+#include <Perf_counters.h>
 
 Implemente_instanciable(Convection_Diffusion_Espece_Multi_QC,"Convection_Diffusion_Espece_Multi_QC",Convection_Diffusion_Espece_Multi_base);
 // XD convection_diffusion_espece_multi_QC eqn_base convection_diffusion_espece_multi_QC -1 Species conservation equation for a multi-species quasi-compressible fluid.
@@ -225,7 +222,7 @@ void Convection_Diffusion_Espece_Multi_QC::assembler(Matrice_Morse& matrice, con
 
 void Convection_Diffusion_Espece_Multi_QC::assembler_blocs_avec_inertie(matrices_t matrices, DoubleTab& secmem, const tabs_t& semi_impl)
 {
-  statistiques().begin_count(assemblage_sys_counter_);
+  statistics().begin_count(STD_COUNTERS::matrix_assembly,statistics().get_last_opened_counter_level()+1);
   const std::string& nom_inco = inconnue().le_nom().getString();
   const DoubleTab& inco = inconnue().valeurs();
   Matrice_Morse *mat = matrices.count(nom_inco) ? matrices.at(nom_inco) : nullptr;
@@ -261,14 +258,14 @@ void Convection_Diffusion_Espece_Multi_QC::assembler_blocs_avec_inertie(matrices
       if (mat)
         (*mat)(i, i) += divu1(i);
     }
-  statistiques().end_count(assemblage_sys_counter_);
+  statistics().end_count(STD_COUNTERS::matrix_assembly);
 
-  statistiques().begin_count(source_counter_);
+  statistics().begin_count(STD_COUNTERS::rhs,statistics().get_last_opened_counter_level()+1);
   for (int i = 0; i < sources().size(); i++)
     sources()(i)->ajouter_blocs(matrices, secmem, semi_impl);
-  statistiques().end_count(source_counter_);
+  statistics().end_count(STD_COUNTERS::rhs);
 
-  statistiques().begin_count(assemblage_sys_counter_);
+  statistics().begin_count(STD_COUNTERS::matrix_assembly,statistics().get_last_opened_counter_level()+1);
   if (mat)
     mat->ajouter_multvect(inco, secmem);
 
@@ -277,5 +274,5 @@ void Convection_Diffusion_Espece_Multi_QC::assembler_blocs_avec_inertie(matrices
   if (!discretisation().is_polymac_family())
     modifier_pour_Cl(*mat, secmem);
 
-  statistiques().end_count(assemblage_sys_counter_);
+  statistics().end_count(STD_COUNTERS::matrix_assembly);
 }

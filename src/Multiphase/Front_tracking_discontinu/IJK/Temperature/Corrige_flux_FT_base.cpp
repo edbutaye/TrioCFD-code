@@ -19,7 +19,7 @@
 #include <IJK_Navier_Stokes_tools.h>
 #include <Intersection_Interface_ijk.h>
 #include <Param.h>
-#include <stat_counters.h>
+
 
 Implemente_base_sans_constructeur(Corrige_flux_FT_base, "Corrige_flux_FT_base", Objet_U);
 

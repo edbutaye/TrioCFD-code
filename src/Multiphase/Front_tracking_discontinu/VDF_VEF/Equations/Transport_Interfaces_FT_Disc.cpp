@@ -30,7 +30,7 @@
 #include <Champ_Fonc_P1NC.h>
 #include <Fluide_Diphasique.h>
 #include <Fluide_Incompressible.h>
-#include <Statistiques.h>
+#include <Perf_counters.h>
 #include <Paroi_FT_disc.h>
 #include <Champ_Fonc_Face_VDF.h>
 #include <Scatter.h>
@@ -53,7 +53,6 @@
 #include <TRUSTList.h>
 #include <Domaine.h>
 #include <TRUSTTrav.h>
-#include <stat_counters.h>
 #include <Dirichlet_paroi_fixe.h>
 #include <Dirichlet_paroi_defilante.h>
 #include <Echange_contact_VDF_FT_Disc.h>
@@ -4055,8 +4054,8 @@ void Transport_Interfaces_FT_Disc::calculer_distance_interface_faces(
   const DoubleTab& normale_elem,
   DoubleTab&        dist_face) const
 {
-  static const Stat_Counter_Id stat_counter = statistiques().new_counter(3, "Calculer_distance_interface");
-  statistiques().begin_count(stat_counter);
+  statistics().create_custom_counter("Calculer_distance_interface",3,"FrontTracking");
+  statistics().begin_count("Calculer_distance_interface",statistics().get_last_opened_counter_level()+1);
 
   static const double distance_faces_invalides = -1.e30;
 
@@ -4123,7 +4122,7 @@ void Transport_Interfaces_FT_Disc::calculer_distance_interface_faces(
         dist_face(i) = valeur_invalide;
     }
   dist_face.echange_espace_virtuel();
-  statistiques().end_count(stat_counter);
+  statistics().end_count("Calculer_distance_interface");
 }
 
 
@@ -8898,8 +8897,8 @@ void Transport_Interfaces_FT_Disc::calculer_distance_interface(
   DoubleTab& normale_elements,
   const int n_iter) const
 {
-  static const Stat_Counter_Id stat_counter = statistiques().new_counter(3, "Calculer_distance_interface");
-  statistiques().begin_count(stat_counter);
+  statistics().create_custom_counter("Calculer_distance_interface",3,"FrontTracking");
+  statistics().begin_count("Calculer_distance_interface",statistics().get_last_opened_counter_level()+1);
 
   static const double distance_sommets_invalides = -1.e30;
 
@@ -9131,7 +9130,7 @@ void Transport_Interfaces_FT_Disc::calculer_distance_interface(
       distance_elements = tmp;
       distance_elements.echange_espace_virtuel();
     }
-  statistiques().end_count(stat_counter);
+  statistics().end_count("Calculer_distance_interface");
 }
 
 /*! @brief Calcul de la derivee par rapport au temps du volume de phase 1 aux sommets du maillage lagrangien a partir du champ de vitesse

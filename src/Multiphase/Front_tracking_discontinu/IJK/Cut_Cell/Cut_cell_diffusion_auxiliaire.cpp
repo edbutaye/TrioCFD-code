@@ -18,7 +18,7 @@
 #include <IJK_Thermal_base.h>
 #include <Probleme_FTD_IJK_cut_cell.h>
 #include <Process.h>
-#include <stat_counters.h>
+
 #include <IJK_Navier_Stokes_tools.h>
 #include <IJK_Navier_Stokes_tools_cut_cell.h>
 #include <Param.h>

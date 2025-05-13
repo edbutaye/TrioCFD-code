@@ -24,7 +24,7 @@
 #include <Fluide_base.h>
 #include <Champ_Uniforme.h>
 #include <Debog.h>
-#include <stat_counters.h>
+#include <Perf_counters.h>
 #include <Param.h>
 
 Implemente_instanciable(Modele_turbulence_hyd_K_Eps_Bas_Reynolds, "Modele_turbulence_hyd_K_Epsilon_Bas_Reynolds", Modele_turbulence_hyd_RANS_K_Eps_base);
@@ -134,10 +134,10 @@ void Modele_turbulence_hyd_K_Eps_Bas_Reynolds::mettre_a_jour(double temps)
   sch.faire_un_pas_de_temps_eqn_base(get_set_eq_transport());
   get_set_eq_transport().mettre_a_jour(temps);
 
-  statistiques().begin_count(nut_counter_);
+  statistics().begin_count(STD_COUNTERS::turbulent_viscosity, statistics().get_last_opened_counter_level()+1);
   calculate_limit_viscosity<MODELE_TYPE::K_EPS_BAS_REYNOLDS>(get_set_unknown(), -123. /* unused */);
   Debog::verifier("Modele_turbulence_hyd_K_Eps_Bas_Reynolds::mettre_a_jour apres calculer_viscosite_turbulente la_viscosite_turbulente", la_viscosite_turbulente_->valeurs());
-  statistiques().end_count(nut_counter_);
+  statistics().end_count(STD_COUNTERS::turbulent_viscosity);
 }
 
 bool Modele_turbulence_hyd_K_Eps_Bas_Reynolds::initTimeStep(double dt)
