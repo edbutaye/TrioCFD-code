@@ -920,7 +920,7 @@ int Navier_Stokes_FT_Disc::preparer_calcul()
             Cerr << "Initialisation of the physical properties (rho, mu, ...)\n" << " based on the indicatrice field of the equation " << ref_equation->le_nom() << finl;
 
           }
-        FT_disc_calculer_champs_rho_mu_nu_dipha(domaine_dis(), fluide_diphasique(), ref_equation->get_update_indicatrice().valeurs(), // indicatrice
+        FT_disc_calculer_champs_rho_mu_nu_dipha(domaine_dis(), fluide_diphasique(), ref_equation->get_indicatrice().valeurs(), // indicatrice
                                                 champ_rho_elem_->valeurs(), champ_nu_->valeurs(), champ_mu_->valeurs(), champ_rho_faces_->valeurs());
         const OWN_PTR(Collision_Model_FT_base)& ptr_collision_model=ref_equation.valeur().get_ptr_collision_model();
         if (is_solid_particle_)
@@ -3313,7 +3313,7 @@ DoubleTab& Navier_Stokes_FT_Disc::derivee_en_temps_inco(DoubleTab& vpoint)
         variables_internes().ref_eq_interf_proprietes_fluide;
       if (refeq_transport.non_nul())
         {
-          //const Champ_base& indicatrice = refeq_transport.valeur().get_update_indicatrice();
+          //const Champ_base& indicatrice = refeq_transport.valeur().get_indicatrice();
           int phase_liq = 1;
           int phase_vap = 0;
           if (variables_internes().ref_equation_mpoint_.non_nul())
@@ -4425,7 +4425,7 @@ void Navier_Stokes_FT_Disc::compute_particles_eulerian_id_number(
   OBS_PTR(Transport_Interfaces_FT_Disc) &refeq_transport = variables_internes().\
                                                            ref_eq_interf_proprietes_fluide;
   const DoubleTab& volumic_phase_indicator_function = refeq_transport->\
-                                                      get_update_indicatrice().valeurs();
+                                                      get_indicatrice().valeurs();
   const int& id_fluid_phase=fluide_diphasique().get_id_fluid_phase();
 
   for (int elem = 0; elem < nb_elem; elem++)
@@ -4536,7 +4536,7 @@ void Navier_Stokes_FT_Disc::compute_eulerian_field_contact_forces
   // Step 4: Discretisation of the lagrangian contact forces to the eulerian field
   const Domaine_VF& domain_vf=ref_cast(Domaine_VF,domaine_dis());
   const DoubleTab& volumic_phase_indicator_function_face =
-    eq_transport.get_compute_indicatrice_faces().valeurs();
+    eq_transport.get_indicatrice_faces().valeurs();
   DoubleTab& contact_force = variables_internes().contact_force_source_term->valeurs();
   contact_force=0;
   collision_model.discretize_contact_forces_eulerian_field(

@@ -630,7 +630,7 @@ void Convection_Diffusion_Temperature_FT_Disc::correct_mpoint()
       Process::exit();
     }
   Transport_Interfaces_FT_Disc& eq_interface_ = ref_eq_interface_.valeur();
-  //const Champ_base& ch_indic = ref_cast(Champ_Inc,eq_interface_.get_update_indicatrice());
+  //const Champ_base& ch_indic = ref_cast(Champ_Inc,eq_interface_.get_indicatrice());
   //const DoubleTab& indicatrice = ch_indic.valeurs();
   const DoubleTab& indicatrice = eq_interface_.inconnue().valeurs();
   const DoubleTab& indicatrice_passe = eq_interface_.inconnue().passe();

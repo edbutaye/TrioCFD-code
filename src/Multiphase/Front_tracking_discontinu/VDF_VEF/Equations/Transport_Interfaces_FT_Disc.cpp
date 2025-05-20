@@ -7965,7 +7965,7 @@ void Transport_Interfaces_FT_Disc::mettre_a_jour_hors_deplacement(double temps, 
   // The Eulerian fields normal and distance should be updated first (before indicatrice!!)
   // because the indicatrice calculation partly relies on the distance calculation.
   // Update normal and distance and indicatrice
-  // Attention: get_update_indicatrice renvoie une ref a indicatrice_cache.
+  // Attention: get_indicatrice renvoie une ref a indicatrice_cache.
   //  C'est ici qu'on copie le contenu de indicatrice_cache dans indicatrice :
   update_indicatrice_normale_distance();
   // TODO GB 2024 : mettre_a_jour ferait un echange_EV en plus de changer temps. Mais l'echange EV est deja fait dans le update donc pas necessaire.
@@ -10196,7 +10196,7 @@ void Transport_Interfaces_FT_Disc::fill_ftab_local_reference_frame_velocity(Doub
                                                       on l'obtient donc en regardant la case present */ );
       // Pour ajouter le saut de vitesse a l'interface :
       ajouter_contribution_saut_vitesse(vit, // TODO: a verifier. Je ne sais pas ce que l'on veut
-        false /* la_roue_de_vitesse_a_deja_tournee => permet d'afficher la valeur future en expli */ );// ici, l'interpolation depend de ns.get_new_mass_source()
+                                        false /* la_roue_de_vitesse_a_deja_tournee => permet d'afficher la valeur future en expli */ );// ici, l'interpolation depend de ns.get_new_mass_source()
       calculer_vitesse_repere_local( maillage_interface_pour_post(), vit,Positions,Vitesses);
       fill_ftab_vector(ftab,vit);
     }

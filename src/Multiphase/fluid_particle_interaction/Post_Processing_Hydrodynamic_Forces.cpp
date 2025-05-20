@@ -290,7 +290,7 @@ int Post_Processing_Hydrodynamic_Forces::trilinear_interpolation_elem(
   const Navier_Stokes_FT_Disc& eq_ns = ptr_eq_ns_.valeur();
   Transport_Interfaces_FT_Disc& eq_transport = ptr_eq_transport_.valeur();
   const Maillage_FT_Disc& mesh = eq_transport.maillage_interface();
-  const DoubleTab& phase_indicator_function = eq_transport.get_update_indicatrice().valeurs();
+  const DoubleTab& phase_indicator_function = eq_transport.get_indicatrice().valeurs();
   const int nb_fa7=coord.dimension(0);
 
   const IntTab& particles_eulerian_id_number=eq_ns.get_particles_eulerian_id_number();
@@ -724,7 +724,7 @@ int Post_Processing_Hydrodynamic_Forces::trilinear_interpolation_gradU_elem_P1(
   DoubleTab& resu)
 {
   Transport_Interfaces_FT_Disc& eq_transport = ptr_eq_transport_.valeur();
-  const DoubleTab& phase_indicator_function = eq_transport.get_update_indicatrice().valeurs();
+  const DoubleTab& phase_indicator_function = eq_transport.get_indicatrice().valeurs();
   const Navier_Stokes_FT_Disc& eq_ns = ptr_eq_ns_.valeur();
   const IntTab& particles_eulerian_id_number=eq_ns.get_particles_eulerian_id_number();
   const Fluide_Diphasique& two_phase_fluid = eq_ns.fluide_diphasique();
@@ -1286,7 +1286,7 @@ double Post_Processing_Hydrodynamic_Forces::find_neighboring_elements(
 {
   const Navier_Stokes_FT_Disc& eq_ns = ptr_eq_ns_.valeur();
   Transport_Interfaces_FT_Disc& eq_transport = ptr_eq_transport_.valeur();
-  const DoubleTab& phase_indicator_function = eq_transport.get_update_indicatrice().valeurs();
+  const DoubleTab& phase_indicator_function = eq_transport.get_indicatrice().valeurs();
   const Domaine_VDF& domain_vdf = ref_cast(Domaine_VDF, eq_ns.domaine_dis());
   const Domaine& domain = domain_vdf.domaine();
 

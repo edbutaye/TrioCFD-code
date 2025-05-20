@@ -993,7 +993,7 @@ void Maillage_FT_Disc::calcul_indicatrice(DoubleVect& indicatrice,
   // the phase indicator.
   if (!is_solid_particle_ || (is_solid_particle_ && nb_particles_tot==1))
     {
-      const DoubleTab& distance = equation_transport().get_update_distance_interface().valeurs();
+      const DoubleTab& distance = equation_transport().get_distance_interface().valeurs();
       int i;
       int error_count = 0;
 
