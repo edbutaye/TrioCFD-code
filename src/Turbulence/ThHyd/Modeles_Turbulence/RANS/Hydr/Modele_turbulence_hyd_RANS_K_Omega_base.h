@@ -49,6 +49,7 @@ public:
   void completer() override;
   int sauvegarder(Sortie& os) const override;
   int reprendre(Entree& is) override;
+  void verifie_loi_paroi() override { };
   std::vector<YAML_data> data_a_sauvegarder() const override;
 
   const Champ_base& get_champ(const Motcle& nom) const override;
