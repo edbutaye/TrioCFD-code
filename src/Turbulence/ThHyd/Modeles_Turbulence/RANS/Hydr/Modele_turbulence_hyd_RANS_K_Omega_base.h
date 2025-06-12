@@ -42,7 +42,7 @@ public:
     // cAlan: careful, it is the inverse of the classical definition for code purpose
     Prandtl_K_ = 1/0.6; // from Wilcox STD model, 1/Prandtl_K_ = sigma_k = 0.6
     Prandtl_Omega_ = 1/0.5; // from Wilcox STD model, 1/Prandtl_Omega_ = sigma_omega = 0.5
-    model_variant_ = "STD";
+    model_variant_ = "SST";
   }
 
   void set_param(Param& param) override;

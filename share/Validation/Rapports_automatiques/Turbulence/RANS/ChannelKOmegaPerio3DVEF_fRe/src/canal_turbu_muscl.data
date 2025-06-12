@@ -104,6 +104,7 @@ Read pb1
         conditions_initiales { k_omega Champ_Uniforme 2 1 5.556 }
       }
       turbulence_paroi loi_standard_hydr
+      model_variant STD
     }
 
     Traitement_particulier {
