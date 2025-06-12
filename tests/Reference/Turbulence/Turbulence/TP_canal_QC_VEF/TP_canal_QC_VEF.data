@@ -103,7 +103,7 @@ Fluide_Quasi_Compressible
                 # Turbulence RANS model used: k-epsilon adapted to high Reynolds number (Warning: verify that 30<y+<500) #
                 modele_turbulence K_Epsilon
                 {
-                        Transport_K_Epsilon
+                        Transport_equation transport_k_eps
                         {
                                 convection { amont }
                                 diffusion { }

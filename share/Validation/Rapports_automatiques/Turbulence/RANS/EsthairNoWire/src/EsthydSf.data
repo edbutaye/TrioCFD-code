@@ -72,7 +72,7 @@ Read pb
                         perio  Periodique 
                 } 
                 Modele_turbulence K_Epsilon {
-                        Transport_K_Epsilon
+                        Transport_equation transport_k_eps
                         {
                                 convection { amont }
                                 diffusion { }

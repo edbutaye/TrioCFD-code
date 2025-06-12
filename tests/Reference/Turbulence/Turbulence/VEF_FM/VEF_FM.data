@@ -173,7 +173,7 @@ fluide_Quasi_compressible
                         INJE  frontiere_ouverte_vitesse_imposee Champ_Front_Uniforme 2 2. 0.
           }
 	  modele_turbulence k_epsilon {
-	  transport_k_epsilon {
+	  Transport_equation transport_k_eps {
           convection    { ef_stab { alpha 1.0 } }
           diffusion    { }
           conditions_initiales    { k_eps champ_uniforme  2 1.e-4 2.e-4 }

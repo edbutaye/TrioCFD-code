@@ -171,7 +171,7 @@ Fluide_Incompressible
 	Modele_turbulence K_epsilon
 	{
 	cmu 0.09
-	transport_k_epsilon
+	Transport_equation transport_k_eps
 		{
 		parametre_equation parametre_implicite
 			{

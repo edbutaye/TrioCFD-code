@@ -89,31 +89,34 @@ Lire pb
 					}
 		Modele_turbulence k_epsilon_bicephale
 					{
-					transport_k
+					List_transport_equations
 					{
-						convection		{ amont }
-						diffusion		{ }
-						conditions_initiales 	{ k champ_uniforme 1 1e-6 }
-						conditions_limites	{
-									periox	periodique
-									perioz	periodique
-									wall	paroi
-									sym	symetrie
-									}
-						sources			{ source_transport_k { } }
-					}
-					transport_epsilon
-					{
-						convection		{ amont }
-						diffusion		{ }
-						conditions_initiales 	{ eps champ_uniforme 1 1e-8 }
-						conditions_limites	{
-									periox	periodique
-									perioz	periodique
-									wall	paroi
-									sym	symetrie
-									}
-						sources			{ source_transport_eps { C1_eps 1.44 C2_eps 1.92 } }
+						K_equation transport_k_ou_eps
+						{
+							convection		{ amont }
+							diffusion		{ }
+							conditions_initiales 	{ k champ_uniforme 1 1e-6 }
+							conditions_limites	{
+										periox	periodique
+										perioz	periodique
+										wall	paroi
+										sym	symetrie
+										}
+							sources			{ source_transport_k { } }
+						}
+						Eps_equation transport_k_ou_eps
+						{
+							convection		{ amont }
+							diffusion		{ }
+							conditions_initiales 	{ eps champ_uniforme 1 1e-8 }
+							conditions_limites	{
+										periox	periodique
+										perioz	periodique
+										wall	paroi
+										sym	symetrie
+										}
+							sources			{ source_transport_eps { C1_eps 1.44 C2_eps 1.92 } }
+						}
 					}
 					Prandtl_K 1
 					Prandtl_Eps 1.2

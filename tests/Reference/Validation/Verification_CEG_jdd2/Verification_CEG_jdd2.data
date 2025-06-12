@@ -65,7 +65,7 @@ Lire pb
 		}
 		traitement_particulier { CEG { debug 1 t_deb 0 frontiere Surface haspi 3 AREVA { } CEA_JAEA { normalise 1 nb_mailles_mini 1 min_critere_Q_sur_max_critere_Q -0.1  } } }
                 modele_turbulence K_Epsilon {
-                        Transport_K_Epsilon
+                        Transport_equation transport_k_eps
                         {
                                 convection { amont }
                                 diffusion { }

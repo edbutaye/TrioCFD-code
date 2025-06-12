@@ -71,7 +71,7 @@ Read pb
 			BACK    Symetrie
 			}
 		modele_turbulence K_Epsilon {
-		    Transport_K_Epsilon
+		    Transport_equation transport_k_eps
 		    {
 		         convection { EF_stab { } }
 		         diffusion { }

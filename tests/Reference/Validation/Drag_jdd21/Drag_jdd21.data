@@ -84,7 +84,7 @@ Read pb
  
 
                modele_turbulence K_Epsilon {
-                     Transport_K_Epsilon
+                     Transport_equation Transport_K_Eps
                      {
 
                              convection { amont }

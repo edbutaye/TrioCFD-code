@@ -80,7 +80,7 @@ Read pb
 		}
 
                modele_turbulence K_Epsilon_Realisable {
-                     Transport_K_Epsilon_Realisable
+                     Transport_equation transport_k_eps_Realisable
                      {
 
                              convection { amont }
