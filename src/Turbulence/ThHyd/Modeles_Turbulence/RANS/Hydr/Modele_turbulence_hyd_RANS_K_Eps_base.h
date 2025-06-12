@@ -38,7 +38,6 @@ class Modele_turbulence_hyd_RANS_K_Eps_base : public Modele_turbulence_hyd_2_eq_
 {
   Declare_base(Modele_turbulence_hyd_RANS_K_Eps_base);
 public:
-
   void set_param(Param& param) override;
   void completer() override;
   int sauvegarder(Sortie& os) const override;
@@ -49,11 +48,6 @@ public:
   bool has_champ(const Motcle& nom, OBS_PTR(Champ_base) &ref_champ) const override;
   bool has_champ(const Motcle& nom) const override;
   void get_noms_champs_postraitables(Noms& nom,Option opt=NONE) const override;
-
-  virtual Transport_K_Eps_base& eqn_transp_K_Eps()=0;
-  virtual const Transport_K_Eps_base& eqn_transp_K_Eps() const=0;
-  virtual const Equation_base& equation_k_eps(int) const=0 ;
-
   inline OWN_PTR(Modele_Fonc_Bas_Reynolds_Base)& associe_modele_fonction() { return mon_modele_fonc_; }
   inline const OWN_PTR(Modele_Fonc_Bas_Reynolds_Base)& associe_modele_fonction() const { return mon_modele_fonc_; }
 

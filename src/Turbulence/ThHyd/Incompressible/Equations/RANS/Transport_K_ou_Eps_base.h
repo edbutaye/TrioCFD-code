@@ -44,7 +44,7 @@ class Transport_K_ou_Eps_base: public Transport_2eq_base
 public:
 
   void discretiser() override;
-
+  void set_param(Param& param) override;
   virtual int controler_variable();
   void valider_iteration() override;
   inline const Champ_Inc_base& inconnue() const override;
@@ -54,16 +54,15 @@ public:
   bool has_champ(const Motcle& nom, OBS_PTR(Champ_base) &ref_champ) const override;
   bool has_champ(const Motcle& nom) const override;
 
-  inline void transporte_K();
-  inline void transporte_Eps();
   inline bool transporte_t_il_K() const;
+  void set_K_equation() { transporte_K_=true; }
 
 protected:
 
   OWN_PTR(Champ_Inc_base) le_champ_;
   OWN_PTR(Champ_Fonc_base)  residu_;
 
-  bool transporte_K_;
+  bool transporte_K_=false;
 };
 /*! @brief Renvoie le champ inconnue de l'equation.
  *
@@ -87,16 +86,6 @@ inline Champ_Inc_base& Transport_K_ou_Eps_base::inconnue()
 inline const Champ_Inc_base& Transport_K_ou_Eps_base::inconnue() const
 {
   return le_champ_;
-}
-
-inline void Transport_K_ou_Eps_base::transporte_K()
-{
-  transporte_K_ = true;
-}
-
-inline void Transport_K_ou_Eps_base::transporte_Eps()
-{
-  transporte_K_ = false;
 }
 
 inline bool Transport_K_ou_Eps_base::transporte_t_il_K() const

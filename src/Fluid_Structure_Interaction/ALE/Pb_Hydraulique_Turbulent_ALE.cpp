@@ -102,8 +102,6 @@ Equation_base& Pb_Hydraulique_Turbulent_ALE::equation(int i)
   return eq_hydraulique;
 }
 
-
-
 /*! @brief Associe le milieu au probleme.
  *
  * Le milieu doit etre de type fluide incompressible.
@@ -139,7 +137,7 @@ int Pb_Hydraulique_Turbulent_ALE::verifier()
   if ( sub_type(Modele_turbulence_hyd_RANS_K_Eps_base, eq_hydraulique.get_modele(TURBULENCE).valeur() ))
     {
       const Modele_turbulence_hyd_RANS_K_Eps_base& le_mod_RANS = ref_cast(Modele_turbulence_hyd_RANS_K_Eps_base, eq_hydraulique.get_modele(TURBULENCE).valeur());
-      const Transport_K_Eps_base& eqn = ref_cast(Transport_K_Eps_base, le_mod_RANS.eqn_transp_K_Eps());
+      const Transport_K_Eps_base& eqn = ref_cast(Transport_K_Eps_base, le_mod_RANS.get_eq_transport());
       const Domaine_Cl_dis_base& domaine_Cl_turb = eqn.domaine_Cl_dis();
       tester_compatibilite_hydr_turb(domaine_Cl_hydr, domaine_Cl_turb);
     }

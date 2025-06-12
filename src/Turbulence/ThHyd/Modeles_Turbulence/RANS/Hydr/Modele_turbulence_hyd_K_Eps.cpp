@@ -48,7 +48,6 @@ Entree& Modele_turbulence_hyd_K_Eps::readOn(Entree& s)
 void Modele_turbulence_hyd_K_Eps::set_param(Param& param)
 {
   Modele_turbulence_hyd_RANS_K_Eps_base::set_param(param);
-  param.ajouter_non_std("Transport_K_Epsilon", (this), Param::REQUIRED); // XD_ADD_P transport_k_epsilon Keyword to define the (k-eps) transportation equation.
   param.ajouter_non_std("Modele_Fonc_Bas_Reynolds", (this)); // XD_ADD_P modele_fonction_bas_reynolds_base This keyword is used to set the bas Reynolds model used.
   param.ajouter("CMU", &LeCmu_); // XD_ADD_P double Keyword to modify the Cmu constant of k-eps model : Nut=Cmu*k*k/eps Default value is 0.09
   param.ajouter("PRANDTL_K", &Prandtl_K_); // XD_ADD_P double Keyword to change the Prk value (default 1.0).
@@ -57,16 +56,10 @@ void Modele_turbulence_hyd_K_Eps::set_param(Param& param)
 
 int Modele_turbulence_hyd_K_Eps::lire_motcle_non_standard(const Motcle& mot, Entree& is)
 {
-  if (mot == "Transport_K_Epsilon")
-    {
-      eqn_transp_K_Eps().associer_modele_turbulence(*this);
-      is >> eqn_transp_K_Eps();
-      return 1;
-    }
-  else if (mot == "Modele_Fonc_Bas_Reynolds")
+  if (mot == "Modele_Fonc_Bas_Reynolds")
     {
       Cerr << "Lecture du modele bas reynolds associe " << finl;
-      Modele_Fonc_Bas_Reynolds_Base::typer_lire_Modele_Fonc_Bas_Reynolds(mon_modele_fonc_, eqn_transp_K_Eps(), is);
+      Modele_Fonc_Bas_Reynolds_Base::typer_lire_Modele_Fonc_Bas_Reynolds(mon_modele_fonc_, get_eq_transport(), is);
       Cerr << "mon_modele_fonc.que_suis_je() avant discretisation " << mon_modele_fonc_.que_suis_je() << finl;
       mon_modele_fonc_->discretiser();
       Cerr << "mon_modele_fonc.que_suis_je() " << mon_modele_fonc_->que_suis_je() << finl;
@@ -85,9 +78,9 @@ int Modele_turbulence_hyd_K_Eps::lire_motcle_non_standard(const Motcle& mot, Ent
  */
 Champ_Fonc_base& Modele_turbulence_hyd_K_Eps::calculer_viscosite_turbulente(double temps)
 {
-  const Champ_base& chK_Eps = eqn_transp_K_Eps().inconnue();
+  const Champ_base& chK_Eps = get_eq_transport().inconnue();
   Nom type = chK_Eps.que_suis_je();
-  const Domaine_Cl_dis_base& le_dom_Cl_dis = eqn_transp_K_Eps().domaine_Cl_dis();
+  const Domaine_Cl_dis_base& le_dom_Cl_dis = get_eq_transport().domaine_Cl_dis();
   const DoubleTab& tab_K_Eps = chK_Eps.valeurs();
   DoubleTab& visco_turb = la_viscosite_turbulente_->valeurs();
 
@@ -100,7 +93,7 @@ Champ_Fonc_base& Modele_turbulence_hyd_K_Eps::calculer_viscosite_turbulente(doub
   if (n < 0)
     {
       if (sub_type(Champ_Inc_P0_base, chK_Eps))
-        n = eqn_transp_K_Eps().domaine_dis().domaine().nb_elem();
+        n = get_eq_transport().domaine_dis().domaine().nb_elem();
       else
         {
           Cerr << "Unsupported K_Eps field in Modele_turbulence_hyd_K_Eps::calculer_viscosite_turbulente" << finl;
@@ -115,14 +108,14 @@ Champ_Fonc_base& Modele_turbulence_hyd_K_Eps::calculer_viscosite_turbulente(doub
       // pour avoir nu en incompressible et mu en QC
       // et non comme on a divise K et eps par rho (si on est en QC)
       // on veut toujours nu
-      const OWN_PTR(Champ_Don_base) ch_visco = ref_cast(Fluide_base,eqn_transp_K_Eps().milieu()).viscosite_cinematique();
-      const Champ_Don_base& ch_visco_cin = ref_cast(Fluide_base,eqn_transp_K_Eps().milieu()).viscosite_cinematique();
+      const OWN_PTR(Champ_Don_base) ch_visco = ref_cast(Fluide_base,get_eq_transport().milieu()).viscosite_cinematique();
+      const Champ_Don_base& ch_visco_cin = ref_cast(Fluide_base,get_eq_transport().milieu()).viscosite_cinematique();
       // const Champ_Don_base& ch_visco_cin_ou_dyn =((const Op_Diff_K_Eps&) eqn_transp_K_Eps().operateur(0)).diffusivite();
 
       const DoubleTab& tab_visco = ch_visco_cin.valeurs();
       //      const DoubleTab& tab_visco = ch_visco.valeurs();
       Fmu.resize(tab_K_Eps.dimension(0));
-      const Domaine_dis_base& le_dom_dis = eqn_transp_K_Eps().domaine_dis();
+      const Domaine_dis_base& le_dom_dis = get_eq_transport().domaine_dis();
 
       mon_modele_fonc_->Calcul_Fmu(Fmu, le_dom_dis, le_dom_Cl_dis, tab_K_Eps, ch_visco);
       int is_Cmu_constant = mon_modele_fonc_->Calcul_is_Cmu_constant();
@@ -132,7 +125,7 @@ Champ_Fonc_base& Modele_turbulence_hyd_K_Eps::calculer_viscosite_turbulente(doub
           mon_modele_fonc_->Calcul_Cmu(Cmu, le_dom_dis, le_dom_Cl_dis, vitesse, tab_K_Eps, EPS_MIN_);
 
           /*Paroi*/
-          Nom lp = eqn_transp_K_Eps().modele_turbulence().loi_paroi().que_suis_je();
+          Nom lp = get_eq_transport().modele_turbulence().loi_paroi().que_suis_je();
           if (lp != "negligeable_VEF")
             {
               DoubleTab visco_tab(visco_turb.dimension_tot(0));
@@ -157,7 +150,7 @@ Champ_Fonc_base& Modele_turbulence_hyd_K_Eps::calculer_viscosite_turbulente(doub
     {
       OWN_PTR(Champ_Inc_base) visco_turb_au_format_K_eps;
       visco_turb_au_format_K_eps.typer(type);
-      DoubleTab& visco_turb_K_eps = complete_viscosity_field(n, eqn_transp_K_Eps().domaine_dis(), visco_turb_au_format_K_eps);
+      DoubleTab& visco_turb_K_eps = complete_viscosity_field(n, get_eq_transport().domaine_dis(), visco_turb_au_format_K_eps);
 
       if (visco_turb_K_eps.size() != n)
         {
@@ -205,7 +198,7 @@ void Modele_turbulence_hyd_K_Eps::fill_turbulent_viscosity_tab(const int n, cons
 
 int Modele_turbulence_hyd_K_Eps::preparer_calcul()
 {
-  eqn_transp_K_Eps().preparer_calcul();
+  get_set_eq_transport().preparer_calcul();
   Modele_turbulence_hyd_RANS_K_Eps_base::preparer_calcul();
   // GF pour initialiser la loi de paroi thermique en TBLE
   if (equation().probleme().nombre_d_equations() > 1)
@@ -218,14 +211,14 @@ int Modele_turbulence_hyd_K_Eps::preparer_calcul()
         }
     }
 
-  calculate_limit_viscosity<MODELE_TYPE::K_EPS>(K_Eps(), LeCmu_);
+  calculate_limit_viscosity<MODELE_TYPE::K_EPS>(get_set_unknown(), LeCmu_);
   Debog::verifier("Modele_turbulence_hyd_K_Eps::preparer_calcul la_viscosite_turbulente", la_viscosite_turbulente_->valeurs());
   return 1;
 }
 
 bool Modele_turbulence_hyd_K_Eps::initTimeStep(double dt)
 {
-  return eqn_transport_K_Eps_.initTimeStep(dt);
+  return get_set_eq_transport().initTimeStep(dt);
 }
 
 /*! @brief Effectue une mise a jour en temps du modele de turbulence.
@@ -238,15 +231,15 @@ bool Modele_turbulence_hyd_K_Eps::initTimeStep(double dt)
  */
 void Modele_turbulence_hyd_K_Eps::mettre_a_jour(double temps)
 {
-  Schema_Temps_base& sch = eqn_transp_K_Eps().schema_temps();
-  eqn_transp_K_Eps().domaine_Cl_dis().mettre_a_jour(temps);
-  if (!eqn_transp_K_Eps().equation_non_resolue())
-    sch.faire_un_pas_de_temps_eqn_base(eqn_transp_K_Eps());
-  eqn_transp_K_Eps().mettre_a_jour(temps);
+  Schema_Temps_base& sch = get_set_eq_transport().schema_temps();
+  get_set_eq_transport().domaine_Cl_dis().mettre_a_jour(temps);
+  if (!get_eq_transport().equation_non_resolue())
+    sch.faire_un_pas_de_temps_eqn_base(get_set_eq_transport());
+  get_set_eq_transport().mettre_a_jour(temps);
 
   statistiques().begin_count(nut_counter_);
   Debog::verifier("Modele_turbulence_hyd_K_Eps::mettre_a_jour la_viscosite_turbulente before", la_viscosite_turbulente_->valeurs());
-  calculate_limit_viscosity<MODELE_TYPE::K_EPS>(K_Eps(), LeCmu_);
+  calculate_limit_viscosity<MODELE_TYPE::K_EPS>(get_set_unknown(), LeCmu_);
   Debog::verifier("Modele_turbulence_hyd_K_Eps::mettre_a_jour la_viscosite_turbulente after", la_viscosite_turbulente_->valeurs());
   statistiques().end_count(nut_counter_);
 }
@@ -306,4 +299,22 @@ void Modele_turbulence_hyd_K_Eps::verifie_loi_paroi()
         Cerr << "must not be used with a wall law of type negligeable or with a modele_function." << finl;
         Cerr << "Another wall law must be selected with this kind of turbulence model." << finl;
       }
+}
+
+
+Transport_K_Eps& Modele_turbulence_hyd_K_Eps::get_set_eq_transport()
+{
+  Transport_K_Eps& eq_transport = ref_cast(Transport_K_Eps, ptr_eq_transport_.valeur());
+  return eq_transport;
+}
+
+const Transport_K_Eps& Modele_turbulence_hyd_K_Eps::get_eq_transport() const
+{
+  const Transport_K_Eps& eq_transport = ref_cast(Transport_K_Eps, ptr_eq_transport_.valeur());
+  return eq_transport;
+}
+
+void Modele_turbulence_hyd_K_Eps::controler()
+{
+  get_set_eq_transport().controler_K_Eps();
 }

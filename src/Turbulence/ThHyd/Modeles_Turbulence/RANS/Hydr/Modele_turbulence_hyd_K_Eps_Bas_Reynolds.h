@@ -37,25 +37,31 @@ public:
   bool initTimeStep(double dt) override;
   void mettre_a_jour(double) override;
   void completer() override;
-  const Equation_base& equation_k_eps(int) const override;
-
-  virtual inline Champ_Inc_base& K_Eps() { return eqn_transport_K_Eps_Bas_Re_.inconnue(); }
-  virtual inline const Champ_Inc_base& K_Eps() const { return eqn_transport_K_Eps_Bas_Re_.inconnue(); }
-  inline Transport_K_Eps_base& eqn_transp_K_Eps() override { return eqn_transport_K_Eps_Bas_Re_; }
-  inline const Transport_K_Eps_base& eqn_transp_K_Eps() const override { return eqn_transport_K_Eps_Bas_Re_; }
-
+  void controler() override;
   const Champ_base& get_champ(const Motcle& nom) const override;
   bool has_champ(const Motcle& nom, OBS_PTR(Champ_base) &ref_champ) const override;
   bool has_champ(const Motcle& nom) const override;
   void get_noms_champs_postraitables(Noms& nom, Option opt = NONE) const override;
+  inline Transport_K_Eps_Bas_Reynolds& get_set_eq_transport() override;
+  inline const Transport_K_Eps_Bas_Reynolds& get_eq_transport() const override;
 
   void imprimer(Sortie&) const override { /* Don nothing */ }
-  void controler() { eqn_transport_K_Eps_Bas_Re_.controler_K_Eps(); }
   virtual Champ_Fonc_base& calculer_viscosite_turbulente(double temps);
 
 private:
-  Transport_K_Eps_Bas_Reynolds eqn_transport_K_Eps_Bas_Re_;
   void fill_turbulent_viscosity_tab(const int , const DoubleTab&, const DoubleTab& , DoubleTab& );
 };
+
+inline Transport_K_Eps_Bas_Reynolds& Modele_turbulence_hyd_K_Eps_Bas_Reynolds::get_set_eq_transport()
+{
+  Transport_K_Eps_Bas_Reynolds& eq_transport = ref_cast(Transport_K_Eps_Bas_Reynolds,ptr_eq_transport_.valeur());
+  return eq_transport;
+}
+
+inline const Transport_K_Eps_Bas_Reynolds& Modele_turbulence_hyd_K_Eps_Bas_Reynolds::get_eq_transport() const
+{
+  const Transport_K_Eps_Bas_Reynolds& eq_transport = ref_cast(Transport_K_Eps_Bas_Reynolds,ptr_eq_transport_.valeur());
+  return eq_transport;
+}
 
 #endif /* Modele_turbulence_hyd_K_Eps_Bas_Reynolds_included */

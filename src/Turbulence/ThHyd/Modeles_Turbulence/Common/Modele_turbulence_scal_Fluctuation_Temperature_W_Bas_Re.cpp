@@ -106,7 +106,7 @@ Champ_Fonc_base& Modele_turbulence_scal_Fluctuation_Temperature_W_Bas_Re::calcul
   const Equation_base& eqn_hydr = mon_pb.equation(0);
   const RefObjU& modele_turbulence = eqn_hydr.get_modele(TURBULENCE);
   const Modele_turbulence_hyd_K_Eps_Bas_Reynolds& mod_turb_hydr = ref_cast(Modele_turbulence_hyd_K_Eps_Bas_Reynolds,modele_turbulence.valeur());
-  const Transport_K_Eps_base& eqBasRe = mod_turb_hydr.eqn_transp_K_Eps();
+  const Transport_K_Eps_base& eqBasRe = mod_turb_hydr.get_eq_transport();
   const DoubleTab& K_eps_Bas_Re = eqBasRe.inconnue().valeurs();
 
   //on recupere les proprietes physiques du fluide : viscosite cinematique et diffusivite

@@ -43,10 +43,10 @@ public:
   }
 
   void set_param(Param& param) override;
+  int lire_motcle_non_standard(const Motcle&, Entree&) override;
   void completer() override;
   int sauvegarder(Sortie& os) const override;
   int reprendre(Entree& is) override;
-  int lire_motcle_non_standard(const Motcle&, Entree&) override;
   std::vector<YAML_data> data_a_sauvegarder() const override;
 
   const Champ_base& get_champ(const Motcle& nom) const override;
@@ -55,21 +55,29 @@ public:
   void get_noms_champs_postraitables(Noms& nom, Option opt = NONE) const override;
 
   int nombre_d_equations() const override { return 2; }
+  Champ_Inc_base& get_set_K();
+  const Champ_Inc_base& get_K() const;
+  Champ_Inc_base& get_set_Eps();
+  const Champ_Inc_base& get_Eps() const;
+  Transport_K_ou_Eps_base& get_set_eq_transp_K();
+  const Transport_K_ou_Eps_base& get_eq_transp_K() const;
+  Transport_K_ou_Eps_base& get_set_eq_transp_Eps();
+  const Transport_K_ou_Eps_base& get_eq_transp_Eps() const;
+  inline const Equation_base& get_equation_k_eps(int) const;
 
-  virtual Transport_K_ou_Eps_base& eqn_transp_K()=0;
-  virtual Transport_K_ou_Eps_base& eqn_transp_Eps()=0;
-  virtual const Transport_K_ou_Eps_base& eqn_transp_K() const =0;
-  virtual const Transport_K_ou_Eps_base& eqn_transp_Eps() const =0;
-  virtual const Equation_base& equation_k_eps(int) const =0;
 
   void associer_seconde_eqn(const Equation_base&);
 
   inline Equation_base& seconde_equation();
   inline const Equation_base& seconde_equation() const;
-
+  void controler() override;
 protected:
+  OWN_PTR(Transport_2eq_base) ptr_eq_transport_K_;
+  OWN_PTR(Transport_2eq_base) ptr_eq_transport_Eps_;
   OBS_PTR(Equation_base) ma_seconde_equation_;
 };
+
+
 
 /*! @brief Renvoie la seconde equation associee au modele de turbulence en formulation bicephale.
  *
@@ -96,5 +104,19 @@ inline const Equation_base& Modele_turbulence_hyd_RANS_Bicephale_base::seconde_e
     }
   return ma_seconde_equation_.valeur();
 }
+
+inline const Equation_base& Modele_turbulence_hyd_RANS_Bicephale_base::get_equation_k_eps(int i) const
+{
+  assert((i == 0) || (i == 1));
+  if (i == 0)
+    {
+      return ptr_eq_transport_K_.valeur();
+    }
+  else
+    {
+      return ptr_eq_transport_Eps_.valeur();
+    }
+}
+
 
 #endif /* Modele_turbulence_hyd_RANS_Bicephale_base_included */

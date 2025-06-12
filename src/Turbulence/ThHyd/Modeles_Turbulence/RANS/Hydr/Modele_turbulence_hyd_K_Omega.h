@@ -26,7 +26,6 @@
 #include <Transport_K_Omega.h>
 #include <Modele_turbulence_hyd_RANS_K_Omega_base.h>
 
-
 /*! @brief Classe Modele_turbulence_hyd_K_Omega Cette classe represente le modele de turbulence (k, omega) pour les
  *
  *     equations de Navier-Stokes.
@@ -38,15 +37,13 @@ class Modele_turbulence_hyd_K_Omega: public Modele_turbulence_hyd_RANS_K_Omega_b
   Declare_instanciable(Modele_turbulence_hyd_K_Omega);
 public:
   void set_param(Param& param) override;
-  int lire_motcle_non_standard(const Motcle&, Entree&) override;
   int preparer_calcul() override;
   bool initTimeStep(double dt) override;
   void mettre_a_jour(double) override;
-  virtual inline Champ_Inc_base& K_Omega();
-  virtual inline const Champ_Inc_base& K_Omega() const;
-
-  inline Transport_K_Omega_base& eqn_transp_K_Omega() override;
-  inline const Transport_K_Omega_base& eqn_transp_K_Omega() const override;
+  virtual inline Champ_Inc_base& get_set_eq_K_Omega();
+  virtual inline const Champ_Inc_base& get_eq_K_Omega() const;
+  inline Transport_K_Omega_base& get_set_eq_transport() override;
+  inline const Transport_K_Omega_base& get_eq_transport() const override;
 
   void init_F1_F2_enstrophy();
 
@@ -57,19 +54,12 @@ public:
   inline const DoubleTab& get_enstrophy() const;
   inline DoubleTab& get_enstrophy();
 
-  const Equation_base& equation_k_omega(int i) const override
-  {
-    assert((i == 0));
-    return ptr_eqn_transport_K_Omega_.valeur();
-  }
-
-  void controler() { ptr_eqn_transport_K_Omega_.valeur().controler_K_Omega(); }
+  void controler() override { get_set_eq_transport().controler_K_Omega(); }
   virtual Champ_Fonc_base& calculer_viscosite_turbulente(double );
 
   inline bool is_SST() const { return is_SST_ ;};
 
 protected:
-  OWN_PTR(Transport_K_Omega_base) ptr_eqn_transport_K_Omega_;
   void fill_turbulent_viscosity_tab(const DoubleTab& K_Omega, DoubleTab& turbulent_viscosity);
   DoubleTab tabF1_; // Blending field for SST model
   DoubleTab tabF2_; // for the turbulent viscosity in the SST model
@@ -85,9 +75,10 @@ protected:
  *
  * @return (Champ_Inc_base&) le champ inconnue (K, Omega)
  */
-inline const Champ_Inc_base& Modele_turbulence_hyd_K_Omega::K_Omega() const
+inline const Champ_Inc_base& Modele_turbulence_hyd_K_Omega::get_eq_K_Omega() const
 {
-  return ptr_eqn_transport_K_Omega_.valeur().inconnue();
+  const Champ_Inc_base& inc=get_eq_transport().inconnue();
+  return inc;
 }
 
 /*! @brief Renvoie le champ inconnue du modele de turbulence i.
@@ -97,32 +88,21 @@ inline const Champ_Inc_base& Modele_turbulence_hyd_K_Omega::K_Omega() const
  *
  * @return (Champ_Inc_base&) le champ inconnue (K, Omega)
  */
-inline Champ_Inc_base& Modele_turbulence_hyd_K_Omega::K_Omega()
+inline Champ_Inc_base& Modele_turbulence_hyd_K_Omega::get_set_eq_K_Omega()
 {
-  return ptr_eqn_transport_K_Omega_.valeur().inconnue();
+  return get_set_eq_transport().inconnue();
 }
 
-/*! @brief Renvoie l'equation du modele de turbulence i.
- *
- * e. : (K, Omega).
- *
- * @return (Transport_K_Omega&) equation (K, Omega)
- */
-inline Transport_K_Omega_base& Modele_turbulence_hyd_K_Omega::eqn_transp_K_Omega()
+inline const Transport_K_Omega_base& Modele_turbulence_hyd_K_Omega::get_eq_transport() const
 {
-  return ptr_eqn_transport_K_Omega_.valeur();
+  const Transport_K_Omega_base& eq_transport=ref_cast(Transport_K_Omega_base,ptr_eq_transport_.valeur());
+  return eq_transport;
 }
 
-/*! @brief Renvoie l'equation du modele de turbulence i.
- *
- * e. : (K, Omega).
- *     (version const)
- *
- * @return (Transport_K_Omega&) equation (K, Omega)
- */
-inline const Transport_K_Omega_base& Modele_turbulence_hyd_K_Omega::eqn_transp_K_Omega() const
+inline Transport_K_Omega_base& Modele_turbulence_hyd_K_Omega::get_set_eq_transport()
 {
-  return ptr_eqn_transport_K_Omega_.valeur();
+  Transport_K_Omega_base& eq_transport=ref_cast(Transport_K_Omega_base,ptr_eq_transport_.valeur());
+  return eq_transport;
 }
 
 /*! @brief Returns the blending table F1 for SST.

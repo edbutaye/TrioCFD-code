@@ -580,7 +580,7 @@ DoubleTab& Source_Transport_Fluctuation_Temperature_W_Bas_Re_VDF_Elem::ajouter(D
   const Modele_turbulence_hyd_base& le_modele = ref_cast(Modele_turbulence_hyd_base,modele_turbulence_hydr.valeur());
   const Modele_turbulence_hyd_K_Eps_Bas_Reynolds& modele_bas_Re =
     ref_cast(Modele_turbulence_hyd_K_Eps_Bas_Reynolds,le_modele);
-  const Transport_K_Eps_base& mon_eq_transport_K_Eps_Bas_Re = modele_bas_Re.eqn_transp_K_Eps();
+  const Transport_K_Eps_base& mon_eq_transport_K_Eps_Bas_Re = modele_bas_Re.get_eq_transport();
   const Domaine_Cl_VDF& zcl_VDF_th = ref_cast(Domaine_Cl_VDF,eq_thermique->domaine_Cl_dis());
   const Domaine_Cl_dis_base& zcl_VDF_th_dis = eq_thermique->domaine_Cl_dis();
   const DoubleTab& K_eps_Bas_Re = mon_eq_transport_K_Eps_Bas_Re.inconnue().valeurs();

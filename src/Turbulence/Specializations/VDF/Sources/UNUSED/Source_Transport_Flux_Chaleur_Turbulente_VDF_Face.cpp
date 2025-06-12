@@ -514,7 +514,7 @@ DoubleTab& Source_Transport_Flux_Chaleur_Turbulente_VDF_Face::ajouter(DoubleTab&
   const Modele_turbulence_hyd_base& mon_modele = ref_cast(Modele_turbulence_hyd_base,modele_turbulence_hydr.valeur());
   const DoubleTab& visco_turb = mon_modele.viscosite_turbulente().valeurs();
   const Modele_turbulence_hyd_K_Eps_Bas_Reynolds& modele_bas_Re = ref_cast(Modele_turbulence_hyd_K_Eps_Bas_Reynolds,mon_modele);
-  const Transport_K_Eps_base& mon_eq_transport_K_Eps_Bas_Re = modele_bas_Re.eqn_transp_K_Eps();
+  const Transport_K_Eps_base& mon_eq_transport_K_Eps_Bas_Re = modele_bas_Re.get_eq_transport();
   const DoubleTab& K_Eps_Bas_Re = mon_eq_transport_K_Eps_Bas_Re.inconnue().valeurs();
   const Modele_turbulence_scal_base& le_modele_scalaire = ref_cast(Modele_turbulence_scal_base,eq_thermique->get_modele(TURBULENCE).valeur());
   const Modele_turbulence_scal_Fluctuation_Temperature& modele_Fluctu_Temp = ref_cast(Modele_turbulence_scal_Fluctuation_Temperature,le_modele_scalaire);

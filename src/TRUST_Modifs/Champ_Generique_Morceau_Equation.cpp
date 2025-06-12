@@ -107,7 +107,7 @@ void Champ_Generique_Morceau_Equation::completer(const Postraitement_base& post)
                     if (sub_type(Modele_turbulence_hyd_K_Eps, modele_turbulence.valeur()) || sub_type(Modele_turbulence_hyd_K_Eps_Realisable, modele_turbulence.valeur()) )
                       {
                         const Modele_turbulence_hyd_RANS_K_Eps_base& le_mod_RANS = ref_cast(Modele_turbulence_hyd_RANS_K_Eps_base, eq_test.get_modele(TURBULENCE).valeur());
-                        const Transport_K_Eps_base& transportkeps = ref_cast(Transport_K_Eps_base, le_mod_RANS.eqn_transp_K_Eps());
+                        const Transport_K_Eps_base& transportkeps = ref_cast(Transport_K_Eps_base, le_mod_RANS.get_eq_transport());
                         if ((transportkeps.inconnue().le_nom() == mon_champ_inc.le_nom()))
                           {
                             numero_eq_=i;
@@ -122,7 +122,7 @@ void Champ_Generique_Morceau_Equation::completer(const Postraitement_base& post)
                     if (sub_type(Modele_turbulence_hyd_K_Omega, modele_turbulence.valeur()))
                       {
                         const Modele_turbulence_hyd_RANS_K_Omega_base& le_mod_RANS = ref_cast(Modele_turbulence_hyd_RANS_K_Omega_base, eq_test.get_modele(TURBULENCE).valeur());
-                        const Transport_K_Omega_base& transportkomega = ref_cast(Transport_K_Omega_base, le_mod_RANS.eqn_transp_K_Omega());
+                        const Transport_K_Omega_base& transportkomega = ref_cast(Transport_K_Omega_base, le_mod_RANS.get_eq_transport());
                         if ((transportkomega.inconnue().le_nom() == mon_champ_inc.le_nom()))
                           {
                             numero_eq_=i;
@@ -148,13 +148,13 @@ void Champ_Generique_Morceau_Equation::completer(const Postraitement_base& post)
   else if (iskeps)
     {
       const Modele_turbulence_hyd_RANS_K_Eps_base& le_mod_RANS = ref_cast(Modele_turbulence_hyd_RANS_K_Eps_base, Pb.equation(numero_eq_).get_modele(TURBULENCE).valeur());
-      const Transport_K_Eps_base& eqn = ref_cast(Transport_K_Eps_base, le_mod_RANS.eqn_transp_K_Eps());
+      const Transport_K_Eps_base& eqn = ref_cast(Transport_K_Eps_base, le_mod_RANS.get_eq_transport());
       ref_eq_ = ref_cast(Equation_base, eqn);
     }
   else if (iskomega)
     {
       const Modele_turbulence_hyd_RANS_K_Omega_base& le_mod_RANS = ref_cast(Modele_turbulence_hyd_RANS_K_Omega_base, Pb.equation(numero_eq_).get_modele(TURBULENCE).valeur());
-      const Transport_K_Omega_base& eqn = ref_cast(Transport_K_Omega_base, le_mod_RANS.eqn_transp_K_Omega());
+      const Transport_K_Omega_base& eqn = ref_cast(Transport_K_Omega_base, le_mod_RANS.get_eq_transport());
       ref_eq_ = ref_cast(Equation_base, eqn);
     }
   else

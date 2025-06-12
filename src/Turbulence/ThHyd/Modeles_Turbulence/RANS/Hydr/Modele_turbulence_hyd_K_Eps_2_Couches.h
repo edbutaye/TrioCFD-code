@@ -35,60 +35,35 @@ class Modele_turbulence_hyd_K_Eps_2_Couches: public Modele_turbulence_hyd_RANS_K
   Declare_instanciable(Modele_turbulence_hyd_K_Eps_2_Couches);
 public:
 
-  void set_param(Param& param) override;
-  int lire_motcle_non_standard(const Motcle&, Entree&) override;
   void completer() override;
   int preparer_calcul() override;
   bool initTimeStep(double dt) override;
   void mettre_a_jour(double) override;
-  inline Champ_Inc_base& K_Eps();
-  inline const Champ_Inc_base& K_Eps() const;
   inline int get_nbcouches() const;
   inline int get_yswitch() const;
   inline int get_nutswitch() const;
   inline int get_switch() const;
   inline int get_impr() const;
-
-  inline Transport_K_Eps_base& eqn_transp_K_Eps() override;
-  inline const Transport_K_Eps_base& eqn_transp_K_Eps() const override;
-  const Equation_base& equation_k_eps(int i) const override
-  {
-    assert((i == 0));
-    return eqn_transport_K_Eps_;
-  }
-
-  void controler() { eqn_transport_K_Eps_.controler_K_Eps(); }
+  void controler() override;
+  inline Transport_K_KEps& get_set_eq_transport() override;
+  inline const Transport_K_KEps& get_eq_transport() const override;
 
   Champ_Fonc_base& calculer_viscosite_turbulente(double temps);
 
 private:
-  Transport_K_KEps eqn_transport_K_Eps_;
   void fill_turbulent_viscosity_tab(const int , const DoubleTab&, DoubleTab& );
 };
 
-/*! @brief Renvoie le champ inconnue du modele de turbulence i.
- *
- * e. : (K,Epsilon). Cette inconnue est portee
- *     par l'equation de transport K-eps porte par le modele.
- *     (version const)
- *
- * @return (Champ_Inc_base&) le champ inconnue (K,epsilon)
- */
-inline const Champ_Inc_base& Modele_turbulence_hyd_K_Eps_2_Couches::K_Eps() const
+inline Transport_K_KEps& Modele_turbulence_hyd_K_Eps_2_Couches::get_set_eq_transport()
 {
-  return eqn_transport_K_Eps_.inconnue();
+  Transport_K_KEps& eq_transport = ref_cast(Transport_K_KEps,ptr_eq_transport_.valeur());
+  return eq_transport;
 }
 
-/*! @brief Renvoie le champ inconnue du modele de turbulence i.
- *
- * e. : (K,Epsilon). Cette inconnue est portee
- *     par l'equation de transport K-eps porte par le modele.
- *
- * @return (Champ_Inc_base&) le champ inconnue (K,epsilon)
- */
-inline Champ_Inc_base& Modele_turbulence_hyd_K_Eps_2_Couches::K_Eps()
+inline const Transport_K_KEps& Modele_turbulence_hyd_K_Eps_2_Couches::get_eq_transport() const
 {
-  return eqn_transport_K_Eps_.inconnue();
+  const Transport_K_KEps& eq_transport = ref_cast(Transport_K_KEps,ptr_eq_transport_.valeur());
+  return eq_transport;
 }
 
 /*! @brief Renvoie le nombre couches utilises pour les lois de paroi Ce nombre est porte par l'equation de transport K_K-eps.
@@ -97,7 +72,7 @@ inline Champ_Inc_base& Modele_turbulence_hyd_K_Eps_2_Couches::K_Eps()
  */
 inline int Modele_turbulence_hyd_K_Eps_2_Couches::get_nbcouches() const
 {
-  return eqn_transport_K_Eps_.get_nbcouches();
+  return get_eq_transport().get_nbcouches();
 }
 
 /*! @brief Renvoie le y* de switch entre les deux couches pour le modele a deux couches.
@@ -108,7 +83,7 @@ inline int Modele_turbulence_hyd_K_Eps_2_Couches::get_nbcouches() const
  */
 inline int Modele_turbulence_hyd_K_Eps_2_Couches::get_yswitch() const
 {
-  return eqn_transport_K_Eps_.get_yswitch();
+  return get_eq_transport().get_yswitch();
 }
 
 /*! @brief Renvoie 0 si on choisit le switch par y*, 1 par nu_t.
@@ -119,7 +94,7 @@ inline int Modele_turbulence_hyd_K_Eps_2_Couches::get_yswitch() const
  */
 inline int Modele_turbulence_hyd_K_Eps_2_Couches::get_switch() const
 {
-  return eqn_transport_K_Eps_.get_switch();
+  return get_eq_transport().get_switch();
 }
 
 /*! @brief Renvoie la valeur de nut/nu qui delimite les deux couches.
@@ -130,7 +105,7 @@ inline int Modele_turbulence_hyd_K_Eps_2_Couches::get_switch() const
  */
 inline int Modele_turbulence_hyd_K_Eps_2_Couches::get_nutswitch() const
 {
-  return eqn_transport_K_Eps_.get_nutswitch();
+  return get_eq_transport().get_nutswitch();
 }
 
 /*! @brief indique si on doit ecrire le domaine des 2 couches dans le .
@@ -141,29 +116,7 @@ inline int Modele_turbulence_hyd_K_Eps_2_Couches::get_nutswitch() const
  */
 inline int Modele_turbulence_hyd_K_Eps_2_Couches::get_impr() const
 {
-  return eqn_transport_K_Eps_.get_impr();
-}
-
-/*! @brief Renvoie l'equation.
- *
- * (version const)
- *
- * @return (Trasnport_K_KEps)
- */
-inline const Transport_K_Eps_base& Modele_turbulence_hyd_K_Eps_2_Couches::eqn_transp_K_Eps() const
-{
-  return eqn_transport_K_Eps_;
-}
-
-/*! @brief Renvoie l'equation.
- *
- * (version const)
- *
- * @return (Trasnport_K_KEps)
- */
-inline Transport_K_Eps_base& Modele_turbulence_hyd_K_Eps_2_Couches::eqn_transp_K_Eps()
-{
-  return eqn_transport_K_Eps_;
+  return get_eq_transport().get_impr();
 }
 
 #endif /* Modele_turbulence_hyd_K_Eps_2_Couches_included */

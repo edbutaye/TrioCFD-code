@@ -49,8 +49,6 @@ Entree& Modele_turbulence_hyd_K_Eps_Realisable_Bicephale::readOn(Entree& is)
 void Modele_turbulence_hyd_K_Eps_Realisable_Bicephale::set_param(Param& param)
 {
   Modele_turbulence_hyd_RANS_Bicephale_base::set_param(param);
-  param.ajouter_non_std("Transport_K", (this), Param::REQUIRED); // XD_ADD_P chaine Keyword to define the realisable (k) transportation equation.
-  param.ajouter_non_std("Transport_Epsilon", (this), Param::REQUIRED); // XD_ADD_P chaine Keyword to define the realisable (eps) transportation equation.
   param.ajouter_non_std("Modele_Fonc_Realisable", (this), Param::REQUIRED); // XD_ADD_P Modele_Fonc_Realisable_base This keyword is used to set the model used
   param.ajouter("PRANDTL_K", &Prandtl_K_, Param::REQUIRED); // XD_ADD_P double Keyword to change the Prk value (default 1.0).
   param.ajouter("PRANDTL_EPS", &Prandtl_Eps_, Param::REQUIRED); // XD_ADD_P double Keyword to change the Pre value (default 1.3)
@@ -60,8 +58,8 @@ int Modele_turbulence_hyd_K_Eps_Realisable_Bicephale::lire_motcle_non_standard(c
 {
   if (mot == "Modele_Fonc_Realisable")
     {
-      Modele_Fonc_Realisable_base::typer_lire_Modele_Fonc_Realisable(mon_modele_fonc_, eqn_transp_K(), is);
-      mon_modele_fonc_->associer_eqn_2(eqn_transp_Eps());
+      Modele_Fonc_Realisable_base::typer_lire_Modele_Fonc_Realisable(mon_modele_fonc_, get_eq_transp_K(), is);
+      mon_modele_fonc_->associer_eqn_2(get_eq_transp_Eps());
       get_modele_fonction()->discretiser();
       Cerr << "Realizable Two-headed K_Epsilon model type " << get_modele_fonction().que_suis_je() << finl;
       return 1;
@@ -72,10 +70,10 @@ int Modele_turbulence_hyd_K_Eps_Realisable_Bicephale::lire_motcle_non_standard(c
 
 Champ_Fonc_base& Modele_turbulence_hyd_K_Eps_Realisable_Bicephale::calculer_viscosite_turbulente(double temps)
 {
-  const Champ_base& chK = eqn_transp_K().inconnue();
+  const Champ_base& chK = get_eq_transp_K().inconnue();
   Nom type = chK.que_suis_je();
   const DoubleTab& tab_K = chK.valeurs();
-  const Champ_base& chEps = eqn_transp_Eps().inconnue();
+  const Champ_base& chEps = get_eq_transp_Eps().inconnue();
   const DoubleTab& tab_Eps = chEps.valeurs();
   Debog::verifier("Modele_turbulence_hyd_K_Eps_Realisable_Bicephale::calculer_viscosite_turbulente K", tab_K);
   Debog::verifier("Modele_turbulence_hyd_K_Eps_Realisable_Bicephale::calculer_viscosite_turbulente Epsilon", tab_Eps);
@@ -92,7 +90,7 @@ Champ_Fonc_base& Modele_turbulence_hyd_K_Eps_Realisable_Bicephale::calculer_visc
     {
       OWN_PTR(Champ_Inc_base) visco_turb_au_format_K_eps_Rea;
       visco_turb_au_format_K_eps_Rea.typer(type);
-      DoubleTab& visco_turb_K_eps_Rea = complete_viscosity_field(n, eqn_transp_K().domaine_dis(), visco_turb_au_format_K_eps_Rea);
+      DoubleTab& visco_turb_K_eps_Rea = complete_viscosity_field(n, get_eq_transp_K().domaine_dis(), visco_turb_au_format_K_eps_Rea);
 
       if (visco_turb_K_eps_Rea.size() != n)
         {
@@ -126,49 +124,37 @@ void Modele_turbulence_hyd_K_Eps_Realisable_Bicephale::fill_turbulent_viscosity_
 
 int Modele_turbulence_hyd_K_Eps_Realisable_Bicephale::preparer_calcul()
 {
-  eqn_transp_K().preparer_calcul();
-  eqn_transp_Eps().preparer_calcul();
+  get_set_eq_transp_K().preparer_calcul();
+  get_set_eq_transp_Eps().preparer_calcul();
   Modele_turbulence_hyd_base::preparer_calcul();
-  calculate_limit_viscosity<MODELE_TYPE::K_EPS_REALISABLE_BICEPHALE>(K(), Eps(), -123. /* unused */);
+  calculate_limit_viscosity<MODELE_TYPE::K_EPS_REALISABLE_BICEPHALE>(get_set_K(), get_set_Eps(), -123. /* unused */);
   return 1;
 
 }
 
 void Modele_turbulence_hyd_K_Eps_Realisable_Bicephale::mettre_a_jour(double temps)
 {
-  Schema_Temps_base& sch = eqn_transp_K().schema_temps();
-  eqn_transp_K().domaine_Cl_dis().mettre_a_jour(temps);
-  if (!eqn_transp_K().equation_non_resolue())
-    sch.faire_un_pas_de_temps_eqn_base(eqn_transp_K());
-  eqn_transp_K().mettre_a_jour(temps);
-  if (!eqn_transp_Eps().equation_non_resolue())
-    sch.faire_un_pas_de_temps_eqn_base(eqn_transp_Eps());
-  eqn_transp_Eps().mettre_a_jour(temps);
+  Schema_Temps_base& sch = get_set_eq_transp_K().schema_temps();
+  get_set_eq_transp_K().domaine_Cl_dis().mettre_a_jour(temps);
+  if (!get_eq_transp_K().equation_non_resolue())
+    sch.faire_un_pas_de_temps_eqn_base(get_set_eq_transp_K());
+  get_set_eq_transp_K().mettre_a_jour(temps);
+  if (!get_eq_transp_Eps().equation_non_resolue())
+    sch.faire_un_pas_de_temps_eqn_base(get_set_eq_transp_Eps());
+  get_set_eq_transp_Eps().mettre_a_jour(temps);
 
   statistiques().begin_count(nut_counter_);
   Debog::verifier("Modele_turbulence_hyd_K_Eps_Realisable_Bicephale::mettre_a_jour la_viscosite_turbulente before", la_viscosite_turbulente_->valeurs());
-  calculate_limit_viscosity<MODELE_TYPE::K_EPS_REALISABLE_BICEPHALE>(K(), Eps(), -123. /* unused */);
+  calculate_limit_viscosity<MODELE_TYPE::K_EPS_REALISABLE_BICEPHALE>(get_set_K(), get_set_Eps(), -123. /* unused */);
   Debog::verifier("Modele_turbulence_hyd_K_Eps_Realisable_Bicephale::mettre_a_jour apres calculer_viscosite_turbulente la_viscosite_turbulente", la_viscosite_turbulente_->valeurs());
   statistiques().end_count(nut_counter_);
 }
 
 bool Modele_turbulence_hyd_K_Eps_Realisable_Bicephale::initTimeStep(double dt)
 {
-  return (eqn_transport_K_Rea_.initTimeStep(dt) and eqn_transport_Eps_Rea_.initTimeStep(dt));
+  return (get_set_eq_transp_K().initTimeStep(dt) and get_set_eq_transp_Eps().initTimeStep(dt));
 }
 
-const Equation_base& Modele_turbulence_hyd_K_Eps_Realisable_Bicephale::equation_k_eps(int i) const
-{
-  assert((i == 0) || (i == 1));
-  if (i == 0)
-    {
-      return eqn_transport_K_Rea_;
-    }
-  else
-    {
-      return eqn_transport_Eps_Rea_;
-    }
-}
 
 bool Modele_turbulence_hyd_K_Eps_Realisable_Bicephale::has_champ(const Motcle& nom, OBS_PTR(Champ_base)& ref_champ) const
 {

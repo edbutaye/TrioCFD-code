@@ -42,75 +42,16 @@ public:
   void verifie_loi_paroi() override;
   bool initTimeStep(double dt) override;
   void mettre_a_jour(double) override;
-  virtual inline Champ_Inc_base& K_Eps();
-  virtual inline const Champ_Inc_base& K_Eps() const;
-
-  inline Transport_K_Eps_base& eqn_transp_K_Eps() override;
-  inline const Transport_K_Eps_base& eqn_transp_K_Eps() const override;
-  const Equation_base& equation_k_eps(int i) const override
-  {
-    assert((i == 0));
-    return eqn_transport_K_Eps_;
-  }
-
+  void controler() override;
+  Transport_K_Eps& get_set_eq_transport() override;
+  const Transport_K_Eps& get_eq_transport() const override;
   const Champ_base& get_champ(const Motcle& nom) const override;
   bool has_champ(const Motcle& nom, OBS_PTR(Champ_base) &ref_champ) const override;
   bool has_champ(const Motcle& nom) const override;
   void get_noms_champs_postraitables(Noms& nom, Option opt = NONE) const override;
-  void controler() { eqn_transport_K_Eps_.controler_K_Eps(); }
   virtual Champ_Fonc_base& calculer_viscosite_turbulente(double temps);
-
 protected:
-  Transport_K_Eps eqn_transport_K_Eps_;
   void fill_turbulent_viscosity_tab(const int , const DoubleTab&, const DoubleTab& , const DoubleTab& , const DoubleTab&  , DoubleTab& );
 };
-
-/*! @brief Renvoie le champ inconnue du modele de turbulence i.
- *
- * e. : (K,Epsilon). Cette inconnue est portee
- *     par l'equation de transport K-eps porte par le modele.
- *     (version const)
- *
- * @return (Champ_Inc_base&) le champ inconnue (K,epsilon)
- */
-inline const Champ_Inc_base& Modele_turbulence_hyd_K_Eps::K_Eps() const
-{
-  return eqn_transport_K_Eps_.inconnue();
-}
-
-/*! @brief Renvoie le champ inconnue du modele de turbulence i.
- *
- * e. : (K,Epsilon). Cette inconnue est portee
- *     par l'equation de transport K-eps porte par le modele.
- *
- * @return (Champ_Inc_base&) le champ inconnue (K,epsilon)
- */
-inline Champ_Inc_base& Modele_turbulence_hyd_K_Eps::K_Eps()
-{
-  return eqn_transport_K_Eps_.inconnue();
-}
-
-/*! @brief Renvoie l'equation du modele de turbulence i.
- *
- * e. : (K,Epsilon).
- *
- * @return (Transport_K_Eps&) equation (K,epsilon)
- */
-inline Transport_K_Eps_base& Modele_turbulence_hyd_K_Eps::eqn_transp_K_Eps()
-{
-  return eqn_transport_K_Eps_;
-}
-
-/*! @brief Renvoie l'equation du modele de turbulence i.
- *
- * e. : (K,Epsilon).
- *     (version const)
- *
- * @return (Transport_K_Eps&) equation (K,epsilon)
- */
-inline const Transport_K_Eps_base& Modele_turbulence_hyd_K_Eps::eqn_transp_K_Eps() const
-{
-  return eqn_transport_K_Eps_;
-}
 
 #endif /* Modele_turbulence_hyd_K_Eps_included */

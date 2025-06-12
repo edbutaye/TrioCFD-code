@@ -102,7 +102,7 @@ int Paroi_2couches_VDF::calculer_hyd(DoubleTab& tab_nu_t,DoubleTab& tab_k_eps)
   Modele_turbulence_hyd_K_Eps_2_Couches& mod_2couches = ref_cast(Modele_turbulence_hyd_K_Eps_2_Couches,mon_modele_turb_hyd.valeur());
   const int nbcouches = mod_2couches.get_nbcouches();
 
-  Loi_2couches_base& loi2couches = ref_cast(Transport_K_KEps,mod_2couches.eqn_transp_K_Eps()).loi2couches();
+  Loi_2couches_base& loi2couches = ref_cast(Transport_K_KEps,mod_2couches.get_set_eq_transport()).loi2couches();
 
   int valswitch;
 

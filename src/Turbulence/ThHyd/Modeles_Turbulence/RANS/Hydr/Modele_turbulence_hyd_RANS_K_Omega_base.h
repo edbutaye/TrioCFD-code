@@ -57,10 +57,6 @@ public:
   bool has_champ(const Motcle& nom) const override;
   void get_noms_champs_postraitables(Noms& nom,Option opt=NONE) const override;
 
-  virtual Transport_K_Omega_base& eqn_transp_K_Omega() = 0;
-  virtual const Transport_K_Omega_base& eqn_transp_K_Omega() const = 0;
-  virtual const Equation_base& equation_k_omega(int) const=0 ;
-
   inline const Motcle& get_model_variant() const { return model_variant_; }
 
 protected:

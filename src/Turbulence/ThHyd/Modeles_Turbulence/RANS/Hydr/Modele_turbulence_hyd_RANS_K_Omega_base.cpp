@@ -39,7 +39,7 @@ void Modele_turbulence_hyd_RANS_K_Omega_base::set_param(Param& param)
 
 void Modele_turbulence_hyd_RANS_K_Omega_base::completer()
 {
-  eqn_transp_K_Omega().completer();
+  get_set_eq_transport().completer();
   verifie_loi_paroi();
 }
 
@@ -49,7 +49,7 @@ bool Modele_turbulence_hyd_RANS_K_Omega_base::has_champ(const Motcle& nom, OBS_P
     return true;
 
   for (int i = 0; i < nombre_d_equations(); i++)
-    if (equation_k_omega(i).has_champ(nom, ref_champ))
+    if (get_eq_transport().has_champ(nom, ref_champ))
       return true;
 
   return false; /* rien trouve */
@@ -61,7 +61,7 @@ bool Modele_turbulence_hyd_RANS_K_Omega_base::has_champ(const Motcle& nom) const
     return true;
 
   for (int i = 0; i < nombre_d_equations(); i++)
-    if (equation_k_omega(i).has_champ(nom))
+    if (get_eq_transport().has_champ(nom))
       return true;
 
   return false; /* rien trouve */
@@ -75,7 +75,7 @@ const Champ_base& Modele_turbulence_hyd_RANS_K_Omega_base::get_champ(const Motcl
     return ref_champ;
 
   for (int i = 0; i < nombre_d_equations(); i++)
-    if (equation_k_omega(i).has_champ(nom, ref_champ))
+    if (get_eq_transport().has_champ(nom, ref_champ))
       return ref_champ;
 
   throw std::runtime_error(std::string("Field ") + nom.getString() + std::string(" not found !"));
@@ -86,7 +86,7 @@ void Modele_turbulence_hyd_RANS_K_Omega_base::get_noms_champs_postraitables(Noms
   Modele_turbulence_hyd_base::get_noms_champs_postraitables(nom, opt);
 
   for (int i = 0; i < nombre_d_equations(); i++)
-    equation_k_omega(i).get_noms_champs_postraitables(nom, opt);
+    get_eq_transport().get_noms_champs_postraitables(nom, opt);
 }
 
 /*! @brief for PDI IO: retrieve name, type and dimensions of the fields to save/restore
@@ -95,7 +95,7 @@ void Modele_turbulence_hyd_RANS_K_Omega_base::get_noms_champs_postraitables(Noms
 std::vector<YAML_data> Modele_turbulence_hyd_RANS_K_Omega_base::data_a_sauvegarder() const
 {
   std::vector<YAML_data> data = Modele_turbulence_hyd_base::data_a_sauvegarder();
-  std::vector<YAML_data> eqn_transp = eqn_transp_K_Omega().data_a_sauvegarder();
+  std::vector<YAML_data> eqn_transp = get_eq_transport().data_a_sauvegarder();
   data.insert(data.end(), eqn_transp.begin(), eqn_transp.end());
   return data;
 }
@@ -112,7 +112,7 @@ std::vector<YAML_data> Modele_turbulence_hyd_RANS_K_Omega_base::data_a_sauvegard
 int Modele_turbulence_hyd_RANS_K_Omega_base::sauvegarder(Sortie& os) const
 {
   Modele_turbulence_hyd_base::sauvegarder(os);
-  return eqn_transp_K_Omega().sauvegarder(os);
+  return get_eq_transport().sauvegarder(os);
 }
 
 /*! @brief Reprise du modele a partir d'un flot d'entree.
@@ -127,7 +127,7 @@ int Modele_turbulence_hyd_RANS_K_Omega_base::reprendre(Entree& is)
 {
   Modele_turbulence_hyd_base::reprendre(is);
   if (mon_equation_.non_nul())
-    return eqn_transp_K_Omega().reprendre(is);
+    return get_set_eq_transport().reprendre(is);
   else
     return reprendre_generique(is);
 }

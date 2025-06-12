@@ -41,16 +41,6 @@ public:
   void verifie_loi_paroi() override;
   bool initTimeStep(double dt) override;
   void mettre_a_jour(double) override;
-  virtual inline Champ_Inc_base& K();
-  virtual inline const Champ_Inc_base& K() const;
-  virtual inline Champ_Inc_base& Eps();
-  virtual inline const Champ_Inc_base& Eps() const;
-
-  inline Transport_K_ou_Eps_base& eqn_transp_K() override;
-  inline const Transport_K_ou_Eps_base& eqn_transp_K() const override;
-  inline Transport_K_ou_Eps_base& eqn_transp_Eps() override;
-  inline const Transport_K_ou_Eps_base& eqn_transp_Eps() const override;
-  const Equation_base& equation_k_eps(int) const override;
 
   inline OWN_PTR(Modele_Fonc_Bas_Reynolds_Base)& associe_modele_fonction() { return mon_modele_fonc_; }
   inline const OWN_PTR(Modele_Fonc_Bas_Reynolds_Base)& associe_modele_fonction() const { return mon_modele_fonc_; }
@@ -61,98 +51,10 @@ public:
   void get_noms_champs_postraitables(Noms& nom, Option opt = NONE) const override;
   virtual Champ_Fonc_base& calculer_viscosite_turbulente(double temps);
 
-  void controler()
-  {
-    eqn_transport_K_.controler_variable();
-    eqn_transport_Eps_.controler_variable();
-  }
-
 protected:
   OWN_PTR(Modele_Fonc_Bas_Reynolds_Base) mon_modele_fonc_;
-  Transport_K_ou_Eps eqn_transport_K_, eqn_transport_Eps_;
   void fill_turbulent_viscosity_tab(const int , const DoubleTab&, const DoubleTab& , const DoubleTab& ,const DoubleTab& , const DoubleTab&  , DoubleTab& );
 };
 
-/*! @brief Renvoie le champ inconnue K du modele de turbulence Cette inconnue est portee
- *
- *     par l equation de transport K porte par le modele.
- *     (version const)
- *
- * @return (Champ_Inc_base&) le champ inconnue (K)
- */
-inline const Champ_Inc_base& Modele_turbulence_hyd_K_Eps_Bicephale::K() const
-{
-  return eqn_transport_K_.inconnue();
-}
-
-/*! @brief Renvoie le champ inconnue K du modele de turbulence Cette inconnue est portee
- *
- *     par l equation de transport K porte par le modele.
- *
- * @return (Champ_Inc_base&) le champ inconnue (K)
- */
-inline Champ_Inc_base& Modele_turbulence_hyd_K_Eps_Bicephale::K()
-{
-  return eqn_transport_K_.inconnue();
-}
-
-/*! @brief Renvoie le champ inconnue epsilon du modele de turbulence Cette inconnue est portee
- *
- *     par l equation de transport epsilon porte par le modele.
- *     (version const)
- *
- * @return (Champ_Inc_base&) le champ inconnue (epsilon)
- */
-inline const Champ_Inc_base& Modele_turbulence_hyd_K_Eps_Bicephale::Eps() const
-{
-  return eqn_transport_Eps_.inconnue();
-}
-
-/*! @brief Renvoie le champ inconnue epsilon du modele de turbulence Cette inconnue est portee
- *
- *     par l equation de transport epsilon porte par le modele.
- *
- * @return (Champ_Inc_base&) le champ inconnue (epsilon)
- */
-inline Champ_Inc_base& Modele_turbulence_hyd_K_Eps_Bicephale::Eps()
-{
-  return eqn_transport_Eps_.inconnue();
-}
-
-/*! @brief Renvoie l equation d evolution de K du modele de turbulence
- *
- * @return (Transport_K_ou_Eps&) equation (K)
- */
-inline Transport_K_ou_Eps_base& Modele_turbulence_hyd_K_Eps_Bicephale::eqn_transp_K()
-{
-  return eqn_transport_K_;
-}
-
-/*! @brief Renvoie l equation d evolution de K du modele de turbulence (version const)
- *
- * @return (Transport_K_ou_Eps&) equation (K)
- */
-inline const Transport_K_ou_Eps_base& Modele_turbulence_hyd_K_Eps_Bicephale::eqn_transp_K() const
-{
-  return eqn_transport_K_;
-}
-
-/*! @brief Renvoie l equation d evolution de epsilon du modele de turbulence
- *
- * @return (Transport_K_ou_Eps&) equation (epsilon)
- */
-inline Transport_K_ou_Eps_base& Modele_turbulence_hyd_K_Eps_Bicephale::eqn_transp_Eps()
-{
-  return eqn_transport_Eps_;
-}
-
-/*! @brief Renvoie l equation d evolution de epsilon du modele de turbulence (version const)
- *
- * @return (Transport_K_ou_Eps&) equation (epsilon)
- */
-inline const Transport_K_ou_Eps_base& Modele_turbulence_hyd_K_Eps_Bicephale::eqn_transp_Eps() const
-{
-  return eqn_transport_Eps_;
-}
 
 #endif /* Modele_turbulence_hyd_K_Eps_Bicephale_included */

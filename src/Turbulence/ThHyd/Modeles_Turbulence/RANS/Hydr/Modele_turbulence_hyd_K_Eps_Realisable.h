@@ -38,27 +38,22 @@ public:
   void verifie_loi_paroi() override;
   bool initTimeStep(double dt) override;
   void mettre_a_jour(double) override;
-  const Equation_base& equation_k_eps(int) const override;
-
-  virtual inline Champ_Inc_base& K_Eps() { return eqn_transport_K_Eps_Rea_.inconnue(); }
-  virtual inline const Champ_Inc_base& K_Eps() const { return eqn_transport_K_Eps_Rea_.inconnue(); }
-  inline Transport_K_Eps_base& eqn_transp_K_Eps() override { return eqn_transport_K_Eps_Rea_; }
-  inline const Transport_K_Eps_base& eqn_transp_K_Eps() const override { return eqn_transport_K_Eps_Rea_; }
+  void controler() override;
   inline OWN_PTR(Modele_Fonc_Realisable_base)& associe_modele_fonction() { return mon_modele_fonc_; }
   inline const OWN_PTR(Modele_Fonc_Realisable_base)& associe_modele_fonction() const { return mon_modele_fonc_; }
   inline OWN_PTR(Modele_Fonc_Realisable_base)& get_modele_fonction() { return mon_modele_fonc_; }
   inline const OWN_PTR(Modele_Fonc_Realisable_base)& get_modele_fonction() const { return mon_modele_fonc_; }
+  Transport_K_Eps_Realisable& get_set_eq_transport() override;
+  const Transport_K_Eps_Realisable& get_eq_transport() const override;
 
   const Champ_base& get_champ(const Motcle& nom) const override;
   bool has_champ(const Motcle& nom, OBS_PTR(Champ_base) &ref_champ) const override;
   bool has_champ(const Motcle& nom) const override;
   void get_noms_champs_postraitables(Noms& nom, Option opt = NONE) const override;
   virtual Champ_Fonc_base& calculer_viscosite_turbulente(double temps);
-  void controler() { eqn_transport_K_Eps_Rea_.controler_K_Eps(); }
 
 private:
   OWN_PTR(Modele_Fonc_Realisable_base) mon_modele_fonc_;
-  Transport_K_Eps_Realisable eqn_transport_K_Eps_Rea_;
   void fill_turbulent_viscosity_tab(const int , const DoubleTab&, DoubleTab& );
 };
 

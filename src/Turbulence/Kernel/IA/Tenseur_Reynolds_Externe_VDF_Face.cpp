@@ -152,7 +152,7 @@ void Tenseur_Reynolds_Externe_VDF_Face::associer_pb(const Probleme_base& pb)
 
       modele_K_Eps_ = modele_turbulence_keps;
 
-      eqn_transport_K_Eps_ = ref_cast(Transport_K_Eps,modele_K_Eps_->eqn_transp_K_Eps());
+      eqn_transport_K_Eps_ = ref_cast(Transport_K_Eps,modele_K_Eps_->get_set_eq_transport());
     }
 }
 

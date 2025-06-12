@@ -38,17 +38,6 @@ public:
   void verifie_loi_paroi() override;
   bool initTimeStep(double dt) override;
   void mettre_a_jour(double) override;
-  const Equation_base& equation_k_eps(int) const override;
-
-  virtual inline Champ_Inc_base& K() { return eqn_transport_K_Rea_.inconnue(); }
-  virtual inline const Champ_Inc_base& K() const { return eqn_transport_K_Rea_.inconnue(); }
-  virtual inline Champ_Inc_base& Eps() { return eqn_transport_Eps_Rea_.inconnue(); }
-  virtual inline const Champ_Inc_base& Eps() const { return eqn_transport_Eps_Rea_.inconnue(); }
-
-  inline Transport_K_ou_Eps_base& eqn_transp_K() override { return eqn_transport_K_Rea_; }
-  inline const Transport_K_ou_Eps_base& eqn_transp_K() const override { return eqn_transport_K_Rea_; }
-  inline Transport_K_ou_Eps_base& eqn_transp_Eps() override { return eqn_transport_Eps_Rea_; }
-  inline const Transport_K_ou_Eps_base& eqn_transp_Eps() const override { return eqn_transport_Eps_Rea_; }
 
   inline OWN_PTR(Modele_Fonc_Realisable_base)& associe_modele_fonction() { return mon_modele_fonc_; }
   inline const OWN_PTR(Modele_Fonc_Realisable_base)& associe_modele_fonction() const { return mon_modele_fonc_; }
@@ -61,15 +50,8 @@ public:
   void get_noms_champs_postraitables(Noms& nom, Option opt = NONE) const override;
 
   virtual Champ_Fonc_base& calculer_viscosite_turbulente(double temps);
-  void controler()
-  {
-    eqn_transport_K_Rea_.controler_variable();
-    eqn_transport_Eps_Rea_.controler_variable();
-  }
-
 private:
   OWN_PTR(Modele_Fonc_Realisable_base) mon_modele_fonc_;
-  Transport_K_ou_Eps_Realisable eqn_transport_K_Rea_, eqn_transport_Eps_Rea_;
   void fill_turbulent_viscosity_tab(const int , const DoubleTab&, const DoubleTab&, DoubleTab& );
 };
 
