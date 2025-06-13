@@ -80,7 +80,7 @@ void Navier_Stokes_FTD_IJK::set_param(Param& param)
   param.ajouter("fichier_reprise_vitesse", &fichier_reprise_vitesse_); // XD_ADD_P chaine not_set
   param.ajouter("timestep_reprise_vitesse", &timestep_reprise_vitesse_); // XD_ADD_P chaine not_set
 
-  param.ajouter("boundary_conditions", &boundary_conditions_, Param::REQUIRED); // XD_ADD_P bloc_lecture BC
+  param.ajouter("boundary_conditions", &boundary_conditions_, Param::REQUIRED);
 
   param.ajouter_flag("projection_initiale", &projection_initiale_demandee_);
   param.ajouter_flag("disable_solveur_poisson", &disable_solveur_poisson_); // XD_ADD_P rien Disable pressure poisson solver
@@ -139,7 +139,7 @@ void Navier_Stokes_FTD_IJK::set_param(Param& param)
   param.ajouter("expression_derivee_force", &expression_derivee_acceleration_); // XD_ADD_P chaine expression of the time-derivative of the X-component of a source-term (see terme_force_ini for the initial value). terme_force_ini : initial value of the X-component of the source term (see expression_derivee_force  for time evolution)
   param.ajouter("terme_force_init", &terme_source_acceleration_); // XD_ADD_P chaine not_set
   param.ajouter("correction_force", &correction_force_); // XD_ADD_P chaine not_set
-  param.ajouter_flag("compute_force_init", &compute_force_init_); // XD_ADD_P chaine not_set
+  param.ajouter_flag("compute_force_init", &compute_force_init_); // XD_ADD_P flag not_set
 
   param.ajouter("expression_variable_source_x", &expression_variable_source_[0]); // XD_ADD_P chaine not_set
   param.ajouter("expression_variable_source_y", &expression_variable_source_[1]); // XD_ADD_P chaine not_set
@@ -150,7 +150,7 @@ void Navier_Stokes_FTD_IJK::set_param(Param& param)
   param.ajouter("expression_potential_phi", &expression_potential_phi_); // XD_ADD_P chaine parser to define phi and make a momentum source Nabla phi.
 
   param.ajouter("forcage", &forcage_);  // XD_ADD_P chaine not_set
-  param.ajouter("corrections_qdm", &qdm_corrections_); // XD_ADD_P chaine not_set
+  param.ajouter("corrections_qdm", &qdm_corrections_); // XD_ADD_P bloc_lecture not_set
 
 
   // Correcteur PID

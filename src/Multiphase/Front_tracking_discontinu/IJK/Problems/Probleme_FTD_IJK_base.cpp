@@ -50,7 +50,10 @@
 #include <Param.h>
 
 Implemente_base(Probleme_FTD_IJK_base, "Probleme_FTD_IJK_base", Probleme_FT_Disc_gen);
-// XD Probleme_FTD_IJK_base interprete Probleme_FTD_IJK_base 1 not_set
+// XD probleme_ftd_ijk Pb_FrontTracking_Disc probleme_ftd_ijk -1 not_set
+// XD attr Fluide_Diphasique_IJK Fluide_Diphasique_IJK Fluide_Diphasique_IJK 1 The diphasic fluid medium associated with the problem.
+// XD ref scheme schema_temps_base_IJK
+// XD ref Domaine_IJK Domaine_IJK
 
 Sortie& Probleme_FTD_IJK_base::printOn(Sortie& os) const
 {

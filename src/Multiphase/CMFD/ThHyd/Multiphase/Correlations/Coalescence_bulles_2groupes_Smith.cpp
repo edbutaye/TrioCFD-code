@@ -25,7 +25,9 @@
 
 
 Implemente_instanciable(Coalescence_bulles_2groupes_Smith, "Coalescence_bulles_2groupes_Smith", Coalescence_bulles_2groupes_base);
-
+// XD Coalescence_bulles_2groupes source_base Coalescence_bulles_2groupes 0 Source term of interfacial area
+// XD attr bloc bloc_lecture bloc 0 hydraulic diameter should be specified within this bloc
+// XD attr smith chaine smith 0 Smith correlation
 
 Sortie& Coalescence_bulles_2groupes_Smith::printOn(Sortie& os) const
 {

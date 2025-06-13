@@ -15,7 +15,8 @@
 
 #include <Flux_2groupes_base.h>
 Implemente_base(Flux_2groupes_base, "Flux_2groupes_base", Correlation_base);
-// XD Flux_2groupes source_base Flux_2groupes 0 Source term of mass transfer between phases connected by the saturation object defined in saturation_xxxx
+// XD Flux_2groupes source_base Flux_2groupes -1 Source term of mass and interfacial area transfer
+// XD attr dh floattant dh 1 hydraulic diameter
 
 Sortie& Flux_2groupes_base::printOn(Sortie& os) const
 {

@@ -44,7 +44,7 @@ void Modele_turbulence_hyd_K_Eps_Bicephale::set_param(Param& param)
 {
   Modele_turbulence_hyd_RANS_Bicephale_base::set_param(param);
   param.ajouter_non_std("Modele_Fonc_Bas_Reynolds", (this)); // XD_ADD_P Modele_Fonc_Realisable_base This keyword is used to set the model used
-  param.ajouter("CMU", &LeCmu_); // XD_ADD_P double Keyword to modify the Cmu constant of k-eps model : Nut=Cmu*k*k/eps Default value is 0.09
+  param.ajouter("CMU", &LeCmu_); // XD_ADD_P floattant Keyword to modify the Cmu constant of k-eps model : Nut=Cmu*k*k/eps Default value is 0.09
 }
 
 int Modele_turbulence_hyd_K_Eps_Bicephale::lire_motcle_non_standard(const Motcle& mot, Entree& is)

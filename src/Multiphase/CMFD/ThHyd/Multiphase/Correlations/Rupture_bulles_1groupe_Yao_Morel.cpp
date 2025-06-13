@@ -22,6 +22,9 @@
 #include <Pb_Multiphase.h>
 
 Implemente_instanciable(Rupture_bulles_1groupe_Yao_Morel, "Rupture_bulles_1groupe_Yao_Morel", Rupture_bulles_1groupe_base);
+// XD Rupture_bulles_1groupe source_base Rupture_bulles_1groupe 0 Source term of interfacial area breakup
+// XD attr bloc bloc_lecture bloc 0 should be { }
+// XD attr Yao_Morel chaine Yao_Morel 0 Yao Morel correlation
 
 Sortie& Rupture_bulles_1groupe_Yao_Morel::printOn(Sortie& os) const
 {

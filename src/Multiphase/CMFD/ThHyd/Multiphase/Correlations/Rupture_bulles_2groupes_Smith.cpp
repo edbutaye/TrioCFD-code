@@ -24,6 +24,9 @@
 #include <Pb_Multiphase.h>
 
 Implemente_instanciable(Rupture_bulles_2groupes_Smith, "Rupture_bulles_2groupes_Smith", Rupture_bulles_2groupes_base);
+// XD Rupture_bulles_2groupes source_base Rupture_bulles_2groupes 0 Source term of interfacial area breakup
+// XD attr bloc bloc_lecture bloc 0 hydraulic diameter should be specified
+// XD attr smith chaine smith 0 Smith correlation
 
 Sortie& Rupture_bulles_2groupes_Smith::printOn(Sortie& os) const
 {

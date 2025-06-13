@@ -16,6 +16,7 @@
 #include <Schema_RK3_IJK.h>
 
 Implemente_instanciable(Schema_RK3_IJK, "Schema_RK3_IJK", Schema_Temps_IJK_base);
+// XD Schema_RK3_IJK schema_temps_base_IJK Schema_RK3_IJK -1 Basic class for time schemes. This scheme will be associated with a problem and the equations of this problem.
 
 Sortie& Schema_RK3_IJK::printOn(Sortie& s) const { return Schema_Temps_IJK_base::printOn(s); }
 Entree& Schema_RK3_IJK::readOn(Entree& s) { return Schema_Temps_IJK_base::readOn(s); }

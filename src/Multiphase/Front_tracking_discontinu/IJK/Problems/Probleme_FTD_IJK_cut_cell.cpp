@@ -20,6 +20,7 @@
 #include <Cut_cell_tools.h>
 
 Implemente_instanciable(Probleme_FTD_IJK_cut_cell, "Probleme_FTD_IJK_cut_cell", Probleme_FTD_IJK_base);
+// XD Probleme_FTD_IJK_cut_cell probleme_ftd_ijk Probleme_FTD_IJK_cut_cell -1 not_set
 
 Sortie& Probleme_FTD_IJK_cut_cell::printOn(Sortie& os) const { return os; }
 

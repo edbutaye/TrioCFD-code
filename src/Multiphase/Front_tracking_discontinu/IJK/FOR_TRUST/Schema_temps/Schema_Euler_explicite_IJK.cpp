@@ -16,6 +16,7 @@
 #include <Schema_Euler_explicite_IJK.h>
 
 Implemente_instanciable(Schema_Euler_explicite_IJK, "Schema_euler_explicite_IJK", Schema_Temps_IJK_base);
+// XD Schema_euler_explicite_IJK schema_temps_base_IJK Schema_euler_explicite_IJK -1 Basic class for time schemes. This scheme will be associated with a problem and the equations of this problem.
 
 Sortie& Schema_Euler_explicite_IJK::printOn(Sortie& s) const { return  Schema_Temps_IJK_base::printOn(s); }
 

@@ -19,6 +19,7 @@
 #include <Vecteur3.h>
 
 Implemente_instanciable(Fluide_Diphasique_IJK, "Fluide_Diphasique_IJK", Fluide_Diphasique);
+// XD Fluide_Diphasique_IJK fluide_diphasique Fluide_Diphasique_IJK -1 Two-phase fluid.
 
 Sortie& Fluide_Diphasique_IJK::printOn(Sortie& os) const { return os; }
 

@@ -22,6 +22,10 @@
 #include <Pb_Multiphase.h>
 
 Implemente_instanciable(Coalescence_bulles_1groupe_Yao_Morel, "Coalescence_bulles_1groupe_Yao_Morel", Coalescence_bulles_1groupe_base);
+// XD Coalescence_bulles_1groupe source_base Coalescence_bulles_1groupe 0 Source term of interfacial area
+// XD attr bloc bloc_lecture bloc 0 Should be { }
+// XD attr Yao_Morel chaine Yao_Morel 0 Yao Morel correlation
+
 
 Sortie& Coalescence_bulles_1groupe_Yao_Morel::printOn(Sortie& os) const
 {

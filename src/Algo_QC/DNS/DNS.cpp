@@ -45,6 +45,9 @@ using std::max;
 //  verifier quick en paroi (=> passer a l'ordre 1)
 
 Implemente_instanciable(DNS_QC_double, "DNS_QC_double", Interprete);
+// XD DNS_QC_double interprete DNS_QC_double -1 not_set
+// XD  attr bloc bloc_lecture bloc 0 not_set
+
 
 Sortie& DNS_QC_double::printOn(Sortie& s) const
 {
