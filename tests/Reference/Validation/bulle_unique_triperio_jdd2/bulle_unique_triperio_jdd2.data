@@ -1,0 +1,165 @@
+# PARALLEL ONLY 8 #
+dimension 3
+system " tar -xzf maillage_disc.tar.gz "
+
+# Domain definition #
+Domaine dom
+
+# Problem #
+probleme_ft_disc_gen	pb
+
+Scatter maillage/DOM.Zones dom
+
+
+system "mkdir -p RESULTATS"
+system "mkdir -p SAUV"
+
+# Scheme definition #
+schema_euler_explicite sch
+read sch
+{
+   tinit 0.
+	nb_pas_dt_max 3
+   # tmax 1. #
+   dt_min 1.e-16
+   dt_max 5e-5
+   dt_impr 1.e-2 
+   dt_sauv  5.e-5
+   seuil_statio  -1.e-8
+   periode_sauvegarde_securite_en_heures 11.8
+}
+
+# Discretization method declaration #
+VDF dis
+
+# Association of previous elements with the problem #
+# pb problème, dom domaine, hydraulique équation NS avec FT, interf équation interface, fluide def des fluides, sch discr terme temp #
+associate  pb dom
+associate  pb sch
+
+# Association of discretization #
+discretize pb dis
+
+# Problem definition #
+read pb
+{
+    solved_equations
+    {
+        # Navier-Stokes equation for front-tracking method #
+        navier_stokes_ft_disc	hydraulique
+        # Interface equation #
+        transport_interfaces_ft_disc	interf
+    }
+    
+    Fluide_Diphasique
+    {
+        sigma	champ_uniforme 1 0.031153874425382942
+        # Gravity #
+        gravite Champ_Uniforme 3 -9.81 0. 0.
+        
+	    fluide1 fluide_incompressible
+	        {
+	            mu  champ_uniforme 1 0.040582375497764035  
+	            rho champ_uniforme 1 880.0
+            }
+	    fluide0 fluide_incompressible
+	        {
+	            mu champ_uniforme       1 0.0020291187748882017     
+	            rho champ_uniforme      1 44.0
+            }
+    }
+    
+    
+	hydraulique
+	{	
+		modele_turbulence null { } # DNS #
+		solveur_pression GCP { precond ssor { omega 1.5 } seuil 1e-6 }
+		diffusion   {       }
+		convection  { Quick }
+		Sources  { Canal_perio { bord periox } , Canal_perio { bord perioy } , Canal_perio { bord perioz } , Source_Qdm champ_uniforme 3 851.994 0. 0. }		
+		projection_initiale     	  	0
+		dt_projection 			1.e-10 1.e-18
+		equation_interfaces_proprietes_fluide 	interf
+		initial_conditions
+		{
+			vitesse Champ_Uniforme 3 -0.0335 0. 0.
+		}
+		conditions_limites
+		{
+			perioy	periodique
+                        perioz      periodique
+                        periox      periodique
+		}
+		terme_gravite grad_i
+	}
+	interf
+	{
+	    maillage { niveau_plot 1 }
+		methode_transport vitesse_interpolee hydraulique
+		interpolation_repere_local 
+		methode_interpolation_v VDF_lineaire
+		VOFlike_correction_volume 1
+		nb_iterations_correction_volume 2
+		nb_lissage_correction_volume 2
+		n_iterations_distance 8
+		remaillage # Remaillage de Nour en 2D AXISYMETRIC #
+		{
+			pas 1e-10
+			nb_iter_remaillage 5
+			critere_arete 0.35
+			# critere_remaillage 0.35 #
+			pas_lissage 1e-12
+			relax_barycentrage 1
+			# critere_longueur_fixe 0.0065 #
+			facteur_longueur_ideale 1 # 1.5 #
+			nb_iter_barycentrage 2
+			nb_iter_correction_volume 5
+			seuil_dvolume_residuel 0
+			lissage_courbure_coeff -0.02
+			lissage_courbure_iterations_systematique 3 # 1 #
+			lissage_courbure_iterations_si_remaillage 5
+		}
+		collisions
+		{
+			active
+			/* juric_pour_tout */
+			type_remaillage Juric { source_isovaleur indicatrice }
+			 /* Thomas { distance_interface_element_max 1 } */ # Uncomment later #
+		}
+		initial_conditions 
+		{
+            		fonction 1.-(((x-0.002)^2+y^2+z^2)_LT_((0.00095)^2))*(2.0)
+		}
+		boundary_conditions
+		{
+			periox	    Paroi_FT_disc symetrie
+			perioy	    Paroi_FT_disc symetrie
+			perioz	    Paroi_FT_disc symetrie
+		}
+	}
+	
+
+        Post_processing
+		{
+			format  LATA
+			champs dt_post        1.e-3
+			{
+				indicatrice_interf elem
+				vitesse elem
+				pression elem 
+			}
+			interfaces interf
+			{
+			
+				courbure som
+				vitesse som
+			}
+		} 
+
+    /* resume_last_time binaire SAUV/jsi_long_bubble.sauv */
+    sauvegarde_simple binaire SAUV/jsi_long_bubble.sauv
+}
+# The problem is solved with #
+Solve pb
+# Not necessary keyword to finish #
+End
