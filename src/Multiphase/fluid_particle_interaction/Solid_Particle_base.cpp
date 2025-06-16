@@ -39,5 +39,5 @@ Entree& Solid_Particle_base::readOn(Entree& is)
 void Solid_Particle_base::set_param(Param& param)
 {
   Fluide_Incompressible::set_param(param);
-  param.ajouter("e_dry", &e_dry_,Param::REQUIRED); // XD_ADD_P double dry coefficient
+  param.ajouter("e_dry", &e_dry_,Param::REQUIRED); // XD_ADD_P floattant dry coefficient
 }
