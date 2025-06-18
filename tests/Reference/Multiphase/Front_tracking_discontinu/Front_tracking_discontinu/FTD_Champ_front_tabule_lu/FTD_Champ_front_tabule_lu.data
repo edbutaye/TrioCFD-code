@@ -1,0 +1,195 @@
+dimension 2
+bidim_axi
+domaine dom 
+
+# BEGIN MESH #
+mailler dom
+{
+     pave pave1
+    {
+        origine             0. 0.
+        longueurs           0.0012 0.0050
+        nombre_de_noeuds    80 40
+    }
+    {
+        bord haut        Y = 0.0050	0. <= X <= 0.0012
+	bord bas        Y = 0.	        0. <= X <= 0.0012
+	bord gauche      X = 0.	   	0. <= Y <= 0.0050
+        bord droite      X = 0.0012	0. <= Y <= 0.0050
+    }
+}
+# END MESH #
+
+# BEGIN PARTITION
+Partition dom
+{
+	Partition_tool metis { Nb_parts 2 }
+	Larg_joint 2
+	zones_name dom
+	reorder 1
+    	single_hdf
+}
+END PARTITION #
+
+# BEGIN SCATTER
+scatter dom.Zones dom
+END SCATTER #
+
+probleme_ft_disc_gen	pb
+
+schema_euler_explicite sch
+read sch
+{
+   tinit 0.
+   tmax 0.04
+   nb_pas_dt_max 10
+   dt_min 1.e-8
+   dt_max 1.e-7
+   dt_impr 1.e-2 
+   dt_sauv 5.e-4
+   seuil_statio  -1.e-8
+}
+
+VDF dis
+
+associate  pb dom
+associate  pb sch
+
+# Association de discrétisation #
+discretize pb dis
+
+
+# Definition du probleme #
+read pb
+{
+    solved_equations
+    {
+        navier_stokes_ft_disc	hydraulique
+        transport_interfaces_ft_disc	interf
+    }
+    
+    Fluide_Diphasique
+    {
+        sigma	champ_uniforme 1 0.0728
+        gravite Champ_Uniforme 2 0. -9.81
+	    fluide0 fluide_incompressible
+	        {
+	            mu  champ_uniforme 1 0.001      
+	            rho champ_uniforme 1 998.
+                }
+	    fluide1 fluide_incompressible
+	        {
+	            mu champ_uniforme       1 1.8179e-5      
+	            rho champ_uniforme      1 1.202 
+                }
+     }
+    
+    
+	hydraulique
+	{	
+		modele_turbulence null { } 
+		solveur_pression GCP { precond ssor { omega 1.5 } seuil 1e-6 }
+		diffusion   {       }
+		convection  { amont }
+		projection_initiale     	  	1
+		dt_projection 			1.e-10 1.e-18
+		equation_interfaces_proprietes_fluide 	interf
+		initial_conditions
+		{
+			vitesse Champ_fonc_xyz dom 2 0.0 0.0
+		}
+		conditions_limites
+		{
+			gauche	symetrie
+			droite  paroi_fixe
+			haut	frontiere_ouverte_pression_imposee Champ_front_uniforme 1 0.0 
+			bas frontiere_ouverte_vitesse_imposee Champ_front_tabule_lu 2 donnees 
+			
+		}
+		terme_gravite grad_i
+	}
+	interf
+	{
+	    maillage { niveau_plot 1 }
+		methode_transport vitesse_interpolee hydraulique
+		VOFlike_correction_volume 1
+		nb_iterations_correction_volume 2
+		nb_lissage_correction_volume 2
+		n_iterations_distance 8
+		remaillage
+		{
+			pas 1e-05
+			nb_iter_remaillage 5
+			critere_arete 0.35
+			pas_lissage 1e-12
+			relax_barycentrage 1
+			facteur_longueur_ideale 0.8
+			nb_iter_barycentrage 2
+			nb_iter_correction_volume 5
+			seuil_dvolume_residuel 1e-15
+			lissage_courbure_coeff -0.001
+			lissage_courbure_iterations_systematique 3
+			lissage_courbure_iterations_si_remaillage 5
+		}
+		collisions
+		{
+			active
+			type_remaillage Juric { source_isovaleur indicatrice }
+		}
+		initial_conditions 
+		{
+            		fonction ((x-0.00001)^2+(y-0.0030)^2-(0.00015)^2)
+		}
+		boundary_conditions
+		{
+			bas	    Paroi_FT_disc symetrie
+			gauche      Paroi_FT_disc symetrie
+			droite	    Paroi_FT_disc symetrie
+			haut	    Paroi_FT_disc symetrie
+		}
+		        
+	}
+
+    Post_processing
+    {
+        Probes {
+                sonde_vitesse vitesse periode 1.e-7 points 1  0.2 0.2 
+                sonde_indicatrice indicatrice_interf periode 1.e-7 point 1 0.02 0.02
+        }
+
+        fields dt_post 0.05
+        {
+            indicatrice_interf
+            vitesse elem
+            masse_volumique
+        }
+    }
+
+    liste_postraitements
+    {
+        postraitement_ft_lata post1 {
+            format Lata
+            fichier post1
+            champs dt_post 5e-4 {
+                indicatrice_interf elem
+		vitesseX elem
+		vitesseY elem
+		pression elem 
+		masse_volumique elem
+
+            }
+            interfaces interf {
+                courbure som
+                vitesse som
+            }
+        }
+    }
+ 
+}
+
+
+
+Solve pb
+End 
+
+
