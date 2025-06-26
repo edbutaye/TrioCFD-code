@@ -8225,8 +8225,9 @@ int Transport_Interfaces_FT_Disc::reprendre(Entree& is)
     if (is_solid_particle_)
       {
         if (collision_model_.non_nul())	collision_model_.valeur().reprendre(is);
-        particles_position_collision_.resize(0,dimension);
-        particles_velocity_collision_.resize(0,dimension);
+        const int nb_particles_tot=collision_model_.valeur().get_nb_particles_tot();
+        particles_position_collision_.resize(nb_particles_tot,dimension);
+        particles_velocity_collision_.resize(nb_particles_tot,dimension);
         const int format_xyz = EcritureLectureSpecial::is_lecture_special();
         if (format_xyz)
           {

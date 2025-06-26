@@ -171,8 +171,7 @@ int Collision_Model_FT_base::reprendre(Entree& is)
     }
   is >> nb_particles_tot_;
   e_eff_.resize(nb_particles_tot_,nb_particles_tot_+2*dimension);
-  e_eff_.resize(nb_particles_tot_,nb_particles_tot_+2*dimension);
-
+  F_old_.resize(nb_particles_tot_,nb_particles_tot_+2*dimension);
   if (format_xyz)
     {
       for (int i=0; i<F_old_.dimension(0); i++)
@@ -200,7 +199,7 @@ int Collision_Model_FT_base::sauvegarder(Sortie& os) const
       if (Process::je_suis_maitre())
         {
           os << Nom(que_suis_je()) << finl;
-          os << nb_particles_tot_;
+          os << nb_particles_tot_ << finl;
           for (int i=0; i<F_old_.dimension(0); i++)
             for (int j=0; j<F_old_.dimension(1); j++)
               os<<F_old_(i,j);
@@ -213,7 +212,7 @@ int Collision_Model_FT_base::sauvegarder(Sortie& os) const
   else
     {
       os << que_suis_je() << finl;
-      os << nb_particles_tot_;
+      os << nb_particles_tot_ << finl;
       os << F_old_;
       bytes += 8 * F_old_.size_array();
       os << e_eff_;
