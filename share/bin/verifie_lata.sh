@@ -14,11 +14,15 @@ name=${fullname#PAR_}
 echo "Test case name: ${fullname}"
 
 # untar ref for compare_lata
-tar xzf ref.tar.gz
+if [ -f "ref.tar.gz" ] ; then 
+    tar xzf "ref.tar.gz"
+else
+    UPDATE_LATA_REF=1
+fi
 
 
 # Update ref if asked
-if [ "$UPDATE_LATA_REF" != "" ] && [ "$fullname" != "$name" ]
+if [ "$UPDATE_LATA_REF" != "" ] && [ "$fullname" == "$name" ]
 then
 
 	test_path=${TrioCFD_project_directory}/tests/Reference/$(realpath -s --relative-to=$TRUST_TMP/tests $(pwd))
