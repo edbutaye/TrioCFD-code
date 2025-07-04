@@ -52,7 +52,7 @@ public :
 protected:
   double Reb_c_ = 170.;
   double g_ = 9.81;
-  int n_l = -1 ;
+  int n_l_ = -1 ;
 };
 
 #endif

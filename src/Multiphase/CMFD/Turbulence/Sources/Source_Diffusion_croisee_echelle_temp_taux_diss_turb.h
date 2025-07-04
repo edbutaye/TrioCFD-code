@@ -47,8 +47,7 @@ public:
   void ajouter_blocs(matrices_t matrices, DoubleTab& secmem, const tabs_t& semi_impl = {}) const override = 0;
 
 protected:
-  double sigma_d = 0.; // Kok and Spekreijse (2000) Efficient and accurate implementation of the k-omega turbulence model in the NLR multi-block Navier-Stokes system
+  double sigma_d_ = 0.; // Kok and Spekreijse (2000) Efficient and accurate implementation of the k-omega turbulence model in the NLR multi-block Navier-Stokes system
 };
 
 #endif
-

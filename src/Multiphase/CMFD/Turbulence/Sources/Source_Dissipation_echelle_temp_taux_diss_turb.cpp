@@ -42,7 +42,7 @@ Sortie& Source_Dissipation_echelle_temp_taux_diss_turb::printOn(Sortie& os) cons
 Entree& Source_Dissipation_echelle_temp_taux_diss_turb::readOn(Entree& is)
 {
   Param param(que_suis_je());
-  param.ajouter("beta_omega", &beta_omega);
+  param.ajouter("beta_omega", &beta_omega_);
   param.lire_avec_accolades_depuis(is);
   return is;
 }
@@ -72,16 +72,16 @@ void Source_Dissipation_echelle_temp_taux_diss_turb::ajouter_blocs(matrices_t ma
       {
         if (Type_diss == "tau")
           {
-            const double secmem_en  = pe(e) * ve(e) * beta_omega ;
+            const double secmem_en  = pe(e) * ve(e) * beta_omega_ ;
             secmem(e, n) += secmem_en ;
           }
         else if (Type_diss == "omega")
           {
-            const double secmem_en  = - pe(e) * ve(e) * beta_omega * pdiss(e,n) * (  pdiss(e,n) + 2 * (diss(e,n) - pdiss(e,n) ) ); // cAlan : pourquoi cette forme ?
+            const double secmem_en = - pe(e) * ve(e) * beta_omega_ * pdiss(e,n) * (  pdiss(e,n) + 2 * (diss(e,n) - pdiss(e,n) ) );
             secmem(e, n) += secmem_en ;
             for (auto &&i_m : matrices)
               if (i_m.first == "omega")
-                (*i_m.second)(N*e+n, N*e+n) += pe(e) * ve(e) * beta_omega * 2* pdiss(e,n) ;
+                (*i_m.second)(N*e+n, N*e+n) += pe(e) * ve(e) * beta_omega_ * 2* pdiss(e,n) ;
           }
       }
 }

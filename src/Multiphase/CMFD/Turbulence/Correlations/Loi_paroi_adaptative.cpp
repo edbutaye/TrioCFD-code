@@ -114,7 +114,7 @@ double Loi_paroi_adaptative::u_plus_de_y_plus(double y_p)  // Blended Reichardt 
 {
   const double reichardt = std::log(1 + 0.4*y_p)/von_karman_
                            + 7.8*(1 - std::exp(-y_p/11) - y_p/11*std::exp(-y_p/3));
-  const double log_law = std::log(y_p + limiteur_y_p)/von_karman_ + 5.1;
+  const double log_law = std::log(y_p + limiteur_y_p_)/von_karman_ + 5.1;
   const double blending = std::tanh( y_p/27*y_p/27*y_p/27*y_p/27);
 
   return (1.0 - blending)*reichardt + blending*log_law;
@@ -124,12 +124,12 @@ double Loi_paroi_adaptative::deriv_u_plus_de_y_plus(double y_p)
 {
   const double reichardt = std::log(1 + 0.4*y_p)/von_karman_
                            + 7.8*(1 - std::exp(-y_p/11) - y_p/11*std::exp(-y_p/3));
-  const double log_law = std::log(y_p + limiteur_y_p)/von_karman_ + 5.1;
+  const double log_law = std::log(y_p + limiteur_y_p_)/von_karman_ + 5.1;
   const double blending = std::tanh( y_p/27*y_p/27*y_p/27*y_p/27);
 
   const double d_reichardt = 0.4/(1 + 0.4*y_p)*1/von_karman_ + 7.8/11*std::exp(-y_p/11)
                              - 7.8/11*std::exp(-y_p/3) + 7.8*y_p/33*std::exp(-y_p/3) ;
-  const double d_log_law = 1.0/(y_p + limiteur_y_p)*1./von_karman_;
+  const double d_log_law = 1.0/(y_p + limiteur_y_p_)*1./von_karman_;
   const double d_blending = 4.0/27*(y_p/27*y_p/27*y_p/27)*(1 - blending*blending);
 
   return (1 - blending)*d_reichardt - reichardt*d_blending + blending*d_log_law + d_blending*log_law ;

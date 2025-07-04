@@ -46,7 +46,8 @@ Sortie& Paroi_frottante_loi::printOn(Sortie& s ) const
 
 Entree& Paroi_frottante_loi::readOn(Entree& s )
 {
-  if (app_domains.size() == 0) app_domains = { Motcle("turbulence") };
+  if (app_domains.size() == 0)
+    app_domains = { Motcle("turbulence") };
 
   Param param(que_suis_je());
   param.ajouter("y_p_prod_k", &y_p_prod_k_);
@@ -67,30 +68,53 @@ void Paroi_frottante_loi::completer()
       .is_turb())
     Process::exit(que_suis_je() + " : diffusion operator must be turbulent !");
 
-  if sub_type(Viscosite_turbulente_k_tau, (*ref_cast(Operateur_Diff_base, domaine_Cl_dis().equation().operateur(0).l_op_base()).correlation_viscosite_turbulente()))
+  if (sub_type(Viscosite_turbulente_k_tau, (*ref_cast(Operateur_Diff_base, domaine_Cl_dis().equation().operateur(0).l_op_base()).correlation_viscosite_turbulente())))
     {
-      if (fac_prod_k_ < -1.e7) fac_prod_k_ = 1.2;
-      if (y_p_prod_k_ < -1.e7) y_p_prod_k_ = 4.;
-      if (fac_prod_k_grand_ < -1.e7) fac_prod_k_grand_ = 0.2;
-      if (y_p_prod_k_grand_ < -1.e7) y_p_prod_k_grand_ = 150.;
+      if (fac_prod_k_ < -1.e7)
+        fac_prod_k_ = 1.2;
+
+      if (y_p_prod_k_ < -1.e7)
+        y_p_prod_k_ = 4.;
+
+      if (fac_prod_k_grand_ < -1.e7)
+        fac_prod_k_grand_ = 0.2;
+
+      if (y_p_prod_k_grand_ < -1.e7)
+        y_p_prod_k_grand_ = 150.;
     }
   else if sub_type(Viscosite_turbulente_k_omega, (*ref_cast(Operateur_Diff_base, domaine_Cl_dis().equation().operateur(0).l_op_base()).correlation_viscosite_turbulente()))
     {
-      if (fac_prod_k_ < -1.e7) fac_prod_k_ = 1.0;
-      if (y_p_prod_k_ < -1.e7) y_p_prod_k_ = 4.;
-      if (fac_prod_k_grand_ < -1.e7) fac_prod_k_grand_ = 0.6;
-      if (y_p_prod_k_grand_ < -1.e7) y_p_prod_k_grand_ = 120.;
+      if (fac_prod_k_ < -1.e7)
+        fac_prod_k_ = 1.0;
+
+      if (y_p_prod_k_ < -1.e7)
+        y_p_prod_k_ = 4.;
+
+      if (fac_prod_k_grand_ < -1.e7)
+        fac_prod_k_grand_ = 0.6;
+
+      if (y_p_prod_k_grand_ < -1.e7)
+        y_p_prod_k_grand_ = 120.;
     }
   else
     {
-      if (fac_prod_k_ < -1.e7) fac_prod_k_ = 0.;
-      if (y_p_prod_k_ < -1.e7) y_p_prod_k_ = 4.;
-      if (fac_prod_k_grand_ < -1.e7) fac_prod_k_grand_ = 0.;
-      if (y_p_prod_k_grand_ < -1.e7) y_p_prod_k_grand_ = 120.;
+      if (fac_prod_k_ < -1.e7)
+        fac_prod_k_ = 0.;
+
+      if (y_p_prod_k_ < -1.e7)
+        y_p_prod_k_ = 4.;
+
+      if (fac_prod_k_grand_ < -1.e7)
+        fac_prod_k_grand_ = 0.;
+
+      if (y_p_prod_k_grand_ < -1.e7)
+        y_p_prod_k_grand_ = 120.;
     }
 }
 
 double Paroi_frottante_loi::fac_coeff_grad(double y_p) const
 {
-  return 1 + fac_prod_k_ * std::tanh( (y_p/y_p_prod_k_)*(y_p/y_p_prod_k_) ) - fac_prod_k_grand_ * std::tanh( (y_p/y_p_prod_k_grand_)*(y_p/y_p_prod_k_grand_)*(y_p/y_p_prod_k_grand_) );
+  const double tmp1 = (y_p/y_p_prod_k_)*(y_p/y_p_prod_k_);
+  const double tmp2 = (y_p/y_p_prod_k_grand_)*(y_p/y_p_prod_k_grand_)*(y_p/y_p_prod_k_grand_);
+  return 1 + fac_prod_k_ * std::tanh(tmp1) - fac_prod_k_grand_ * std::tanh(tmp2);
 }

@@ -101,9 +101,9 @@ const Champ_base& Energie_cinetique_turbulente_WIT::diffusivite_pour_pas_de_temp
  */
 void Energie_cinetique_turbulente_WIT::discretiser()
 {
-  int nb_valeurs_temp = schema_temps().nb_valeurs_temporelles();
-  double temps = schema_temps().temps_courant();
-  const Discret_Thyd& dis=ref_cast(Discret_Thyd, discretisation());
+  const int nb_valeurs_temp = schema_temps().nb_valeurs_temporelles();
+  const double temps = schema_temps().temps_courant();
+  const Discret_Thyd& dis = ref_cast(Discret_Thyd, discretisation());
   Cerr << "Turbulent kinetic energy discretization" << finl;
   //On utilise temperature pour la directive car discretisation identique
   dis.discretiser_champ("temperature",domaine_dis(),"k_WIT","J/kg", 1,nb_valeurs_temp,temps,l_inco_ch);//une seule compo, meme en multiphase
@@ -187,8 +187,8 @@ void Energie_cinetique_turbulente_WIT::calculer_alpha_rho_k_WIT(const Objet_U& o
       val(i, n) = k(i, n);
 
   /* on ne peut utiliser valeur_aux_bords que si ch_rho a un domaine_dis_base */
-  DoubleTab b_k = eqn.inconnue().valeur_aux_bords();
-  int Nb = b_k.dimension_tot(0);
+  const DoubleTab b_k = eqn.inconnue().valeur_aux_bords();
+  const int Nb = b_k.dimension_tot(0);
 
   for (int i = 0; i < Nb; i++)
     for (int n = 0; n < N; n++)

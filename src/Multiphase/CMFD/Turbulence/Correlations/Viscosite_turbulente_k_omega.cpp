@@ -106,13 +106,14 @@ void Viscosite_turbulente_k_omega::reynolds_stress(DoubleTab& R_ij) const // Ren
   const DoubleTab& omega = pb_->get_champ("omega").passe();
   const DoubleTab& nu = pb_->get_champ("viscosite_cinematique").passe();
   const DoubleTab& grad_u = pb_->get_champ("gradient_vitesse").passe();
-  ConstDoubleTab_parts p_gu(grad_u); //en PolyMAC_P0, grad_u contient (nf.grad)u_i aux faces, puis (d_j u_i) aux elements
+
   const int cnu = nu.dimension(0) == 1;
   const int D = dimension;
   const int N = nu.dimension(1);
   const int Nk = k.dimension(1);
 
   int i_part = -1;
+  ConstDoubleTab_parts p_gu(grad_u); //en PolyMAC_P0, grad_u contient (nf.grad)u_i aux faces, puis (d_j u_i) aux elements
   for (int i = 0; i < p_gu.size(); i++)
     if (p_gu[i].get_md_vector() == R_ij.get_md_vector())
       i_part = i; //on cherche une partie ayant le meme support que k
@@ -125,7 +126,15 @@ void Viscosite_turbulente_k_omega::reynolds_stress(DoubleTab& R_ij) const // Ren
     for (int n = 0; n < N; n++)
       {
         double sum_diag = 0.;
-        double nut_loc = n < Nk ? (omega(i,n) > 0.) ? std::max(k(i, n) / omega(i, n), limiter_ * nu(!cnu * i, n)): limiter_ * nu(!cnu * i, n) : 0 ;
+        double nut_loc {0.0};
+        if (n < Nk)
+          {
+            if (omega(i, n) > 0.)
+              nut_loc = std::max(k(i, n) / omega(i, n), limiter_ * nu(!cnu * i, n));
+            else
+              nut_loc = limiter_*nu(!cnu*i, n);
+          }
+
         for (int d = 0; d < D; d++)
           sum_diag += gu(i, d, D * n + d) ;
 

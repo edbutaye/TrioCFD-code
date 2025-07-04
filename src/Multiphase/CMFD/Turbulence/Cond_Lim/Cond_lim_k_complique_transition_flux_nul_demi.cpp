@@ -60,7 +60,9 @@ void Cond_lim_k_complique_transition_flux_nul_demi::me_calculer()
   const DoubleTab& nu_visc = equa.diffusivite_pour_pas_de_temps().passe();
   const DoubleTab& mu_visc = equa.diffusivite_pour_transport().passe();
 
-  const int cnu = nu_visc.dimension(0) == 1, cmu = mu_visc.dimension(0) == 1;
+  const int cnu = nu_visc.dimension(0) == 1;
+  const int cmu = mu_visc.dimension(0) == 1;
+
   // On va chercher le mu turbulent de polymac et celui de vdf et on prend le bon dans la suite
   const DoubleTab *mu_poly = domaine.que_suis_je().debute_par("Domaine_PolyMAC")
                              ? &ref_cast(Op_Diff_PolyMAC_P0_base,
@@ -82,14 +84,15 @@ void Cond_lim_k_complique_transition_flux_nul_demi::me_calculer()
 
   for (int f = 0; f < nf; f++)
     {
-      int f_domaine = f + f1; // number of the face in the domaine
-      int e_domaine = (f_e(f_domaine,0)>=0) ? f_e(f_domaine,0) : f_e(f_domaine,1) ; // Make orientation vdf-proof
-      double y_loc = f_e(f_domaine,0)>=0 ? domaine.dist_face_elem0(f_domaine,e_domaine) : domaine.dist_face_elem1(f_domaine,e_domaine) ;
-      double mu_tot_loc = (mu_poly) ? (*mu_poly)(e_domaine,n) : (mu_vdf) ? (*mu_vdf)(e_domaine,n) + mu_visc(!cmu * e_domaine,n) : -1;
+      const int f_domaine = f + f1; // number of the face in the domaine
+      const int e_domaine = (f_e(f_domaine,0)>=0) ? f_e(f_domaine,0) : f_e(f_domaine,1) ; // Make orientation vdf-proof
+      const double y_loc = f_e(f_domaine,0)>=0 ? domaine.dist_face_elem0(f_domaine,e_domaine) : domaine.dist_face_elem1(f_domaine,e_domaine) ;
+      const double mu_tot_loc = (mu_poly) ? (*mu_poly)(e_domaine,n) : (mu_vdf) ? (*mu_vdf)(e_domaine,n) + mu_visc(!cmu * e_domaine,n) : -1;
 
       const double tmp = yp(f_domaine, 0)/50.;
-      h_(f, 0) = 2.*mu_tot_loc/y_loc * (1 - std::tanh(tmp*tmp*tmp));
-      h_grad_(f, 0) = 2./y_loc * (1 - std::tanh(tmp*tmp*tmp));
+      const double fac = 1.0/y_loc * (1 - std::tanh(tmp*tmp*tmp));
+      h_(f, 0) = 2.*mu_tot_loc * fac;
+      h_grad_(f, 0) = 2.0*fac;
       T_(f, 0) = calc_k(y_loc/2., u_tau(f_domaine, 0), nu_visc(!cnu * e_domaine, 0));
     }
 
@@ -105,10 +108,10 @@ double Cond_lim_k_complique_transition_flux_nul_demi::calc_k(const double y,
   const double y_p = y * u_tau / visc;
   const double f1 = (y_p - 1)*(y_p - 1)*(y_p - 1)/30;
   const double tmp = std::abs(4.6 - std::log(y_p));
-  const double f2 = 1/std::sqrt(beta_k_) - 0.08*tmp*tmp*tmp;
+  const double f2 = 1.0/std::sqrt(beta_k_) - 0.08*tmp*tmp*tmp;
   const double b1 = std::tanh(std::pow(y_p/4., 10));
   const double b2 = std::tanh(std::pow(y_p/2500., 1.4));
-  const double f3 = 1/std::sqrt(beta_k_)*0.25;
+  const double f3 = 1.0/std::sqrt(beta_k_)*0.25;
 
-  return u_tau*u_tau*(std::max((1 - b1)*f1 + b1*f2, 0.)*(1 - b2) + b2*f3);
+  return u_tau*u_tau*(std::max((1.0 - b1)*f1 + b1*f2, 0.0)*(1.0 - b2) + b2*f3);
 }

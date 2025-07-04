@@ -39,7 +39,7 @@ Entree& Transport_turbulent_SGDH_WIT::readOn(Entree& is)
   Param param(que_suis_je());
   param.ajouter("Aspect_ratio", &gamma_);   // rapport d'aspet des bulles
   param.ajouter("Influence_area", &delta_); // paramètre modèle d'Alméras 2014 (taille du sillage)
-  param.ajouter("C_s", &C_s);               // paramètre modèle d'Alméras 2014
+  param.ajouter("C_s", &C_s_);               // paramètre modèle d'Alméras 2014
   param.lire_avec_accolades_depuis(is);
   return is;
 }
@@ -81,12 +81,12 @@ void Transport_turbulent_SGDH_WIT::modifier_mu(const Convection_Diffusion_std& e
       u_r(i, 0) = std::sqrt(u_r(i, 0));
     }
 
-  // formule pour passer de nu a mu : mu0 / nu0 * C_s * temps_carac
+  // formule pour passer de nu a mu : mu0 / nu0 * C_s_ * temps_carac
   for (int i = 0; i < nl; i++)
     {
       const double tmp1 = 1./(delta_*delta_*delta_)*diam(i, 1);
       const double tmp2 = pow(gamma_, 2./3.)*alp(i, 1)*u_r(i,0);
       const double temps_carac = (u_r(i, 0) != 0) ? 2./3. * tmp1 / tmp2 : 0; // si u_r=0 alors pas de WIT donc pas de diffusion du WIT
-      nu(i, 0) = mu0(i, 0) / nu0(i, 0) * C_s * temps_carac ; // ici mu0/nu0 = 1 car l'inconnue de l'équation est k_WIT (voir Energie_cinetique_turbulente_WIT.cpp)
+      nu(i, 0) = mu0(i, 0) / nu0(i, 0) * C_s_ * temps_carac ; // ici mu0/nu0 = 1 car l'inconnue de l'équation est k_WIT (voir Energie_cinetique_turbulente_WIT.cpp)
     }
 }

@@ -42,7 +42,7 @@ protected :
   void me_calculer() override;
   double calc_k(const double y, const double u_tau, const double visc) const;
 
-  double limiteur_y_p = 0.01; // To prevent numerical issues ; no consequence on the calculation, as it falls in the region where the blending function is zero
+  double limiteur_y_p_ = 0.01; // To prevent numerical issues ; no consequence on the calculation, as it falls in the region where the blending function is zero
   double beta_k_ = 0.09;
 };
 

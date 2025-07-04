@@ -52,12 +52,18 @@ Entree& Production_WIT_PolyMAC_P0::readOn(Entree& is)
   param.ajouter("g", &g_);
   param.lire_avec_accolades_depuis(is);
 
-  Pb_Multiphase *pbm = sub_type(Pb_Multiphase, equation().probleme()) ? &ref_cast(Pb_Multiphase, equation().probleme()) : nullptr;
+  const Pb_Multiphase *pbm = sub_type(Pb_Multiphase, equation().probleme()) ? &ref_cast(Pb_Multiphase, equation().probleme()) : nullptr;
 
-  if (!pbm || pbm->nb_phases() == 1) Process::exit(que_suis_je() + " : not needed for single-phase flow!");
+  if (!pbm || pbm->nb_phases() == 1)
+    Process::exit(que_suis_je() + " : not needed for single-phase flow!");
+
   for (int n = 0; n < pbm->nb_phases(); n++) //recherche de n_l, n_g : phase {liquide,gaz}_continu en priorite
-    if (pbm->nom_phase(n).debute_par("liquide") && (n_l < 0 || pbm->nom_phase(n).finit_par("continu")))  n_l = n;
-  if (n_l < 0) Process::exit(que_suis_je() + " : liquid phase not found!");
+    if (pbm->nom_phase(n).debute_par("liquide")
+        && (n_l_ < 0 || pbm->nom_phase(n).finit_par("continu")))
+      n_l_ = n;
+
+  if (n_l_ < 0)
+    Process::exit(que_suis_je() + " : liquid phase not found!");
 
   return is;
 }
@@ -69,28 +75,39 @@ void Production_WIT_PolyMAC_P0::dimensionner_blocs(matrices_t matrices, const ta
 
 void Production_WIT_PolyMAC_P0::ajouter_blocs(matrices_t matrices, DoubleTab& secmem, const tabs_t& semi_impl) const
 {
-  const Domaine_PolyMAC_P0&                      domaine = ref_cast(Domaine_PolyMAC_P0, equation().domaine_dis());
-  const DoubleTab&                      tab_rho = equation().probleme().get_champ("masse_volumique").passe();
-  const DoubleTab&                      tab_alp = equation().probleme().get_champ("alpha").passe();
-  const DoubleTab&                          vit = equation().probleme().get_champ("vitesse").passe();
-  const DoubleTab&                         diam = equation().probleme().get_champ("diametre_bulles").valeurs();
-  const DoubleTab&                           nu = equation().probleme().get_champ("viscosite_cinematique").passe();
+  const Domaine_PolyMAC_P0& domaine = ref_cast(Domaine_PolyMAC_P0, equation().domaine_dis());
+  const DoubleTab& tab_rho = equation().probleme().get_champ("masse_volumique").passe();
+  const DoubleTab& tab_alp = equation().probleme().get_champ("alpha").passe();
+  const DoubleTab& vit = equation().probleme().get_champ("vitesse").passe();
+  const DoubleTab& diam = equation().probleme().get_champ("diametre_bulles").valeurs();
+  const DoubleTab& nu = equation().probleme().get_champ("viscosite_cinematique").passe();
 
-  const DoubleVect& pe = equation().milieu().porosite_elem(), &ve = domaine.volumes();
+  const DoubleVect& pe = equation().milieu().porosite_elem();
+  const DoubleVect& ve = domaine.volumes();
 
-  int Nk = equation().inconnue().valeurs().dimension(1), N = ref_cast(Pb_Multiphase, equation().probleme()).nb_phases(), ne = domaine.nb_elem(), nf_tot = domaine.nb_faces_tot(), D = dimension ;
-  if (Nk!=1) Process::exit("WIT is only in the liquid phase");
-  if (D!=3) Process::exit("WIT is only coded for 3 dimensions");
+  const int Nk = equation().inconnue().valeurs().dimension(1);
+  const int N = ref_cast(Pb_Multiphase, equation().probleme()).nb_phases();
+  const int ne = domaine.nb_elem();
+  const int nf_tot = domaine.nb_faces_tot();
+  const int D = dimension;
+
+  if (Nk != 1)
+    Process::exit("WIT is only in the liquid phase");
+
+  if (D != 3)
+    Process::exit("WIT is only coded for 3 dimensions");
 
   // On calcule le second membre aux elements (implicite uniquement pour le moment)
   for(int e = 0 ; e < ne ; e++)
-    for (int k = 0 ; k<N ; k++)
-      if (k!=n_l)
+    for (int k = 0 ; k < N ; k++)
+      if (k != n_l_)
         {
           double u_r = 0;
-          for (int d = 0; d < D; d++) u_r += (vit(nf_tot + D*e+d, k) - vit(nf_tot + D*e+d, n_l))*(vit(nf_tot + D*e+d, k) - vit(nf_tot + D*e+d, n_l)); // relative speed = gas speed - liquid speed
+          for (int d = 0; d < D; d++)
+            u_r += (vit(nf_tot + D*e+d, k) - vit(nf_tot + D*e+d, n_l_))*(vit(nf_tot + D*e+d, k) - vit(nf_tot + D*e+d, n_l_)); // relative speed = gas speed - liquid speed
           u_r = std::sqrt(u_r);
-          double Reb = diam(e,k)*u_r/nu(e,n_l);
-          secmem(e, 0) += ve(e) * pe(e) * tab_alp(e, k) *(tab_rho(e, n_l)-tab_rho(e, k))/tab_rho(e, n_l)*g_*u_r*(0.9 - exp(-Reb/Reb_c_));
+
+          const double Reb = diam(e,k)*u_r/nu(e,n_l_);
+          secmem(e, 0) += ve(e) * pe(e) * tab_alp(e, k) *(tab_rho(e, n_l_)-tab_rho(e, k))/tab_rho(e, n_l_)*g_*u_r*(0.9 - exp(-Reb/Reb_c_));
         }
 }

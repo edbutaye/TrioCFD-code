@@ -41,8 +41,8 @@ public:
   void eps(DoubleTab& eps) const override;
 
 private:
-  double coef_sato = 0.6; // coefficient du modèle ajusté par Sato
-  int n_l = -1; // phase liquide
+  double coef_sato_ = 0.6; // coefficient du modèle ajusté par Sato
+  int n_l_ = -1; // phase liquide
 };
 
 #endif

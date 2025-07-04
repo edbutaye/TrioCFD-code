@@ -39,7 +39,7 @@ Sortie& Viscosite_turbulente_sato::printOn(Sortie& os) const
 Entree& Viscosite_turbulente_sato::readOn(Entree& is)
 {
   Param param(que_suis_je());
-  param.ajouter("coef_sato", &coef_sato);
+  param.ajouter("coef_sato", &coef_sato_);
   param.lire_avec_accolades_depuis(is);
 
   //identification des phases
@@ -48,12 +48,12 @@ Entree& Viscosite_turbulente_sato::readOn(Entree& is)
   if (!pbm || pbm->nb_phases() == 1)
     Process::exit(que_suis_je() + " : not needed for single-phase flow!");
 
-  for (int n = 0; n < pbm->nb_phases(); n++) //recherche de n_l, n_g : phase {liquide,gaz}_continu en priorite
+  for (int n = 0; n < pbm->nb_phases(); n++) //recherche de n_l_, n_g : phase {liquide,gaz}_continu en priorite
     if (pbm->nom_phase(n).debute_par("liquide")
-        && (n_l < 0 || pbm->nom_phase(n).finit_par("continu")))
-      n_l = n;
+        && (n_l_ < 0 || pbm->nom_phase(n).finit_par("continu")))
+      n_l_ = n;
 
-  if (n_l < 0)
+  if (n_l_ < 0)
     Process::exit(que_suis_je() + " : liquid phase not found!");
 
   pbm->creer_champ("distance_paroi_globale"); // Besoin de distance a la paroi
@@ -102,19 +102,19 @@ void Viscosite_turbulente_sato::reynolds_stress(DoubleTab& R_ij) const // Renvoi
     for (int i = 0; i < D; i++)                 // dimension i
       for (int j = 0; j < D; j++)               // dimension j
         for (int k = 0; k < N; k++)             // phases
-          if (k != n_l)                         // iteration sur phases gazeuses
+          if (k != n_l_)                         // iteration sur phases gazeuses
             {
               // Compute the relative velocity norm
               double u_r_carre = 0.;
               for (int d = 0; d < D; d++)
-                u_r_carre += (u(e, d, k) - u(e, d, n_l))*(u(e, d, k) - u(e, d, n_l)); // relative speed = gas speed - liquid speed
+                u_r_carre += (u(e, d, k) - u(e, d, n_l_))*(u(e, d, k) - u(e, d, n_l_)); // relative speed = gas speed - liquid speed
               u_r(e, 0) = std::sqrt(u_r_carre);
 
               // Compute Sato eddy viscosity
-              const double nu_sato = coef_sato * alpha(e, k) * d_bulles(e, k) * u_r(e,0);
+              const double nu_sato = coef_sato_ * alpha(e, k) * d_bulles(e, k) * u_r(e,0);
 
               // Tenseur des taux de déformations Sij = gradv_ij + gradv_ji (facteur 1/2 supprimé car il se simplifie après)
-              const double S_ij = tab_grad(nf_tot + i + e * D , D * n_l + j) + tab_grad(nf_tot + j + e * D , D * n_l + i);
+              const double S_ij = tab_grad(nf_tot + i + e * D , D * n_l_ + j) + tab_grad(nf_tot + j + e * D , D * n_l_ + i);
 
               // Tenseur de Reynolds BIA
               R_ij(e, k, i, j) = 0 ; // No BIT for gas phase

@@ -47,7 +47,7 @@ public:
   void completer() override;
 
 protected:
-  double beta_k = 0.09; // Wilcox
+  double beta_k_ = 0.09; // Wilcox
 };
 
 #endif

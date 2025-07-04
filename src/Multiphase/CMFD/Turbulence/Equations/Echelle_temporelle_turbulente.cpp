@@ -88,9 +88,9 @@ const Champ_base& Echelle_temporelle_turbulente::diffusivite_pour_pas_de_temps()
  */
 void Echelle_temporelle_turbulente::discretiser()
 {
-  int nb_valeurs_temp = schema_temps().nb_valeurs_temporelles();
-  double temps = schema_temps().temps_courant();
-  const Discret_Thyd& dis=ref_cast(Discret_Thyd, discretisation());
+  const int nb_valeurs_temp = schema_temps().nb_valeurs_temporelles();
+  const double temps = schema_temps().temps_courant();
+  const Discret_Thyd& dis = ref_cast(Discret_Thyd, discretisation());
   Cerr << "Turbulent time scale discretization" << finl;
   //On utilise temperature pour la directive car discretisation identique
   dis.discretiser_champ("temperature",domaine_dis(),"tau","s", 1,nb_valeurs_temp,temps,l_inco_ch);//une seule compo, meme en multiphase
@@ -107,18 +107,22 @@ void Echelle_temporelle_turbulente::calculer_tau(const Objet_U& obj, DoubleTab& 
   const DoubleTab& tau = eqn.inconnue().valeurs();
 
   /* valeurs du champ */
-  int i, n, N = val.line_size(), Nl = val.dimension_tot(0);
-  for (i = 0; i < Nl; i++)
-    for (n = 0; n < N; n++) val(i, n) = tau(i, n);
+  const int N = val.line_size(), Nl = val.dimension_tot(0);
+  for (int i = 0; i < Nl; i++)
+    for (int n = 0; n < N; n++)
+      val(i, n) = tau(i, n);
 
   /* on ne peut utiliser valeur_aux_bords que si ch_rho a un domaine_dis_base */
   const DoubleTab& b_tau = eqn.inconnue().valeur_aux_bords();
-  int Nb = b_tau.dimension_tot(0);
-  for (i = 0; i < Nb; i++)
-    for (n = 0; n < N; n++) bval(i, n) = b_tau(i, n);
+  const int Nb = b_tau.dimension_tot(0);
+  for (int i = 0; i < Nb; i++)
+    for (int n = 0; n < N; n++)
+      bval(i, n) = b_tau(i, n);
 
   //derivee en tau : 1
   DoubleTab& d_tau = deriv["tau"];
-  for (d_tau.resize(Nl, N), i = 0; i < Nl; i++)
-    for (n = 0; n < N; n++) d_tau(i, n) = 1.;
+  d_tau.resize(Nl, N);
+  for (int i = 0; i < Nl; i++)
+    for (int n = 0; n < N; n++)
+      d_tau(i, n) = 1.;
 }

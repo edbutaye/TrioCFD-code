@@ -38,8 +38,7 @@ Sortie& Source_Diffusion_croisee_echelle_temp_taux_diss_turb::printOn(Sortie& os
 Entree& Source_Diffusion_croisee_echelle_temp_taux_diss_turb::readOn(Entree& is)
 {
   Param param(que_suis_je());
-  param.ajouter("sigma_d", &sigma_d);
+  param.ajouter("sigma_d", &sigma_d_);
   param.lire_avec_accolades_depuis(is);
   return is;
 }
-

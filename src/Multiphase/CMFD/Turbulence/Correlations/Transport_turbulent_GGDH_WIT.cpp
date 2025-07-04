@@ -44,48 +44,65 @@ Entree& Transport_turbulent_GGDH_WIT::readOn(Entree& is)
   Param param(que_suis_je());
   param.ajouter("Aspect_ratio", &gamma_); // rapport d'aspet des bulles
   param.ajouter("Influence_area", &delta_); // paramètre modèle d'Alméras 2014 (taille du sillage)
-  param.ajouter("C_s", &C_s); // paramètre modèle d'Alméras 2014
+  param.ajouter("C_s", &C_s_); // paramètre modèle d'Alméras 2014
   //param.ajouter("vitesse_rel_attendue", &ur_user, Param::REQUIRED); // valeur de ur à prendre si u_r(i,0)=0
   param.ajouter("Limiteur_alpha", &limiteur_alpha_, Param::REQUIRED); // valeur minimal de (1-alpha) pour utiliser le modèle d'Alméras
   param.lire_avec_accolades_depuis(is);
 
-  if ((C_s <0) && (dimension == 2)) C_s = 1;
-  if ((C_s <0) && (dimension == 3)) C_s = 1.5;
+  if ((C_s_ <0) && (dimension == 2))
+    C_s_ = 1;
+
+  if ((C_s_ <0) && (dimension == 3))
+    C_s_ = 1.5;
 
   return is;
 }
 
 void Transport_turbulent_GGDH_WIT::modifier_mu(const Convection_Diffusion_std& eq, const Viscosite_turbulente_base& visc_turb, DoubleTab& nu) const
 {
-  const DoubleTab& mu0 = eq.diffusivite_pour_transport().passe(), &nu0 = eq.diffusivite_pour_pas_de_temps().passe(), //viscosites moleculaires
-                   alp = pb_->get_champ("alpha").passe(), diam = pb_->get_champ("diametre_bulles").valeurs(),
-                   &tab_u = pb_->get_champ("vitesse").passe();
-  int i, nl = nu.dimension(0), N = alp.dimension(1), d, db, D = dimension, i_part=-1;
+  const DoubleTab& mu0 = eq.diffusivite_pour_transport().passe();
+  const DoubleTab& nu0 = eq.diffusivite_pour_pas_de_temps().passe(); //viscosites moleculaires
+  const DoubleTab& alp = pb_->get_champ("alpha").passe();
+  const DoubleTab& diam = pb_->get_champ("diametre_bulles").valeurs();
+  const DoubleTab& tab_u = pb_->get_champ("vitesse").passe();
+
+  const int nl = nu.dimension(0);
+  const int N = alp.dimension(1);
+  const int D = dimension;
+
   //if (N!= 1) Process::exit("Only the liquid phase can have WIT for now");
   DoubleTrav Rij(0, N, D, D);
   MD_Vector_tools::creer_tableau_distribue(nu.get_md_vector(), Rij);
 
+  int i_part = -1;
   ConstDoubleTab_parts p_u(tab_u); //en PolyMAC_P0, tab_u contient (nf.u) aux faces, puis (u_i) aux elements
-  for (i = 0; i < p_u.size(); i++)
-    if (p_u[i].get_md_vector() == Rij.get_md_vector()) i_part = i; //on cherche une partie ayant le meme support
-  if (i_part < 0) Process::exit("Viscosite_turbulente_WIF : inconsistency between velocity and Rij!");
+  for (int i = 0; i < p_u.size(); i++)
+    if (p_u[i].get_md_vector() == Rij.get_md_vector())
+      i_part = i; //on cherche une partie ayant le meme support
+
+  if (i_part < 0)
+    Process::exit("Viscosite_turbulente_WIF : inconsistency between velocity and Rij!");
+
   const DoubleTab& u = p_u[i_part]; //le bon tableau
   DoubleTrav u_r(u.dimension(0), 1);
-  for (i = 0; i < u_r.dimension(0); i++)
+
+  for (int i = 0; i < u_r.dimension(0); i++)
     {
-      for (d = 0; d < D; d++) u_r(i, 0) += (u(i, d, 1) - u(i, d, 0))*(u(i, d, 1) - u(i, d, 0)); // relative speed = gas speed - liquid speed
+      for (int d = 0; d < D; d++)
+        u_r(i, 0) += (u(i, d, 1) - u(i, d, 0))*(u(i, d, 1) - u(i, d, 0)); // relative speed = gas speed - liquid speed
       u_r(i, 0) = std::sqrt(u_r(i, 0));
     }
 
   visc_turb.reynolds_stress(Rij);
-  //formule pour passer de nu a mu : mu0 / nu0 * C_s * temps_carac * <u'i u'_j>
-  for (i = 0; i < nl; i++)
+  const double gamma_p2s3 = std::cbrt(gamma_*gamma_);
+  //formule pour passer de nu a mu : mu0 / nu0 * C_s_ * temps_carac * <u'i u'_j>
+  for (int i = 0; i < nl; i++)
     if (alp(i, 0) >= limiteur_alpha_)
-      for (d = 0; d < D; d++)
-        for (db = 0; db < D; db++)
+      for (int d = 0; d < D; d++)
+        for (int db = 0; db < D; db++)
           {
-            //double ur = (u_r(i,0)!=0) ? u_r(i,0) : ur_user; // vitesse relative (on ne peut pas diviser par 0)
-            double temps_carac = (u_r(i,0)!=0) ? 2./3. * 1./(delta_*delta_*delta_)*diam(i, 1) / (pow(gamma_, 2./3.)*alp(i, 1)*u_r(i,0)) : 0 ; // si u_r=0 alors pas de WIT donc pas de diffusion du WIT
-            nu(i, 0, d, db) += mu0(i, 0) / nu0(i, 0) * C_s * std::max(temps_carac * Rij(i, 0, d, db), visc_turb.limiteur() * nu(i, 0, d, db));
+            // si u_r=0 alors pas de WIT donc pas de diffusion du WIT
+            const double temps_carac = (u_r(i,0) != 0) ? 2./3. * 1./(delta_*delta_*delta_)*diam(i, 1) / (gamma_p2s3*alp(i, 1)*u_r(i,0)) : 0 ;
+            nu(i, 0, d, db) += mu0(i, 0) / nu0(i, 0) * C_s_ * std::max(temps_carac * Rij(i, 0, d, db), visc_turb.limiteur() * nu(i, 0, d, db));
           }
 }

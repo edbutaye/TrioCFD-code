@@ -41,7 +41,7 @@ class Loi_paroi_Ramstorfer : public Loi_paroi_base
   Declare_instanciable(Loi_paroi_Ramstorfer);
 public:
   void completer() override;
-  void   calc_y_plus(const DoubleTab& vit, const DoubleTab& nu_visc) override;
+  void calc_y_plus(const DoubleTab& vit, const DoubleTab& nu_visc) override;
 
 protected:
   double calc_y_plus_loc(double u_par, double nu, double y, double yp, const double *d_bulles, const double *alpha);
@@ -49,8 +49,8 @@ protected:
   double deriv_u_plus_de_y_plus(double u_tau, double nu, double y, const double *d_bulles, const double *alpha); // Blended Reichardt model
 
   double von_karman_ = 0.41;
-  double limiteur_y_p = 0.01; // To prevent numerical issues ; no consequence on the calculation, as it falls in the region where the blending function is zero
-  double C_kr_ = .5;
+  double limiteur_y_p_ = 0.01; // To prevent numerical issues ; no consequence on the calculation, as it falls in the region where the blending function is zero
+  double C_kr_ = 0.5;
 
 };
 

@@ -31,7 +31,7 @@
 #include <Motcle.h>
 #include <math.h>
 
-Implemente_instanciable(Cond_lim_omega_dix,"Cond_lim_omega_dix",Dirichlet_loi_paroi);
+Implemente_instanciable(Cond_lim_omega_dix, "Cond_lim_omega_dix", Dirichlet_loi_paroi);
 // XD Cond_lim_omega_dix condlim_base Cond_lim_omega_dix 1 Adaptive wall law boundary condition for turbulent dissipation rate
 
 Sortie& Cond_lim_omega_dix::printOn(Sortie& s ) const
@@ -42,8 +42,8 @@ Sortie& Cond_lim_omega_dix::printOn(Sortie& s ) const
 Entree& Cond_lim_omega_dix::readOn(Entree& s )
 {
   Param param(que_suis_je());
-  param.ajouter("beta_omega", &beta_omega);
-  param.ajouter("beta_k", &beta_k);
+  param.ajouter("beta_omega", &beta_omega_);
+  param.ajouter("beta_k", &beta_k_);
   param.ajouter("von_karman", &von_karman_);
   param.ajouter("facteur_paroi", &facteur_paroi_);
   param.lire_avec_accolades_depuis(s);
@@ -75,7 +75,8 @@ void Cond_lim_omega_dix::me_calculer()
   const DoubleTab& nu_visc = ref_cast(Convection_diffusion_turbulence_multiphase, domaine_Cl_dis().equation()).diffusivite_pour_pas_de_temps().passe();
 
   const int cnu = nu_visc.dimension(0) == 1;
-  int nf = la_frontiere_dis->frontiere().nb_faces(), f1 = la_frontiere_dis->frontiere().num_premiere_face();
+  const int nf = la_frontiere_dis->frontiere().nb_faces();
+  const int f1 = la_frontiere_dis->frontiere().num_premiere_face();
   const IntTab& f_e = domaine.face_voisins();
 
   int n = 0 ; // Carrying phase is 0 for turbulent flows
@@ -93,5 +94,5 @@ void Cond_lim_omega_dix::me_calculer()
 
 double Cond_lim_omega_dix::calc_omega(const double y, const double u_tau, const double visc)
 {
-  return 6 * visc / (beta_omega * y * y);
+  return 6 * visc / (beta_omega_ * y * y);
 }

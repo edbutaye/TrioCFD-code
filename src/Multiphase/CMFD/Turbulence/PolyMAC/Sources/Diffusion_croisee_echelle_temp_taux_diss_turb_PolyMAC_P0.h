@@ -47,9 +47,8 @@ public:
 
 protected:
   void completer() override ;
-  int f_grad_k_fixe = 1 ;
-  int f_grad_tau_omega_fixe = 1 ;
+  int f_grad_k_fixe_ = 1 ;
+  int f_grad_tau_omega_fixe_ = 1 ;
 };
 
 #endif
-

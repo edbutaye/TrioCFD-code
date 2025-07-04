@@ -76,7 +76,7 @@ void Production_energie_cin_turb_VDF::ajouter_blocs(matrices_t matrices, DoubleT
   const DoubleTab& tab_rho = equation().probleme().get_champ("masse_volumique").passe();
   const DoubleTab& palp = equation().probleme().get_champ("alpha").passe();
   const DoubleTab& alp = equation().probleme().get_champ("alpha").valeurs();
-  const DoubleTab& nu =  equation().probleme().get_champ("viscosite_cinematique").passe();
+  const DoubleTab& nu = equation().probleme().get_champ("viscosite_cinematique").passe();
   const DoubleTab& k = equation().probleme().get_champ("k").valeurs();
   const DoubleTab& tab_grad = equation().probleme().get_champ("gradient_vitesse").passe();
   const DoubleTab *diss = equation().probleme().has_champ(Type_diss) ? &equation().probleme().get_champ(Type_diss).valeurs() : nullptr;

@@ -109,19 +109,19 @@ void Diffusion_croisee_echelle_temp_taux_diss_turb_VDF::ajouter_blocs(matrices_t
       {
         if (Type_diss == "tau")
           {
-            const double secmem_en = pe(e)*ve(e) * sigma_d*diss(e, n)*std::min(grad_f_diss_dot_grad_f_k(e, n), 0.);
+            const double secmem_en = pe(e)*ve(e) * sigma_d_*diss(e, n)*std::min(grad_f_diss_dot_grad_f_k(e, n), 0.);
             secmem(e, n) += secmem_en;
             if (M)
-              (*M)(N * e + n, N * e + n) -= pe(e)*ve(e) * sigma_d*std::min(grad_f_diss_dot_grad_f_k(e, n), 0.); // derivee en tau
+              (*M)(N * e + n, N * e + n) -= pe(e)*ve(e) * sigma_d_*std::min(grad_f_diss_dot_grad_f_k(e, n), 0.); // derivee en tau
           }
         else if (Type_diss == "omega")
           {
             if (diss(e,n)>1.e-8) // Else everything = 0
               {
                 const double dp = std::max(diss_passe(e, n), 1.e-6);
-                secmem(e, n) += pe(e)*ve(e) * sigma_d/dp*(2 - diss(e, n)/dp)*std::max(grad_f_diss_dot_grad_f_k(e, n), 0.) ;
+                secmem(e, n) += pe(e)*ve(e) * sigma_d_/dp*(2 - diss(e, n)/dp)*std::max(grad_f_diss_dot_grad_f_k(e, n), 0.) ;
                 if (M)
-                  (*M)(N * e + n, N * e + n) -= pe(e)*ve(e) * sigma_d*(-1/(dp*dp)) * std::max(grad_f_diss_dot_grad_f_k(e, n), 0.); // derivee en omega
+                  (*M)(N * e + n, N * e + n) -= pe(e)*ve(e) * sigma_d_*(-1/(dp*dp)) * std::max(grad_f_diss_dot_grad_f_k(e, n), 0.); // derivee en omega
               }
           }
       }
@@ -144,7 +144,7 @@ void Diffusion_croisee_echelle_temp_taux_diss_turb_VDF::face_to_elem(const Domai
       for (int d = 0; d < D; d++)
         for (int s = 0; s < nb_face_elem; s++)
           {
-            int f = elem_faces(ele, s);
+            const int f = elem_faces(ele, s);
             if (fs[f] > 1.e-12)
               tab_elems(ele, n, d) += tab_faces(f,n)*nf(f,d)/fs[f];
           }

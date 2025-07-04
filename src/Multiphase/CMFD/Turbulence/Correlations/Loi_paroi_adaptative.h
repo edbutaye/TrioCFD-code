@@ -47,7 +47,7 @@ public:
 protected:
 
   double von_karman_ = 0.41;
-  double limiteur_y_p = 0.01; // To prevent numerical issues ; no consequence on the calculation, as it falls in the region where the blending function is zero
+  double limiteur_y_p_ = 0.01; // To prevent numerical issues ; no consequence on the calculation, as it falls in the region where the blending function is zero
 
 };
 

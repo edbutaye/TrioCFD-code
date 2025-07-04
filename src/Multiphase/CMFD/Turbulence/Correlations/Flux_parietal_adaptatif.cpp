@@ -40,14 +40,20 @@ void Flux_parietal_adaptatif::qp(const input_t& in, output_t& out) const
 {
   const Loi_paroi_adaptative& corr_loi_paroi = ref_cast(Loi_paroi_adaptative, correlation_loi_paroi_.valeur());
 
-  double eps = std::numeric_limits<double>::epsilon();
-  const double u_tau =std::max( corr_loi_paroi.get_utau((in.f)),eps);
+  const double eps = std::numeric_limits<double>::epsilon();
+  const double u_tau =std::max( corr_loi_paroi.get_utau((in.f)), eps);
 
-  double theta_plus = calc_theta_plus(in.y, u_tau, in.mu[0], in.lambda[0], in.rho[0], in.Cp[0], in.D_h),
-         fac = in.rho[0] * in.Cp[0] * u_tau / theta_plus ;
-  if (out.qpk) (*out.qpk)(0) = fac * (in.Tp - in.T[0]);
-  if (out.dTf_qpk) (*out.dTf_qpk)(0,0) = -fac;
-  if (out.dTp_qpk) (*out.dTp_qpk)(0)   = fac;
+  const double theta_plus = calc_theta_plus(in.y, u_tau, in.mu[0], in.lambda[0], in.rho[0], in.Cp[0], in.D_h);
+  const double fac = in.rho[0] * in.Cp[0] * u_tau / theta_plus ;
+
+  if (out.qpk)
+    (*out.qpk)(0) = fac * (in.Tp - in.T[0]);
+
+  if (out.dTf_qpk)
+    (*out.dTf_qpk)(0,0) = -fac;
+
+  if (out.dTp_qpk)
+    (*out.dTp_qpk)(0) = fac;
 
 }
 

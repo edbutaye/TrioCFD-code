@@ -51,11 +51,11 @@ public :
   void mettre_a_jour(double temps) override { };
 
 protected:
-  double g_=9.81;
-  double C_k = 1.;
-  double C_epsilon = 1.;
-  double C_mu =  0.09;
-  int n_l = -1 ;
+  double g_ = 9.81;
+  double C_k_ = 1.;
+  double C_epsilon_ = 1.;
+  double C_mu_ =  0.09;
+  int n_l_ = -1 ;
 };
 
 #endif

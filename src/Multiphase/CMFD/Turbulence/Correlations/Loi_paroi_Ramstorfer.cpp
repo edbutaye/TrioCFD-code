@@ -51,24 +51,29 @@ void Loi_paroi_Ramstorfer::completer()
 {
   Loi_paroi_base::completer();
 
-  Pb_Multiphase *pbm = sub_type(Pb_Multiphase, pb_.valeur()) ? &ref_cast(Pb_Multiphase, pb_.valeur()) : nullptr;
-  if (!pbm || pbm->nb_phases() == 1) Process::exit(que_suis_je() + " : This is a two-phase wall law!");
+  const Pb_Multiphase *pbm = sub_type(Pb_Multiphase, pb_.valeur()) ? &ref_cast(Pb_Multiphase, pb_.valeur()) : nullptr;
+  if (!pbm || pbm->nb_phases() == 1)
+    Process::exit(que_suis_je() + " : This is a two-phase wall law!");
 
-  DoubleTab const * d_bulles = (pb_->has_champ("diametre_bulles")) ? &pb_->get_champ("diametre_bulles").valeurs() : nullptr ;
-  if (!d_bulles) Process::exit(que_suis_je() + " : you must define a bubble diameter ! This is a two-phase wall law.");
+  const DoubleTab * d_bulles = (pb_->has_champ("diametre_bulles")) ? &pb_->get_champ("diametre_bulles").valeurs() : nullptr ;
+  if (!d_bulles)
+    Process::exit(que_suis_je() + " : you must define a bubble diameter ! This is a two-phase wall law.");
 }
 
 void Loi_paroi_Ramstorfer::calc_y_plus(const DoubleTab& vit, const DoubleTab& nu_visc)
 {
-  Domaine_VF& domaine = ref_cast(Domaine_VF, pb_->domaine_dis());
-  DoubleTab& u_t = valeurs_loi_paroi_["u_tau"], &y_p = valeurs_loi_paroi_["y_plus"];
+  const Domaine_VF& domaine = ref_cast(Domaine_VF, pb_->domaine_dis());
+  DoubleTab& u_t = valeurs_loi_paroi_["u_tau"];
+  DoubleTab& y_p = valeurs_loi_paroi_["y_plus"];
   const DoubleTab& n_f = domaine.face_normales();
   const DoubleVect& fs = domaine.face_surfaces();
   const IntTab& f_e = domaine.face_voisins();
-  const DoubleTab& d_bulles = pb_->get_champ("diametre_bulles").valeurs(),
-                   & alpha  = pb_->get_champ("alpha").valeurs();
+  const DoubleTab& d_bulles = pb_->get_champ("diametre_bulles").valeurs();
+  const DoubleTab& alpha  = pb_->get_champ("alpha").valeurs();
 
-  int nf_tot = domaine.nb_faces_tot(), D = dimension, N = vit.line_size();
+  const int nf_tot = domaine.nb_faces_tot();
+  const int D = dimension;
+  const int N = vit.line_size();
 
   DoubleTab pvit_elem(0, N * dimension);
   if (nf_tot == vit.dimension_tot(0))
@@ -78,51 +83,63 @@ void Loi_paroi_Ramstorfer::calc_y_plus(const DoubleTab& vit, const DoubleTab& nu
       ch.get_elem_vector_field(pvit_elem, true);
     }
 
-  int n=0; // pour l'instant, turbulence dans seulement une phase
+  int n = 0; // pour l'instant, turbulence dans seulement une phase
 
-  for (int f = 0 ; f < nf_tot ; f ++)
-    if (Faces_a_calculer_(f,0)==1)
+  for (int f = 0; f < nf_tot; f ++)
+    if (Faces_a_calculer_(f, 0) == 1)
       {
-        int c = (f_e(f,0)>=0) ? 0 : 1 ;
-        if (f_e(f, (c==0) ? 1 : 0 ) >= 0) Process::exit("Error in the definition of the boundary conditions for wall laws");
-        int e = f_e(f,c);
+        const int c = (f_e(f,0) >= 0) ? 0 : 1 ;
+        if (f_e(f, (c == 0) ? 1 : 0 ) >= 0)
+          Process::exit("Error in the definition of the boundary conditions for wall laws");
+        const int e = f_e(f,c);
 
         double u_orth = 0 ;
         DoubleTrav u_parallel(D);
         if (nf_tot == vit.dimension_tot(0))
           {
-            for (int d = 0; d <D ; d++) u_orth -= pvit_elem(e, N*d+n)*n_f(f,d)/fs(f); // ! n_f pointe vers la face 1 donc vers l'exterieur de l'element, d'ou le -
-            for (int d = 0 ; d < D ; d++) u_parallel(d) = pvit_elem(e, N*d+n) - u_orth*(-n_f(f,d))/fs(f) ; // ! n_f pointe vers la face 1 donc vers l'exterieur de l'element, d'ou le -
+            // ! n_f pointe vers la face 1 donc vers l'exterieur de l'element, d'ou le signe -
+            for (int d = 0; d <D ; d++)
+              u_orth -= pvit_elem(e, N*d+n)*n_f(f,d)/fs(f);
+            for (int d = 0 ; d < D ; d++)
+              u_parallel(d) = pvit_elem(e, N*d+n) - u_orth*(-n_f(f,d))/fs(f);
           }
         else
           {
-            for (int d = 0; d <D ; d++) u_orth -= vit(nf_tot + e * D+d, n)*n_f(f,d)/fs(f); // ! n_f pointe vers la face 1 donc vers l'exterieur de l'element, d'ou le -
-            for (int d = 0 ; d < D ; d++) u_parallel(d) = vit(nf_tot + e * D + d, n) - u_orth*(-n_f(f,d))/fs(f) ; // ! n_f pointe vers la face 1 donc vers l'exterieur de l'element, d'ou le -
+            // ! n_f pointe vers la face 1 donc vers l'exterieur de l'element, d'ou le signe -
+            for (int d = 0; d <D ; d++)
+              u_orth -= vit(nf_tot + e * D+d, n)*n_f(f,d)/fs(f);
+            for (int d = 0 ; d < D ; d++)
+              u_parallel(d) = vit(nf_tot + e * D + d, n) - u_orth*(-n_f(f,d))/fs(f) ;
           }
 
         double residu = 0 ;
-        for (int d = 0; d <D ; d++) residu += u_parallel(d)*n_f(f,d)/fs(f);
-        if (residu > 1e-8) Process::exit("Loi_paroi_adaptative : Error in the calculation of the parallel velocity for wall laws");
-        double norm_u_parallel = std::sqrt(domaine.dot(&u_parallel(0), &u_parallel(0)));
+        for (int d = 0; d < D; d++)
+          residu += u_parallel(d)*n_f(f,d)/fs(f);
+        if (residu > 1e-8)
+          Process::exit("Loi_paroi_adaptative : Error in the calculation of the parallel velocity for wall laws");
+        const double norm_u_parallel = std::sqrt(domaine.dot(&u_parallel(0), &u_parallel(0)));
 
-        double y_loc = (c==0) ? domaine.dist_face_elem0(f,e) : domaine.dist_face_elem1(f,e) ;
-        y_p(f, n) = std::max(y_p_min_, calc_y_plus_loc(norm_u_parallel, nu_visc(e, n), y_loc, y_p(f, n), &d_bulles(e, 0), &alpha(e, 0)));
+        const double y_loc = (c == 0) ? domaine.dist_face_elem0(f, e) : domaine.dist_face_elem1(f, e);
+        const double y_p_loc = calc_y_plus_loc(norm_u_parallel, nu_visc(e, n), y_loc, y_p(f, n), &d_bulles(e, 0), &alpha(e, 0));
+
+        y_p(f, n) = std::max(y_p_min_, y_p_loc);
         u_t(f, n) = y_p(f, n)*nu_visc(e, n)/y_loc;
       }
 }
 
 double Loi_paroi_Ramstorfer::calc_y_plus_loc(double u_par, double nu, double y, double y_p_0, const double *d_bulles, const double *alpha)
 {
-  double eps = eps_y_p_;
-  int step = 1, iter_max = 20;
+  const double eps = eps_y_p_;
+  const int iter_max = 20;
 
+  int step = 1;
   double y_p = y_p_0 ;
   double u_tau = nu*y_p/y;
 
   do
     {
       y_p = y_p - (u_plus_de_y_plus(y_p, nu, y, d_bulles, alpha) - u_par/u_tau)/(deriv_u_plus_de_y_plus(y_p, nu, y, d_bulles, alpha) + u_par/(u_tau*y_p) );
-      step = step+1;
+      step = step + 1;
       u_tau = nu*y_p/y;
     }
   while( (std::fabs(u_plus_de_y_plus(y_p, nu, y, d_bulles, alpha) - u_par/u_tau) > eps) and (step < iter_max));
@@ -134,26 +151,30 @@ double Loi_paroi_Ramstorfer::calc_y_plus_loc(double u_par, double nu, double y, 
 
 double Loi_paroi_Ramstorfer::u_plus_de_y_plus(double y_p, double nu, double y, const double *d_bulles, const double *alpha) // Ramstorfer model
 {
-  double u_tau = y_p*y/nu;
-  double log_law = std::log(y_p+limiteur_y_p)/von_karman_ + 5.1;
+  const Pb_Multiphase pbm = ref_cast(Pb_Multiphase, pb_.valeur());
+
+  const double u_tau = y_p*y/nu;
+  const double log_law = std::log(y_p + limiteur_y_p_)/von_karman_ + 5.1;
 
   double kr_p = 0;
-  Pb_Multiphase pbm = ref_cast(Pb_Multiphase, pb_.valeur());
-  for (int i = 1 ; i < pbm.nb_phases() ; i++) kr_p += d_bulles[i]*alpha[i];
+  for (int i = 1 ; i < pbm.nb_phases() ; i++)
+    kr_p += d_bulles[i]*alpha[i];
   kr_p *= u_tau/nu ;
 
-  return log_law - (kr_p < 11.3 ? 0 : std::log(1+C_kr_*kr_p)/von_karman_);
+  return log_law - (kr_p < 11.3 ? 0 : std::log(1 + C_kr_*kr_p)/von_karman_);
 }
 
 double Loi_paroi_Ramstorfer::deriv_u_plus_de_y_plus(double y_p, double nu, double y, const double *d_bulles, const double *alpha) // Ramstorfer model
 {
-  double u_tau = y_p*y/nu;
-  double d_log_law = 1/((y_p+limiteur_y_p)*von_karman_);
+  const Pb_Multiphase pbm = ref_cast(Pb_Multiphase, pb_.valeur());
+
+  const double u_tau = y_p*y/nu;
+  const double d_log_law = 1/((y_p+limiteur_y_p_)*von_karman_);
 
   double kr = 0;
-  Pb_Multiphase pbm = ref_cast(Pb_Multiphase, pb_.valeur());
-  for (int i = 1 ; i < pbm.nb_phases() ; i++) kr += d_bulles[i]*alpha[i];
-  double kr_p = kr * u_tau/nu ;
+  for (int i = 1 ; i < pbm.nb_phases() ; i++)
+    kr += d_bulles[i]*alpha[i];
+  const double kr_p = kr * u_tau/nu;
 
-  return d_log_law - (kr_p < 11.3 ? 0 : (C_kr_*kr/y)/((1+C_kr_*y_p*kr/y)/von_karman_));
+  return d_log_law - (kr_p < 11.3 ? 0 : (C_kr_*kr/y)/((1 + C_kr_*y_p*kr/y)/von_karman_));
 }

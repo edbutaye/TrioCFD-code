@@ -37,48 +37,57 @@ Entree& Production_echelle_temp_taux_diss_turb_PolyMAC_P0::readOn(Entree& is) { 
 
 void Production_echelle_temp_taux_diss_turb_PolyMAC_P0::ajouter_blocs(matrices_t matrices, DoubleTab& secmem, const tabs_t& semi_impl) const
 {
-  const Domaine_VF&                     domaine = ref_cast(Domaine_PolyMAC_P0, equation().domaine_dis());
-  const DoubleTab&                     tab_diss = ref_cast(Champ_Elem_PolyMAC_P0, equation().inconnue()).valeurs(); // tau ou omega selon l'equation
-  const DoubleTab&                    tab_pdiss = ref_cast(Champ_Elem_PolyMAC_P0, equation().inconnue()).passe(); // tau ou omega selon l'equation
-  const DoubleTab&                     tab_grad = equation().probleme().get_champ("gradient_vitesse").passe();
-  const DoubleTab*                          alp = sub_type(Pb_Multiphase,equation().probleme()) ? &equation().probleme().get_champ("alpha").valeurs() : nullptr;
-  const DoubleVect& pe = equation().milieu().porosite_elem(), &ve = domaine.volumes();
+  const Domaine_VF& domaine = ref_cast(Domaine_PolyMAC_P0, equation().domaine_dis());
+  const DoubleTab& tab_diss = ref_cast(Champ_Elem_PolyMAC_P0, equation().inconnue()).valeurs(); // tau ou omega selon l'equation
+  const DoubleTab& tab_pdiss = ref_cast(Champ_Elem_PolyMAC_P0, equation().inconnue()).passe(); // tau ou omega selon l'equation
+  const DoubleTab& tab_grad = equation().probleme().get_champ("gradient_vitesse").passe();
+  const DoubleTab* alp = sub_type(Pb_Multiphase,equation().probleme()) ? &equation().probleme().get_champ("alpha").valeurs() : nullptr;
+  const DoubleVect& pe = equation().milieu().porosite_elem();
+  const DoubleVect& ve = domaine.volumes();
 
-  int nf_tot = domaine.nb_faces_tot(), ne = domaine.nb_elem(), D = dimension ;
-  int N = equation().inconnue().valeurs().line_size();
-  int Na = sub_type(Pb_Multiphase,equation().probleme()) ? equation().probleme().get_champ("alpha").valeurs().line_size() : 1;
-  int e, n;
+  const int nf_tot = domaine.nb_faces_tot();
+  const int ne = domaine.nb_elem();
+  const int D = dimension ;
+  const int N = equation().inconnue().valeurs().line_size();
+  const int Na = sub_type(Pb_Multiphase,equation().probleme()) ? equation().probleme().get_champ("alpha").valeurs().line_size() : 1;
 
   std::string Type_diss = ""; // omega or tau dissipation
-  if sub_type(Echelle_temporelle_turbulente, equation()) Type_diss = "tau";
-  else if sub_type(Taux_dissipation_turbulent, equation()) Type_diss = "omega";
-  if (Type_diss == "") Process::exit(que_suis_je() + " : you must have tau or omega dissipation ! ");
+  if (sub_type(Echelle_temporelle_turbulente, equation()))
+    Type_diss = "tau";
+  else if (sub_type(Taux_dissipation_turbulent, equation()))
+    Type_diss = "omega";
+  if (Type_diss == "")
+    Process::exit(que_suis_je() + " : you must have tau or omega dissipation ! ");
 
   // Second membre
-  for(e = 0 ; e < ne ; e++)
-    for(n = 0; n<N ; n++)
+  for (int e = 0 ; e < ne ; e++)
+    for (int n = 0; n < N ; n++)
       {
-        double grad_grad = 0.;
+        double grad_grad {0.0};
         for (int d_U = 0; d_U < D; d_U++)
           for (int d_X = 0; d_X < D; d_X++)
             grad_grad += ( tab_grad(nf_tot + d_U + e * D , D * n + d_X) + tab_grad(nf_tot + d_X + e * D , D * n + d_U) ) * tab_grad(nf_tot + d_X + e * D , D * n + d_U) ;
 
-        double fac = std::max(grad_grad, 0.) * pe(e) * ve(e) * alpha_omega_ ;
+        const double fac = std::max(grad_grad, 0.) * pe(e) * ve(e) * alpha_omega_ ;
 
         if (Type_diss == "tau")
           {
-            secmem(e, n) -= fac * (2*tab_diss(e, n)-tab_pdiss(e, n)) * tab_pdiss(e, n) * (alp ? (*alp)(e,n) : 1.0); // tau has negative production
+            secmem(e, n) -= fac * (2*tab_diss(e, n) - tab_pdiss(e, n)) * tab_pdiss(e, n) * (alp ? (*alp)(e,n) : 1.0); // tau has negative production
+
             for (auto &&i_m : matrices)
               {
-                if (i_m.first == "tau")    (*i_m.second)(N*e+n, N*e+n) += fac *  2 * tab_pdiss(e, n) * (alp ? (*alp)(e,n) : 1.0) ;
-                if (i_m.first == "alpha")  (*i_m.second)(N*e+n, Na*e+n) += fac * (2*tab_diss(e, n)-tab_pdiss(e, n)) * tab_pdiss(e, n) ;
+                if (i_m.first == "tau")
+                  (*i_m.second)(N*e+n, N*e+n) += fac * 2 * tab_pdiss(e, n) * (alp ? (*alp)(e,n) : 1.0) ;
+                if (i_m.first == "alpha")
+                  (*i_m.second)(N*e+n, Na*e+n) += fac * (2*tab_diss(e, n) - tab_pdiss(e, n)) * tab_pdiss(e, n);
               }
           }
         else if (Type_diss == "omega")
           {
-            secmem(e, n) +=   fac * (alp ? (*alp)(e,n) : 1.0);
+            secmem(e, n) += fac * (alp ? (*alp)(e,n) : 1.0);
             for (auto &&i_m : matrices)
-              if (i_m.first == "alpha")  (*i_m.second)(N*e+n, Na*e+n) += fac ;
+              if (i_m.first == "alpha")
+                (*i_m.second)(N*e+n, Na*e+n) += fac;
           }
       }
 }

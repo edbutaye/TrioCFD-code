@@ -43,8 +43,8 @@ protected :
   double calc_omega(const double y, const double u_tau, const double visc) const;
 
   double von_karman_ = 0.41 ;
-  double beta_omega = 0.075;
-  double beta_k = 0.09;
+  double beta_omega_ = 0.075;
+  double beta_k_ = 0.09;
 };
 
 #endif

@@ -43,8 +43,8 @@ Sortie& Cond_lim_omega_demi::printOn(Sortie& s ) const
 Entree& Cond_lim_omega_demi::readOn(Entree& s )
 {
   Param param(que_suis_je());
-  param.ajouter("beta_omega", &beta_omega);
-  param.ajouter("beta_k", &beta_k);
+  param.ajouter("beta_omega", &beta_omega_);
+  param.ajouter("beta_k", &beta_k_);
   param.ajouter("von_karman", &von_karman_);
   param.lire_avec_accolades_depuis(s);
 
@@ -71,8 +71,8 @@ void Cond_lim_omega_demi::me_calculer()
 {
   Loi_paroi_adaptative& corr_loi_paroi = ref_cast(Loi_paroi_adaptative, correlation_loi_paroi_.valeur());
   const Domaine_VF& domaine = ref_cast(Domaine_VF, domaine_Cl_dis().equation().domaine_dis());
-  const DoubleTab&   u_tau = corr_loi_paroi.get_tab("u_tau");
-  const DoubleTab&      nu_visc = ref_cast(Convection_diffusion_turbulence_multiphase, domaine_Cl_dis().equation()).diffusivite_pour_pas_de_temps().passe();
+  const DoubleTab& u_tau = corr_loi_paroi.get_tab("u_tau");
+  const DoubleTab& nu_visc = ref_cast(Convection_diffusion_turbulence_multiphase, domaine_Cl_dis().equation()).diffusivite_pour_pas_de_temps().passe();
   const int cnu = nu_visc.dimension(0) == 1;
 
   const int nf = la_frontiere_dis->frontiere().nb_faces();
@@ -86,8 +86,10 @@ void Cond_lim_omega_demi::me_calculer()
       const int f_domaine = f + f1; // number of the face in the domaine
       const int e_domaine = (f_e(f_domaine, 0) >= 0) ? f_e(f_domaine, 0) : f_e(f_domaine, 1) ; // Make orientation vdf-proof
       const double y_loc = f_e(f_domaine, 0) >= 0 ? domaine.dist_face_elem0(f_domaine, e_domaine) : domaine.dist_face_elem1(f_domaine, e_domaine) ;
+      const double u_tau_loc = u_tau(f_domaine, n);
+      const double nu_visc_loc = nu_visc(!cnu * e_domaine, n);
 
-      d_(f, n) = std::max(0., 2. * calc_omega(y_loc/2., u_tau(f_domaine, n), nu_visc(!cnu * e_domaine, n)) - calc_omega(y_loc, u_tau(f_domaine, n), nu_visc(!cnu * e_domaine, n)));
+      d_(f, n) = std::max(0., 2. * calc_omega(y_loc/2., u_tau_loc, nu_visc_loc) - calc_omega(y_loc, u_tau_loc, nu_visc_loc));
     }
   d_.echange_espace_virtuel();
 }
@@ -95,11 +97,11 @@ void Cond_lim_omega_demi::me_calculer()
 double Cond_lim_omega_demi::calc_omega(const double y, const double u_tau, const double visc) const
 {
   const double y_p = y * u_tau / visc;
-  const double w_vis = 6 * visc / (beta_omega * y * y);
-  const double w_log = u_tau / (std::sqrt(beta_k) * von_karman_ * y);
+  const double w_vis = 6 * visc / (beta_omega_ * y * y);
+  const double w_log = u_tau / (std::sqrt(beta_k_) * von_karman_ * y);
   const double w_1 = w_vis + w_log;
   const double w_2 = std::pow(std::pow(w_vis, 1.2) + std::pow(w_log, 1.2), 1/1.2);
   const double blending = std::tanh(y_p/10*y_p/10*y_p/10*y_p/10);
 
-  return blending * w_1 + (1-blending) * w_2 ;
+  return blending * w_1 + (1 - blending) * w_2 ;
 }

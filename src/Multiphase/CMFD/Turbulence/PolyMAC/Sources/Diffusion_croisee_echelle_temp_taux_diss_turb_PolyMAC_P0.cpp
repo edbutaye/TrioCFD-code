@@ -46,35 +46,51 @@ void Diffusion_croisee_echelle_temp_taux_diss_turb_PolyMAC_P0::completer()
     for (int j = 0 ; j<pb.equation(i).domaine_Cl_dis().nb_cond_lim(); j++)
       {
         const Cond_lim& cond_lim_loc = pb.equation(i).domaine_Cl_dis().les_conditions_limites(j);
-        if      sub_type(Echange_impose_base, cond_lim_loc.valeur())         f_grad_k_fixe = 0;
-        else if sub_type(Echange_impose_base, cond_lim_loc.valeur()) f_grad_tau_omega_fixe = 0;
+        if (sub_type(Echange_impose_base, cond_lim_loc.valeur()))
+          f_grad_k_fixe_ = 0;
+        else if (sub_type(Echange_impose_base, cond_lim_loc.valeur()))
+          f_grad_tau_omega_fixe_ = 0;
       }
 
 }
 
 void Diffusion_croisee_echelle_temp_taux_diss_turb_PolyMAC_P0::ajouter_blocs(matrices_t matrices, DoubleTab& secmem, const tabs_t& semi_impl) const
 {
-  const Domaine_PolyMAC_P0& 		domaine = ref_cast(Domaine_PolyMAC_P0, equation().domaine_dis());
-  const Champ_Elem_PolyMAC_P0& 	ch_k 		= ref_cast(Champ_Elem_PolyMAC_P0, equation().probleme().get_champ("k"));	// Champ k
-  const DoubleTab& 	  		k_passe				= ch_k.passe(), &xp = domaine.xp(), &xv = domaine.xv();
-  const Conds_lim&          cls_k 			= ch_k.domaine_Cl_dis().les_conditions_limites(); 		// conditions aux limites du champ k
-  const IntTab&             fcl_k 			= ch_k.fcl(), &e_f = domaine.elem_faces(), &f_e = domaine.face_voisins();	// tableaux utilitaires sur les CLs : fcl(f, .) = (type de la CL, no de la CL, indice dans la CL)
-  const DoubleVect& pe = equation().milieu().porosite_elem(), &ve = domaine.volumes(), &fs = domaine.face_surfaces();
+  const Domaine_PolyMAC_P0& domaine = ref_cast(Domaine_PolyMAC_P0, equation().domaine_dis());
+  const Champ_Elem_PolyMAC_P0& ch_k = ref_cast(Champ_Elem_PolyMAC_P0, equation().probleme().get_champ("k"));	// Champ k
+  const DoubleTab& k_passe = ch_k.passe();
+  const DoubleTab& xp = domaine.xp();
+  const DoubleTab& xv = domaine.xv();
+  const Conds_lim& cls_k = ch_k.domaine_Cl_dis().les_conditions_limites(); // conditions aux limites du champ k
 
-  const Champ_Elem_PolyMAC_P0& 	ch_diss	= ref_cast(Champ_Elem_PolyMAC_P0, equation().inconnue()); 		// Champ tau ou omega
-  const DoubleTab& 			diss_passe			= ch_diss.passe();
-  const DoubleTab& 			      diss			= ch_diss.valeurs();
+  // tableaux utilitaires sur les CLs : fcl(f, .) = (type de la CL, no de la CL, indice dans la CL)
+  const IntTab& fcl_k = ch_k.fcl();
+  const IntTab& e_f = domaine.elem_faces();
+  const IntTab& f_e = domaine.face_voisins();
+  const DoubleVect& pe = equation().milieu().porosite_elem();
+  const DoubleVect& ve = domaine.volumes();
+  const DoubleVect& fs = domaine.face_surfaces();
 
-  const Conds_lim& 		   	cls_diss			= ch_diss.domaine_Cl_dis().les_conditions_limites(); 	// conditions aux limites du champ tau ou omega
-  const IntTab&				   fcl_diss 			= ch_diss.fcl(); // tableaux utilitaires sur les CLs : fcl(f, .) = (type de la CL, no de la CL, indice dans la CL)
+  const Champ_Elem_PolyMAC_P0& ch_diss = ref_cast(Champ_Elem_PolyMAC_P0, equation().inconnue()); 		// Champ tau ou omega
+  const DoubleTab& diss_passe = ch_diss.passe();
+  const DoubleTab& diss = ch_diss.valeurs();
 
-  const int nf = domaine.nb_faces(), D = dimension, nb_elem = domaine.nb_elem(), nb_elem_tot = domaine.nb_elem_tot() ;
+  const Conds_lim& cls_diss = ch_diss.domaine_Cl_dis().les_conditions_limites(); // conditions aux limites du champ tau ou omega
+  const IntTab& fcl_diss = ch_diss.fcl(); // tableaux utilitaires sur les CLs : fcl(f, .) = (type de la CL, no de la CL, indice dans la CL)
+
+  const int nf = domaine.nb_faces();
+  const int D = dimension;
+  const int nb_elem = domaine.nb_elem();
+  const int nb_elem_tot = domaine.nb_elem_tot() ;
   const int N = diss_passe.line_size();
 
   std::string Type_diss = ""; // omega or tau dissipation
-  if sub_type(Echelle_temporelle_turbulente, equation()) Type_diss = "tau";
-  else if sub_type(Taux_dissipation_turbulent, equation()) Type_diss = "omega";
-  if (Type_diss == "") Process::abort();
+  if (sub_type(Echelle_temporelle_turbulente, equation()))
+    Type_diss = "tau";
+  else if (sub_type(Taux_dissipation_turbulent, equation()))
+    Type_diss = "omega";
+  if (Type_diss == "")
+    Process::abort();
 
 //  Cerr <<"lol !! " ;
 
@@ -83,9 +99,13 @@ void Diffusion_croisee_echelle_temp_taux_diss_turb_PolyMAC_P0::ajouter_blocs(mat
   /* Calcul de grad de tau ou de omega aux faces */
 
   DoubleTrav grad_f_diss(nf, N);
-  if (f_grad_tau_omega_fixe) ch_diss.init_grad(0); // Initialisation des tables fgrad_d, fgrad_e, fgrad_w qui dependent de la discretisation et du type de conditions aux limites --> pas de mises a jour necessaires
-  else ch_diss.calc_grad(0); // Si on a des CAL qui evoluent avec les lois de paroi, on peut devoir recalculer le fgrad a chaque pas de temps
-  const IntTab& f_d_tau = ch_diss.fgrad_d, &f_e_tau = ch_diss.fgrad_e; // Tables utilisees dans domaine_PolyMAC_P0::fgrad pour le calcul du gradient
+  if (f_grad_tau_omega_fixe_)
+    ch_diss.init_grad(0); // Initialisation des tables fgrad_d, fgrad_e, fgrad_w qui dependent de la discretisation et du type de conditions aux limites --> pas de mises a jour necessaires
+  else
+    ch_diss.calc_grad(0); // Si on a des CAL qui evoluent avec les lois de paroi, on peut devoir recalculer le fgrad a chaque pas de temps
+  //
+  const IntTab& f_d_tau = ch_diss.fgrad_d;
+  const IntTab& f_e_tau = ch_diss.fgrad_e; // Tables utilisees dans domaine_PolyMAC_P0::fgrad pour le calcul du gradient
   const DoubleTab& f_w_tau = ch_diss.fgrad_w;
 
   for (int f = 0; f < nf; f++)
@@ -94,7 +114,7 @@ void Diffusion_croisee_echelle_temp_taux_diss_turb_PolyMAC_P0::ajouter_blocs(mat
         grad_f_diss(f, n) = 0;
         for (int j = f_d_tau(f); j < f_d_tau(f+1) ; j++)
           {
-            int e = f_e_tau(j);
+            const int e = f_e_tau(j);
             int f_bord;
             if ( (f_bord = e-nb_elem_tot) < 0) //contribution d'un element
               grad_f_diss(f, n) += f_w_tau(j) * diss_passe(e, n);
@@ -110,9 +130,13 @@ void Diffusion_croisee_echelle_temp_taux_diss_turb_PolyMAC_P0::ajouter_blocs(mat
   /* Calcul de grad de k aux faces */
 
   DoubleTrav grad_f_k(nf, N);
-  if (f_grad_k_fixe) ch_k.init_grad(0); // Initialisation des tables fgrad_d, fgrad_e, fgrad_w qui dependent de la discretisation et du type de conditions aux limites --> pas de mises a jour necessaires
-  else ch_k.calc_grad(0); // Si on a des CAL qui evoluent avec les lois de paroi, on peut devoir recalculer le fgrad a chaque pas de temps
-  const IntTab& f_d_k = ch_k.fgrad_d, &f_e_k = ch_k.fgrad_e;  // Tables utilisees dans domaine_PolyMAC_P0::fgrad pour le calcul du gradient
+  if (f_grad_k_fixe_)
+    ch_k.init_grad(0); // Initialisation des tables fgrad_d, fgrad_e, fgrad_w qui dependent de la discretisation et du type de conditions aux limites --> pas de mises a jour necessaires
+  else
+    ch_k.calc_grad(0); // Si on a des CAL qui evoluent avec les lois de paroi, on peut devoir recalculer le fgrad a chaque pas de temps
+  //
+  const IntTab& f_d_k = ch_k.fgrad_d;
+  const IntTab& f_e_k = ch_k.fgrad_e;  // Tables utilisees dans domaine_PolyMAC_P0::fgrad pour le calcul du gradient
   const DoubleTab& f_w_k = ch_k.fgrad_w;
 
   for (int n = 0; n < N; n++)
@@ -121,7 +145,7 @@ void Diffusion_croisee_echelle_temp_taux_diss_turb_PolyMAC_P0::ajouter_blocs(mat
         grad_f_k(f, n) = 0;
         for (int j = f_d_k(f); j < f_d_k(f+1) ; j++)
           {
-            int e = f_e_k(j);
+            const int e = f_e_k(j);
             int f_bord;
             if ( (f_bord = e-nb_elem_tot) < 0) //contribution d'un element
               grad_f_k(f, n) += f_w_k(j) * k_passe(e, n);
@@ -141,40 +165,39 @@ void Diffusion_croisee_echelle_temp_taux_diss_turb_PolyMAC_P0::ajouter_blocs(mat
     for (int e = 0; e < nb_elem; e++)
       {
         grad_f_diss_dot_grad_f_k(e, n) = 0;
-        std::vector<double> grad_diss(D), grad_k(D);
-        for (int d = 0 ; d < D ; d++ ) {grad_diss[d] = 0 ;  grad_k[d] = 0;}
+        std::vector<double> grad_diss(D, 0.0);
+        std::vector<double> grad_k(D, 0.0);
+
         for (int j = 0, f; j < e_f.dimension(1) && (f = e_f(e, j)) >= 0; j++)
           for (int d = 0; d < D; d++)
             {
               grad_diss[d] += (e == f_e(f, 0) ? 1 : -1) * fs(f) * (xv(f, d) - xp(e, d)) / ve(e) * grad_f_diss(f, n);
               grad_k[d]    += (e == f_e(f, 0) ? 1 : -1) * fs(f) * (xv(f, d) - xp(e, d)) / ve(e) * grad_f_k(f, n);
             }
-        for (int d = 0 ; d < D ; d++) grad_f_diss_dot_grad_f_k(e, n) += grad_diss[d] * grad_k[d]; // produit scalaire
+        for (int d = 0 ; d < D ; d++)
+          grad_f_diss_dot_grad_f_k(e, n) += grad_diss[d] * grad_k[d]; // produit scalaire
       }
 
   /* remplissage des matrices et du second membre */
-
   Matrice_Morse *M = matrices.count(ch_diss.le_nom().getString()) ? matrices.at(ch_diss.le_nom().getString()) : nullptr;
 
-  int e, n;
-
-  for ( e = 0; e < nb_elem; e++)
-    for(n = 0; n<N; n++)
+  for (int e = 0; e < nb_elem; e++)
+    for(int n = 0; n<N; n++)
       {
         if (Type_diss == "tau")
           {
-            double secmem_en = pe(e) * ve(e) * sigma_d * diss(e, n) * std::min(grad_f_diss_dot_grad_f_k(e, n), 0.);
+            const double secmem_en = pe(e) * ve(e) * sigma_d_ * diss(e, n) * std::min(grad_f_diss_dot_grad_f_k(e, n), 0.);
             secmem(e, n) += secmem_en;
-            if (!(M==nullptr)) (*M)(N*e+n, N*e+n) -= pe(e) * ve(e) * sigma_d * std::min(grad_f_diss_dot_grad_f_k(e, n), 0.); // derivee en tau
+            if (M)
+              (*M)(N*e+n, N*e+n) -= pe(e) * ve(e) * sigma_d_ * std::min(grad_f_diss_dot_grad_f_k(e, n), 0.); // derivee en tau
           }
         else if (Type_diss == "omega")
-          if (diss(e,n)>1.e-8) // Else everything = 0
+          if (diss(e,n) > 1.e-8) // Else everything = 0
             {
-              double dp = std::max(diss_passe(e, n), 1.e-6);
-              secmem(e, n) += pe(e) * ve(e) * sigma_d / dp*(2-diss(e, n)/dp)* std::max(grad_f_diss_dot_grad_f_k(e, n), 0.) ;
-              if (!(M==nullptr))     (*M)(N * e + n, N * e + n)       -= pe(e) * ve(e) * sigma_d * (-1/(dp*dp)) * std::max(grad_f_diss_dot_grad_f_k(e, n), 0.); // derivee en omega
+              const double dp = std::max(diss_passe(e, n), 1.e-6);
+              secmem(e, n) += pe(e) * ve(e) * sigma_d_ / dp*(2-diss(e, n)/dp)* std::max(grad_f_diss_dot_grad_f_k(e, n), 0.) ;
+              if (M)
+                (*M)(N * e + n, N * e + n)       -= pe(e) * ve(e) * sigma_d_ * (-1/(dp*dp)) * std::max(grad_f_diss_dot_grad_f_k(e, n), 0.); // derivee en omega
             }
       }
 }
-
-

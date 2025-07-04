@@ -46,8 +46,7 @@ public:
   void ajouter_blocs(matrices_t matrices, DoubleTab& secmem, const tabs_t& semi_impl = {}) const override;
 
 protected:
-  double beta_omega = 0.075; // Kok and Speikreijse (2000)
+  double beta_omega_ = 0.075; // Kok and Speikreijse (2000)
 };
 
 #endif
-

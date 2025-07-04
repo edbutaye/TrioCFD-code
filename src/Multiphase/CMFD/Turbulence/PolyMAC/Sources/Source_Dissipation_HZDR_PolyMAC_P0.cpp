@@ -39,16 +39,22 @@ Entree& Source_Dissipation_HZDR_PolyMAC_P0::readOn(Entree& is)
 {
   Param param(que_suis_je());
   param.ajouter("constante_gravitation", &g_); // XD_ADD_P floattant not_set
-  param.ajouter("C_k", &C_k); // XD_ADD_P floattant not_set
-  param.ajouter("C_epsilon", &C_epsilon); // XD_ADD_P floattant not_set
+  param.ajouter("C_k", &C_k_); // XD_ADD_P floattant not_set
+  param.ajouter("C_epsilon", &C_epsilon_); // XD_ADD_P floattant not_set
   param.lire_avec_accolades_depuis(is);
 
-  Pb_Multiphase *pbm = sub_type(Pb_Multiphase, equation().probleme()) ? &ref_cast(Pb_Multiphase, equation().probleme()) : nullptr;
+  const Pb_Multiphase *pbm = sub_type(Pb_Multiphase, equation().probleme()) ? &ref_cast(Pb_Multiphase, equation().probleme()) : nullptr;
 
-  if (!pbm || pbm->nb_phases() == 1) Process::exit(que_suis_je() + " : not needed for single-phase flow!");
-  for (int n = 0; n < pbm->nb_phases(); n++) //recherche de n_l, n_g : phase {liquide,gaz}_continu en priorite
-    if (pbm->nom_phase(n).debute_par("liquide") && (n_l < 0 || pbm->nom_phase(n).finit_par("continu")))  n_l = n;
-  if (n_l < 0) Process::exit(que_suis_je() + " : liquid phase not found!");
+  if (!pbm || pbm->nb_phases() == 1)
+    Process::exit(que_suis_je() + " : not needed for single-phase flow!");
+
+  for (int n = 0; n < pbm->nb_phases(); n++) //recherche de n_l_, n_g : phase {liquide,gaz}_continu en priorite
+    if (pbm->nom_phase(n).debute_par("liquide")
+        && (n_l_ < 0 || pbm->nom_phase(n).finit_par("continu")))
+      n_l_ = n;
+
+  if (n_l_ < 0)
+    Process::exit(que_suis_je() + " : liquid phase not found!");
 
   return is;
 }
@@ -84,34 +90,35 @@ void Source_Dissipation_HZDR_PolyMAC_P0::ajouter_blocs(matrices_t matrices, Doub
   const DoubleTab& press = equation().probleme().get_champ("pression").passe();
   const DoubleTab& temp  = equation().probleme().get_champ("temperature").passe();
   const int nb_max_sat =  N * (N-1) /2; // oui !! suite arithmetique !!
+  const int Np = press.line_size();
+
   DoubleTrav Sigma_tab(ne,nb_max_sat);
-  int Np = press.line_size();
+
   for (int k = 0; k < N; k++)
-    {
-      for (int l = k + 1; l < N; l++)
-        {
-          const Interface_base& sat = milc.get_interface(k,l);
-          const int ind_trav = (k*(N-1)-(k-1)*(k)/2) + (l-k-1);
-          for (int i = 0 ; i<ne ; i++)
-            Sigma_tab(i,ind_trav) = sat.sigma(temp(i,k), press(i, k*(Np > 1))) ;
-        }
-    }
+    for (int l = k + 1; l < N; l++)
+      {
+        const Interface_base& sat = milc.get_interface(k,l);
+        const int ind_trav = (k*(N-1)-(k-1)*(k)/2) + (l-k-1);
+        for (int i = 0 ; i<ne ; i++)
+          Sigma_tab(i,ind_trav) = sat.sigma(temp(i,k), press(i, k*(Np > 1))) ;
+      }
 
   // On calcule le second membre aux elements : Diss_HZDR = C_epsilon / (C_nu * d_b * sqrt(k)) * Prod_HZDR
-  for(int e = 0 ; e < ne ; e++)
-    for (int k = 0 ; k<N ; k++)
-      if (k!=n_l) // n_l est l'indice de la phase continue/liquide (n_l=0)
+  for (int e = 0 ; e < ne ; e++)
+    for (int k = 0 ; k < N ; k++)
+      if (k != n_l_) // n_l_ est l'indice de la phase continue/liquide (n_l=0)
         {
-          double u_r = 0;
+          double u_r {0.0};
           for (int d = 0; d < D; d++)
-            u_r += (vit(nf_tot + D*e+d, k) - vit(nf_tot + D*e+d, n_l))*(vit(nf_tot + D*e+d, k) - vit(nf_tot + D*e+d, n_l)); // relative speed = gas speed - liquid speed
+            u_r += (vit(nf_tot + D*e+d, k) - vit(nf_tot + D*e+d, n_l_))*(vit(nf_tot + D*e+d, k) - vit(nf_tot + D*e+d, n_l_)); // relative speed = gas speed - liquid speed
           u_r = std::sqrt(u_r);
-          const double Reb = diam(e,k)*u_r/nu(e,n_l); // Reynolds bulle
-          const int ind_trav = (k>n_l) ? (n_l*(N-1)-(n_l-1)*(n_l)/2) + (k-n_l-1) : (k*(N-1)-(k-1)*(k)/2) + (n_l-k-1);
-          const double Eo = g_ * std::abs(tab_rho(e, n_l)-tab_rho(e, k)) * diam(e, k)*diam(e, k)/Sigma_tab(e, ind_trav);
-          const double Cd = (u_r!=0) ? std::max( std::min( 16./Reb*(1+0.15*std::pow(Reb, 0.687)) , 48./Reb )   , 8.*Eo/(3.*(Eo+4.))) : 0; // Coef de trainee - remarque: si u_r=0 alors pas de trainée, pas de BIA donc production=0
+
+          const double Reb = diam(e,k)*u_r/nu(e,n_l_); // Reynolds bulle
+          const int ind_trav = (k>n_l_) ? (n_l_*(N-1)-(n_l_-1)*(n_l_)/2) + (k-n_l_-1) : (k*(N-1)-(k-1)*(k)/2) + (n_l_-k-1);
+          const double Eo = g_ * std::abs(tab_rho(e, n_l_)-tab_rho(e, k)) * diam(e, k)*diam(e, k)/Sigma_tab(e, ind_trav);
+          const double Cd = (u_r != 0) ? std::clamp(16./Reb*(1 + 0.15*std::pow(Reb, 0.687)), 8.*Eo/(3.*(Eo + 4.)), 48./Reb) : 0; // Coef de trainee - remarque: si u_r=0 alors pas de trainée, pas de BIA donc production=0
           // Terme de production HZDR
-          const double prod_HZDR = C_k * (3./4.) * Cd/diam(e,k) * tab_alp(e, k) / tab_alp(e, n_l) * std::pow(u_r, 3);
-          secmem(e, n_l) += ve(e) * pe(e) * C_epsilon / C_mu / diam(e,k) / std::sqrt(k_passe(e,n_l)) * prod_HZDR;
+          const double prod_HZDR = C_k_ * (3./4.) * Cd/diam(e,k) * tab_alp(e, k) / tab_alp(e, n_l_) * u_r*u_r*u_r;
+          secmem(e, n_l_) += ve(e) * pe(e) * C_epsilon_ / C_mu_ / diam(e,k) / std::sqrt(k_passe(e,n_l_)) * prod_HZDR;
         }
 }
