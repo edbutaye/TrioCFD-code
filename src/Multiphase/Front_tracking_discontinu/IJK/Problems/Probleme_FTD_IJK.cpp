@@ -43,6 +43,9 @@ void Probleme_FTD_IJK::initialize()
   if (IJK_Shear_Periodic_helpler::defilement_ == 1)
     {
       allocate_velocity(vel, domaine_ijk_.valeur(), 2);
+      vel[0].allocate_shear_BC(0, 0., 0., 0.);
+      vel[1].allocate_shear_BC(0, 0., 0., 0.);
+      vel[2].allocate_shear_BC(0, 0., 0., 0.);
       vel[0].get_shear_BC_helpler().set_dU_(bc.get_dU_perio(bc.get_resolution_u_prime_()));
       vel[1].get_shear_BC_helpler().set_dU_(0.);
       vel[2].get_shear_BC_helpler().set_dU_(0.);
