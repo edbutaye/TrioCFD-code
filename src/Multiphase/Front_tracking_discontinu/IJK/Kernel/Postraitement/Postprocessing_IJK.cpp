@@ -977,8 +977,8 @@ void Postprocessing_IJK::ecrire_statistiques_bulles(int reset, const Nom& nom_ca
       write_func_tab("%s_bulles_hz.out", hauteurs_bulles,2);
 
       write_func_tab("%s_bulles_centre_x.out", position, 0);
-      write_func_tab("%s_bulles_centre_y.out", position, 0);
-      write_func_tab("%s_bulles_centre_z.out", position, 0);
+      write_func_tab("%s_bulles_centre_y.out", position, 1);
+      write_func_tab("%s_bulles_centre_z.out", position, 2);
 
       write_func_arr("%s_bulles_surface.out", surface);
       write_func_arr("%s_bulles_volume.out", volume);
