@@ -1,9 +1,0 @@
-#!/bin/bash
-# ce script est execute avant de lire les cas tests
-
-cat >deplacements3.txt <<EOF
-0.00250 0.001250 0.001250 bulle3.msh 
-EOF
-./cree_multi_bulles.sh deplacements3.txt init_multi.lata
-
-sed -e 's/nproc 1 1 1/nproc 2 2 2/g' basic_temperature.data > basic_temperature_multi_proc.data
