@@ -6,8 +6,9 @@ Created on Tue May 23 11:03:38 2023
 
 @author: Moncef El Moatamid
 """
-from string import Template
+
 import numpy as np
+
 from math import *
 
 # # paramètres fixés pour tous les calculs
