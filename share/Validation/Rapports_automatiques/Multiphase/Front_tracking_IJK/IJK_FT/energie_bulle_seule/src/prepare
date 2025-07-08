@@ -6,4 +6,4 @@ cat >deplacements3.txt <<EOF
 EOF
 ./cree_multi_bulles.sh deplacements3.txt init_multi.lata
 
-sed -e 's/\(nproc[a-z_]*\) [0-9]*/\1 2/g' basic_temperature.data > basic_temperature_multi_proc.data
+sed -e 's/nproc 1 1 1/nproc 2 2 2/g' basic_temperature.data > basic_temperature_multi_proc.data
