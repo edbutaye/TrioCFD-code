@@ -14,5 +14,17 @@ index.html
 build/
 local/
 __pycache__
+
+# why is this generated ? always empty
 liste_cas
+
+################################
+# Jupyter validation reports
 Run.log
+
+# from Run_fiche -archive
+archive.log
+build_init/
+old_rapport*
+preserve.tgz
+preserve_FAILED.tgz
