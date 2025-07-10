@@ -84,6 +84,12 @@ Entree& Transport_2eq_base::lire_op_diff_turbulent(Entree& is)
   Nom discr = discretisation().que_suis_je();
   // les operateurs de diffusion sont communs aux discretisations VEF et VEFP1B
   if (discr == "VEFPreP1B") discr = "VEF";
+  if (discretisation().is_polymac_family())
+    {
+      Cerr << "Error: " << modele_turbulence().que_suis_je() << " in " << modele_turbulence().equation().probleme().que_suis_je() << " is not available in PolyMAC discretizations." << finl;
+      Cerr << "Contact TRUST/TrioCFD support team." << finl;
+      Process::exit();
+    }
 
   type += discr;
 
