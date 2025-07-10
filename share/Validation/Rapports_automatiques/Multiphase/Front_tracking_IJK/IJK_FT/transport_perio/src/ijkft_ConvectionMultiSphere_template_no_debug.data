@@ -26,13 +26,6 @@ Lire DOM
   ijk_splitting_ft_extension 7
 }
 
-DebogIJK 
-{
-  mode $mode
-  filename $Debogfile
-  seuil_absolu $Debogseuil
-}
-
 
 Schema_euler_explicite_IJK sch
 lire sch
@@ -116,7 +109,8 @@ lire pb
 
   {
   
-  nom_sauvegarde $fsauv
+  # REPRISE du champ de vitesse : #
+  nom_reprise $frepr 
   }
   
   post_processing 

@@ -18,7 +18,7 @@ Lire DOM
   size_dom 0.4 0.3 0.5
   perio 1 1 0
   # DEBUT MAILLAGE #
-  nproc $procs
+  nproc 1 1 1
   # FIN MAILLAGE #
   # DEBUT LECTURE
   nproc 2 2 2
@@ -28,9 +28,9 @@ Lire DOM
 
 DebogIJK 
 {
-  mode $mode
-  filename $Debogfile
-  seuil_absolu $Debogseuil
+  mode WRITE_PASS
+  filename seq.txt
+  seuil_absolu -1.
 }
 
 
@@ -38,9 +38,9 @@ Schema_euler_explicite_IJK sch
 lire sch
 {    
   tinit 0.0
+	nb_pas_dt_max 3
   timestep 0.01
   timestep_facsec 0.4
-  nb_pas_dt_max 24
   dt_sauvegarde 12
 }
 
@@ -102,21 +102,21 @@ lire pb
       }
 
       expression_vx_init 0.2
-      expression_vy_init $vy
+      expression_vy_init 0.2
       expression_vz_init 0.
 	}
 
   # LECTURE DES INTERFACES DANS UN FICHIER LATA #
   interf 
   {
-    fichier_reprise_interface $freprise_interf
+    fichier_reprise_interface init.lata
     timestep_reprise_interface       1
-    lata_meshname   $lata_meshname
+    lata_meshname   FTMESH
   }
 
   {
   
-  nom_sauvegarde $fsauv
+  nom_sauvegarde ConvMultiSpherePerio.repr
   }
   
   post_processing 
