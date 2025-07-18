@@ -38,7 +38,7 @@ Read sch
   seuil_statio 0.0001
   solveur ice
   {
-    criteres_convergence { alpha 1e-8 pression 1. vitesse 1e-5 temperature 1e8 k 1e-5 omega 1e-3 }
+    criteres_convergence { alpha 1e-7 pression 1. vitesse 1e-5 temperature 1e8 k 1e-5 omega 1e-3 }
     iter_min 2
     solveur petsc cholesky { }
     seuil_convergence_implicite 1e30
