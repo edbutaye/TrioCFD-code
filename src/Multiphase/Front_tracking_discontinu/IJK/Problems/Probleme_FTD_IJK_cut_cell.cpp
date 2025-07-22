@@ -97,10 +97,7 @@ void Probleme_FTD_IJK_cut_cell::initialize()
   Cut_field_vector3_double& cut_field_velocity = static_cast<Cut_field_vector3_double&>(eq_ns.get_velocity());
   if (IJK_Shear_Periodic_helpler::defilement_ == 1)
     {
-      allocate_velocity_persistant(cut_cell_disc_, cut_field_velocity, domaine_ijk_.valeur(), 2);
-      cut_field_velocity[0].get_shear_BC_helpler().set_dU_(bc.get_dU_perio(bc.get_resolution_u_prime_()));
-      cut_field_velocity[1].get_shear_BC_helpler().set_dU_(0.);
-      cut_field_velocity[2].get_shear_BC_helpler().set_dU_(0.);
+      allocate_velocity_persistant(cut_cell_disc_, cut_field_velocity, domaine_ijk_.valeur(), 2, bc.get_dU_perio(bc.get_resolution_u_prime_()));
     }
   else
     allocate_velocity_persistant(cut_cell_disc_, cut_field_velocity, domaine_ijk_.valeur(), thermal_probes_ghost_cells_);
