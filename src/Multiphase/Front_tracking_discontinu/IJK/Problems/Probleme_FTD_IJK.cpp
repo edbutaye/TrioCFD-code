@@ -42,7 +42,7 @@ void Probleme_FTD_IJK::initialize()
   auto& vel = eq_ns.get_velocity();
   if (IJK_Shear_Periodic_helpler::defilement_ == 1)
     {
-      allocate_velocity(vel, domaine_ijk_.valeur(), 2, bc.get_dU_perio(bc.get_resolution_u_prime_()));
+      allocate_velocity(vel, domaine_ijk_.valeur(), 2, "VELOCITY", bc.get_dU_perio(bc.get_resolution_u_prime_()));
     }
   else
     allocate_velocity(vel, domaine_ijk_.valeur(), thermal_probes_ghost_cells_);
