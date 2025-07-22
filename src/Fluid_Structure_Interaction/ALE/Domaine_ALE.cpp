@@ -86,6 +86,7 @@ void Domaine_ALE::clear()
   les_elems_extrait_surf_reference_.reset();
   extrait_surf_dom_deformable_ = false;
   str_mesh_model = Structural_dynamic_mesh_model() ;
+  UpdateTheGrid = 1 ;
 }
 
 Sortie& Domaine_ALE::printOn(Sortie& os) const
@@ -110,6 +111,12 @@ void Domaine_ALE::mettre_a_jour (double temps, Domaine_dis_base& le_domaine_dis,
   update_or_not_matrix_coeffs_=0;
 
   //Cerr<<"Domaine_ALE::mettre_a_jour"<<finl;
+
+  if (Coupling_ICoCo_method == -1)
+    {
+      int res=getCouplingMethod(); // Initialization of Coupling_ICoCo_Method- in first call to getCouplingMethod
+      Cout<<" 	Initialization of Coupling_ICoCo_Method "<<res<<finl;
+    }
 
   bool  check_NoZero_ALE=true; //  if ALE boundary velocity is zero, ALE mesh velocity is zero and mettre_a_jour is skipped.
 
@@ -222,7 +229,6 @@ void Domaine_ALE::mettre_a_jour (double temps, Domaine_dis_base& le_domaine_dis,
 
           type_elem.creer_facette_normales(*this, facette_normales_, rang_elem_non_standard);
           //Cerr << "carre_pas_du_maillage : " << le_dom_VEF.carre_pas_du_maillage() << finl;
-
 
           int nb_eqn=pb.nombre_d_equations();
           for(int num_eq=0; num_eq<nb_eqn; num_eq++)
@@ -404,6 +410,8 @@ void Domaine_ALE::initialiser (double temps, Domaine_dis_base& le_domaine_dis,Pr
   Cerr << "Domaine_ALE::initialize " << finl;
   invalide_octree();
   bool  check_NoZero_ALE= true;
+  ALE_mesh_velocity=calculer_vitesse(temps,le_domaine_dis,pb,  check_NoZero_ALE);
+
   //On initialise les vitesses aux faces
   Domaine_VF& le_dom_VF=ref_cast(Domaine_VF,le_domaine_dis);
   int nb_faces=le_dom_VF.nb_faces();
@@ -947,6 +955,9 @@ void Domaine_ALE::reading_vit_bords_ALE(Entree& is)
 {
   Motcle accolade_ouverte("{");
   Motcle accolade_fermee("}");
+  //Motcles couplage(3);
+  //couplage[0] = "explicit";
+  //couplage[1] = "implicit";
   Motcle motlu;
   Nom nomlu;
   is >> motlu;
@@ -960,6 +971,32 @@ void Domaine_ALE::reading_vit_bords_ALE(Entree& is)
   is >> nb_bords_ALE;
   Cerr << "nombre de bords ALE : " <<  nb_bords_ALE << finl;
   les_champs_front.dimensionner(nb_bords_ALE);
+  /*is >> motlu;
+  Cerr << "type de couplage: " << motlu << endl;
+  int rang = couplage.search(motlu);
+  switch(rang)
+    {
+    case 0:
+      {
+        Coupling_ICoCo_method = 0;
+        Cerr << "Your choose the explicit way (considering only if your calculation is coupled with EPX)" << finl;
+        break;
+      }
+    case 1:
+      {
+        Coupling_ICoCo_method = 1;
+        Cerr << "Your choose the implicit way (considering only if your calculation is coupled with EPX)" << finl;
+        break;
+      }
+    default :
+      {
+        Cerr << "Error while reading the coupling method" << finl;
+        Cerr << motlu << "is not understand here "<< finl;
+        Cerr << "We were expecting a word from " << couplage << finl;
+        exit();
+      }
+    }*/
+
   int compteur=0;
   while(1)
     {
@@ -1834,3 +1871,36 @@ void Domaine_ALE::update_coord_dom_extrait_surface()
           }
       }
 }
+
+int Domaine_ALE::getCouplingMethod()
+{
+  if (Coupling_ICoCo_method == -1) // First use, unitialize value
+    {
+      Probleme_base& pb_base=(eq.valeur()).probleme(); // get the probleme from stored ref to equation
+      if (pb_base.checkOutputIntEntry("CouplingMethod"))
+        {
+          Coupling_ICoCo_method=pb_base.getOutputIntValue("CouplingMethod");
+          Cerr << "Coupling Method set to " << Coupling_ICoCo_method << " from ICoCo" << finl ;
+        }
+      else
+        {
+          Coupling_ICoCo_method=0;
+          Cerr << "Coupling Method set to " << Coupling_ICoCo_method << " (default)" << finl ;
+        }
+    }
+  return Coupling_ICoCo_method;
+}
+
+bool Domaine_ALE::getUpdateTheGrid()
+{
+  return UpdateTheGrid;
+}
+
+void Domaine_ALE::setUpdateTheGrid(bool val)
+{
+  UpdateTheGrid = val;
+}
+
+
+
+

@@ -85,6 +85,9 @@ public :
   inline const DoubleTab& getNewJacobian() const;
   inline int getMeshMotionModel() const ;
 
+  int getCouplingMethod();
+  bool getUpdateTheGrid() override;
+  void setUpdateTheGrid(bool) override;
 
   DoubleVect interpolationOnThe3DSurface(const int&, const double& x, const double& y, const double& z, const DoubleTab& u, const DoubleTab& R) const;
   //double computeDtBeam(Domaine_dis_base&);
@@ -143,6 +146,11 @@ protected:
 
   bool extrait_surf_dom_deformable_ = false;
   int meshMotionModel_ = 0 ; // Model for ALE mesh motion: 0 = Laplacien, 1 = Structural_dynamics
+
+  int Coupling_ICoCo_method=-1 ; //1:implicit 0:explicit -1:uninitialized
+  bool UpdateTheGrid;
+  DoubleTab coord_ini;
+  DoubleTab displacement_lag;
 };
 
 
