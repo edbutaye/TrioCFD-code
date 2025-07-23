@@ -103,8 +103,6 @@ for ts in lts :
       pass
    pass 
 
-if not os.path.exists("REF"): subprocess.call(["ln","-sf", "CAS_OFFSET0.0", "REF"])
-
 # 2D or 2Daxi
 for axi in ["2D", "2D_axi"]:
    os.makedirs(axi, exist_ok=True)
@@ -114,7 +112,7 @@ for axi in ["2D", "2D_axi"]:
       if (r == 1):
           if not os.path.exists("%s/M%s"%(axi,M)): 
              os.chdir(axi)
-             subprocess.call(["ln","-sf", "../REF", "M%s"%(M)])
+             subprocess.call(["ln","-sf", "../CAS_OFFSET0.0", "M%s"%(M)])
              os.chdir("..")
       else:
          makeCase(dest="%s/M%.3g" %(axi,M), Nx=int(refNx*r), Ny=(refNy*r),degliq=refdegliq,offset=refoffset, axi=(axi=="2D_axi"))
@@ -124,7 +122,7 @@ for axi in ["2D", "2D_axi"]:
       if (o == 1):
           if not os.path.exists("%s/M%s"%(axi,M)): 
              os.chdir(axi)
-             subprocess.call(["ln","-sf", "../REF", "OGT%s"%(o)])
+             subprocess.call(["ln","-sf", "../CAS_OFFSET0.0", "OGT%s"%(o)])
              os.chdir("..")
       else:
           makeCase(dest="%s/OGT%s"%(axi,o), Nx=refNx, Ny=refNy,degliq=refdegliq, offset=refoffset, ordre_gradT=o, axi=(axi=="2D_axi"))
@@ -135,7 +133,7 @@ for axi in ["2D", "2D_axi"]:
 # Angle serie : 
 for angle in langle : 
    if (angle == refdegliq):
-       if not os.path.exists("CAS_ANGLE%s"%angle): subprocess.call(["ln","-sf", "REF", "CAS_ANGLE%s"%angle])
+       if not os.path.exists("CAS_ANGLE%s"%angle): subprocess.call(["ln","-sf", "CAS_OFFSET0.0", "CAS_ANGLE%s"%angle])
    else:
       makeCase(dest="CAS_ANGLE%s"%angle, Nx=refNx, Ny=refNy,degliq=angle,offset=refoffset)
       pass
@@ -144,7 +142,7 @@ for angle in langle :
 # Overheat series : 
 for dT in ldT: 
    if (dT == refDT):
-       if not os.path.exists("CAS_DT%s"%dT): subprocess.call(["ln","-sf", "REF", "CAS_DT%s"%dT])
+       if not os.path.exists("CAS_DT%s"%dT): subprocess.call(["ln","-sf", "CAS_OFFSET0.0", "CAS_DT%s"%dT])
    else:
       makeCase(dest="CAS_DT%s"%dT, Nx=refNx, Ny=refNy,degliq=refdegliq,offset=refoffset, dT=dT)
       pass
