@@ -36,6 +36,7 @@ class Equation_base;
 class Beam_model;
 class Structural_dynamic_mesh_model;
 
+
 //////////////////////////////////////////////////////////////////////////////
 //
 // .DESCRIPTION
@@ -85,9 +86,10 @@ public :
   inline const DoubleTab& getNewJacobian() const;
   inline int getMeshMotionModel() const ;
 
-  int getCouplingMethod();
+  int getCouplingMethod() ;
   bool getUpdateTheGrid() override;
   void setUpdateTheGrid(bool) override;
+
 
   DoubleVect interpolationOnThe3DSurface(const int&, const double& x, const double& y, const double& z, const DoubleTab& u, const DoubleTab& R) const;
   //double computeDtBeam(Domaine_dis_base&);

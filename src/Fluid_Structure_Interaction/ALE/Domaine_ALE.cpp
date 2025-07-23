@@ -33,10 +33,9 @@
 #include <Champ_front_ALE.h>
 #include <Ch_front_input_ALE.h>
 #include <Champ_front_ALE_Beam.h>
-#include <Champs_front_ALE_projection.h>
+#include <Equation_base.h>
 #include <Noms.h>
 #include <Navier_Stokes_std.h>
-#include <Equation_base.h>
 #include <Operateur_Diff.h>
 #include <Operateur_Grad.h>
 #include <communications.h>
@@ -1900,7 +1899,6 @@ void Domaine_ALE::setUpdateTheGrid(bool val)
 {
   UpdateTheGrid = val;
 }
-
 
 
 

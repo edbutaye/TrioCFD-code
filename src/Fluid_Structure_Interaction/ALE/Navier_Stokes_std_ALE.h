@@ -41,6 +41,7 @@ public :
   std::vector<YAML_data> data_a_sauvegarder() const override;
   virtual int sauvegarder(Sortie&) const override;
   virtual int reprendre(Entree&) override;
+  void updateFluidForce(DoubleTab&)  override;
 
 protected :
   OWN_PTR(Champ_Inc_base) ALEMeshVelocity_;

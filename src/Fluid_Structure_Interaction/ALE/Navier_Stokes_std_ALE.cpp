@@ -24,6 +24,7 @@
 #include <Domaine_ALE.h>
 #include <Schema_Temps_base.h>
 #include <Op_Conv_ALE_VEF.h>
+#include <Op_Grad_VEF_P1B_Face.h>
 #include <Discretisation_base.h>
 #include <TRUSTTrav.h>
 #include <Debog.h>
@@ -302,6 +303,29 @@ void Navier_Stokes_std_ALE::mettre_a_jour(double temps)
           const DoubleTab& meshPbForceFace = dom_ale.getMeshPbForceFace(); //we access the internal forces in the fictitious structure problem for the mesh
           ALEMeshStructuralForces_->valeurs() = meshPbForceFace ;
         }
+
+    }
+
+}
+
+
+void Navier_Stokes_std_ALE::updateFluidForce(DoubleTab& velocity)
+{
+  // in case of implicit coupling with a structural code: update the fluxes (used for computing the fluid force) during implicit sub-iterations
+  Domaine_ALE& dom_ale=ref_cast(Domaine_ALE, probleme().domaine());
+  if(dom_ale.getCouplingMethod()) //implicit coupling case
+    {
+      //update diffusion operator
+      DoubleTab field_value = velocity;
+      field_value = 0.;
+      operateur_diff().ajouter(velocity, field_value);
+
+
+      //update gradient operator
+      pression().mettre_a_jour(schema_temps().temps_courant());
+      calculer_la_pression_en_pa();
+      Op_Grad_VEF_P1B_Face& op_grad_vef = ref_cast(Op_Grad_VEF_P1B_Face, operateur_gradient().l_op_base());
+      op_grad_vef.calculer_flux_bords();
 
     }
 }
