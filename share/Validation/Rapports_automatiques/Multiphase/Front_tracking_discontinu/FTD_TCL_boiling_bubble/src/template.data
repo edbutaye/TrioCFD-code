@@ -101,19 +101,6 @@ Ou pas a saturation:
         chaleur_latente Champ_Uniforme 1    -2.256e6
         gravite Champ_Uniforme 2 0 -9.81
     }
-
-        fluide0 Fluide_Incompressible
-        {
-            mu champ_uniforme       1 1.227e-5
-            rho champ_uniforme      1 0.597
-            lambda champ_uniforme   1 0.025
-            cp champ_uniforme       1 2.077e3
-        }
-
-        sigma   Champ_Uniforme 1            5.89e-2
-        chaleur_latente Champ_Uniforme 1    -2.256e6
-        gravite Champ_Uniforme 2 0. -9.81
-    }
     hydraulique
     {
         modele_turbulence null {  }

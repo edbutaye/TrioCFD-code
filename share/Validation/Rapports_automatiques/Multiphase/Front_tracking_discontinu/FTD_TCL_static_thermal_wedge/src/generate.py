@@ -8,7 +8,7 @@ refoffset = 0 # in microns
 refDT = 8.5
 refogt = 1
 loffsets = ['-0.5', '-0.4', '-0.3', '-0.2', '-0.1', '0.0', '0.1', '0.2', '0.3', '0.4', '0.5']
-lraf = [0.25, 0.5, 1, 2, 4, 8]
+lraf = [0.25, 0.5, 1, 1.96, 4, 8]   # when using 2, the calcul indicatrice cashes...
 langle = [5, 10, 15, 20, 30, 50, 80, 90]
 ldT = [3,5,8.5,10,15]
 lordre_gradT = [0,1,2] # @ordre_gradT@
@@ -117,7 +117,7 @@ for axi in ["2D", "2D_axi"]:
              subprocess.call(["ln","-sf", "../REF", "M%s"%(M)])
              os.chdir("..")
       else:
-         makeCase(dest="%s/M%s"%(axi,M), Nx=int(refNx*r), Ny=(refNy*r),degliq=refdegliq,offset=refoffset, axi=(axi=="2D_axi"))
+         makeCase(dest="%s/M%.3g" %(axi,M), Nx=int(refNx*r), Ny=(refNy*r),degliq=refdegliq,offset=refoffset, axi=(axi=="2D_axi"))
          pass
       pass
    for o in lordre_gradT:
