@@ -1,6 +1,7 @@
 --------------------------------------------------------------------------------------------------
 Release notes version 1.9.7_beta : Enhancements, modifications and corrected bugs since version 1.9.6 :
 --------------------------------------------------------------------------------------------------
+31/07/25 (TrioCFD) Turbulence  : Transport_2eq_base moved to TRUST. All transport equations of Modele_turbulence_hyd_2_eq_base are now OWN_PTR of OWN_PTR(Transport_2eq_base).
 01/07/25 (TrioCFD) Minor change: negligeable keyword is now authorized for wall function in k-omega model
 01/07/25 (TrioCFD) Minor change: default k-omega model is now SST
 
