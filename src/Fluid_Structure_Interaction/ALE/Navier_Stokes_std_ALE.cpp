@@ -329,3 +329,8 @@ void Navier_Stokes_std_ALE::updateFluidForce(DoubleTab& velocity)
 
     }
 }
+bool Navier_Stokes_std_ALE::getCouplingInfoForFiltering() const
+{
+  const Domaine_ALE& dom_ale=ref_cast(Domaine_ALE, probleme().domaine());
+  return dom_ale.getCouplingMethod();
+}

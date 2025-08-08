@@ -42,6 +42,7 @@ public :
   virtual int sauvegarder(Sortie&) const override;
   virtual int reprendre(Entree&) override;
   void updateFluidForce(DoubleTab&)  override;
+  bool getCouplingInfoForFiltering() const override;   //true if implicit coupling with structural solver
 
 protected :
   OWN_PTR(Champ_Inc_base) ALEMeshVelocity_;

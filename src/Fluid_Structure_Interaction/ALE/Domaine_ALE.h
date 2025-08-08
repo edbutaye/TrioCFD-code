@@ -86,7 +86,8 @@ public :
   inline const DoubleTab& getNewJacobian() const;
   inline int getMeshMotionModel() const ;
 
-  int getCouplingMethod() ;
+  int getCouplingMethod();
+  bool getCouplingMethod() const;
   bool getUpdateTheGrid() override;
   void setUpdateTheGrid(bool) override;
 

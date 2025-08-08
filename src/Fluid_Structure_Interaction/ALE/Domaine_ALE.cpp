@@ -1889,6 +1889,13 @@ int Domaine_ALE::getCouplingMethod()
     }
   return Coupling_ICoCo_method;
 }
+bool Domaine_ALE::getCouplingMethod() const
+{
+  if(Coupling_ICoCo_method==1)
+    return true;
+  else
+    return false;
+}
 
 bool Domaine_ALE::getUpdateTheGrid()
 {
