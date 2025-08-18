@@ -35,7 +35,7 @@ public:
   void associer_pb(const Probleme_base& ) override;
   void ajouter_blocs(matrices_t matrices, DoubleTab& secmem, const tabs_t& semi_impl) const override;
 
-private:
+protected:
   void fill_resu_anisotherme(const DoubleVect& , const DoubleVect& , const DoubleVect& , DoubleTab& ) const override;
 };
 

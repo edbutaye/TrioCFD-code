@@ -45,7 +45,7 @@ protected:
   OBS_PTR(Transport_K_Omega) eqn_K_Omega;
   void associer_pb(const Probleme_base& pb) override;
 
-private:
+protected:
   const DoubleTab& get_visc_turb() const override;
   void calculer_terme_production(const Champ_Face_VDF&, const DoubleTab& , const DoubleTab& , DoubleVect&) const override;
   void fill_resu(const DoubleVect& , DoubleTab& ) const override;

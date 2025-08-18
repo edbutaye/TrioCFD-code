@@ -43,7 +43,7 @@ protected:
   OBS_PTR(Transport_K_Eps)  mon_eq_transport_K_Eps;
   void associer_pb(const Probleme_base& pb) override;
 
-private:
+
   const DoubleTab& get_visc_turb() const override;
   const OWN_PTR(Modele_Fonc_Bas_Reynolds_Base)& get_modele_fonc_bas_reyn() const  override;
   void calculer_terme_production(const Champ_Face_VDF&, const DoubleTab& , const DoubleTab& , DoubleVect&) const override;

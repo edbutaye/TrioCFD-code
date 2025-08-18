@@ -24,17 +24,16 @@
 
 #include <Modele_turbulence_hyd_K_Omega.h>
 #include <Calcul_Production_K_VDF.h>
-#include <Source_Transport_proto.h>
+#include <Source_Transport_VDF_Elem_base.h>
 #include <Domaine_Cl_VDF.h>
 #include <Domaine_VDF.h>
 #include <TRUST_Ref.h>
 
-class Source_Transport_K_Omega_VDF_Elem_base: public Source_base, public Calcul_Production_K_VDF, public Source_Transport_proto
+class Source_Transport_K_Omega_VDF_Elem_base: public Source_Transport_VDF_Elem_base
 {
   Declare_base_sans_constructeur(Source_Transport_K_Omega_VDF_Elem_base);
 public:
   Source_Transport_K_Omega_VDF_Elem_base() { }
-  // Source_Transport_VDF_Elem_base(double cs1, double cs2) : Source_Transport_proto(cs1,cs2) { }
 
   DoubleTab& calculer(DoubleTab&) const override;
   void associer_domaines(const Domaine_dis_base&, const Domaine_Cl_dis_base&) override;
@@ -55,33 +54,6 @@ protected:
   static constexpr double SIGMA_K = 0.5; // SIGMA_STAR
   static constexpr double SIGMA_OMEGA = 0.5; // SIGMA
   static constexpr double ALPHA_OMEGA = 5./9.; // ALPHA
-
-  // static constexpr double ALPHA_STAR_INF = 1, ALPHA_INF = 0.52, ALPHA_ZERO = 1./9.;
-  // static constexpr double BETA_STAR_INF = 0.09, BETA_I = 0.072, R_BETA = 8;
-  // static constexpr double R_K = 6, R_OMEGA = 2.95, ZETA_STAR = 1.5;
-  // static constexpr double SIGMA_K = 2.0, SIGMA_OMEGA = 2.0;
-  // static constexpr double Mt_ZERO = 0.25, ALPHA_STAR_ZERO = BETA_I/3.;
-  // DoubleVect ALPHA, ALPHA_STAR, BETA, FBETA, FBETA_STAR;
-
-  // Constants for the baseline k-omega model
-  // static constexpr double SIGMA_K_ONE = 2.0, SIGMA_OMEGA_ONE = 2.0;
-  // static constexpr double SIGMA_K_TWO = 1.0, SIGMA_OMEGA_TWO = 1.168;
-  // static constexpr double BETA_I_ONE = 0.075, BETA_I_TWO = 0.0828;
-
-  // Constants for the SST model
-  // static constexpr double SIGMA_K_ONE = 1.176, SIGMA_OMEGA_ONE = 2.0;
-  // static constexpr double SIGMA_K_TWO = 1.0, SIGMA_OMEGA_TWO = 1.168;
-  // static constexpr double BETA_I_ONE = 0.075, BETA_I_TWO = 0.0828;
-  // static constexpr double ALPHA_ONE = 0.31
-
-  OBS_PTR(Domaine_VDF) le_domaine_VDF;
-  OBS_PTR(Domaine_Cl_VDF) le_domaine_Cl_VDF;
-
-private:
-  // methodes a surcharger sinon throw !!
-  virtual const DoubleTab& get_visc_turb() const { return not_implemented<DoubleTab&>(__func__); }
-  virtual void calculer_terme_production(const Champ_Face_VDF&, const DoubleTab& , const DoubleTab& , DoubleVect&) const { return not_implemented<void>(__func__); }
-  virtual void fill_resu(const DoubleVect& , DoubleTab& ) const { return not_implemented<void>(__func__); }
 };
 
 #endif /* Source_Transport_K_Omega_VDF_Elem_base_included */

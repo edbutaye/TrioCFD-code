@@ -37,8 +37,6 @@ public :
 
 protected :
   OBS_PTR(Transport_K_Eps_Bas_Reynolds) eqn_keps_bas_re;
-
-private:
   virtual void fill_resu_bas_reyn(const DoubleTrav& , const DoubleTrav& , const DoubleTrav& , const DoubleTrav& , const DoubleTrav& , DoubleTab& ) const { return not_implemented<void>(__func__); }
 };
 

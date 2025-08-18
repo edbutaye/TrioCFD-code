@@ -40,7 +40,7 @@ public :
 protected :
   OBS_PTR(Transport_K_ou_Eps_Realisable) eqn_k_Rea, eqn_eps_Rea;
 
-private:
+protected:
   const DoubleTab& get_visc_turb() const override;
   const Modele_Fonc_Realisable_base& get_modele_fonc() const override;
   void calculer_terme_production_real(const Champ_Face_VDF&, const DoubleTab& , const DoubleTab& , DoubleTrav&) const override;

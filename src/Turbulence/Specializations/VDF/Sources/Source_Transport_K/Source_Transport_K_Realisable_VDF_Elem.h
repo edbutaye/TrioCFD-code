@@ -38,7 +38,6 @@ public :
 protected :
   OBS_PTR(Transport_K_ou_Eps_Realisable) eqn_k_Rea, eqn_eps_Rea;
 
-private:
   void fill_coeff_matrice(const int , const DoubleTab& , const DoubleVect& , const DoubleVect& , double& , Matrice_Morse& ) const override;
 };
 
