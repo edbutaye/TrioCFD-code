@@ -39,19 +39,6 @@ Sortie& Source_Transport_K_Omega_VEF_Face_base::printOn(Sortie& os) const { retu
 
 Entree& Source_Transport_K_Omega_VEF_Face_base::readOn(Entree& is) { return Source_Transport_proto::readOn_proto(is, que_suis_je()); }
 
-void Source_Transport_K_Omega_VEF_Face_base::associer_domaines(const Domaine_dis_base& domaine_dis, const Domaine_Cl_dis_base& domaine_Cl_dis)
-{
-  le_dom_VEF = ref_cast(Domaine_VEF, domaine_dis);
-  le_dom_Cl_VEF = ref_cast(Domaine_Cl_VEF, domaine_Cl_dis);
-}
-
-void Source_Transport_K_Omega_VEF_Face_base::associer_pb(const Probleme_base& pb) { Source_Transport_proto::associer_pb_proto(pb); }
-
-DoubleTab& Source_Transport_K_Omega_VEF_Face_base::calculer(DoubleTab& resu) const
-{
-  resu = 0.;
-  return ajouter(resu);
-}
 
 // cAlan, 2023-06-23: salement copié de Source_Chaleur_WC_VEF. À mutualiser.
 void Source_Transport_K_Omega_VEF_Face_base::elem_to_face(const Domaine_VF& domaine,
@@ -120,7 +107,7 @@ DoubleTab& Source_Transport_K_Omega_VEF_Face_base::ajouter_komega(DoubleTab& res
                               _interpolation_viscosite_turbulente,
                               _coefficient_limiteur);
 
-  fill_resu(volumes_entrelaces, production_TKE, gradKgradOmega, resu); // voir les classes filles
+  fill_resu_k_omega(volumes_entrelaces, production_TKE, gradKgradOmega, resu); // voir les classes filles
 
   if (turbulence_model->is_SST())
     compute_enstrophy(le_dom_VEF, domaine_Cl_VEF, velocity,

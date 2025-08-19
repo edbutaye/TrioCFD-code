@@ -55,7 +55,6 @@ protected :
   OBS_PTR(Domaine_VEF) le_dom_VEF;
   OBS_PTR(Domaine_Cl_VEF) le_dom_Cl_VEF;
 
-private:
   // methodes a surcharger sinon throw !!
   virtual const DoubleTab& get_visc_turb() const { return not_implemented<DoubleTab&>(__func__); }
   virtual const DoubleTab& get_cisaillement_paroi() const { return not_implemented<DoubleTab&>(__func__); }

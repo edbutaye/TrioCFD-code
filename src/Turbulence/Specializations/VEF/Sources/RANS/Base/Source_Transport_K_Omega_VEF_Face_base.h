@@ -25,6 +25,7 @@
 #include <Calcul_Production_K_VEF.h>
 #include <Tensors_Computation_VEF.h>
 #include <Source_Transport_proto.h>
+#include <Source_Transport_VEF_Face_base.h>
 #include <TRUST_Ref.h>
 
 class Transport_K_Omega;
@@ -32,34 +33,22 @@ class Domaine_Cl_VEF;
 class Domaine_VEF;
 class Modele_turbulence_hyd_K_Omega;
 
-class Source_Transport_K_Omega_VEF_Face_base: public Source_base,
-  public Source_Transport_proto,
-  public Calcul_Production_K_VEF,
-  public Tensors_Computation_VEF
+class Source_Transport_K_Omega_VEF_Face_base: public Source_Transport_VEF_Face_base, public Tensors_Computation_VEF
 {
   Declare_base_sans_constructeur(Source_Transport_K_Omega_VEF_Face_base);
 public :
   Source_Transport_K_Omega_VEF_Face_base() { }
-  Source_Transport_K_Omega_VEF_Face_base(double cs1, double cs2): Source_Transport_proto(cs1, cs2) { }
-
-  void associer_pb(const Probleme_base& pb) override;
-  void associer_domaines(const Domaine_dis_base&, const Domaine_Cl_dis_base&) override;
-  DoubleTab& calculer(DoubleTab&) const override;
-  DoubleTab& ajouter(DoubleTab&) const override = 0; // XXX XXX XXX Elie Saikali : like that !!;
+  Source_Transport_K_Omega_VEF_Face_base(double cs1, double cs2): Source_Transport_VEF_Face_base(cs1, cs2) { }
 
   void elem_to_face(const Domaine_VF&, const DoubleTab& grad_elems, DoubleTab& grad_faces) const;
 
-  inline void mettre_a_jour(double temps) override { Calcul_Production_K_VEF::mettre_a_jour(temps); }
-  inline void contribuer_a_avec(const DoubleTab&, Matrice_Morse&) const override { /* Do Nothing */ }
-
-  virtual void compute_cross_diffusion(DoubleTab& gradKgradOmega) const { return not_implemented<void>(__func__); };
-  virtual void compute_blending_F1(DoubleTab& gradKgradOmega) const { return not_implemented<void>(__func__); };
+  virtual void compute_cross_diffusion(DoubleTab& gradKgradOmega) const { return not_implemented<void>(__func__); }
+  virtual void compute_blending_F1(DoubleTab& gradKgradOmega) const { return not_implemented<void>(__func__); }
 
 protected :
   DoubleTab& ajouter_komega(DoubleTab&) const;
+  virtual  void fill_resu_k_omega(const DoubleVect& , const DoubleTrav& , const DoubleTab&, DoubleTab& ) const { return not_implemented<void>(__func__); }
 
-  OBS_PTR(Domaine_VEF) le_dom_VEF;
-  OBS_PTR(Domaine_Cl_VEF) le_dom_Cl_VEF;
   OBS_PTR(Modele_turbulence_hyd_K_Omega) turbulence_model;
 
   // Constants for the classic k-omega model Wilcox 1988
@@ -81,15 +70,6 @@ protected :
   double const GAMMA2 = BETA2/BETA_K - SIGMA_OMEGA2*KAPPA*KAPPA/sqrt(BETA_K);
 
   std::map<std::string, DoubleTab> contrib_komega;
-
-private:
-  // methodes a surcharger sinon throw !!
-  virtual const DoubleTab& get_visc_turb() const { return not_implemented<DoubleTab&>(__func__); }
-  virtual const DoubleTab& get_cisaillement_paroi() const { return not_implemented<DoubleTab&>(__func__); }
-  virtual const DoubleTab& get_K_pour_production() const { return not_implemented<DoubleTab&>(__func__); }
-  virtual const Nom get_type_paroi() const { return not_implemented<Nom>(__func__); }
-  virtual void calcul_tenseur_reyn(const DoubleTab&, const DoubleTab&, DoubleTab& ) const { return not_implemented<void>(__func__); }
-  virtual void fill_resu(const DoubleVect&, const DoubleTrav&, const DoubleTab&, DoubleTab& ) const { return not_implemented<void>(__func__); }
 };
 
 #endif /* Source_Transport_K_Omega_VEF_Face_base_included */

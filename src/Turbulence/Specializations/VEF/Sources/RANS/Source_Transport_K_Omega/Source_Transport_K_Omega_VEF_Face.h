@@ -51,6 +51,7 @@ public:
 protected:
   void associer_pb(const Probleme_base& pb) override;
   OBS_PTR(Transport_K_Omega) eqn_K_Omega;
+  void fill_resu_k_omega(const DoubleVect& , const DoubleTrav& , const DoubleTab&, DoubleTab& ) const override;
 
 private:
   OWN_PTR(Champ_Fonc_base)  grad_k_omega_; /* produit : grad (K) * grad (omega)*/
@@ -58,7 +59,6 @@ private:
   const DoubleTab& get_cisaillement_paroi() const override;
   const DoubleTab& get_K_pour_production() const override;
   const Nom get_type_paroi() const override;
-  void fill_resu(const DoubleVect& , const DoubleTrav& , const DoubleTab&, DoubleTab& ) const override;
 };
 
 #endif /* Source_Transport_K_Omega_VEF_Face_included */

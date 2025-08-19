@@ -202,10 +202,10 @@ void Source_Transport_K_Omega_VEF_Face::compute_cross_diffusion(DoubleTab& gradK
         gradK_face(num_face, ncompo) * gradOmega_face(num_face, ncompo);
 }
 
-void Source_Transport_K_Omega_VEF_Face::fill_resu(const DoubleVect& volumes_entrelaces,
-                                                  const DoubleTrav& ProdK,
-                                                  const DoubleTab& gradKgradOmega,
-                                                  DoubleTab& resu) const
+void Source_Transport_K_Omega_VEF_Face::fill_resu_k_omega(const DoubleVect& volumes_entrelaces,
+                                                          const DoubleTrav& ProdK,
+                                                          const DoubleTab& gradKgradOmega,
+                                                          DoubleTab& resu) const
 {
   const DoubleTab& K_Omega = eqn_K_Omega->inconnue().valeurs();
   const double LeK_MIN = eqn_K_Omega->modele_turbulence().get_K_MIN();
