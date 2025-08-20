@@ -3621,10 +3621,6 @@ void Navier_Stokes_FTD_IJK::calculer_vitesse_ft()
   for (int dir = 0; dir < 3; dir++)
     redistribute_to_splitting_ft_faces_[dir].redistribute(velocity_[dir], velocity_ft_[dir]);
 
-  redistribute_to_splitting_ft_faces_[2].redistribute(velocity_[2], velocity_ft_[2]);
-  redistribute_to_splitting_ft_faces_[1].redistribute(velocity_[1], velocity_ft_[1]);
-  redistribute_to_splitting_ft_faces_[0].redistribute(velocity_[0], velocity_ft_[0]);
-
   if (IJK_Shear_Periodic_helpler::defilement_ == 1)
     {
       // after redistribute, velocity in ft domain must be shifted by the shear
