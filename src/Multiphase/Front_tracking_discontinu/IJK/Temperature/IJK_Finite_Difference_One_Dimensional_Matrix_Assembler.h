@@ -232,7 +232,7 @@ protected :
   FixedVector<FixedVector<DoubleVect,2>,MAX_ORDER_DERIVATIVE> second_order_derivative_backward_;
 
   int precision_order_ = 2;
-  int reduce_side_precision_ = 0;
+  bool reduce_side_precision_ = false;
   int core_matrix_type_ = centred;
   int equation_type_ = advection_diffusion;
   int nb_elem_ = 0;

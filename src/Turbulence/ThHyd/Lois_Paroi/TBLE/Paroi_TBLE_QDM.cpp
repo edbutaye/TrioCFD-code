@@ -51,7 +51,6 @@ Paroi_TBLE_QDM::Paroi_TBLE_QDM()
   tps_nu_t_dyn = -1;//Temps de debut d'utilisation du nu_t en premiere maille dans TBLE
   nb_post_pts = 0;
   reprise_ok = 0;
-  restart = 0;
 
   mu_fonction = 0;
   lambda_fonction = 0;

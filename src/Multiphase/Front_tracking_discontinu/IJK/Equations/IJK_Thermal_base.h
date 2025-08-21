@@ -293,7 +293,7 @@ public:
     return ghost_fluid_fields_->get_eulerian_facets_barycentre_ft();
     // return eulerian_facets_barycentre_ft_;
   }
-  const int& get_ghost_fluid_flag() const
+  bool get_ghost_fluid_flag() const
   {
     return ghost_fluid_;
   };
@@ -301,7 +301,7 @@ public:
   {
     return ghost_cells_;
   };
-  const int& get_debug() const
+  bool get_debug() const
   {
     return debug_;
   };
@@ -428,7 +428,7 @@ public:
   }
   virtual void set_field_T_ana();
 
-  virtual int& get_conserv_energy_global() { return conserv_energy_global_; };
+  virtual bool get_conserv_energy_global() { return conserv_energy_global_; };
   const double& get_E0() const { return E0_; };
 
   virtual void calculer_ecart_T_ana();
@@ -572,7 +572,7 @@ protected:
 
   virtual void enforce_periodic_temperature_boundary_value() {  }
 
-  int debug_ = 0;
+  bool debug_ = false;
   int latastep_reprise_ = 0;
   int latastep_reprise_ini_ = 0;
   /*
@@ -626,8 +626,8 @@ protected:
    */
   Nom expression_source_temperature_;
   Nom type_T_source_ = "??";
-  int lambda_variable_ = 0; // terme source variable
-  int wall_flux_ = 0;
+  bool lambda_variable_ = false; // terme source variable
+  bool wall_flux_ = false;
   IJK_Field_double source_temperature_;
   IJK_Field_double source_temperature_v_;
   IJK_Field_double source_temperature_l_;
@@ -655,8 +655,8 @@ protected:
   /*
    * Storage for operators & time scheme
    */
-  int diff_temperature_negligible_ = 0;
-  int conv_temperature_negligible_ = 0;
+  bool diff_temperature_negligible_ = false;
+  bool conv_temperature_negligible_ = false;
   int type_temperature_convection_form_ = 1;  // Default value: 1 : non conservative
 
   /*
@@ -696,7 +696,7 @@ protected:
   std::shared_ptr<IJK_Field_double> RK3_F_temperature_; // Temporary storage for substeps in the RK3 algorithm.
   IJK_Field_vector3_double storage_; // Temporary storage for fluxes calculation.
   int calculate_local_energy_ = 0;
-  int conserv_energy_global_ = 0;
+  bool conserv_energy_global_ = false;
 
   /*
    * Fields FT
@@ -717,14 +717,14 @@ protected:
   /*
    * For Ghost fluid method & Subresolution or Post-processing
    */
-  int ghost_fluid_ = 0;
+  bool ghost_fluid_ = false;
   int n_iter_distance_ = 3;
-  int gfm_recompute_field_ini_ = 1;
-  int gfm_zero_neighbour_value_mean_ = 0;
+  bool gfm_recompute_field_ini_ = true;
+  bool gfm_zero_neighbour_value_mean_ = false;
   int gfm_vapour_mixed_only_ = 1;
-  int gfm_vapour_liquid_vapour_ = 0;
+  bool gfm_vapour_liquid_vapour_ = false;
   int gfm_smooth_factor_ = 20;
-  int avoid_gfm_parallel_calls_ = 0;
+  bool avoid_gfm_parallel_calls_ = false;
 
   int compute_distance_ = 0;
   int compute_curvature_ = 0;
@@ -751,7 +751,7 @@ protected:
   IJK_Field_double eulerian_grad_T_interface_ns_;
   int compute_grad_T_elem_ = 0;
   IJK_Field_vector3_double grad_T_elem_;
-  int smooth_grad_T_elem_ = 0;
+  bool smooth_grad_T_elem_ = false;
   IJK_Field_vector3_double grad_T_elem_smooth_;
   /*
    * hess(T) = grad(grad(T))
@@ -775,14 +775,14 @@ protected:
 
   int mixed_cells_number_ = 0;
   void compute_mixed_cells_number(const IJK_Field_double& indicator);
-  int compute_eulerian_compo_ = 1;
+  bool compute_eulerian_compo_ = true;
 
 //  IJK_Field_double eulerian_compo_connex_ft_;
 //  IJK_Field_double eulerian_compo_connex_ns_;
 //  IJK_Field_double eulerian_compo_connex_ghost_ft_;
 //  IJK_Field_double eulerian_compo_connex_ghost_ns_;
   int spherical_approx_ = 1;
-  int spherical_exact_ = 0;
+  bool spherical_exact_ = false;
   const IJK_Field_double * eulerian_compo_connex_ft_ = nullptr;
   const IJK_Field_double * eulerian_compo_connex_ns_ = nullptr;
   const IJK_Field_double * eulerian_compo_connex_ghost_ft_ = nullptr;
@@ -796,8 +796,8 @@ protected:
 
   int compute_rising_velocities_ = 0;
   int fill_rising_velocities_ = 0;
-  int use_bubbles_velocities_from_interface_ = 0;
-  int use_bubbles_velocities_from_barycentres_ = 0;
+  bool use_bubbles_velocities_from_interface_ = false;
+  bool use_bubbles_velocities_from_barycentres_ = false;
 
   const Vecteur3 * liquid_velocity_ = nullptr;
   const Vecteur3 * rising_velocity_overall_ = nullptr;
@@ -816,8 +816,8 @@ protected:
   IJK_Field_int dummy_int_field_;
   IJK_Field_double dummy_double_field_;
 
-  int store_flux_operators_for_energy_balance_ = 0;
-  int disable_relative_velocity_energy_balance_ = 0;
+  bool store_flux_operators_for_energy_balance_ = false;
+  bool disable_relative_velocity_energy_balance_ = false;
 
   IJK_One_Dimensional_Subproblems_Interfaces_Fields thermal_local_subproblems_interfaces_fields_;
   IJK_Field_double temperature_gaussian_filtered_;
@@ -825,8 +825,8 @@ protected:
   IJK_Field_vector3_double grad_T_elem_tangential_;
   // IJK_Field_vector3_double grad_T_elem_gaussian_filtered_;
   int smoothing_numbers_ = 1;
-  int smoothing_remove_normal_compo_ = 0;
-  int smoothing_use_unique_phase_ = 0;
+  bool smoothing_remove_normal_compo_ = false;
+  bool smoothing_use_unique_phase_ = false;
   double direct_smoothing_factors_[7] = {1.,1.,1.,1.,1.,1.,2.};
   double gaussian_smoothing_factors_[3][3][3] = {{{1,2,1},
       {2,4,2},

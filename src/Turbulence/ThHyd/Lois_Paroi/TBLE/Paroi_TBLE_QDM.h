@@ -121,7 +121,7 @@ protected:
 
   int reprise_ok;
   DoubleTab valeurs_reprises;
-  int restart;
+  bool restart = false;
 
   //Tableau de Stats
   DoubleTab Fxmean_sum; //Integrale en temps du second membre Fx.

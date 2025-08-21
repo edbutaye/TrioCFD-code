@@ -134,7 +134,7 @@ protected:
   OWN_PTR(Champ_Inc_base) vitesse_convection_;
 
   // To make a divergence-free velocity extension :
-  int divergence_free_velocity_extension_;
+  bool divergence_free_velocity_extension_ = false; // Default set to historical behavior : velocity extension is NOT divergence-free
   OWN_PTR(Assembleur_base) assembleur_pression_;
   OWN_PTR(Champ_Inc_base) la_pression; // Of course, it's a fake :D
   OWN_PTR(Champ_Inc_base) gradient_pression_;

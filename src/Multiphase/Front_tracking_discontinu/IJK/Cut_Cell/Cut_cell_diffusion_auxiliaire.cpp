@@ -29,7 +29,6 @@ Cut_cell_diffusion_auxiliaire::Cut_cell_diffusion_auxiliaire()
 {
   methode_valeur_remplissage_ = METHODE_TEMPERATURE_REMPLISSAGE::COPIE_DIRECTE;
 
-  deactivate_correction_petites_cellules_diffusion_ = 0;
   correction_petites_cellules_ = CORRECTION_PETITES_CELLULES::DIRECTION_PRIVILEGIEE_AVEC_LIMITATION_2;
 
   no_static_update_ = false;

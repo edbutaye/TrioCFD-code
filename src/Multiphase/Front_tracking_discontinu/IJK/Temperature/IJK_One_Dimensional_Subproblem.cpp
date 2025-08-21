@@ -360,7 +360,7 @@ void IJK_One_Dimensional_Subproblem::associate_collisions_parameters(const int& 
 }
 
 void IJK_One_Dimensional_Subproblem::associate_sub_problem_temporal_params(const bool& is_first_time_step,
-                                                                           int& first_time_step_temporal,
+                                                                           bool& first_time_step_temporal,
                                                                            const int& first_time_step_explicit,
                                                                            const double& local_fourier,
                                                                            const double& local_cfl,

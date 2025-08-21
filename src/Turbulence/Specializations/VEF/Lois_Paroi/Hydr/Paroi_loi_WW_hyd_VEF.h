@@ -33,9 +33,8 @@ class Paroi_loi_WW_hyd_VEF : public Paroi_std_hyd_VEF
   // dont le constructeur doit etre code
   Declare_instanciable_sans_constructeur(Paroi_loi_WW_hyd_VEF);
 
-  /* PUBLIC */
 public:
-  inline Paroi_loi_WW_hyd_VEF();
+  Paroi_loi_WW_hyd_VEF() { };
   void set_param(Param& param) override;
 
   /* calculer_hyd pour k-epsilon qui renvoie une erreur */
@@ -44,15 +43,13 @@ public:
   /* calculer_hyd pour L.E.S */
   int calculer_hyd(DoubleTab& , DoubleTab& ) override;
 
-
-  /* PROTECTED */
 protected :
 
   /* constante pour la loi en WWance */
-  double A ;
-  double B  ;
+  double A;
+  double B;
 
-  double Y0 ;
+  double Y0;
 
   int init_lois_paroi_hydraulique() override;
   int preparer_calcul_hyd(DoubleTab& );
@@ -60,9 +57,8 @@ protected :
   int calculer_u_star_couche_puissance(double ,double ,double ,int );
   int calculer_couche_puissance(DoubleTab& ,DoubleTab&  ,double ,int ,int );
   int calculer_local(double, DoubleTab&  ,DoubleTab& , double , double,double ,int ,int );
-  int impr;
+  bool impr = false;
 };
-inline Paroi_loi_WW_hyd_VEF::Paroi_loi_WW_hyd_VEF():impr(0) { }
 double norm_2D_vit(const DoubleTab& vit,int num1,int num2,int fac,const Domaine_VEF& domaine,double& u,double& val1, double& val2);
 double norm_2D_vit3(const DoubleTab& vit,int num1,int num2,int num3,int fac,const Domaine_VEF& domaine,double& u,double& val1, double& val2);
 double norm_3D_vit(const DoubleTab& vit,int fac,int num1,int num2,int num3,const Domaine_VEF& domaine,double& val1,double& val2,double& val3);

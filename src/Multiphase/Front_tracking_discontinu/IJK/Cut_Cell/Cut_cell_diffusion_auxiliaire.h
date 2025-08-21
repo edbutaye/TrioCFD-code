@@ -34,7 +34,7 @@ class Cut_cell_diffusion_auxiliaire : public Cut_cell_schema_auxiliaire
   Declare_instanciable(Cut_cell_diffusion_auxiliaire);
 
 public:
-  int deactivate_correction_petites_cellules_diffusion_;
+  bool deactivate_correction_petites_cellules_diffusion_ = false;
   void associer(DoubleTabFT_cut_cell_scalar& flux_interface_efficace);
 
   DoubleTabFT_cut_cell_scalar *flux_interface_efficace_ptr_ = nullptr;

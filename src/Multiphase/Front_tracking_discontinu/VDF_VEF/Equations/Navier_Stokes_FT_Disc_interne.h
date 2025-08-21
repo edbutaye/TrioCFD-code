@@ -28,15 +28,7 @@ class Navier_Stokes_FT_Disc_interne
 {
 public:
   Navier_Stokes_FT_Disc_interne() :
-    correction_courbure_ordre_(0), // Par defaut, pas de prise en compte de la courbure pour corriger le champ etendu delta_vitesse
-    mpoint_inactif(0),   // Par defaut, mpoint cree un saut de vitesse
-    mpointv_inactif(0),   // Par defaut, mpointv  cree un saut de vitesse
-    matrice_pression_invariante(0),   // Par defaut, recalculer la matrice pression
-    clipping_courbure_interface(1e40),   // Par defaut, pas de clipping
     terme_gravite_(GRAVITE_GRAD_I),   // Par defaut terme gravite ft sans courants parasites
-    is_explicite(1),                  // Par defaut, calcul explicite de vpoint etape predicition
-    is_boussinesq_(0),                // Par defaut, l'hypothese de Boussinesq n'est pas utilisee pour la flottabilite dans les phases.
-    new_mass_source_(0),              // Par defaut, on utilise la methode historique pour imposer le saut de vitesse du changement de phase.
     type_interpol_indic_pour_dI_dt_(INTERP_STANDARD), // Default is the historical interpolation
     OutletCorrection_pour_dI_dt_(NO_CORRECTION),   // Default is the historical
     is_penalized(0),                  // Par defaut, pas de penalisation L2 du forcage
@@ -47,9 +39,13 @@ public:
     y_pfl_imp(-1.e40), z_pfl_imp(-1.e40)
   { }
 
-  int correction_courbure_ordre_;
-  int mpoint_inactif;
-  int mpointv_inactif;
+  // Par defaut, pas de prise en compte de la courbure pour corriger le champ etendu delta_vitesse
+  int correction_courbure_ordre_ = 0;
+
+  // Par defaut, mpoint cree un saut de vitesse
+  bool mpoint_inactif = false;
+  // Par defaut, mpointv  cree un saut de vitesse
+  bool mpointv_inactif = false;
 
   OWN_PTR(Champ_Fonc_base)  second_membre_projection;
   OWN_PTR(Champ_Fonc_base)  second_membre_projection_jump_;
@@ -79,14 +75,18 @@ public:
 
   // Si matrice_pression_invariante != 0,
   //   on ne recalcule pas la matrice de pression a chaque pas de temps.
-  int matrice_pression_invariante;
+  // Par defaut, recalculer la matrice pression
+  bool matrice_pression_invariante = false;
+
   // Si on veut ajouter une interface a vitesse imposee :
   //  reference a l'equation de transport correspondante :
   VECT(OBS_PTR(Transport_Interfaces_FT_Disc)) ref_eq_interf_vitesse_imposee;
+
   // Si le fluide est diphasique, c'est l'indicatrice de l'equation suivante
   // qui est utilisee pour determiner les proprietes du fluide:
   // (masse volumique, viscosite, tension superficielle, ...)
   OBS_PTR(Transport_Interfaces_FT_Disc) ref_eq_interf_proprietes_fluide;
+
   // Si le fluide est diphasique, la reference au fluide:
   OBS_PTR(Fluide_Diphasique) ref_fluide_diphasique;
 
@@ -95,7 +95,8 @@ public:
 
   // Valeur maximale de courbure autorisee pour calculer le
   // terme source de tension de surface (clipping si valeur superieur)
-  double clipping_courbure_interface;
+  // Par defaut, pas de clipping
+  double clipping_courbure_interface = 1e40;
 
   enum Terme_Gravite
   {
@@ -103,13 +104,19 @@ public:
   };
   Terme_Gravite terme_gravite_;
   Noms equations_concentration_source_fluide_;
+
   // Si is_explicite != 0,
   //   on calcul vpoint de facon explicite dans l etape de prediction des vitesses.
-  int is_explicite;
+  // Par defaut, calcul explicite de vpoint etape predicition
+  bool is_explicite = true;
+
   // Si is_boussinesq_ != 0, on calcul une force par le modele de boussinesq
-  int is_boussinesq_;
+  // Par defaut, l'hypothese de Boussinesq n'est pas utilisee pour la flottabilite dans les phases.
+  bool is_boussinesq_ = false;
+
   // Flag pour la method du saut de vitesse :
-  int new_mass_source_;
+  // Par defaut, on utilise la methode historique pour imposer le saut de vitesse du changement de phase.
+  bool new_mass_source_ = false;
 
   enum Type_interpol_indic_pour_dI_dt
   {
@@ -126,10 +133,13 @@ public:
   // Si is_penalized != 0,
   //   on penalise L2 le terme de forcage.
   int is_penalized;
+
   // Valeur de l'inverse du coefficient de penalisation L2 du terme de forcage.
   double eta;
+
   // Valeur pour la penalisation L2 de la pression.
   double p_ref_pena;
+
   // Point de penalisation L2 de la pression du fluide
   int is_pfl_flottant; // Traitement local Dirichlet pression si les CL pression sont toutes en Neumann homogene
   double x_pfl_imp;

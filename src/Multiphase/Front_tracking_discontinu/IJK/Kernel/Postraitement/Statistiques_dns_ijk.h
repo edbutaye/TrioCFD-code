@@ -215,13 +215,13 @@ protected:
   // Temporal integral of statistics variables
   VECT(ArrOfDouble) integrale_temporelle_;
   // Integration time
-  double t_integration_;
+  double t_integration_ = 0.0;
   VECT(Nom) noms_moyennes_;
   VECT(Nom) noms_k_;
   int nval_;
   int kval_;
-  double t_integration_k_;//modif AT 20/06/2013
-  int check_converge_;//modif AT 20/06/2013
+  double t_integration_k_ = 0.0;//modif AT 20/06/2013
+  bool check_converge_ = false;//modif AT 20/06/2013
   VECT(ArrOfDouble) integrale_k_;//modif AT 20/06/2013
   VECT(ArrOfDouble) vit_moy_;//modif AT 20/06/2013
   ArrOfDouble rho_moy_;// DD 16/10/2015

@@ -35,7 +35,7 @@ class Paroi_loi_WW_hyd_EF : public Paroi_std_hyd_EF
 
   /* PUBLIC */
 public:
-  inline Paroi_loi_WW_hyd_EF();
+  Paroi_loi_WW_hyd_EF() = default;
   void set_param(Param& param) override;
 
   /* calculer_hyd pour k-epsilon qui renvoie une erreur */
@@ -60,9 +60,9 @@ protected :
   int calculer_u_star_couche_puissance(double ,double ,double ,int );
   int calculer_couche_puissance(DoubleTab& ,DoubleTab&  ,double ,int ,int );
   int calculer_local(double, DoubleTab&  ,DoubleTab& , double , double,double ,int ,int );
-  int impr;
+  bool impr = false;
 };
-inline Paroi_loi_WW_hyd_EF::Paroi_loi_WW_hyd_EF():impr(0) { }
+
 
 
 #endif

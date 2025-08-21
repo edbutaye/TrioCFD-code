@@ -66,9 +66,9 @@ public :
   int get_tstep_init() const { return tstep_init_; }
   int get_tstep_sauv() const { return tstep_sauv_; }
   int get_use_tstep_init() const { return use_tstep_init_; }
-  int& get_first_step_interface_smoothing() { return first_step_interface_smoothing_; }
-  int get_first_step_interface_smoothing() const { return first_step_interface_smoothing_; }
-  int get_enable_dt_oh_ideal_length_factor() const { return enable_dt_oh_ideal_length_factor_; }
+  bool& get_first_step_interface_smoothing() { return first_step_interface_smoothing_; }
+  bool get_first_step_interface_smoothing() const { return first_step_interface_smoothing_; }
+  bool get_enable_dt_oh_ideal_length_factor() const { return enable_dt_oh_ideal_length_factor_; }
   int get_dt_sauvegarde() const { return dt_sauvegarde_; }
 
   double find_timestep(const double max_timestep, const double cfl, const double fo, const double oh);
@@ -88,7 +88,8 @@ protected:
   double modified_time_ini_ = 0., max_timestep_ = -123.;
   double cfl_ = 1., fo_ = 1., oh_ = 1.;
 
-  int enable_dt_oh_ideal_length_factor_ = 0, first_step_interface_smoothing_ = 0;
+  bool enable_dt_oh_ideal_length_factor_ = false;
+  bool first_step_interface_smoothing_ = false;
   int tstep_sauv_ = 0, tstep_init_ = 0, use_tstep_init_ = 0;
   int dt_sauvegarde_ = 2000000000;
 

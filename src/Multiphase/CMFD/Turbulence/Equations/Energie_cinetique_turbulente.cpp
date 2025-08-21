@@ -95,7 +95,7 @@ void Energie_cinetique_turbulente::mettre_a_jour(double temps)
 
   const Navier_Stokes_std& eqv = ref_cast(Navier_Stokes_std, probleme().equation(0));
 
-  if (probleme().discretisation().is_polymac_p0() && limit_k_ == 1)
+  if (probleme().discretisation().is_polymac_p0() && limit_k_)
     if ( temps > schema_temps().temps_courant() && coef_limit_ > 0 )
       {
         Cerr << "Limiting the value of K : coeff used = " << coef_limit_ << finl;

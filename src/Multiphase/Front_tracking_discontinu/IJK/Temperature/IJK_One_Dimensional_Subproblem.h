@@ -620,7 +620,7 @@ protected :
                                        const int& enable_resize_probe_collision,
                                        const int& debug_probe_collision);
   void associate_sub_problem_temporal_params(const bool& is_first_time_step,
-                                             int& first_time_step_temporal,
+                                             bool& first_time_step_temporal,
                                              const int& first_time_step_explicit,
                                              const double& local_fourier,
                                              const double& local_cfl,
@@ -1152,7 +1152,7 @@ protected :
    */
   DoubleVect temperature_ini_temporal_schemes_;
   bool is_first_time_step_ = false;
-  int * first_time_step_temporal_ = nullptr;
+  bool * first_time_step_temporal_ = nullptr;
   int first_time_step_explicit_ = 1;
   double current_time_ = 0.;
   double global_dt_cfl_ = 0.;

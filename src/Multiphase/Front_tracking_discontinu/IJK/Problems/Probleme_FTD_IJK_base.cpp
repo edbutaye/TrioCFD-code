@@ -923,7 +923,7 @@ void Probleme_FTD_IJK_base::solveTimeStep_Euler(DoubleTrav& var_volume_par_bulle
   if (!Option_IJK::DISABLE_DIPHASIQUE)
     {
       int counter_first_iter = 1;
-      int& first_step_interface_smoothing = schema_temps_ijk().get_first_step_interface_smoothing(); // attention ref
+      bool& first_step_interface_smoothing = schema_temps_ijk().get_first_step_interface_smoothing(); // attention ref
 
       do
         {

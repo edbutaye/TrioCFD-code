@@ -106,12 +106,12 @@ public:
   int get_fill_rising_velocities() const { return fill_rising_velocities_; }
   int get_use_bubbles_velocities_from_interface() const { return use_bubbles_velocities_from_interface_; }
   int get_use_bubbles_velocities_from_barycentres() const { return use_bubbles_velocities_from_barycentres_; }
-  int get_upstream_velocity_measured() const { return upstream_velocity_measured_; }
+  bool get_upstream_velocity_measured() const { return upstream_velocity_measured_; }
   int& get_compute_rising_velocities() { return compute_rising_velocities_; }
   int& get_fill_rising_velocities() { return fill_rising_velocities_; }
   int& get_use_bubbles_velocities_from_interface() { return use_bubbles_velocities_from_interface_; }
   int& get_use_bubbles_velocities_from_barycentres() { return use_bubbles_velocities_from_barycentres_; }
-  int& get_upstream_velocity_measured() { return upstream_velocity_measured_; }
+  bool& get_upstream_velocity_measured() { return upstream_velocity_measured_; }
 
   const IJK_Field_vector3_double& get_velocity_ft() const { return velocity_ft_; }
 
@@ -238,7 +238,7 @@ protected:
    * full_adaptative    : Tenseur des contraintes complet : div[mu (grad(u)+grad^T(u))]
    *     mu : switch from arithmetic to geometric mean depending on the direction (Not available yet)
    */
-  int use_harmonic_viscosity_ = 0;
+  bool use_harmonic_viscosity_ = false;
   Operateur_IJK_faces_diff velocity_diffusion_op_;
   enum velocity_diffusion_options_ { simple_arithmetic, full_arithmetic, full_adaptative};
 
@@ -271,38 +271,38 @@ protected:
 
   int upstream_dir_ = -1;
   int upstream_stencil_ = 3;
-  int upstream_velocity_measured_ = 0;
-  int harmonic_nu_in_diff_operator_ = 0;
-  int harmonic_nu_in_calc_with_indicatrice_ = 0;
+  bool upstream_velocity_measured_ = false;
+  bool harmonic_nu_in_diff_operator_ = false;
+  bool harmonic_nu_in_calc_with_indicatrice_ = false;
   int vitesse_entree_dir_ = DIRECTION_I;
   int vitesse_entree_compo_to_force_ = -1;
   int stencil_vitesse_entree_ = 3;
-  int test_etapes_et_bilan_ = 0;
-  int add_initial_field_ = 0;
-  int diffusion_alternative_ = 0;
-  int suppression_rejetons_ = 0;  // By defaults, break-ups are not fixed on restart. (no deletion of smaller fractions)
+  bool test_etapes_et_bilan_ = false;
+  bool add_initial_field_ = false;
+  bool diffusion_alternative_ = false;
+  bool suppression_rejetons_ = false;  // By defaults, break-ups are not fixed on restart. (no deletion of smaller fractions)
 
   // Discretisation du champ (1/rho) et utilisation dans le calcul de rho*v*v, dans le mass_solver
   // et dans pressure_projection_with_inv_rho :
-  int use_inv_rho_for_mass_solver_and_calculer_rho_v_ = 0;
-  int use_inv_rho_in_poisson_solver_ = 0;
+  bool use_inv_rho_for_mass_solver_and_calculer_rho_v_ = false;
+  bool use_inv_rho_in_poisson_solver_ = false;
   int use_inv_rho_ = 0;
 
   // Pour la premiere projection, on initialise la pression au champ de pression a l'equilibre diphasique :
-  int improved_initial_pressure_guess_ = 0;
+  bool improved_initial_pressure_guess_ = false;
   // travail en increment de pression pour aider le solveur :
-  int include_pressure_gradient_in_ustar_ = 0;
+  bool include_pressure_gradient_in_ustar_ = false;
   int correction_bilan_qdm_ = 0;
-  int refuse_patch_conservation_QdM_RK3_source_interf_ = 0;
+  bool refuse_patch_conservation_QdM_RK3_source_interf_ = false;
 
-  int disable_solveur_poisson_ = 0;
-  int resolution_fluctuations_ = 0;
-  int projection_initiale_demandee_ = 0;
-  int disable_diffusion_qdm_ = 0;
-  int disable_convection_qdm_ = 0;
-  int disable_source_interf_ = 0;
-  int frozen_velocity_ = 0;
-  int velocity_reset_ = 0;
+  bool disable_solveur_poisson_ = false;
+  bool resolution_fluctuations_ = false;
+  bool projection_initiale_demandee_ = false;
+  bool disable_diffusion_qdm_ = false;
+  bool disable_convection_qdm_ = false;
+  bool disable_source_interf_ = false;
+  bool frozen_velocity_ = false;
+  bool velocity_reset_ = false;
 
   double nb_diam_upstream_ = 0.;
   double nb_diam_ortho_shear_perio_= -1.1e20;
@@ -433,7 +433,7 @@ protected:
   DoubleTab vitesses_translation_bulles_; // Vecteur de translation rigide pour chaque bulle
   DoubleTab mean_bubble_rotation_vector_; // Vecteur de rotation rigide pour chaque bulle
   DoubleTab centre_gravite_bulles_;       // Position du centre de gravite pour chaque bulle (associee a la rotation)
-  int correction_semi_locale_volume_bulle_ = 0;
+  bool correction_semi_locale_volume_bulle_ = false;
 
   IJK_Field_vector3_double velocity_ft_;
 
@@ -454,7 +454,7 @@ protected:
   Vecteur3 integrated_residu_ = {0.,0.,0.};
   // terme source qdm pour pousser le fluide dans le canal (en m/s/s)
   double terme_source_acceleration_ = 0.; // par defaut, zero
-  int compute_force_init_ = 0;
+  bool compute_force_init_ = false;
 
   // Vecteurs de taille 3 a lire dans le jeu de donnees :
   ArrOfDouble terme_source_correction_; // Valeur de la force de correction moyenne a appliquer

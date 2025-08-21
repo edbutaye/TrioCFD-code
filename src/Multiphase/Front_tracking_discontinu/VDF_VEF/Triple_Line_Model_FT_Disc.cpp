@@ -45,15 +45,8 @@ Implemente_instanciable_sans_constructeur( Triple_Line_Model_FT_Disc, "Triple_Li
 
 
 Triple_Line_Model_FT_Disc::Triple_Line_Model_FT_Disc() :
-  // Values initialized:
-  activated_(false),
-  deactivate_(0),
-  capillary_effect_on_theta_activated_(0),
-  TCL_energy_correction_(0),
   n_ext_meso_(2),
   tag_tcl_(-1),
-  //coeffa_(0),
-  //coeffb_(0),
   Qtcl_(0),
   lv_(0.),
   theta_app_(0.),
@@ -61,7 +54,6 @@ Triple_Line_Model_FT_Disc::Triple_Line_Model_FT_Disc() :
   ym_(0.),
   sm_(0.),
   ymeso_(0.),
-//  old_xcl_(0.),
   initial_CL_xcoord_(0.),
   kl_cond_(-1.),  // Invalid
   rhocpl_(-1.),  // Invalid
@@ -73,10 +65,8 @@ Triple_Line_Model_FT_Disc::Triple_Line_Model_FT_Disc() :
   Rc_tcl_GridN_(4),
   Rc_inject_(8e-05),
   thetaC_tcl_(150.),
-  reinjection_tcl_(0),
   tempC_tcl_(10.),
   ready_inject_tcl_(0),
-  distri_first_facette_(0),
   integration_time_(0.),
   instant_mmicro_evap_(0.),
   instant_mmeso_evap_(0.),
@@ -91,12 +81,6 @@ Triple_Line_Model_FT_Disc::Triple_Line_Model_FT_Disc() :
 
 Sortie& Triple_Line_Model_FT_Disc::printOn( Sortie& os ) const
 {
-  //Objet_U::printOn(os);
-  /*  os << "{\n"
-  		     << "   lv " << lv_ << "\n"
-  		     << "   Qtcl " << Qtcl_ << "\n"
-       << "}\n" ;
-  */
   Param p(que_suis_je());
   // Je peux pas car c'est const... set_param(p);
   p.print(os);

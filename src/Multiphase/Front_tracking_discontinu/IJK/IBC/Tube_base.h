@@ -88,7 +88,7 @@ public:
   void update_vitesse_position(double current_time, double dt, const Vecteur3& force_appliquee) override;
 protected:
   Vecteur3 position_equilibre_;
-  ArrOfInt blocage_;
+  bool blocage_[3] = {false};
   double rho_cylindre_, amortissement_, raideur_;
 
 };

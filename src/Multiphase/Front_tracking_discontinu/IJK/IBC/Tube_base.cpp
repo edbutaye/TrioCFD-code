@@ -179,8 +179,6 @@ Entree& Tube_libre::readOn(Entree& is)
   param.ajouter("pos_eq_y", &position_equilibre_[1], Param::REQUIRED);
   param.ajouter("pos_eq_z", &position_equilibre_[2], Param::REQUIRED);
   // Degres de liberte du tube
-  blocage_.resize_array(3);
-  blocage_ = 0; // par defaut, non bloque.
   param.ajouter_flag("blocage_i", &blocage_[DIRECTION_I]);
   param.ajouter_flag("blocage_j", &blocage_[DIRECTION_J]);
   param.ajouter_flag("blocage_k", &blocage_[DIRECTION_K]);

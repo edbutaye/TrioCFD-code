@@ -406,8 +406,8 @@ protected:
   OWN_PTR(Champ_Fonc_base)  vitesse_imp_interp_;
 
   // for fpi module
-  bool is_solid_particle_=false; // pointer to NS_FT_Disc::is_solid_particle_
-  int compute_particles_rms_=0;
+  bool is_solid_particle_ = false; // pointer to NS_FT_Disc::is_solid_particle_
+  bool compute_particles_rms_ = false;
   OWN_PTR(Collision_Model_FT_base) collision_model_;
   mutable DoubleTab particles_position_collision_; // for contact forces computation
   mutable DoubleTab particles_velocity_collision_; // for contact forces computation
@@ -431,7 +431,7 @@ private:
 
   OBS_PTR(Milieu_base) ref_milieu_;
 
-  int interpolation_repere_local_;
+  bool interpolation_repere_local_ = false;
   ArrOfDouble force_;
   ArrOfDouble moment_;
 

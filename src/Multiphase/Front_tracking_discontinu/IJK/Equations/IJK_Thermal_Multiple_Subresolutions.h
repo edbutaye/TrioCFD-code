@@ -68,12 +68,12 @@ protected :
 
   OpDiffUniformIJKScalar_double diffusion_temperature_vapour_op_;
 
-  int main_phase_;
-  int diffusion_flux_vapour_correction_;
-  int convective_flux_vapour_correction_;
+  bool main_phase_ = false;
+  int diffusion_flux_vapour_correction_ = 0;
+  int convective_flux_vapour_correction_ = 0;
 
-  double uniform_lambda_vap_;
-  double uniform_alpha_vap_;
+  double uniform_lambda_vap_ = 0;
+  double uniform_alpha_vap_ = 0;
 
 };
 

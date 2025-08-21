@@ -59,8 +59,6 @@ Parcours_interface::Parcours_interface()
   Erreur_relative_maxi_ = 1.E-13;
   Valeur_max_coordonnees_ = 0.;
   Erreur_max_coordonnees_ = 0.;
-  correction_parcours_thomas_ = 0;
-  parcours_sans_tolerance_ = 0;
 }
 
 

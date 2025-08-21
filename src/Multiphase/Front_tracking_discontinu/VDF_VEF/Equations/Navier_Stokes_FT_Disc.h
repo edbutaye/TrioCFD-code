@@ -64,7 +64,7 @@ public:
 
   virtual void calculer_dI_dt(DoubleVect& dI_dt); // const;
   const int& get_is_penalized() const;
-  const int& get_new_mass_source() const;
+  bool get_new_mass_source() const;
   const DoubleTab& get_interfacial_area() const;
   DoubleTab& get_set_interfacial_area();  // Open access  in write-mode..
   const DoubleTab& get_mpoint() const;
@@ -73,7 +73,7 @@ public:
 
   const SolveurSys& get_solveur_pression() const;
 
-  const bool& get_is_solid_particle() const {return is_solid_particle_;}
+  bool get_is_solid_particle() const {return is_solid_particle_;}
   const IntTab& get_particles_eulerian_id_number() const { return particles_eulerian_id_number_; }
   // both following methods should be protected but Transport_Interfaces_FT_Disc is not a friend of NS_FT_Disc...
   void compute_particles_eulerian_id_number(const OWN_PTR(Collision_Model_FT_base)& collision_model_ptr);

@@ -188,13 +188,13 @@ protected:
 
   // Drapeau d'activation de la correction du parcours (par Thomas Fortin,
   //  pour corriger les problemes lies aux sommets qui tombent sur les faces du maillages eulerien
-  int correction_parcours_thomas_ = 0;
+  bool correction_parcours_thomas_ = false;
   int eloigner_sommets_des_faces(Maillage_FT_Disc& maillage) const;
   double uzawa2(const Domaine_VF& domaine_vf, const int elem,
                 double& x, double& y, double& z) const;
 
   // Drapeau de suppression de la tolerance sur la position dedans/dehors des points
-  int parcours_sans_tolerance_ = 0;
+  bool parcours_sans_tolerance_ = false;
 };
 
 #endif

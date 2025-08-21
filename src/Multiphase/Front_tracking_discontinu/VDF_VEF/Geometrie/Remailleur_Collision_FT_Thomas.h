@@ -119,10 +119,10 @@ private :
   DoubleTab surface_interface_elements_voisins_;//pour le parallele
 
   int plus_grande_distance_interface_element_eulerien_;
-  int distance_utilisateur_;
+  int distance_utilisateur_ = 1;
   //int conservation_volume_autorisee_;
-  int tester_;
-  int est_dimensionne_;
+  bool tester_ = false;
+  int est_dimensionne_ = 0;
 
   ArrOfBit tmp_flag_elements_; // tableau temporaire utilise dans elements_voisins()
   //Fonction qui renvoie la surface occupee par l'interface

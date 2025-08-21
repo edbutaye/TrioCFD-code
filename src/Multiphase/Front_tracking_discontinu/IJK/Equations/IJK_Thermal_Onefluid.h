@@ -85,11 +85,12 @@ protected :
   double compute_temperature_dimensionless_theta_mean(const IJK_Field_double& vx) override;
 
   //Rustine
-  double E0_;//volumique
+  double E0_ = 0;//volumique
 
-  int deprecated_rho_cp_;
-  int rho_cp_moy_harmonic_;
-  int lambda_moy_arith_;
+  bool deprecated_rho_cp_ = false;
+  bool rho_cp_moy_harmonic_ = false;
+  bool lambda_moy_arith_ = false;
+
 
   IJK_Field_double T_rust_;
   IJK_Field_double d_T_rustine_; // Temperature increment to conserve the energy.
@@ -98,6 +99,8 @@ protected :
   IJK_Field_double lambda_;
   IJK_Field_double cp_;
   IJK_Field_double rho_cp_inv_;
+
+
 };
 
 #endif /* IJK_Thermal_Onefluid_included */

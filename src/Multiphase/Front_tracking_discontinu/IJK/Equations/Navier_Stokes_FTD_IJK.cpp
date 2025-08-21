@@ -2230,8 +2230,8 @@ void Navier_Stokes_FTD_IJK::calculer_dv(const double timestep, const double time
       // dans d_velocity_moyen on a la contrib de interfaces, forces ajoutees
       terme_interfaces_conv_diff_mass_solver_[dir] = calculer_v_moyen(d_velocity_[dir]);
 
-      Cerr << "disable_diffusion_qdm_ : " << disable_diffusion_qdm_ << finl;
-      Cerr << "diffusion_alternative_ : " << diffusion_alternative_ << finl;
+      Cerr << "disable_diffusion_qdm_ : " << int(disable_diffusion_qdm_) << finl;
+      Cerr << "diffusion_alternative_ : " << int(diffusion_alternative_) << finl;
       Cerr << "type_velocity_diffusion_form : " << velocity_diffusion_op_.get_diffusion_op_option() << finl;
       for (int k = 0; k < kmax; k++)
         {

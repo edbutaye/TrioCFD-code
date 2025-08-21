@@ -30,14 +30,7 @@
 
 Implemente_instanciable_sans_constructeur( IJK_Thermal_Multiple_Subresolutions, "IJK_Thermal_Multiple_Subresolutions", IJK_Thermal_Subresolution ) ;
 
-IJK_Thermal_Multiple_Subresolutions::IJK_Thermal_Multiple_Subresolutions()
-{
-  diffusion_flux_vapour_correction_=0;
-  convective_flux_vapour_correction_=0;
-  main_phase_ = 0;
-  uniform_alpha_vap_ = 0;
-  uniform_lambda_vap_ = 0;
-}
+IJK_Thermal_Multiple_Subresolutions::IJK_Thermal_Multiple_Subresolutions() {}
 
 Sortie& IJK_Thermal_Multiple_Subresolutions::printOn( Sortie& os ) const
 {

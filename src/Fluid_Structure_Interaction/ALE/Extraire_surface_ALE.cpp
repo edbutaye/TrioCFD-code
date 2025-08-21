@@ -60,7 +60,7 @@ Entree& Extraire_surface_ALE::interpreter_(Entree& is)
   Nom nom_pb;
   Nom nom_domaine_surfacique;
   Nom expr_elements("1"),expr_faces("1");
-  int avec_les_bords;
+  bool avec_les_bords;
   Noms noms_des_bords;
   Param param(que_suis_je());
   param.ajouter("Domaine",&nom_domaine_surfacique,Param::REQUIRED);

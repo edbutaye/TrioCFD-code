@@ -42,10 +42,6 @@
 
 Implemente_instanciable_sans_constructeur(ParoiVDF_TBLE,"Paroi_TBLE_VDF",Paroi_hyd_base_VDF);
 
-ParoiVDF_TBLE::ParoiVDF_TBLE()
-{
-  alpha_cv=0;
-}
 
 //     printOn()
 /////

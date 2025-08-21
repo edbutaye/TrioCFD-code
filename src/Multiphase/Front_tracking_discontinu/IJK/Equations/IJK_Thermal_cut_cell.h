@@ -215,15 +215,15 @@ protected :
   Cut_field_vector3_double current_fluxes_diff_;
   Cut_field_vector3_double RK3_F_fluxes_conv_;
   Cut_field_vector3_double RK3_F_fluxes_diff_;
-  int runge_kutta_fluxes_convection_ = 0;
-  int runge_kutta_fluxes_diffusion_ = 0;
-  int runge_kutta_fluxes_pas_de_correction_convection_ = 0;
-  int runge_kutta_fluxes_pas_de_correction_diffusion_ = 0;
+  bool runge_kutta_fluxes_convection_ = false;
+  bool runge_kutta_fluxes_diffusion_ = false;
+  bool runge_kutta_fluxes_pas_de_correction_convection_ = false;
+  bool runge_kutta_fluxes_pas_de_correction_diffusion_ = false;
   Cut_field_int cellule_rk_restreint_conv_;
   Cut_field_int cellule_rk_restreint_diff_;
 
   // Temporary fields, to inspect each step of the time advance
-  int postraiter_champs_intermediaires_ = 0;
+  bool postraiter_champs_intermediaires_ = false;
   Cut_field_double temperature_post_dying_;
   Cut_field_double temperature_post_regular_;
   Cut_field_double temperature_post_convection_;
@@ -232,7 +232,7 @@ protected :
   Cut_cell_convection_auxiliaire convective_correction_;
   Cut_cell_diffusion_auxiliaire diffusive_correction_;
 
-  int deactivate_diffusion_interface_ = 0;
+  bool deactivate_diffusion_interface_ = false;
 
   int runge_kutta_restriction_leniency_convection_ = 0;
   int runge_kutta_restriction_leniency_diffusion_ = 0;

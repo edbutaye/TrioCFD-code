@@ -985,7 +985,7 @@ const int& Navier_Stokes_FT_Disc::get_is_penalized() const
   return variables_internes().is_penalized;
 }
 
-const int& Navier_Stokes_FT_Disc::get_new_mass_source() const
+bool Navier_Stokes_FT_Disc::get_new_mass_source() const
 {
   return variables_internes().new_mass_source_;
 }

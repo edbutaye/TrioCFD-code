@@ -181,9 +181,6 @@ Implemente_instanciable_sans_constructeur(Statistiques_dns_ijk,"Statistiques_dns
 Statistiques_dns_ijk::Statistiques_dns_ijk()
 {
 
-  check_converge_ = 0;
-  t_integration_k_ = 0.;
-  t_integration_ = 0.;
 
   // Pour generer cette liste, envoyer la liste des #define dans
   //  sed 's/#define /"/g;s/_MOY.*/",/g' >resultat
@@ -2022,7 +2019,7 @@ Entree& Statistiques_dns_ijk::readOn(Entree& is)
   //   integrale_temporelle_.reset();
   //   integrale_k_.reset();
   // }
-  Cerr << "Check_converge " << check_converge_ << finl;
+  Cerr << "Check_converge " << int(check_converge_) << finl;
   Cout << "Reprise des donnees statistiques: t_integration=" << t_integration_ << finl;
   if ( check_converge_ )
     {

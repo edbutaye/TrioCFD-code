@@ -926,20 +926,20 @@ protected:
   int timestep_sauvegarde_interface_ = 1;
 
   // Activation du suivi des couleurs des bulles
-  int follow_colors_ = 0;
+  bool follow_colors_ = false;
 
   // Activer la repulsion aux parois :
-  int active_repulsion_paroi_ = 0;
-  int use_tryggvason_interfacial_source_ = 0;
+  bool active_repulsion_paroi_ = false;
+  bool use_tryggvason_interfacial_source_ = false;
   // La repulsion paroi est desactive par defaut,
   // meme si l'inter-bulles l'est
 
   // Pour calculer le terme source comme grad(potentiel*I) au lieu de
   // potentiel_face*gradI
   // Modification de l'evaluation du potentiel :
-  int correction_gradient_potentiel_ = 0;
+  bool correction_gradient_potentiel_ = false;
 
-  int compute_distance_autres_interfaces_ = 0;
+  bool compute_distance_autres_interfaces_ = false;
   //  recompute_indicator_ = 1; // doit-on calculer l'indicatrice avec une methode
   //  de debug (1) ou optimisee (0) ?
 
@@ -984,7 +984,7 @@ protected:
   DoubleTab bounding_box_NS_domain_;
   bool perio_NS_[3];
 
-  int avoid_duplicata_ = 0;
+  bool avoid_duplicata_ = false;
   double factor_length_duplicata_ = 1.;
 
   // Domaine autorise pour les bulles :
@@ -997,7 +997,7 @@ protected:
   // Suppression des bulles sur le pourtour du domaine lors de la sauvegarde
   // finale.
   int ncells_deleted_ = -1; // Valeur recommandee par defaut. On ne veut pas supprimer de bulles.
-  int frozen_ = 0; // flag to disable the interfaces motion. By default, we want the motion of the interfaces.
+  bool frozen_ = false; // flag to disable the interfaces motion. By default, we want the motion of the interfaces.
   DoubleTab bounding_box_forbidden_criteria_;
   DoubleTab bounding_box_delete_criteria_;
 
@@ -1142,8 +1142,8 @@ protected:
   ArrOfDouble bubbles_velocities_bary_magnitude_;
   DoubleTab bubbles_bary_old_;
   DoubleTab bubbles_bary_new_;
-  int read_barycentres_velocity_ = 0;
-  int use_barycentres_velocity_ = 0;
+  bool read_barycentres_velocity_ = false;
+  bool use_barycentres_velocity_ = false;
   bool has_computed_bubble_barycentres_ = false;
   bool has_readen_barycentres_prev_ = false;
 

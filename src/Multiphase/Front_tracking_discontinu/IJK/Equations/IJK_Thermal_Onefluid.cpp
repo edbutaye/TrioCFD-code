@@ -30,12 +30,8 @@ Implemente_instanciable_sans_constructeur( IJK_Thermal_Onefluid, "IJK_Thermal_On
 IJK_Thermal_Onefluid::IJK_Thermal_Onefluid()
 {
   needs_op_unform_ = 0;
-  lambda_moy_arith_=0;
   conserv_energy_global_=0;
-  rho_cp_moy_harmonic_=0;
   rho_cp_post_=0;
-  E0_=0;
-  deprecated_rho_cp_=0;
 }
 
 Sortie& IJK_Thermal_Onefluid::printOn( Sortie& os ) const

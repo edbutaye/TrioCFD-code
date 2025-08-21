@@ -643,8 +643,7 @@ int correction_one_direction::get_need_to_compute_correction_value()
 Implemente_instanciable_sans_constructeur( corrections_qdm, "corrections_qdm", Objet_U ) ;
 
 corrections_qdm::corrections_qdm() :
-  type_(2),    // type_ mis a none (-> NONE) par defaut
-  write_me_(0) // par defaut on n'ecrit pas les informations
+  type_(2)    // type_ mis a none (-> NONE) par defaut
 {
 }
 

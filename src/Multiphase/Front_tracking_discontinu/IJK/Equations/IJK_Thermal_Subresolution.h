@@ -512,22 +512,22 @@ protected :
 
   void compare_fluxes_thermal_subproblems() override;
 
-  int enable_probe_collision_detection_ = 0;
-  int enable_resize_probe_collision_ = 0;
-  int debug_probe_collision_ = 0;
+  bool enable_probe_collision_detection_ = false;
+  bool enable_resize_probe_collision_ = false;
+  bool debug_probe_collision_ = false;
   IJK_Field_double probe_collision_debug_field_;
-  int reference_gfm_on_probes_ = 0;
-  int compute_normal_derivatives_on_reference_probes_ = 0;
+  bool reference_gfm_on_probes_ = false;
+  bool compute_normal_derivatives_on_reference_probes_ = false;
 
-  int disable_probe_weak_gradient_ = 0;
-  int disable_probe_weak_gradient_gfm_ = 0;
+  bool disable_probe_weak_gradient_ = false;
+  bool disable_probe_weak_gradient_gfm_ = false;
 
-  int reconstruct_previous_probe_field_ = 0;
-  int implicit_solver_from_previous_probe_field_ = 0;
+  bool reconstruct_previous_probe_field_ = false;
+  bool implicit_solver_from_previous_probe_field_ = false;
 
-  int disable_spherical_diffusion_start_ = 0;
-  int single_centred_bubble_ = 1;
-  int computed_centred_bubble_start_ = 1;
+  bool disable_spherical_diffusion_start_ = false;
+  bool single_centred_bubble_ = true;
+  bool computed_centred_bubble_start_ = true;
   double single_centred_bubble_radius_ini_ = 1.e-3;
   double probes_end_value_start_ = -1;
   double probes_end_value_coeff_ = 0.05;
@@ -541,20 +541,20 @@ protected :
   double mean_liquid_temperature_ = -1;
   double time_ini_user_ = 0.;
 
-  int disable_mixed_cells_increment_ = 0;
-  int enable_mixed_cells_increment_ = 1;
-  int allow_temperature_correction_for_visu_ = 0;
-  int disable_subresolution_ = 0;
-  int diffusive_flux_correction_ = 0;
-  int convective_flux_correction_ = 0;
-  int fluxes_correction_conservations_ = 0;
-  int conserve_max_interfacial_fluxes_ = 0;
+  bool disable_mixed_cells_increment_ = false;
+  bool enable_mixed_cells_increment_ = true;
+  bool allow_temperature_correction_for_visu_ = false;
+  bool disable_subresolution_ = false;
+  bool diffusive_flux_correction_ = false;
+  bool convective_flux_correction_ = false;
+  bool fluxes_correction_conservations_ = false;
+  bool conserve_max_interfacial_fluxes_ = false;
   int fluxes_corrections_weighting_ = 0;
   int impose_fo_flux_correction_ = 1;
-  int disable_fo_flux_correction_ = 0;
+  bool disable_fo_flux_correction_ = false;
   int subproblem_temperature_extension_ = 0; // ghost fluid extension based on the interfacial gradient computed with the subproblem
 
-  int override_vapour_mixed_values_ = 0; // For debug purposes
+  bool override_vapour_mixed_values_ = false; // For debug purposes
 
   IJK_One_Dimensional_Subproblems thermal_local_subproblems_;
   int points_per_thermal_subproblem_ = 32;
@@ -601,7 +601,7 @@ protected :
   Motcles fd_solvers_jdd_;
   int fd_solver_rank_ = 0;
   Nom fd_solver_type_;
-  int discrete_integral_ = 0;
+  bool discrete_integral_ = false;
   int quadtree_levels_ = 1;
 
   int compute_tangential_variables_ = 0;
@@ -609,26 +609,26 @@ protected :
   int boundary_condition_interface_ = -1;
   Motcles boundary_condition_interface_dict_;
   double interfacial_boundary_condition_value_ = 0.;
-  int impose_boundary_condition_interface_from_simulation_ = 0;
+  bool impose_boundary_condition_interface_from_simulation_ = false;
   int boundary_condition_end_ = 0;
   Motcles boundary_condition_end_dict_;
   double end_boundary_condition_value_ = -1.;
-  int impose_user_boundary_condition_end_value_ = 0;
+  bool impose_user_boundary_condition_end_value_ = false;
   int source_terms_type_ = 2;
   Motcles source_terms_type_dict_;
-  int source_terms_correction_ = 0;
-  int advected_frame_of_reference_ = 0;
-  int neglect_frame_of_reference_radial_advection_ = 0;
-  int approximate_temperature_increment_ = 0;
+  bool source_terms_correction_ = false;
+  bool advected_frame_of_reference_ = false;
+  bool neglect_frame_of_reference_radial_advection_ = false;
+  bool approximate_temperature_increment_ = false;
 
   /*
    * Some tries to do explicit temporal variations at the beginning
    */
   bool is_first_time_step_ = false;
-  int first_time_step_temporal_ = 0;
-  int first_time_step_explicit_ = 0;
-  int first_time_step_implicit_ = 0;
-  int local_diffusion_fourier_priority_ = 0;
+  bool first_time_step_temporal_ = false;
+  bool first_time_step_explicit_ = false;
+  bool first_time_step_implicit_ = false;
+  bool local_diffusion_fourier_priority_ = false;
   int nb_iter_explicit_local_ = 0;
   double local_fourier_ = 1.;
   double local_cfl_ = 1.;
@@ -648,47 +648,47 @@ protected :
   /*
    * Some tries to make the probe length varies at the beginning of the simulation
    */
-  int first_time_step_varying_probes_ = 0;
-  int probe_variations_enabled_ = 0;
-  int probe_variations_priority_ = 0;
-  int disable_interpolation_in_mixed_cells_ = 0;
-  int keep_temperature_extrapolated_from_LRS_ = 0;
-  int max_u_radial_=0;
+  bool first_time_step_varying_probes_ = false;
+  bool probe_variations_enabled_ = false;
+  bool probe_variations_priority_ = false;
+  bool disable_interpolation_in_mixed_cells_ = false;
+  bool keep_temperature_extrapolated_from_LRS_ = false;
+  bool max_u_radial_ = false;
 
   IJK_Field_double debug_LRS_cells_;
   int distance_cell_faces_from_lrs_ = 1;
-  int  disable_distance_cell_faces_from_lrs_ = 0;
+  bool disable_distance_cell_faces_from_lrs_ = false;
 
-  int pre_initialise_thermal_subproblems_list_ = 0;
+  bool pre_initialise_thermal_subproblems_list_ = false;
   double pre_factor_subproblems_number_ = 3.;
-  int remove_append_subproblems_ = 0;
-  int use_sparse_matrix_ = 0;
+  bool remove_append_subproblems_ = false;
+  bool use_sparse_matrix_ = false;
   int global_probes_characteristics_ = 1;
 
-  int correct_temperature_cell_neighbours_first_iter_ = 0;
+  bool correct_temperature_cell_neighbours_first_iter_ = false;
   int correct_first_iter_deactivate_cell_neighbours_ = 0;
-  int find_temperature_cell_neighbours_ = 0;
-  int use_temperature_cell_neighbours_ = 0;
-  int correct_neighbours_using_probe_length_ = 0;
+  bool find_temperature_cell_neighbours_ = false;
+  bool use_temperature_cell_neighbours_ = false;
+  bool correct_neighbours_using_probe_length_ = false;
   int neighbours_corrected_rank_ = 1;
   int neighbours_weighting_ = 0;
-  int neighbours_colinearity_weighting_ = 0;
-  int neighbours_distance_weighting_ = 0;
-  int neighbours_colinearity_distance_weighting_ = 0;
-  int smooth_temperature_field_ = 0;
-  int readjust_probe_length_from_vertices_ = 0;
+  bool neighbours_colinearity_weighting_ = false;
+  bool neighbours_distance_weighting_ = false;
+  bool neighbours_colinearity_distance_weighting_ = false;
+  bool smooth_temperature_field_ = false;
+  bool readjust_probe_length_from_vertices_ = false;
   IJK_Field_double temperature_cell_neighbours_;
   IJK_Field_double temperature_cell_neighbours_debug_;
   IJK_Field_int neighbours_temperature_to_correct_;
   IJK_Field_double neighbours_temperature_colinearity_weighting_;
 
-  int keep_max_flux_correction_ = 0;
+  bool keep_max_flux_correction_ = false;
 
-  int clip_temperature_values_ = 0;
-  int enforce_periodic_boundary_value_ = 0;
+  bool clip_temperature_values_ = false;
+  bool enforce_periodic_boundary_value_ = false;
   int stencil_periodic_boundary_value_ = 2;
 
-  int disable_post_processing_probes_out_files_ = 0;
+  bool disable_post_processing_probes_out_files_ = false;
 
   /*
    * Pure cells corrected for visualisation
@@ -696,21 +696,21 @@ protected :
   IJK_Field_vector3_double cell_faces_corrected_diffusive_;
   IJK_Field_vector3_double cell_faces_corrected_convective_;
   IJK_Field_vector3_int cell_faces_corrected_bool_;
-  int store_cell_faces_corrected_ = 0;
+  bool store_cell_faces_corrected_ = false;
 
   /*
    * Neighbouring faces in the diagonal
    */
   IJK_Field_vector3_int cell_faces_neighbours_corrected_diag_bool_;
-  int find_cell_neighbours_for_fluxes_spherical_correction_ = 0;
-  int use_cell_neighbours_for_fluxes_spherical_correction_ = 0;
+  bool find_cell_neighbours_for_fluxes_spherical_correction_ = false;
+  bool use_cell_neighbours_for_fluxes_spherical_correction_ = false;
 
   /*
    * All reachable faces to correct
    */
-  int find_reachable_fluxes_ = 0;
-  int use_reachable_fluxes_ = 0;
-  int keep_first_reachable_fluxes_ = 0;
+  bool find_reachable_fluxes_ = false;
+  bool use_reachable_fluxes_ = false;
+  bool keep_first_reachable_fluxes_ = false;
   IJK_Field_vector3_int cell_faces_neighbours_corrected_all_bool_;
   IJK_Field_vector3_double cell_faces_neighbours_corrected_velocity_temperature_;
   IJK_Field_vector3_double cell_faces_neighbours_corrected_convective_frame_of_reference_;
@@ -720,42 +720,42 @@ protected :
   IJK_Field_vector3_int cell_faces_neighbours_corrected_min_max_bool_;
   IJK_Field_int neighbours_temperature_to_correct_trimmed_;
   int neighbours_last_faces_weighting_ = 0;
-  int neighbours_last_faces_colinearity_weighting_ = 0;
-  int neighbours_last_faces_colinearity_face_weighting_ = 0;
-  int neighbours_last_faces_distance_weighting_ = 0;
-  int neighbours_last_faces_distance_colinearity_weighting_ = 0;
-  int neighbours_last_faces_distance_colinearity_face_weighting_ = 0;
+  bool neighbours_last_faces_colinearity_weighting_ = false;
+  bool neighbours_last_faces_colinearity_face_weighting_ = false;
+  bool neighbours_last_faces_distance_weighting_ = false;
+  bool neighbours_last_faces_distance_colinearity_weighting_ = false;
+  bool neighbours_last_faces_distance_colinearity_face_weighting_ = false;
 
-  int post_process_all_probes_ = 0;
+  bool post_process_all_probes_ = false;
   int nb_theta_post_pro_ = 10;
   int nb_phi_post_pro_ = 4;
   int nb_probes_post_pro_ = 40;
 
-  int interp_eulerian_ = 0;
+  bool interp_eulerian_ = false;
   int first_step_thermals_post_ = 1;
-  int disable_first_step_thermals_post_ = 0;
+  bool disable_first_step_thermals_post_ = false;
 
-  int copy_fluxes_on_every_procs_ = 1;
-  int copy_temperature_on_every_procs_ = 1;
+  bool copy_fluxes_on_every_procs_ = true;
+  bool copy_temperature_on_every_procs_ = true;
 
-  int post_process_thermal_slices_ = 0;
-  int thermal_slices_regions_ = 0;
+  bool post_process_thermal_slices_ = false;
+  bool thermal_slices_regions_ = false;
   double nb_diam_slice_ = -1;
   int nb_slices_ = 1;
   int upstream_dir_slice_ = -1;
-  int disable_slice_to_nearest_plane_ = 0;
+  bool disable_slice_to_nearest_plane_ = false;
 
-  int post_process_thermal_lines_ = 0;
+  bool post_process_thermal_lines_ = false;
   int upstream_dir_line_ = -1;
   int nb_thermal_lines_ = 1;
   int nb_thermal_concentric_circles_ = 1;
   int nb_thermal_line_points_ = 100;
   double nb_diam_thermal_line_length_ = -1;
 
-  int use_corrected_velocity_convection_ = 0;
-  int use_velocity_cartesian_grid_ = 0;
-  int compute_radial_displacement_ = 0;
-  int use_normal_gradient_for_flux_corr_ = 0;
+  bool use_corrected_velocity_convection_ = false;
+  bool use_velocity_cartesian_grid_ = false;
+  bool compute_radial_displacement_ = false;
+  bool use_normal_gradient_for_flux_corr_ = false;
 
   IJK_Field_vector3_double interfacial_heat_flux_dispatched_;
   FixedVector<ArrOfInt, 3> ijk_indices_flux_out_;

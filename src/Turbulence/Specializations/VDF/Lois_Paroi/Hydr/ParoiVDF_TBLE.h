@@ -45,7 +45,7 @@ class ParoiVDF_TBLE : public Paroi_hyd_base_VDF, public Paroi_TBLE_QDM, public P
   Declare_instanciable_sans_constructeur(ParoiVDF_TBLE);
 public:
 
-  ParoiVDF_TBLE();
+  ParoiVDF_TBLE() {};
   void set_param(Param& param) override;
   int lire_motcle_non_standard(const Motcle&, Entree&) override;
   int init_lois_paroi() override;
@@ -63,7 +63,7 @@ public:
 
 private:
 
-  int alpha_cv;
+  bool alpha_cv = false;
 
   int calculer_stats();
   void calculer_convection(int num_face, int face1, int face2, int face3, int face4, int elem,

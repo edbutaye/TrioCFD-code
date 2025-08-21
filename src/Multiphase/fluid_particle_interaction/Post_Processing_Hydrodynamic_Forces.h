@@ -91,13 +91,13 @@ public:
   const DoubleTab& get_dWdy_P2() { return dWdy_P2_; }
   const DoubleTab& get_dWdz_P2() { return dWdz_P2_; }
 
-  int get_is_compute_forces() const { return is_compute_forces_; }
-  int get_is_compute_forces_Stokes_th() const { return is_compute_stokes_theoretical_forces_; }
-  int get_is_compute_heat_transfer() const { return is_compute_heat_transfer_; }
-  int get_is_post_process_pressure_force_fa7() const { return is_post_process_pressure_force_fa7_; }
-  int get_is_post_process_friction_force_fa7() const { return is_post_process_friction_force_fa7_; }
-  int get_is_post_process_stress_tensor_fa7() const { return is_post_process_stress_tensor_fa7_; }
-  int get_is_post_process_pressure_fa7() const { return is_post_process_pressure_fa7_; }
+  bool get_is_compute_forces() const { return is_compute_forces_; }
+  bool get_is_compute_forces_Stokes_th() const { return is_compute_stokes_theoretical_forces_; }
+  bool get_is_compute_heat_transfer() const { return is_compute_heat_transfer_; }
+  bool get_is_post_process_pressure_force_fa7() const { return is_post_process_pressure_force_fa7_; }
+  bool get_is_post_process_friction_force_fa7() const { return is_post_process_friction_force_fa7_; }
+  bool get_is_post_process_stress_tensor_fa7() const { return is_post_process_stress_tensor_fa7_; }
+  bool get_is_post_process_pressure_fa7() const { return is_post_process_pressure_fa7_; }
 
   const double& get_interpolation_distance_pressure_P1() const { return interpolation_distance_pressure_P1_; }
   const double& get_interpolation_distance_pressure_P2() const { return interpolation_distance_pressure_P2_; }
@@ -212,13 +212,13 @@ protected:
   void compute_U_P2_moy(const int nb_particles_tot);
   void compute_proportion_fa7_ok_and_is_fluid_P2(const int nb_particles_tot);
 
-  int is_compute_stokes_theoretical_forces_=0;
-  int is_post_process_pressure_force_fa7_=0;
-  int is_post_process_friction_force_fa7_=0;
-  int is_post_process_stress_tensor_fa7_=0;
-  int is_post_process_pressure_fa7_=0;
-  int is_compute_heat_transfer_=0;
-  int is_compute_forces_=0;
+  bool is_compute_stokes_theoretical_forces_=false;
+  bool is_post_process_pressure_force_fa7_=false;
+  bool is_post_process_friction_force_fa7_=false;
+  bool is_post_process_stress_tensor_fa7_=false;
+  bool is_post_process_pressure_fa7_=false;
+  bool is_compute_heat_transfer_=false;
+  bool is_compute_forces_=false;
 
   int flag_force_computation_=0;
   int flag_heat_transfer_computation_=0;

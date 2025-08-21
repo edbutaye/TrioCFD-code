@@ -74,13 +74,15 @@ protected:
   int test_intersection_facettes_2D(int fa70, int fa71,
                                     const Maillage_FT_Disc& maillage) const;
 
-  int active_;
+  bool active_ = false;
 
   OWN_PTR(Remailleur_Collision_FT_base) remailleur_Collision_;
 
-  double Erreur_max_coordonnees_; // donnee par Parcours_interface
-  int juric_local_;
-  int phase_continue_;
+  double Erreur_max_coordonnees_ = -1; // donnee par Parcours_interface
+  bool juric_local_ = false;
+
+  // B.M. j'aurais bien mis -1 mais il faut rendre coherent avec phase_marquee de Transport_Marqueur_FT
+  int phase_continue_ = 0;
 };
 
 #endif

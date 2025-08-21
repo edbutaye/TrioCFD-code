@@ -51,15 +51,15 @@ public :
   double get_sm() { return sm_; }
   const double& get_initial_CL_xcoord() const { return initial_CL_xcoord_; }
   const double& get_rhocpl() const { return rhocpl_; }
-  const bool& is_activated() const { return activated_; }
-  const int& is_capillary_activated() const { return capillary_effect_on_theta_activated_; }
-  const int& is_read_via_file() const { return read_via_file_; }
-  const int& Rc_tcl_GridN() const { return Rc_tcl_GridN_; }
+  bool is_activated() const { return activated_; }
+  bool is_capillary_activated() const { return capillary_effect_on_theta_activated_; }
+  bool is_read_via_file() const { return read_via_file_; }
+  bool Rc_tcl_GridN() const { return Rc_tcl_GridN_; }
   const double& Rc_inject() const { return Rc_inject_; }
   const double& thetaC_tcl() const { return thetaC_tcl_; }
-  const int& reinjection_tcl() const { return reinjection_tcl_; }
-  const int& distri_first_facette() const { return distri_first_facette_; }
-  const bool& ready_inject_tcl() const { return ready_inject_tcl_; }
+  bool reinjection_tcl() const { return reinjection_tcl_; }
+  bool distri_first_facette() const { return distri_first_facette_; }
+  bool ready_inject_tcl() const { return ready_inject_tcl_; }
   bool& ready_inject_tcl() { return ready_inject_tcl_; }
   const double& tempC_tcl() const { return tempC_tcl_; }
   const int& tag_tcl() const { return tag_tcl_; }
@@ -115,10 +115,10 @@ public :
 //  double initial_CL_xcoord_;
 protected:
 
-  bool activated_;
-  int deactivate_;
-  int capillary_effect_on_theta_activated_;
-  int TCL_energy_correction_;
+  bool activated_ = false;
+  bool deactivate_ = false;
+  bool capillary_effect_on_theta_activated_ = false;
+  bool TCL_energy_correction_ = false;
   int n_ext_meso_; // number of layers in the extension of the meso-zone.
   int tag_tcl_;
   //double coeffa_; //
@@ -165,7 +165,7 @@ protected:
   // Temperature beyond which the site is activeted [in K] T-Tsat
   // in this case,  we need the initial value for contact angle, thetaC_tcl_ will be used
   // reinjection: if a re-injection of interface if nessaire
-  int reinjection_tcl_;
+  bool reinjection_tcl_ = false;
   double tempC_tcl_;
   bool ready_inject_tcl_;
   // summaries:
@@ -175,7 +175,7 @@ protected:
   //           Rc_tcl_GridN_ thetaC_tcl_ control the initial shape, thetaC_tcl_ should be small...
 
   // if to distribute the Qtcl into the first facette
-  int distri_first_facette_;
+  bool distri_first_facette_ = false;
 
   // Information on the TCL region :
   // Note that the same elem may appear twice in the list, once for the micro contribution, once for the meso.

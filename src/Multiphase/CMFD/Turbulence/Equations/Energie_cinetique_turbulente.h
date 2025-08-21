@@ -46,7 +46,7 @@ public :
 
 protected:
   double coef_limit_ = -1;
-  int limit_k_ = 0;
+  bool limit_k_ = false;
 };
 
 #endif

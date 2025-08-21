@@ -194,9 +194,9 @@ protected:
   Motcles liste_post_instantanes_; // liste des champs instantanes a postraiter
   // Pour numeroter les fichiers .lata il faut compter combien on en a ecrit:
   int compteur_post_instantanes_ = 0;
-  int postraiter_sous_pas_de_temps_ = 0; // drapeau 0 ou 1
+  bool postraiter_sous_pas_de_temps_ = false; // drapeau 0 ou 1
   // Pour reconstruire au post-traitement la grandeur du/dt, on peut choisir de relever u^{dt_post} et u^{dt_post+1} :
-  int post_par_paires_ = 0; // drapeau 0 ou 1
+  bool post_par_paires_ = false; // drapeau 0 ou 1
 
   // Pour des fiches de validation, on post-traite le champ analytique attendu dans le lata pour calcul de l'erreur:
   Noms expression_vitesse_analytique_; // on attend trois expressions
@@ -204,7 +204,7 @@ protected:
   Noms expression_dvitesse_analytique_; // on attend trois expressions
 
   // Pour check_stats (and_grads)
-  int check_stats_ = 0;
+  bool check_stats_ = false;
 
   // -------------------------------------------------
   // Statistiques temporelles

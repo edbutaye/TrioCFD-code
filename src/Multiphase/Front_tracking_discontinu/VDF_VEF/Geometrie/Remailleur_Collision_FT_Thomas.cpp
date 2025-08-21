@@ -33,9 +33,6 @@ Add_synonym(Remailleur_Collision_FT_Thomas, "Thomas");
 
 Remailleur_Collision_FT_Thomas::Remailleur_Collision_FT_Thomas()
 {
-  tester_ = 0;
-  est_dimensionne_ = 0;
-  distance_utilisateur_ = 1;
 }
 
 /*! @brief Lecture des parametres dans le fichier .

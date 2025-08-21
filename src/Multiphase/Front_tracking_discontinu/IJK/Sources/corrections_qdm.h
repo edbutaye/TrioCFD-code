@@ -379,7 +379,7 @@ public :
   int write_me() const;
 protected :
   int type_;
-  int write_me_;
+  bool write_me_ = false;
   correction_one_direction correction_x_;
   correction_one_direction correction_y_;
   correction_one_direction correction_z_;

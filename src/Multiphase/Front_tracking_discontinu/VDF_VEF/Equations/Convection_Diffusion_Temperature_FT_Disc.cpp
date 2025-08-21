@@ -65,7 +65,6 @@ Convection_Diffusion_Temperature_FT_Disc::Convection_Diffusion_Temperature_FT_Di
   lost_fluxes_diffu_.resize_array(0);
   mixed_elems_conv_.resize_array(0);
   lost_fluxes_conv_.resize_array(0);
-  divergence_free_velocity_extension_=0; // Default set to historical behavior : velocity extension is NOT divergence-free
 }
 
 Sortie& Convection_Diffusion_Temperature_FT_Disc::printOn(Sortie& os) const

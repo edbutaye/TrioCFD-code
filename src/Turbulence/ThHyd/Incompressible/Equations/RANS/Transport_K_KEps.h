@@ -57,7 +57,7 @@ public :
   inline int get_yswitch() const;
   inline int get_switch() const;
   inline int get_nutswitch() const;
-  inline int get_impr() const;
+  inline bool get_impr() const;
   inline const Champ_Inc_base& vitesse_transportante();
 
   const Motcle& domaine_application() const override;
@@ -75,7 +75,7 @@ private:
   int ystar_switch;        //la valeur de y* qui delimite les deux couches
   int type_switch;                // indique si on choisit un switch par y* ou par nu_t
   int nut_switch;        //la valeur de nut/nu qui delimite les deux couches.
-  int impr;                //Indique si on doit afficher la zon,e des 2 couches dans le .out
+  bool impr = false;                //Indique si on doit afficher la zon,e des 2 couches dans le .out
 };
 
 
@@ -129,9 +129,9 @@ inline int Transport_K_KEps::get_nutswitch() const
  *
  * out. (version const)
  *
- * @return (int) 1 si on imprime , 0 sinon.
+ * @return (bool) si on imprime ou pas
  */
-inline int Transport_K_KEps::get_impr() const
+inline bool Transport_K_KEps::get_impr() const
 {
   return impr;
 }

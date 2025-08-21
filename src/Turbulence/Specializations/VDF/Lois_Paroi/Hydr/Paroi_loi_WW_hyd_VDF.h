@@ -32,20 +32,19 @@ class Paroi_loi_WW_hyd_VDF : public Paroi_std_hyd_VDF
   // dont le constructeur doit etre code
   Declare_instanciable_sans_constructeur(Paroi_loi_WW_hyd_VDF);
 
-  /* PUBLIC */
 public:
 
   // constructeur qui doit etre code car Declare_instanciable_sans_constructeur
-  inline Paroi_loi_WW_hyd_VDF();
+  Paroi_loi_WW_hyd_VDF() {};
 
   void set_param(Param& param) override;
+
   /* calculer_hyd pour k-epsilon qui renvoie une erreur */
   int calculer_hyd(DoubleTab& ) override;
 
   /* calculer_hyd pour L.E.S */
   int calculer_hyd(DoubleTab& , DoubleTab& ) override;
 
-  /* PROTECTED */
 protected :
 
   /* constante pour la loi en WWance */
@@ -60,10 +59,8 @@ protected :
   int calculer_u_star_couche_puissance(double ,double ,double ,int );
   int calculer_couche_puissance(DoubleTab& ,DoubleTab&  ,double ,int ,int );
   int calculer_local(double, DoubleTab&  ,DoubleTab& , double ,double ,int ,int );
-  int impr;
+  bool impr = false;
 };
-// constructeur
-inline Paroi_loi_WW_hyd_VDF::Paroi_loi_WW_hyd_VDF() : impr(0) {}
 
 #endif
 

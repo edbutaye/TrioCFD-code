@@ -37,11 +37,7 @@
 Implemente_instanciable_sans_constructeur(Topologie_Maillage_FT,"Topologie_Maillage_FT",Objet_U);
 
 
-Topologie_Maillage_FT::Topologie_Maillage_FT() :
-  active_(0),
-  Erreur_max_coordonnees_(-1.),
-  juric_local_(0),
-  phase_continue_(0) // B.M. j'aurais bien mis -1 mais il faut rendre coherent avec phase_marquee de Transport_Marqueur_FT
+Topologie_Maillage_FT::Topologie_Maillage_FT()
 {
 }
 
@@ -54,7 +50,7 @@ Sortie& Topologie_Maillage_FT::printOn(Sortie& os) const
 
 Entree& Topologie_Maillage_FT::readOn(Entree& is)
 {
-  int juric_pour_tout=0;
+  bool juric_pour_tout = false;
   int phase_continue;
   Param param(que_suis_je());
   param.ajouter_flag("active", &active_);
