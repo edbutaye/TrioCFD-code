@@ -108,7 +108,7 @@ Read pb
           haut symetrie
         }
       }
-      turbulence_paroi loi_standard_hydr dt_impr_ustar 300
+      turbulence_paroi loi_standard_hydr dt_impr_ustar 300 
     }
   }
 
@@ -127,16 +127,9 @@ Read pb
       pression_i pression  periode 1e8 segment 100     50 0 50 1
       pression_o pression  periode 1e8 segment 100     100 0 100 1
     }
-    format lml
-    champs binaire dt_post 10
-    {
-      vitesse elem
-      k elem
-      omega elem
-      y_plus elem
-      pression elem
-    }
-  }
+   
+  $field_post 
+ }
 }
 
 Solve pb

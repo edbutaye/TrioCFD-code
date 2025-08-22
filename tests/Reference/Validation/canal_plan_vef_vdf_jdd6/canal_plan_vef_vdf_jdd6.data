@@ -66,13 +66,14 @@ Read sch
   tinit 0
 	nb_pas_dt_max 3
   
+    tmax 20
     dt_impr 1e+6
-    facsec 20
+    facsec 1
     facsec_max 20
     solveur implicite { solveur gmres { diag nb_it_max 3 seuil 1e-12 impr } }
     seuil_statio 1e-30
     residuals { relative 2 }
-    tmax 400
+    tmax 400 
 }
 
 associate pb dom
@@ -116,7 +117,7 @@ Read pb
           haut symetrie
         }
       }
-      turbulence_paroi loi_standard_hydr dt_impr_ustar 300
+      turbulence_paroi loi_standard_hydr dt_impr_ustar 300 
     }
   }
 
@@ -135,8 +136,10 @@ Read pb
       pression_i pression  periode 1e8 segment 100     50 0 50 1
       pression_o pression  periode 1e8 segment 100     100 0 100 1
     }
+   
+  
     format lml
-    champs binaire dt_post 10
+    champs binaire dt_post 50
     {
       vitesse elem
       k elem
@@ -144,7 +147,8 @@ Read pb
       y_plus elem
       pression elem
     }
-  }
+     
+ }
 }
 
 Solve pb

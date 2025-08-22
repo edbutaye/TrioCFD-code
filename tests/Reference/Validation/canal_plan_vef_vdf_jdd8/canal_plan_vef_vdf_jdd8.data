@@ -11,7 +11,7 @@ Mailler dom
   {
     origine 0 0
     longueurs 100 0.2
-    nombre_de_noeuds 51 3
+    nombre_de_noeuds 101 5
   }
   {
     bord entree  X = 0.   0. <= Y <= 0.2
@@ -22,7 +22,7 @@ Mailler dom
   {
     origine 0 0.2
     longueurs 100 0.2
-    nombre_de_noeuds 51 3
+    nombre_de_noeuds 101 5
   }
   {
     bord entree  X = 0    0.2 <= Y <= 0.4
@@ -32,7 +32,7 @@ Mailler dom
   {
     origine 0 0.4
     longueurs 100 0.6
-    nombre_de_noeuds 51 7
+    nombre_de_noeuds 101 9
   }
   {
     bord entree  X = 0    0.4 <= Y <= 1.0
@@ -40,7 +40,7 @@ Mailler dom
     bord haut    Y = 1.0  0.0 <= X <= 100
   }
 }
-trianguler_H dom
+
 # END MESH #
 
 # BEGIN PARTITION
@@ -58,20 +58,22 @@ END PARTITION #
 Scatter DOM.Zones dom
 END SCATTER #
 
-VEF dis
+VDF dis
 
-schema_euler_explicite sch
+schema_euler_implicite sch
 Read sch
 {
   tinit 0
 	nb_pas_dt_max 3
   
-	tmax 400
-	dt_min 1.e-10
-	dt_max 1.e+10
-	dt_impr 1.e-10
-	seuil_statio 1.e-40
-	Residuals { relative 2 }
+    tmax 20
+    dt_impr 1e+6
+    facsec 1
+    facsec_max 20
+    solveur implicite { solveur gmres { diag nb_it_max 3 seuil 1e-12 impr } }
+    seuil_statio 1e-30
+    residuals { relative 2 }
+    tmax 400 
 }
 
 associate pb dom
@@ -102,7 +104,7 @@ Read pb
 
     Modele_turbulence k_omega
     {
-      model_variant STD
+      model_variant SST
       Transport_equation transport_k_omega
       {
         convection { amont }
@@ -115,7 +117,7 @@ Read pb
           haut symetrie
         }
       }
-      turbulence_paroi loi_standard_hydr dt_impr_ustar 300
+      turbulence_paroi loi_standard_hydr dt_impr_ustar 300 
     }
   }
 
@@ -134,8 +136,10 @@ Read pb
       pression_i pression  periode 1e8 segment 100     50 0 50 1
       pression_o pression  periode 1e8 segment 100     100 0 100 1
     }
+   
+  
     format lml
-    champs binaire dt_post 10
+    champs binaire dt_post 50
     {
       vitesse elem
       k elem
@@ -143,7 +147,8 @@ Read pb
       y_plus elem
       pression elem
     }
-  }
+     
+ }
 }
 
 Solve pb

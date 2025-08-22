@@ -128,16 +128,9 @@ Read pb
       pression_i pression  periode 1e8 segment 100     50 0 50 1
       pression_o pression  periode 1e8 segment 100     100 0 100 1
     }
-    format lml
-    champs binaire dt_post 10
-    {
-      vitesse elem
-      k elem
-      eps elem
-      y_plus elem
-      pression elem
-    }
-  }
+ 
+    $field_post 
+ }
 }
 
 Solve pb
