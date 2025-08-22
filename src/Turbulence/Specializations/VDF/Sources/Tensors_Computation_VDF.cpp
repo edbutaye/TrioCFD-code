@@ -28,14 +28,18 @@
 
 using TCV = Tensors_Computation_VDF;
 
-// Compute the antisymetric tensor
 void TCV::compute_enstrophy(const Domaine_VDF& dom_VDF,
                             const Domaine_Cl_VDF& dom_BC_VDF,
-                            const Navier_Stokes_Turbulent& eqn_ns_turb,
+                            const DoubleTab& velocity,
+                            Champ_Face_VDF& ch_vit,
+                            Navier_Stokes_Turbulent& ns_turb,
                             DoubleTab& enstrophy) const
 {
   // Get gradient of velocity
-  const DoubleTab& tab_grad_u = eqn_ns_turb.probleme().get_champ("gradient_vitesse").valeurs();
+  const int nb_elem_tot = dom_VDF.nb_elem_tot();
+  const int dimension = Objet_U::dimension;
+  DoubleTab gradient_elem(nb_elem_tot, dimension*dimension);
+  gradient_elem = 0.;
 
   if (ns_turb.has_champ("gradient_vitesse")) //if the gradient is already computed (post_processing)
     gradient_elem.ref(ns_turb.get_champ("gradient_vitesse").valeurs());

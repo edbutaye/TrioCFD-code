@@ -50,7 +50,9 @@ void Op_Diff_K_Omega_VDF_base::completer()
         {
           const Modele_turbulence_hyd_K_Omega& mod_turb = ref_cast(Modele_turbulence_hyd_K_Omega,eqn_transport.modele_turbulence());
           Eval_Diff_K_Omega_VDF_Elem& eval_diff = static_cast<Eval_Diff_K_Omega_VDF_Elem&> (iter->evaluateur());
+          const Champ_Fonc_base& diff_turb = mod_turb.viscosite_turbulente();
           eval_diff.associer_Pr_K_Omega(mod_turb.get_Prandtl_K(),mod_turb.get_Prandtl_Omega());
+          eval_diff.associer_diff_turb(diff_turb);
         }
     }
   else

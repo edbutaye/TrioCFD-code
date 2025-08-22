@@ -55,15 +55,27 @@ DoubleTab& Source_Transport_K_Omega_VDF_Elem_base::calculer(DoubleTab& resu) con
 
 DoubleTab& Source_Transport_K_Omega_VDF_Elem_base::ajouter_komega(DoubleTab& resu) const
 {
-  const Domaine_VDF& domaine_VDF = le_dom_VDF.valeur();
+  const Domaine_VDF& domain_VDF = le_dom_VDF.valeur();
+  const Domaine_Cl_VDF& dom_Cl_VDF = le_dom_Cl_VDF.valeur();
   const DoubleTab& visco_turb = get_visc_turb(); // voir les classes filles
   const DoubleTab& vit = eq_hydraulique->inconnue().valeurs();
-  const Champ_Face_VDF& ch_vit = ref_cast(Champ_Face_VDF, eq_hydraulique->inconnue());
+  Champ_Face_VDF& ch_vit = ref_cast_non_const(Champ_Face_VDF, eq_hydraulique->inconnue());
+
+  compute_cross_diffusion();
+  if (turbulence_model->is_SST())
+    compute_blending_F1();
 
   DoubleVect P; // Ajout d'un espace virtuel au tableau P
-  domaine_VDF.domaine().creer_tableau_elements(P);
+  domain_VDF.domaine().creer_tableau_elements(P);
   calculer_terme_production(ch_vit, visco_turb, vit, P); // voir les classes filles
   fill_resu(P, resu);
   resu.echange_espace_virtuel();
+  if (turbulence_model->is_SST())
+    compute_enstrophy(domain_VDF,
+                      dom_Cl_VDF,
+                      vit,
+                      ch_vit,
+                      ref_cast_non_const(Navier_Stokes_Turbulent, eq_hydraulique.valeur()),
+                      ref_cast_non_const(DoubleTab, turbulence_model->get_enstrophy()));
   return resu;
 }

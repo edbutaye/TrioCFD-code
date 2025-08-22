@@ -25,7 +25,7 @@
 #include <Navier_Stokes_Turbulent.h>
 #include <Front_VF.h>
 #include <Periodique.h>
-
+#include <Champ_Face_VDF.h>
 class Domaine_Cl_VDF;
 class Domaine_VDF;
 
@@ -34,17 +34,23 @@ class Tensors_Computation_VDF
 protected:
   Tensors_Computation_VDF() { }
 
-  void compute_enstrophy(const Domaine_VDF&, const Domaine_Cl_VDF&,
-                         const Navier_Stokes_Turbulent& eqn_ns_turb, DoubleTab& enstrophy) const;
+  void compute_enstrophy(const Domaine_VDF&,
+                         const Domaine_Cl_VDF&,
+                         const DoubleTab& velocity,
+                         Champ_Face_VDF& ch_vit,
+                         Navier_Stokes_Turbulent& ns_turb,
+                         DoubleTab& enstrophy) const;
   /*void antisym_loop_edge_faces(const Domaine_VDF& dom_VDF, const Domaine_Cl_VDF& dom_BC_VDF,
                                const DoubleTab& gradient_elem, DoubleTab& enstrophy) const;
   void antisym_loop_edges_general(const Domaine_VDF& dom_VDF, const Front_VF& the_edge,
                                   const DoubleTab& gradient_elem, DoubleTab& enstrophy) const;
   void antisym_loop_edges_periodiqueBC(const Domaine_VDF& dom_VDF, const Front_VF& the_edge,
                                        const DoubleTab& gradient_elem, DoubleTab& enstrophy) const;
-  void antisym_loop_internal_faces(const Domaine_VDF& dom_VDF, const DoubleTab& gradient_elem,
-                                   DoubleTab& enstrophy) const;
-  */
+   */
+  void antisym(const Domaine_VDF& dom_VDF,
+               const DoubleTab& gradient_elem,
+               DoubleTab& enstrophy) const;
+
 };
 
 

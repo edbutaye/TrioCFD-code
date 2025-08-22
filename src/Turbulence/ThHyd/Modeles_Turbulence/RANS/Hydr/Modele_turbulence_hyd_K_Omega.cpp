@@ -34,6 +34,9 @@
 #include <TRUSTTrav.h>
 #include <Param.h>
 #include <Debog.h>
+#include <Domaine_VDF.h>
+#include <Domaine_VEF.h>
+
 
 Implemente_instanciable(Modele_turbulence_hyd_K_Omega, "Modele_turbulence_hyd_K_Omega", Modele_turbulence_hyd_RANS_K_Omega_base);
 // XD k_omega mod_turb_hyd_rans k_omega -1 Turbulence model (k-omega).
@@ -176,17 +179,40 @@ void Modele_turbulence_hyd_K_Omega::fill_turbulent_viscosity_tab(const DoubleTab
 void Modele_turbulence_hyd_K_Omega::init_F1_F2_enstrophy()
 {
   const Domaine_VF& domain = ref_cast(Domaine_VF, get_eq_transport().domaine_dis());
-  const MD_Vector& mdf = domain.md_vector_faces();
-  const int n = domain.nb_faces();
+  if (sub_type(Domaine_VDF,get_eq_transport().domaine_dis()))
+    {
+      const MD_Vector& mdf = domain.domaine().md_vector_elements();
+      const int n = domain.nb_elem();
 
-  tabF1_.resize(n, 1);
-  MD_Vector_tools::creer_tableau_distribue(mdf, tabF1_);
+      tabF1_.resize(n, 1);
+      MD_Vector_tools::creer_tableau_distribue(mdf, tabF1_);
 
-  tabF2_.resize(n);
-  MD_Vector_tools::creer_tableau_distribue(mdf, tabF2_);
+      tabF2_.resize(n);
+      MD_Vector_tools::creer_tableau_distribue(mdf, tabF2_);
 
-  enstrophy_.resize(n);
-  MD_Vector_tools::creer_tableau_distribue(mdf, enstrophy_);
+      enstrophy_.resize(n);
+      MD_Vector_tools::creer_tableau_distribue(mdf, enstrophy_);
+    }
+  else if (sub_type(Domaine_VEF,get_eq_transport().domaine_dis()))
+    {
+      const MD_Vector& mdf = domain.md_vector_faces();
+      const int n = domain.nb_faces();
+
+      tabF1_.resize(n, 1);
+      MD_Vector_tools::creer_tableau_distribue(mdf, tabF1_);
+
+      tabF2_.resize(n);
+      MD_Vector_tools::creer_tableau_distribue(mdf, tabF2_);
+
+      enstrophy_.resize(n);
+      MD_Vector_tools::creer_tableau_distribue(mdf, enstrophy_);
+    }
+  else
+    {
+      Cerr << "Modele_turbulence_hyd_K_Omega::init_F1_F2_enstrophy: "
+           << "The domain must be VDF or VEF." << finl;
+      Process::exit();
+    }
 }
 
 /*! @brief Prepare the computation of the k-omega model.

@@ -40,7 +40,12 @@ public:
 
   Source_Transport_K_Omega_VDF_Elem() { };
   void ajouter_blocs(matrices_t matrices, DoubleTab& secmem, const tabs_t& semi_impl) const override;
+  void compute_cross_diffusion() const override;
+  void compute_blending_F1() const override;
+  double blender(double const val1, double const val2, int const elem) const;
 
+  void creer_champ(const Motcle&) override;
+  void get_noms_champs_postraitables(Noms& nom,Option opt=NONE) const override;
 protected:
   OBS_PTR(Transport_K_Omega) eqn_K_Omega;
   void associer_pb(const Probleme_base& pb) override;
@@ -49,6 +54,11 @@ protected:
   const DoubleTab& get_visc_turb() const override;
   void calculer_terme_production(const Champ_Face_VDF&, const DoubleTab& , const DoubleTab& , DoubleVect&) const override;
   void fill_resu(const DoubleVect& , DoubleTab& ) const override;
+
+private:
+  OWN_PTR(Champ_Fonc_base)  grad_k_omega_elem_; /* produit : grad (K) * grad (omega)*/
+  OWN_PTR(Champ_Fonc_base)  grad_k_face_;
+  OWN_PTR(Champ_Fonc_base)  grad_omega_face_;
 };
 
-#endif /* Source_Transport_K_Eps_VDF_Elem_included */
+#endif
