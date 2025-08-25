@@ -54,6 +54,7 @@ protected :
   int n_l = 0 ;
   int n_g1 = -1 ; // group 1
   int n_g2 = -1 ; // group 2
+  double dd_ =0.0014; // Dd = 1e-4(Tp-Tl)+dd_
 };
 
 #endif

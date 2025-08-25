@@ -44,6 +44,10 @@ Entree& Flux_parietal_Kurul_Podowski::readOn(Entree& is)
   Cout << que_suis_je() << " : single-phase wall heat flux is " << correlation_monophasique_->que_suis_je() << finl;
 
   Param param(que_suis_je());
+
+  param.ajouter("departure_diameter", &dd_ );
+
+
   param.lire_avec_accolades(is);
 
   if (!sub_type(Milieu_composite, pb_->milieu()))
@@ -114,7 +118,8 @@ void Flux_parietal_Kurul_Podowski::qp(const input_t& in, output_t& out) const
                 if (in.Tp - in.Tsat[ind_sat] > 0) // Else : no wall superheat => no nucleation => single phase heat transfer only
                   {
 
-                    const double dd = 1.e-4*(in.Tp - in.Tsat[ind_sat])+0.0014;
+                    const double dd = 1.e-4*(in.Tp - in.Tsat[ind_sat])+dd_;
+
                     const double dTp_dd = 1.e-4;
                     // NB: dans Neptune, on utilise un correlation plus complexe:
                     /*double b = (sat.Tsat(in.p)-in.T[n_l])/(2-2*in.rho[k]/in.rho[n_l])
