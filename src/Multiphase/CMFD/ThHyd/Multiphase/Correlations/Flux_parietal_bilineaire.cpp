@@ -33,6 +33,7 @@ Entree& Flux_parietal_bilineaire::readOn( Entree& is )
   param.ajouter("coeff_echange_monophasique|single_phase_exchange_coeff", &h_mono_, Param::REQUIRED);
   param.ajouter("coeff_echange_diphasique|multi_phase_exchange_coeff", &h_diph_, Param::REQUIRED);
   param.ajouter("coeff_osv|osv_coeff", &coeff_, Param::REQUIRED);
+  param.ajouter("offset", &b_);
   param.lire_avec_accolades_depuis(is);
 
   /* n_l / n_g : phases liquide / gaz continu */
@@ -40,14 +41,16 @@ Entree& Flux_parietal_bilineaire::readOn( Entree& is )
 
   if (!pbm || pbm->nb_phases() == 1) // pas un Pb_Multiphase -> monophasique liquide
     Process::exit("Flux_parietal_bilineaire can only be used for a multiphase problem with 2 phases!");
-  else // recherche de n_l, n_g : phase {liquide,gaz}_continu en priorite
-    {
-      for (int n = 0; n < pbm->nb_phases(); n++)
-        if (pbm->nom_phase(n).debute_par("liquide") && (n_l < 0 || pbm->nom_phase(n).finit_par("continu")))
-          n_l = n;
-        else if (pbm->nom_phase(n).debute_par("gaz") && (n_g < 0 || pbm->nom_phase(n).finit_par("continu")))
-          n_g = n;
-    }
+
+  // recherche de n_l, n_g : phase {liquide,gaz}_continu en priorite
+  for (int n = 0; n < pbm->nb_phases(); n++)
+    if (pbm->nom_phase(n).debute_par("liquide")
+        && (n_l < 0 || pbm->nom_phase(n).finit_par("continu")))
+      n_l = n;
+    else if (pbm->nom_phase(n).debute_par("gaz")
+             && (n_g < 0 || pbm->nom_phase(n).finit_par("continu")))
+      n_g = n;
+
 
   if (n_l < 0)
     Process::exit(que_suis_je() + " : main phase not found!");
@@ -65,34 +68,35 @@ Entree& Flux_parietal_bilineaire::readOn( Entree& is )
   return is;
 }
 
-double Flux_parietal_bilineaire::fraction_flux_vap(const input_t& in, double phi, double dTf_phi, double dp_phi, double dTp_phi, double& dTf_eps, double& dp_eps, double& dTp_eps) const
+double Flux_parietal_bilineaire::fraction_flux_vap(const input_t& in, double phi,
+                                                   double dTf_phi, double dp_phi,
+                                                   double dTp_phi, double& dTf_eps,
+                                                   double& dp_eps, double& dTp_eps) const
 {
-  const double Ts = sat->Tsat(in.p),
-               Tld = Ts - phi * coeff_,
-               dp_Tld = sat->dP_Tsat(in.p) - dp_phi * coeff_,
-               dTp_Tld = -dTp_phi * coeff_,
-               dTf_Tld = -dTf_phi * coeff_;
+  const double Ts = sat->Tsat(in.p);
+  const double Tld = Ts - phi * coeff_;
+  const double dp_Tld = sat->dP_Tsat(in.p) - dp_phi * coeff_;
+  const double dTp_Tld = -dTp_phi * coeff_;
+  const double dTf_Tld = -dTf_phi * coeff_;
 
-  const double eps = std::min(1.0, std::max(0.0, (in.T[n_l] - Tld) / (Ts - Tld)));
+  const double eps = std::clamp((in.T[n_l] - Tld) / (Ts - Tld), 0.0, 1.0);
 
-  if (in.T[n_l] > Tld ) // derivee non nulle
+  if (Tld < in.T[n_l] && in.T[n_l] < Ts)
     {
-      if (in.T[n_l] < Ts)
-        {
-          dTf_eps = ((Ts - Tld) * (1-dTf_Tld) + (in.T[n_l] - Tld) * dTf_Tld) / (Ts - Tld) / (Ts - Tld);
-          dp_eps = ((Ts - Tld) * (-dp_Tld) - (in.T[n_l] - Tld) * (sat->dP_Tsat(in.p) - dp_Tld)) / (Ts - Tld) / (Ts - Tld);
-          dTp_eps = ((Ts - Tld) * (-dTp_Tld) + (in.T[n_l] - Tld) * dTp_Tld) / (Ts - Tld) / (Ts - Tld);
-        }
+      const double delT = in.T[n_l] - Tld;
+      const double delTs = Ts - Tld;
+      const double fac = 1./(delTs*delTs);
+      dTf_eps = (delTs * (1 - dTf_Tld) + delT * dTf_Tld) * fac;
+      dp_eps = (delTs * (-dp_Tld) - delT * (sat->dP_Tsat(in.p) - dp_Tld)) * fac;
+      dTp_eps = (delTs * (-dTp_Tld) + delT * dTp_Tld) * fac;
     }
 
   return eps;
-
 }
 
 void Flux_parietal_bilineaire::qp(const input_t& in, output_t& out) const
 {
-  double Ts = sat->Tsat(in.p) ;
-
+  const double Ts = sat->Tsat(in.p) ;
   const Milieu_composite& milc = ref_cast(Milieu_composite, pb_->milieu());
 
   if (out.nonlinear)
@@ -103,11 +107,10 @@ void Flux_parietal_bilineaire::qp(const input_t& in, output_t& out) const
       if (milc.has_saturation(n_l, k))
         {
           const double P_mono = h_mono_ * (in.Tp - in.T[n_l]);
-          const double P_diph= h_diph_ * (in.Tp - Ts)+10000;
+          const double P_diph= h_diph_ * (in.Tp - Ts) + b_;
 
-          if (in.Tp< Ts ) //monophasique
+          if (in.Tp < Ts) //monophasique
             {
-
               if (out.qpk)
                 (*out.qpk)(n_l) = P_mono;
               if (out.dTp_qpk)
@@ -119,8 +122,6 @@ void Flux_parietal_bilineaire::qp(const input_t& in, output_t& out) const
             {
               if (Ts <= in.T[n_l]) // Everything in the evaporative term
                 {
-
-
                   if (out.qpi)
                     (*out.qpi)(n_l, k) = P_diph;
                   if (out.dTp_qpi)
@@ -130,12 +131,12 @@ void Flux_parietal_bilineaire::qp(const input_t& in, output_t& out) const
                   if (out.dp_qpi)
                     (*out.dp_qpi)(n_l, k, n_l) = -h_diph_*sat->dP_Tsat(in.p);
                 }
-
-
               else
                 {
                   double dTf_eps = 0.0, dp_eps = 0.0, dTp_eps = 0.0;
-                  double eps = fraction_flux_vap(in, P_diph, 0, -h_diph_*sat->dP_Tsat(in.p), h_diph_, dTf_eps, dp_eps, dTp_eps);
+                  const double eps = fraction_flux_vap(in, P_diph, 0,
+                                                       -h_diph_*sat->dP_Tsat(in.p),
+                                                       h_diph_, dTf_eps, dp_eps, dTp_eps);
 
                   // Fill in the outputs : heat flux towards liquid
                   if (out.qpk)
@@ -145,7 +146,8 @@ void Flux_parietal_bilineaire::qp(const input_t& in, output_t& out) const
                   if (out.dTf_qpk)
                     (*out.dTf_qpk)(n_l, n_l) = -P_diph*dTf_eps;
                   if (out.dp_qpk)
-                    (*out.dp_qpk)(n_l, k, n_l) = -h_diph_*sat->dP_Tsat(in.p)*(1.0 - eps) -P_diph*dp_eps;
+                    (*out.dp_qpk)(n_l, k, n_l) = -h_diph_*sat->dP_Tsat(in.p)*(1.0 - eps)
+                                                 - P_diph*dp_eps;
 
                   // Evaporation
                   if (out.qpi)
@@ -155,9 +157,9 @@ void Flux_parietal_bilineaire::qp(const input_t& in, output_t& out) const
                   if (out.dTf_qpi)
                     (*out.dTf_qpi)(n_l, k, n_l) = P_diph*dTf_eps;
                   if (out.dp_qpi)
-                    (*out.dp_qpi)(n_l, k, n_l) = -h_diph_*sat->dP_Tsat(in.p)*eps +P_diph*dp_eps;
+                    (*out.dp_qpi)(n_l, k, n_l) = -h_diph_*sat->dP_Tsat(in.p)*eps
+                                                 + P_diph*dp_eps;
                 }
             }
         }
 }
-

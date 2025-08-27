@@ -37,6 +37,7 @@ public:
 private:
   double h_mono_ = -123., h_diph_ = -123.; // Coefficient d'échange thermique dans la zone monophasique /zone diphasique /
   double coeff_ = -123.; // Paramètre d'osv
+  double b_ = 10000.0; // abscisse à l'origine de la fonction dans la zone diphasique, 10kW/m2 de base pour l'héritage du stage
   int n_l = -1, n_g = -1; // indice des phases d'injection du flux
   const Saturation_base *sat = nullptr; //saturation entre liquide et gas (si elle existe)
 
