@@ -1,0 +1,376 @@
+Dimension 3
+ 
+Domaine dom_flu
+Domaine dom_so
+# BEGIN MESH #
+
+read_med { domain dom_flu mesh mesh_prod file ../mesh_prod_coupled.med convertAllToPoly } 
+read_med { domain dom_so mesh Mesh_PROD_SO file ../mesh_prod_coupled.med convertAllToPoly }
+Modif_bord_to_raccord dom_so heat
+Modif_bord_to_raccord dom_flu heat
+# END MESH #
+
+
+
+
+ # BEGIN PARTITION 
+Partition_multi 
+{
+ domaine dom_flu
+ {
+    /* Choose Nb_parts so to have ~ 25000 cells per processor */
+    Partition_tool metis { nb_parts 4 }
+    Larg_joint 2
+    zones_name DOM_FLU
+    }
+    domaine dom_so
+{
+    /* Choose Nb_parts so to have ~ 25000 cells per processor */
+    Partition_tool metis { nb_parts 4 }
+    Larg_joint 2
+    zones_name DOM_SO
+}
+}
+ END PARTITION 
+ END #
+ 
+ # BEGIN SCATTER 
+Scatter DOM_FLU.Zones dom_flu
+Scatter DOM_SO.Zones dom_so
+  END SCATTER # 
+
+PolyMAC_P0  dis option_PolyMAC { traitement_axi } 
+
+Schema_euler_implicite sch
+Read sch
+{
+    # tinit 0.0 #
+    tmax $tmax
+    nb_pas_dt_max  $nb_pas_dt_max
+    dt_impr 1e-8
+    facsec $facsec
+    facsec_max $max_facsec
+    seuil_statio $seuil_statio
+
+    dt_start dt_fixe 1.e-9
+    solveur ice
+    {
+        criteres_convergence { alpha 1e-5 pression 1. vitesse 1e-5 temperature 1e8 k 1e-5 omega 1e-3 }
+        iter_min 2
+        iter_max 5
+        solveur petsc cli {  }
+        seuil_convergence_implicite 1e30
+    }
+}
+# End #
+
+Pb_conduction pb_so
+Pb_Multiphase pb_flu
+Probleme_Couple pbc
+associate pb_flu dom_flu
+associate pb_so dom_so
+
+Associate pbc pb_flu
+Associate pbc pb_so
+
+Associate pbc sch
+
+Discretize pbc dis
+
+Read pb_so
+{
+    Solide
+    {
+        rho Uniform_Field 1 8000
+        lambda Champ_Uniforme 1 401
+        Cp Champ_Uniforme 1 380
+    }
+
+    Conduction
+    {
+        diffusion { }
+        initial_conditions {
+            $Ci
+        }
+        boundary_conditions {
+            heat_so $Cl
+
+            heat paroi_contact pb_flu  heat
+            
+            adiab_so paroi_adiabatique
+            sym_so symetrie
+
+        }
+    }
+    Postraitement
+    {
+    	 Sondes {
+    	 T_so	    grav	temperature             periode 0.1 segment 176      0.005 0 0 0.005 0 0.585  
+    	 }
+    	 format lata
+		champs binaire dt_post 0.05
+		{
+		Temperature elem
+		}
+            
+    	 
+    }
+}
+
+
+Lire pb_flu
+{
+ 
+    Milieu_composite
+    {
+    	liquide_R245 Fluide_generique_EOS { model refprop10 fluid R245FAliquid }
+	gaz_R245 Fluide_generique_EOS { model refprop10 fluid R245FAvapor }
+	saturation_R245 saturation_generique_EOS { model refprop10 fluid R245FAliquid }
+
+    }  
+    correlations
+    {
+        loi_paroi adaptative { }
+        
+         flux_parietal kurul_podowski adaptatif { departure_diameter $dd  }
+                                        
+        masse_ajoutee coef_constant { }      
+        frottement_interfacial Tomiyama { contamination 2 }      
+        portance_interfaciale Sugrue { }       
+                 
+        dispersion_bulles turbulente_burns {  } 
+        
+        diametre_bulles champ champ_uniforme 2 0 $db
+        flux_interfacial Ranz_Marshall { } 
+        
+        
+        
+    }
+    QDM_Multiphase
+    {
+        evanescence { homogene { alpha_res 5e-5 alpha_res_min 1e-5 } } 
+        solveur_pression petsc cholesky { quiet }  
+        convection { amont }
+        diffusion  { turbulente k_omega { } }
+        initial_conditions
+        {
+            vitesse  champ_fonc_xyz dom_flu 6 0 0 0 0 $vi $vi
+            pression champ_fonc_xyz dom_flu 1 260005.0 
+        }
+        conditions_limites
+        {
+            inlet            frontiere_ouverte_vitesse_imposee_sortie champ_front_uniforme 6 0 0 0 0 $vi $vi
+            adiab         paroi_frottante_loi { }
+            heat         paroi_frottante_loi { }
+            outlet            frontiere_ouverte_pression_imposee champ_front_uniforme 1 260005.0
+            sym symetrie
+ 
+        }
+       sources 
+        {
+        
+            source_qdm champ_fonc_xyz dom_flu 6 0 0 0 0 -9.81 -9.81 ,     
+            Portance_interfaciale { beta 1 } ,
+            frottement_interfacial { }  ,
+            Dispersion_bulles { beta 1 }  ,
+            Correction_Antal { }  
+                      
+                
+        } 
+        
+    }
+    Masse_Multiphase
+    {
+        initial_conditions 
+        { 
+        	alpha Champ_Fonc_xyz dom_flu 2 1 0 
+
+        }
+        convection { amont }
+        conditions_limites
+        {
+            
+	    inlet             frontiere_ouverte a_ext Champ_Front_Uniforme 2 1 0      
+            adiab          paroi    
+            heat paroi   
+            sym symetrie
+            outlet             frontiere_ouverte a_ext Champ_Front_Uniforme 2 1 0
+
+        }
+        sources
+        {
+           flux_interfacial 
+        }
+    }
+    Energie_Multiphase
+    {
+        diffusion { turbulente SGDH { pr_t 0.9 }  }
+        convection { amont }
+        initial_conditions 
+        { 
+        	temperature Champ_fonc_xyz dom_flu 2 27.0 41.119
+
+        }
+        boundary_conditions
+        {
+            inlet	      frontiere_ouverte_temperature_imposee Champ_Front_uniforme 2 $Ti 41.119 
+            adiab         paroi_adiabatique
+            heat paroi_contact pb_so  heat
+
+            sym symetrie
+            outlet            frontiere_ouverte T_ext Champ_Front_uniforme 2 $Ti 41.119 
+        }   
+        sources 
+        { 
+          
+           travail_pression , 
+           flux_interfacial    
+        }
+    }
+    
+    
+    taux_dissipation_turbulent
+    {
+        diffusion { turbulente SGDH { sigma 0.5 } }
+        convection { amont }
+        initial_conditions { omega Champ_Fonc_xyz dom_flu 1 10 }
+        boundary_conditions
+        {
+          
+            inlet	       frontiere_ouverte omega_ext Champ_Front_Uniforme 1 10
+            adiab          Cond_lim_omega_demi { }
+            heat          Cond_lim_omega_demi { }
+            outlet             frontiere_ouverte omega_ext Champ_Front_Uniforme 1 10
+            sym symetrie
+            
+        }
+        sources
+        {
+            Production_echelle_temp_taux_diss_turb { alpha_omega 0.5 } ,
+            Dissipation_echelle_temp_taux_diss_turb { beta_omega 0.075 } ,
+            Diffusion_croisee_echelle_temp_taux_diss_turb { sigma_d 0.5 } 
+            
+        }
+
+		
+    } 
+    energie_cinetique_turbulente
+    {
+        diffusion { turbulente SGDH { sigma 0.67 } }
+        convection { amont }
+        initial_conditions { k Champ_Fonc_xyz dom_flu 1 1.44 }
+        boundary_conditions
+        {
+            inlet	       frontiere_ouverte k_ext Champ_Front_Uniforme 1 1.44
+            adiab          Cond_lim_k_simple_flux_nul 
+            heat          Cond_lim_k_simple_flux_nul
+            outlet             frontiere_ouverte k_ext Champ_Front_Uniforme 1 1.44
+            sym symetrie
+            
+        }
+        sources
+        {
+            Production_energie_cin_turb { } ,
+            Terme_dissipation_energie_cinetique_turbulente { beta_k 0.09 }
+        }
+
+    }
+    Postraitement
+    {
+	    	 Definition_champs	{
+			
+		    	gradient_p refChamp { Pb_champ pb_flu gradient_pression }
+		    	d_paroi    refChamp { Pb_champ pb_flu distance_paroi_globale }
+		    	d_bulles   refChamp { Pb_champ pb_flu diametre_bulles }
+		    	
+		    	diff_qdm   operateur_eqn  { numero_op 0 
+		    				    sources { refChamp { pb_champ pb_flu vitesse } }
+		                                   }
+		        conv_qdm   operateur_eqn  { numero_op 1 
+		    				    sources { refChamp { pb_champ pb_flu vitesse } }
+		                                   }
+		    	gravv     operateur_eqn   { numero_source 0
+		                                     sources { refChamp { pb_champ pb_flu vitesse } }
+		                                   }
+		        
+		        lift      operateur_eqn   { numero_source 1
+		                                    sources { refChamp { pb_champ pb_flu vitesse } }
+		                                   }
+		       drag       operateur_eqn   { numero_source 2
+		                                     sources { refChamp { pb_champ pb_flu vitesse } }
+		                                   }
+		        disp      operateur_eqn   { numero_source 3
+		                                    sources { refChamp { pb_champ pb_flu vitesse } }
+		                                   }
+		       antal      operateur_eqn   { numero_source 4
+		                                    sources { refChamp { pb_champ pb_flu vitesse } }
+		                                   }   
+		       source_1 operateur_eqn   { numero_source 1
+		                                     sources { refChamp { pb_champ pb_flu Temperature } } }
+		       source_0 operateur_eqn   { numero_source 0
+		                                     sources { refChamp { pb_champ pb_flu Temperature } } }                      
+		        
+		      
+		       				    		            
+		       				      
+		       total_gaz_volume reduction_0D { methode weighted_sum source refChamp { pb_champ pb_flu alpha }  }              
+		    	
+		                            
+		}
+		
+		sondes	
+			{
+			  T_l	    grav	temperature             periode 0.1 segment 176      0.0056 0 0 0.0056 0 0.585  
+			}   
+
+		
+		format lata
+		champs binaire dt_post 0.05
+		{
+		      k	    elem
+		    omega    elem
+		    Vitesse	elem
+		    pression   elem
+		    alpha     elem
+		    temperature elem
+		   
+		    y_plus	elem
+		    
+		    drag elem
+		    lift elem
+		    disp elem
+		    antal elem
+		    conv_qdm elem
+		    diff_qdm elem
+		    gravv elem
+		    
+		    source_1 elem
+		    source_0 elem
+		    VOLUME_MAILLE elem
+		     
+		   # 
+		    enthalpie elem
+		    enthalpie_melange elem
+		    TITRE_liquide_R245 elem
+		    TITRE_gaz_R245 elem #
+		    
+		    energie_interne elem
+		    masse_volumique elem
+		    masse_volumique_melange elem
+		    
+		    diametre_bulles elem
+		    gradient_p elem
+		    
+		    
+		    
+
+		    	    
+		}
+
+	    
+	    }
+	    
+    
+    }
+    
+ resoudre pbc
