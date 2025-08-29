@@ -92,7 +92,9 @@ Lire pb
         methode_transport vitesse_interpolee hydraulique
         # conditions_initiales { fonction (y) } #
         conditions_initiales { fonction (1.e-3*cos(2.*3.14159*x/0.12*3.)+y) }
-        iterations_correction_volume 1
+        VOFlike_correction_volume 1
+        nb_lissage_correction_volume 1
+        nb_iterations_correction_volume 1
         n_iterations_distance 2
         remaillage
         {

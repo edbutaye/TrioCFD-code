@@ -118,7 +118,10 @@ Lire pb
             interpolation_repere_local
             methode_transport vitesse_interpolee hydraulique
             conditions_initiales { fonction (tan(@degliq@*pi/180.)*(x-5.e-6-(@offset@e-6))-y) }
-            iterations_correction_volume 2
+            VOFlike_correction_volume 1
+            nb_lissage_correction_volume 2
+            nb_iterations_correction_volume 2
+
             methode_interpolation_v vdf_lineaire
             n_iterations_distance 10
             remaillage {

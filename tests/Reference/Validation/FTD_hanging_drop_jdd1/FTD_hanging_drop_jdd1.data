@@ -77,7 +77,9 @@ Read pb1
             -(x-0.0105)*(x-0.0105)-(z-0.0105)*(z-0.0105)-(y-0.012)*(y-0.012)+0.0005*0.0005
         }
         methode_transport vitesse_interpolee hydraulique
-        iterations_correction_volume 0
+        VOFlike_correction_volume 0
+        nb_lissage_correction_volume 0
+        nb_iterations_correction_volume 0
         n_iterations_distance 2
         remaillage {
             pas 1.e-4

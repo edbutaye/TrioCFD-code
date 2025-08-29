@@ -162,7 +162,9 @@ Lire pb1
         interpolation_repere_local
         methode_transport vitesse_interpolee hydraulique
         conditions_initiales { fonction (y-0.4e-3)+(-x) }
-        iterations_correction_volume 0
+        VOFlike_correction_volume 0
+        nb_lissage_correction_volume 0
+        nb_iterations_correction_volume 0
         methode_interpolation_v vdf_lineaire
         n_iterations_distance 10
         parcours_interface { correction_parcours_thomas }

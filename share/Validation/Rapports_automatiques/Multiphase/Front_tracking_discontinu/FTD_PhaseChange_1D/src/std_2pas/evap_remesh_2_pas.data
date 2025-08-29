@@ -111,7 +111,9 @@ Lire pb
         methode_transport vitesse_interpolee hydraulique
         # zlim = 0.00088-0.000848*sqrt(1-1.944*1.944/(1+1.944*1.944) =  #
         conditions_initiales { fonction -(x-0.000105) }
-        iterations_correction_volume 0
+        VOFlike_correction_volume 0
+        nb_lissage_correction_volume 0
+        nb_iterations_correction_volume 0
         methode_interpolation_v vdf_lineaire
         n_iterations_distance 10 # 3 is enough, but we test what happens when BC are reached... #
         # maillage {

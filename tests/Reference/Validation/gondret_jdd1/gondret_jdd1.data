@@ -95,7 +95,9 @@ Lire pb
 		   fonction  (+1*((x)^2+(y-9.78e-3)^2+(z)^2-(3e-3)^2))
 
        		}
-        	iterations_correction_volume 0
+        	VOFlike_correction_volume 0
+                nb_lissage_correction_volume 0
+                nb_iterations_correction_volume 0
        		n_iterations_distance 0
         	# parcours_interface { correction_parcours_thomas } #
 		methode_interpolation_v MEAN_VOLUMIC_VELOCITY

@@ -105,7 +105,9 @@ Lire pb
 		   fonction  (+1*((x)^2+(y)^2+(z)^2-(2.6e-5)^2))
 
        		}
-        	iterations_correction_volume 6
+        	VOFlike_correction_volume 1
+                nb_lissage_correction_volume 6
+                nb_iterations_correction_volume 6
         	n_iterations_distance 3
 		parcours_interface { correction_parcours_thomas }
        		methode_interpolation_v VDF_lineaire

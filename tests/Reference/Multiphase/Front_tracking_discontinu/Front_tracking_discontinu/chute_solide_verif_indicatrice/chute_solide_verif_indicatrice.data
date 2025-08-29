@@ -116,7 +116,9 @@ Fluide_Diphasique
         {
             fonction ((x-3e-3)^2+(y-4e-3)^2-(1e-3)^2)
         }
-        iterations_correction_volume 0
+        VOFlike_correction_volume 0
+        nb_lissage_correction_volume 0
+        nb_iterations_correction_volume 0
         n_iterations_distance 0
         remaillage
         {

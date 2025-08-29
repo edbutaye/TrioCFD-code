@@ -119,7 +119,10 @@ Lire pb
         interpolation_repere_local
         methode_transport vitesse_interpolee hydraulique
         conditions_initiales { fonction x^2+y^2+z^2-0.0005^2 }
-        iterations_correction_volume 1
+        VOFlike_correction_volume 1
+        nb_lissage_correction_volume 1
+        nb_iterations_correction_volume 1
+
         n_iterations_distance 2
         remaillage {
             pas 0.000001

@@ -614,16 +614,22 @@ int Transport_Interfaces_FT_Disc::lire_motcle_non_standard(const Motcle& un_mot,
       if (n>0)
         variables_internes_->VOFlike_correction_volume = 1;
       variables_internes_->nb_lissage_correction_volume = n; // Historical behavior was to set it to the same value as the nb of iterations
-      int m = remaillage_interface().get_nb_iter_bary_volume_seul();
       variables_internes_->nb_iterations_correction_volume = n;
       if (Process::je_suis_maitre())
         {
           Cerr << "Obsolete Keyword is read Iterations_correction_volume : " << n << finl;
           Cerr << "For future compatibility, it is recommended to switch to the new syntax : " << finl;
-          Cerr << "   VOFlike_correction_volume 1 # a flag (0 or 1) for activation #" << finl;
-          Cerr << "   nb_lissage_correction_volume " << n << " # Select 0 or N the number of smothing to apply to avoid potential spikes due to volume correction. #" << finl;
-          Cerr << "   nb_iterations_correction_volume " << m << " # to iterate on the volume correction until seuil is reached. #" << finl;
-          Cerr << "The value of is read nb_iterations_correction_volume from bloc remaillage at keyword: nb_iter_correction_volume" << finl;
+          if (n>0)
+            Cerr << "   VOFlike_correction_volume 1 # a flag (0 or 1) for activation #" << finl;
+          else
+            Cerr << "   VOFlike_correction_volume 0 # a flag (0 or 1) for activation #" << finl;
+          Cerr << "   nb_lissage_correction_volume " << n << " # Select 0 or N the number of smoothing to apply to avoid potential spikes due to volume correction. #" << finl;
+          Cerr << "   nb_iterations_correction_volume " << n << " # to iterate on the volume correction until seuil is reached. #" << finl;
+          // Note: looking at past commits, there may have been a mistake when changing these parameters.
+          // The value 'n' may be wrong and it may be better to use remaillage_interface().get_nb_iter_bary_volume_seul() for nb_iterations_correction_volume.
+          // If you are motivated, you can investigate.
+          Cerr << "The value of nb_iterations_correction_volume is read from bloc remaillage at keyword: nb_iter_correction_volume" << finl;
+          Process::exit();
         }
       return 1;
     }

@@ -123,7 +123,9 @@ Lire pb
 #	        conditions_initiales { fonction -(x^2+(z+0.00025)^2-0.0005^2) } Goutte : environ 1/4 de cylindre. Contact : 60deg #
 #	        conditions_initiales { fonction  (x^2+y^2-(z-(-0.0008))^2*0.51428688979860526^2) } #
         conditions_initiales { fonction -(x^2+y^2+(z+0.00025)^2-0.0005^2) } # Goutte : portion de sphere. Contact : 60deg #
-        iterations_correction_volume 1
+        VOFlike_correction_volume 1
+        nb_lissage_correction_volume 1
+        nb_iterations_correction_volume 1
         n_iterations_distance 10 # 2 #
         remaillage {
             pas 1e-6
@@ -140,7 +142,10 @@ Lire pb
             seuil_dvolume_residuel 1e-12
         }
         #
-        iterations_correction_volume 1
+        VOFlike_correction_volume 1
+        nb_lissage_correction_volume 1
+        nb_iterations_correction_volume 1
+
         n_iterations_distance 2
         remaillage {
             pas 0.000001

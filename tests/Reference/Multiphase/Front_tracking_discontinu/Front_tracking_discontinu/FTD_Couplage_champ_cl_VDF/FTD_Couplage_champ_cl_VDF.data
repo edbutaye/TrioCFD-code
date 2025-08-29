@@ -238,7 +238,9 @@ Lire pb_bulle
         interpolation_repere_local
         methode_transport vitesse_interpolee hydraulique
         conditions_initiales { fonction (x)^2+(y)^2+(z+2.5e-3)^2-(1.e-3)^2 }
-        iterations_correction_volume 2
+        VOFlike_correction_volume 1
+        nb_lissage_correction_volume 2
+        nb_iterations_correction_volume 2
         methode_interpolation_v vdf_lineaire
         n_iterations_distance 7
         remaillage {

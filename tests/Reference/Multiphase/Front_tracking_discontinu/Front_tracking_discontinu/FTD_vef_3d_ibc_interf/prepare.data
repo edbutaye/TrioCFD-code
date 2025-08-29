@@ -100,7 +100,9 @@ methode_transport vitesse_interpolee hydraulique
 conditions_initiales {
 fonction z-0.06
 }
-iterations_correction_volume 0
+VOFlike_correction_volume 0
+nb_lissage_correction_volume 0
+nb_iterations_correction_volume 0
 n_iterations_distance 2
 remaillage {
 pas 1e8

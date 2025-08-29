@@ -139,7 +139,9 @@ Read pb
     {
         methode_transport vitesse_interpolee hydraulique
 
-        iterations_correction_volume 3
+        VOFlike_correction_volume 1
+        nb_lissage_correction_volume 3
+        nb_iterations_correction_volume 3
         n_iterations_distance 5
 
         conditions_initiales {

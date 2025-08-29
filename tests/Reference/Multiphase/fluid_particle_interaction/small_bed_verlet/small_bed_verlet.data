@@ -130,7 +130,9 @@ Lire pb
 	
 
 		parcours_interface { correction_parcours_thomas	}
-		iterations_correction_volume 0
+                VOFlike_correction_volume 0
+                nb_lissage_correction_volume 0
+                nb_iterations_correction_volume 0
 		n_iterations_distance 0
 		methode_interpolation_v VDF_lineaire 
                 

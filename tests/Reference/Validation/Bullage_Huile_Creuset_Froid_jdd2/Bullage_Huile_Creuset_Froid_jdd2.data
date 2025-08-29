@@ -190,7 +190,9 @@ Read pb
     interf
     {
         conditions_initiales { fonction z-0.430 }
-        iterations_correction_volume 1
+        VOFlike_correction_volume 1
+        nb_lissage_correction_volume 1
+        nb_iterations_correction_volume 1
         n_iterations_distance 3
         collisions {
             active

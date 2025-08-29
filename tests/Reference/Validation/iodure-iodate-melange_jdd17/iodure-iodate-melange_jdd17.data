@@ -246,7 +246,10 @@ Read pb3
     interf
     {
             conditions_initiales { fonction (0.1-z) }
-    	iterations_correction_volume 1
+        VOFlike_correction_volume 1
+        nb_lissage_correction_volume 1
+        nb_iterations_correction_volume 1
+
     	n_iterations_distance 3
     	collisions {
     		active

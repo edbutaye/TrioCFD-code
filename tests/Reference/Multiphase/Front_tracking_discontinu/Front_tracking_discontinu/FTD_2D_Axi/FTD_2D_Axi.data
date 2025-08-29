@@ -119,7 +119,9 @@ Lire pb
         conditions_initiales {
             fonction (x)^2+(y*0.8)^2-0.007^2
         }
-        iterations_correction_volume 0
+        VOFlike_correction_volume 0
+        nb_lissage_correction_volume 0
+        nb_iterations_correction_volume 0
         methode_interpolation_v vdf_lineaire
         n_iterations_distance 6
         maillage { niveau_plot 0 }

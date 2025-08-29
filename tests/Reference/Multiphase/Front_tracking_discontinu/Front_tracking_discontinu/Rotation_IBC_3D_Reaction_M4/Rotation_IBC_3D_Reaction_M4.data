@@ -125,7 +125,9 @@ If this does not solve the problem, try to stabilize a bit the flow by adding
     {
         conditions_initiales { fonction  1.0-z }
         n_iterations_distance 3
-        iterations_correction_volume 3
+        VOFlike_correction_volume 1
+        nb_lissage_correction_volume 3
+        nb_iterations_correction_volume 3
 
         collisions {
             active

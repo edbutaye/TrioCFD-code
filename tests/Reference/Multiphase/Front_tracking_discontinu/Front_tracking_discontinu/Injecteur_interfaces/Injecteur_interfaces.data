@@ -110,7 +110,9 @@ Lire pb
         conditions_initiales { fonction -(z-1.2)  }
         injecteur_interfaces  loi_bulles.dat
         interpolation_repere_local
-        iterations_correction_volume 1
+        VOFlike_correction_volume 1
+        nb_lissage_correction_volume 1
+        nb_iterations_correction_volume 1
         n_iterations_distance 2
 
         remaillage {

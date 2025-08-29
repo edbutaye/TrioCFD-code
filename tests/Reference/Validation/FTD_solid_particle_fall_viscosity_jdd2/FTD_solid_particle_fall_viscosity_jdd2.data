@@ -118,7 +118,9 @@ Lire pb
         {
             fonction (+1*((x-0.5e-3)^2+(y-0.5e-3)^2+(z-0.5e-3)^2-(0.1e-3)^2))
         }
-        iterations_correction_volume 1
+        VOFlike_correction_volume 1
+        nb_lissage_correction_volume 1
+        nb_iterations_correction_volume 1
         n_iterations_distance 2
         remaillage
         {

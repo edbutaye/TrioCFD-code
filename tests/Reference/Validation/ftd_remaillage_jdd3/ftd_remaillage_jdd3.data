@@ -61,7 +61,9 @@ Lire pb
             fonction_ignorer_collision ajout_phase0 x*x+y*y+(z-0.035)^2*5-0.03*0.03
         }
         methode_transport vitesse_imposee 0. 0. 0.
-        iterations_correction_volume 0
+        VOFlike_correction_volume 0
+        nb_lissage_correction_volume 0
+        nb_iterations_correction_volume 0
         n_iterations_distance 2
         remaillage {
             pas 1e-8
