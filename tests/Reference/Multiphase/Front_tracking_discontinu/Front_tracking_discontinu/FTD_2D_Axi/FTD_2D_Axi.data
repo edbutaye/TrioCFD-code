@@ -1,5 +1,5 @@
 # Front Tracking discontinu 2D Axi #
-# PARALLEL RUNS #
+# PARALLEL OK 2 #
 dimension 2
 bidim_axi
 Probleme_FT_Disc_gen pb
