@@ -21,6 +21,7 @@
 
 #include <Source_Transport_K_Eps_VDF_Elem.h>
 #include <Modele_turbulence_hyd_K_Eps.h>
+#include <VDF_discretisation.h>
 #include <Milieu_base.h>
 #include <TRUSTTrav.h>
 
@@ -37,6 +38,36 @@ void Source_Transport_K_Eps_VDF_Elem::associer_pb(const Probleme_base& pb)
 {
   Source_Transport_VDF_Elem_base::associer_pb(pb);
   mon_eq_transport_K_Eps = ref_cast(Transport_K_Eps,equation());
+}
+
+void Source_Transport_K_Eps_VDF_Elem::creer_champ(const Motcle& nom)
+{
+  Source_Transport_VDF_Elem_base::creer_champ(nom);
+  const VDF_discretisation& disc = ref_cast(VDF_discretisation, equation().discretisation());
+  Noms noms(1), unites(1);
+
+
+  if (production_k_elem_.est_nul())
+    {
+      noms[0] = "production_k";
+      disc.discretiser_champ("champ_elem", equation().domaine_dis(), scalaire,
+                             noms , unites, 1, 0, production_k_elem_);
+      champs_compris_.ajoute_champ(production_k_elem_);
+    }
+
+}
+
+void Source_Transport_K_Eps_VDF_Elem::get_noms_champs_postraitables(Noms& nom,
+                                                                    Option opt) const
+{
+  Source_Transport_VDF_Elem_base::get_noms_champs_postraitables(nom, opt);
+  Noms noms_compris = champs_compris_.liste_noms_compris();
+  noms_compris.add("production_k");
+
+  if (opt == DESCRIPTION)
+    Cerr << " Source_Transport_K_Omega_VEF_Face : " << noms_compris << finl;
+  else
+    nom.add(noms_compris);
 }
 
 const DoubleTab& Source_Transport_K_Eps_VDF_Elem::get_visc_turb() const
@@ -86,8 +117,10 @@ void Source_Transport_K_Eps_VDF_Elem::fill_resu(const DoubleVect& P, DoubleTab& 
   const DoubleVect& volumes = le_dom_VDF->volumes(), &porosite_vol = le_dom_Cl_VDF->equation().milieu().porosite_elem();
   const DoubleTab& K_eps = mon_eq_transport_K_Eps->inconnue().valeurs();
   const double LeK_MIN = mon_eq_transport_K_Eps->modele_turbulence().get_K_MIN();
+  DoubleTab& production_k_elem = ref_cast_non_const(DoubleTab,production_k_elem_->valeurs());
   for (int elem = 0; elem < le_dom_VDF->nb_elem(); elem++)
     {
+      production_k_elem(elem)=P(elem);
       resu(elem,0) += (P(elem)-K_eps(elem,1))*volumes(elem)*porosite_vol(elem);
       if (K_eps(elem,0) >= LeK_MIN)
         resu(elem,1) += (C1*P(elem)- C2*K_eps(elem,1))*volumes(elem)*porosite_vol(elem)*K_eps(elem,1)/K_eps(elem,0);

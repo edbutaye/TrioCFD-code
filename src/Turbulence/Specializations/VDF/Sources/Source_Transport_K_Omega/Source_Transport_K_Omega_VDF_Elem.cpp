@@ -80,6 +80,55 @@ void Source_Transport_K_Omega_VDF_Elem::creer_champ(const Motcle& nom)
                              noms , unites, dimension, 0, grad_omega_face_);
       champs_compris_.ajoute_champ(grad_omega_face_);
     }
+  if (grad_k_elem_.est_nul())
+    {
+      noms[0] = "grad_k_elem";
+      disc.discretiser_champ("champ_elem", equation().domaine_dis(), scalaire,
+                             noms , unites, dimension, 0, grad_k_elem_);
+      champs_compris_.ajoute_champ(grad_k_elem_);
+    }
+  if (grad_omega_elem_.est_nul())
+    {
+      noms[0] = "grad_omega_elem";
+      disc.discretiser_champ("champ_elem", equation().domaine_dis(), scalaire,
+                             noms , unites, dimension, 0, grad_omega_elem_);
+      champs_compris_.ajoute_champ(grad_omega_elem_);
+    }
+  if (production_k_elem_.est_nul())
+    {
+      noms[0] = "production_k";
+      disc.discretiser_champ("champ_elem", equation().domaine_dis(), scalaire,
+                             noms , unites, 1, 0, production_k_elem_);
+      champs_compris_.ajoute_champ(production_k_elem_);
+    }
+  if (production_omega_elem_.est_nul())
+    {
+      noms[0] = "production_omega";
+      disc.discretiser_champ("champ_elem", equation().domaine_dis(), scalaire,
+                             noms, unites, 1, 0, production_omega_elem_);
+      champs_compris_.ajoute_champ(production_omega_elem_);
+    }
+  if (dissipation_k_elem_.est_nul())
+    {
+      noms[0] = "dissipation_k";
+      disc.discretiser_champ("champ_elem", equation().domaine_dis(), scalaire,
+                             noms, unites, 1, 0, dissipation_k_elem_);
+      champs_compris_.ajoute_champ(dissipation_k_elem_);
+    }
+  if (dissipation_omega_elem_.est_nul())
+    {
+      noms[0] = "dissipation_omega";
+      disc.discretiser_champ("champ_elem", equation().domaine_dis(), scalaire,
+                             noms, unites, 1, 0, dissipation_omega_elem_);
+      champs_compris_.ajoute_champ(dissipation_omega_elem_);
+    }
+  if (cross_diffusion_k_omega_elem_.est_nul())
+    {
+      noms[0] = "cross_diffusion_k_omega";
+      disc.discretiser_champ("champ_elem", equation().domaine_dis(), scalaire,
+                             noms, unites, 1, 0, cross_diffusion_k_omega_elem_);
+      champs_compris_.ajoute_champ(cross_diffusion_k_omega_elem_);
+    }
 }
 
 
@@ -109,13 +158,18 @@ void Source_Transport_K_Omega_VDF_Elem::fill_resu(const DoubleVect& P, DoubleTab
   const DoubleTab& K_Omega = eqn_K_Omega->inconnue().valeurs();
   const double LeK_MIN = eqn_K_Omega->modele_turbulence().get_K_MIN();
   const DoubleTab& gradKgradOmega_elem = grad_k_omega_elem_->valeurs();
+  DoubleTab& production_omega_elem = ref_cast_non_const(DoubleTab,production_omega_elem_->valeurs());
+  DoubleTab& dissipation_k_elem = ref_cast_non_const(DoubleTab,dissipation_k_elem_->valeurs());
+  DoubleTab& dissipation_omega_elem = ref_cast_non_const(DoubleTab,dissipation_omega_elem_->valeurs());
+  DoubleTab& cross_diffusion_k_omega_elem = ref_cast_non_const(DoubleTab,cross_diffusion_k_omega_elem_->valeurs());
 
   for (int elem = 0; elem < le_dom_VDF->nb_elem(); ++elem)
     {
       const double tke = K_Omega(elem, 0);
       const double omega = K_Omega(elem, 1);
       double volporo = volumes(elem)*porosite_vol(elem);
-      resu(elem, 0) += (P(elem) - BETA_K*tke*omega)*volporo;
+      dissipation_k_elem(elem) = BETA_K*tke*omega;
+      resu(elem, 0) += (P(elem) - dissipation_k_elem(elem))*volporo;
 
       if (tke >= LeK_MIN)
         {
@@ -125,14 +179,21 @@ void Source_Transport_K_Omega_VDF_Elem::fill_resu(const DoubleVect& P, DoubleTab
           const double cBETA = turbulence_model->is_SST()
                                ? blender(BETA1, BETA2, elem)
                                : BETA_OMEGA;
-          const double cSIGMA = turbulence_model->is_SST()
-                                ? 2*(1 - turbulence_model->get_tabF1()(elem)*SIGMA_OMEGA2)
-                                : (gradKgradOmega_elem(elem) > 0)*1/8;
+
+          double cSIGMA;
+          if (turbulence_model->is_SST())
+        	  cSIGMA = 2*(1 - turbulence_model->get_tabF1()(elem)*SIGMA_OMEGA2);
+          else
+        	  cSIGMA = (gradKgradOmega_elem(elem) > 0) ? 0.125 : 0.;
 
           double contrib { 0 };
-          contrib += cALPHA * P(elem) * omega / tke; // production
-          contrib += -cBETA * omega * omega; // dissipation
-          contrib += cSIGMA / omega *gradKgradOmega_elem(elem); // cross diffusion
+          production_omega_elem(elem) = cALPHA * P(elem) * omega / tke; // production
+          dissipation_omega_elem(elem) = cBETA * omega * omega; // dissipation
+          cross_diffusion_k_omega_elem(elem) =  cSIGMA / omega * gradKgradOmega_elem(elem);
+
+          contrib += production_omega_elem(elem); //production
+          contrib -= dissipation_omega_elem(elem); // dissipation
+          contrib += cross_diffusion_k_omega_elem(elem); // cross diffusion
           contrib *= volporo;
           resu(elem, 1) += contrib;
         }
@@ -147,23 +208,42 @@ void Source_Transport_K_Omega_VDF_Elem::ajouter_blocs(matrices_t matrices, Doubl
   Matrice_Morse* mat = matrices.count(nom_inco) ? matrices.at(nom_inco) : nullptr;
   if(!mat) return;
 
-  const DoubleTab& val = equation().inconnue().valeurs();
+  const DoubleTab& K_Omega = equation().inconnue().valeurs();
   const DoubleVect& porosite = le_dom_Cl_VDF->equation().milieu().porosite_elem(), &volumes = le_dom_VDF->volumes();
-  const int size = val.dimension(0);
+  const int size = K_Omega.dimension(0);
   // on implicite le -eps et le -eps^2/k
   // cAlan : impliciter omega ?
-
+  const DoubleTab& gradKgradOmega_elem = grad_k_omega_elem_->valeurs();
+  const DoubleVect& production_TKE = production_k_elem_->valeurs();
   for (int c = 0; c < size; ++c)
     {
       // -eps*vol  donne +vol dans la bonne case
-      if (val(c, 0) > DMINFLOAT)
+      if (K_Omega(c, 0) > DMINFLOAT)
         {
+          const double tke = K_Omega(c, 0);
+          const double omega = K_Omega(c, 1);
+
           // cAlan : a adapter
-          double coef_k = porosite(c)*volumes(c)*val(c, 1)/val(c, 0);
+          double coef_k = porosite(c)*volumes(c)*BETA_K*omega;
           (*mat)(c*2, c*2) += coef_k;
-          double coef_omega = ALPHA_OMEGA*coef_k;
-          // if (is_modele_fonc) coef_eps*=F2(c);
-          (*mat)(c*2+1,c*2+1) += coef_omega;
+          const double cALPHA = turbulence_model->is_SST()
+                                ? blender(GAMMA1, GAMMA2, c)
+                                : ALPHA_OMEGA;
+
+          const double cBETA = turbulence_model->is_SST()
+                               ? blender(BETA1, BETA2, c)
+                               : BETA_OMEGA;
+
+          double cSIGMA;
+          if (turbulence_model->is_SST())
+            cSIGMA = 2*(1 - turbulence_model->get_tabF1()(c)*SIGMA_OMEGA2);
+          else
+            cSIGMA = (gradKgradOmega_elem(c) > 0) ? 0.125 : 0.;
+
+          const double coef_omega = (-cALPHA*production_TKE(c)/tke
+                                     + cBETA*omega
+                                     - cSIGMA/(omega*omega)*gradKgradOmega_elem(c) ) * porosite(c)*volumes(c);
+          (*mat)(c*2 + 1, c*2 + 1) += coef_omega;
         }
     }
 }
@@ -211,19 +291,21 @@ void Source_Transport_K_Omega_VDF_Elem::compute_cross_diffusion() const
 
   // Interpolate from faces to elem
   const Domaine_dis_base& domaine_dis = mon_equation->inconnue().domaine_dis_base();
-  DoubleTab gradK_elem, gradOmega_elem;
+  /*DoubleTab gradK_elem, gradOmega_elem;
   gradK_elem.resize(nb_elem_tot,dimension);
   gradOmega_elem.resize(nb_elem_tot,dimension);
+  */
+  DoubleTab& tab_gradK_elem = ref_cast_non_const(DoubleTab, grad_k_elem_->valeurs());
+  DoubleTab& tab_gradOmega_elem = ref_cast_non_const(DoubleTab, grad_omega_elem_->valeurs());
 
-  grad_k_face_->valeur_aux_centres_de_gravite(domaine_dis.domaine(), gradK_elem);
-  grad_omega_face_->valeur_aux_centres_de_gravite(domaine_dis.domaine(), gradOmega_elem);
+  grad_k_face_->valeur_aux_centres_de_gravite(domaine_dis.domaine(), tab_gradK_elem);
+  grad_omega_face_->valeur_aux_centres_de_gravite(domaine_dis.domaine(), tab_gradOmega_elem);
 
   // Dot Product gradKgradOmega
   // EB :  no need to update virtual cells
   for (int elem = 0; elem < nb_elem; ++elem)
     for (int dim=0; dim<dimension; ++dim)
-      gradKgradOmega_elem(elem) += gradK_elem(elem,dim) * gradOmega_elem(elem,dim);
-
+      gradKgradOmega_elem(elem) += tab_gradK_elem(elem,dim) * tab_gradOmega_elem(elem,dim);
 }
 
 void Source_Transport_K_Omega_VDF_Elem::compute_blending_F1() const
@@ -249,7 +331,6 @@ void Source_Transport_K_Omega_VDF_Elem::compute_blending_F1() const
 
       double const arg1 = std::min(std::max(tmp1, tmp2), tmp3); // Common name of the variable
       tabF1(elem) = std::tanh(arg1*arg1*arg1*arg1);
-
       double const arg2 = std::max(2.*tmp1, tmp2);
       tabF2(elem) = std::tanh(arg2*arg2);
     }
@@ -261,6 +342,4 @@ double Source_Transport_K_Omega_VDF_Elem::blender(double const val1, double cons
   const DoubleTab& F1 = turbulence_model->get_tabF1();
   return F1(elem)*val1 + (1 - F1(elem))*val2;
 }
-
-
 

@@ -54,11 +54,6 @@ protected:
   const DoubleTab& get_visc_turb() const override;
   void calculer_terme_production(const Champ_Face_VDF&, const DoubleTab& , const DoubleTab& , DoubleVect&) const override;
   void fill_resu(const DoubleVect& , DoubleTab& ) const override;
-
-private:
-  OWN_PTR(Champ_Fonc_base)  grad_k_omega_elem_; /* produit : grad (K) * grad (omega)*/
-  OWN_PTR(Champ_Fonc_base)  grad_k_face_;
-  OWN_PTR(Champ_Fonc_base)  grad_omega_face_;
 };
 
 #endif

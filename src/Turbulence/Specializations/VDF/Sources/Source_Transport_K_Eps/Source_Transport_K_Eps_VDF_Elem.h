@@ -38,9 +38,14 @@ class Source_Transport_K_Eps_VDF_Elem : public Source_Transport_VDF_Elem_base
 public:
   Source_Transport_K_Eps_VDF_Elem(double cte1 = C1__, double cte2 = C2__ ) : Source_Transport_VDF_Elem_base(cte1,cte2) { }
   void ajouter_blocs(matrices_t matrices, DoubleTab& secmem, const tabs_t& semi_impl) const override;
+  void creer_champ(const Motcle&) override;
+  void get_noms_champs_postraitables(Noms& nom,Option opt=NONE) const override;
+
 
 protected:
   OBS_PTR(Transport_K_Eps)  mon_eq_transport_K_Eps;
+  OWN_PTR(Champ_Fonc_base)  production_k_elem_;
+
   void associer_pb(const Probleme_base& pb) override;
 
 

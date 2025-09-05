@@ -70,6 +70,17 @@ protected:
   double const GAMMA2 = BETA2/BETA_K - SIGMA_OMEGA2*KAPPA*KAPPA/sqrt(BETA_K);
 
   OBS_PTR(Modele_turbulence_hyd_K_Omega) turbulence_model;
+  OWN_PTR(Champ_Fonc_base)  grad_k_omega_elem_; /* produit : grad (K) * grad (omega)*/
+  OWN_PTR(Champ_Fonc_base)  grad_k_face_;
+  OWN_PTR(Champ_Fonc_base)  grad_omega_face_;
+  OWN_PTR(Champ_Fonc_base)  grad_k_elem_;
+  OWN_PTR(Champ_Fonc_base)  grad_omega_elem_;
+  OWN_PTR(Champ_Fonc_base)  production_k_elem_;
+  OWN_PTR(Champ_Fonc_base)  production_omega_elem_;
+  OWN_PTR(Champ_Fonc_base)  dissipation_k_elem_;
+  OWN_PTR(Champ_Fonc_base)  dissipation_omega_elem_;
+  OWN_PTR(Champ_Fonc_base)  cross_diffusion_k_omega_elem_;
+
 };
 
 #endif /* Source_Transport_K_Omega_VDF_Elem_base_included */
