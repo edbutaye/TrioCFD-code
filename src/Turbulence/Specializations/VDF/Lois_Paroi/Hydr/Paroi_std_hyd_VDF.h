@@ -26,6 +26,7 @@
 
 #include <Paroi_hyd_base_VDF.h>
 #include <Paroi_log_QDM.h>
+#include <Modele_turbulence_hyd_K_Omega.h>
 
 
 class Champ_Fonc_base;
@@ -54,6 +55,7 @@ public:
   inline double tau_tang(int face, int k) const;
   void imprimer_ustar(Sortie& ) const override;
   void calculer_uplus_dplus(DoubleVect&, DoubleVect&, DoubleVect&, int, double, double, double ) ;
+  inline void check_turbulence_model();
 
 protected:
   DoubleVect uplus_;
@@ -96,12 +98,24 @@ protected:
   void modifs_valeurs_turb(int, int, double, double, double, double, DoubleTab&, DoubleTab&);
 
   // Constant
+  static constexpr double BETA_OMEGA {0.075};
+  static constexpr double BETA_K {0.09};  // equals to Cmu
   static constexpr double BETA1 {0.075};
   const double Cmu025 {std::pow(0.09, 0.25)}; // Cmu to the power 0.25
   const double sCmu {std::sqrt(0.09)}; // Square root of Cmu
   double ypluslam {0};
   int blended_ {0};
+  int turbulence_model_type_ {0}; // To redirect the computation of the wall quantities. 0:K-Eps, 1:K-Omega
 };
+
+/*! @brief Returns an integer value depending on the turbulence model.
+ *
+ */
+inline void Paroi_std_hyd_VDF::check_turbulence_model()
+{
+  if (sub_type(Modele_turbulence_hyd_K_Omega, mon_modele_turb_hyd.valeur()))
+    turbulence_model_type_ = 1;
+}
 
 inline double Paroi_std_hyd_VDF::tau_tang(int face, int k) const
 {

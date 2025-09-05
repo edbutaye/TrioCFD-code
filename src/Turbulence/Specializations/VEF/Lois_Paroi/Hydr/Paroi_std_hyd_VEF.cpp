@@ -1252,7 +1252,7 @@ int Paroi_std_hyd_VEF::calculer_hyd(DoubleTab& tab_2eq)
 
           // Loop on real faces
           const int ndeb = 0;
-          const int nfin = le_bord.nb_faces_tot();
+          const int nfin = le_bord.nb_faces_tot(); // EB : warning, nb_faces_tot include real + virtual faces
           for (int ind_face = ndeb; ind_face < nfin; ind_face++)
             {
               const int num_face = le_bord.num_face(ind_face);
@@ -1268,7 +1268,7 @@ int Paroi_std_hyd_VEF::calculer_hyd(DoubleTab& tab_2eq)
               // Maintenant on place le num_face en fin de tableau
               for (int nf2 = 0; nf2 < nfac - 1; nf2++)
                 {
-                  num[nf2] = elem_faces(elem, nf2);
+                  num[nf2] = elem_faces(elem, nf2); // EB : why doing this again ?
                   if (num[nf2] == num_face)
                     {
                       num[nf2] = num[nfac-1];
