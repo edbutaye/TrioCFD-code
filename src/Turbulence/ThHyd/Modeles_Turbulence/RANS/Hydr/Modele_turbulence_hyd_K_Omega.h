@@ -44,8 +44,8 @@ public:
   virtual inline const Champ_Inc_base& get_eq_K_Omega() const;
   inline Transport_K_Omega_base& get_set_eq_transport() override;
   inline const Transport_K_Omega_base& get_eq_transport() const override;
-
-  void init_F1_F2_enstrophy();
+  void creer_champ(const Motcle&) override;
+  void get_noms_champs_postraitables(Noms& nom,Option opt=NONE) const override;
 
   inline const DoubleTab& get_tabF1() const;
   inline DoubleTab& get_tabF1();
@@ -61,9 +61,9 @@ public:
 
 protected:
   void fill_turbulent_viscosity_tab(const DoubleTab& K_Omega, DoubleTab& turbulent_viscosity);
-  DoubleTab tabF1_; // Blending field for SST model
-  DoubleTab tabF2_; // for the turbulent viscosity in the SST model
-  DoubleTab enstrophy_; // for the turbulent viscosity in the SST model
+  OWN_PTR(Champ_Fonc_base) tabF1_; // Blending field for SST model
+  OWN_PTR(Champ_Fonc_base) tabF2_; // for the turbulent viscosity in the SST model
+  OWN_PTR(Champ_Fonc_base) enstrophy_; // for the turbulent viscosity in the SST model
   bool is_SST_; // check if model variant is SST
 };
 
@@ -113,7 +113,7 @@ inline Transport_K_Omega_base& Modele_turbulence_hyd_K_Omega::get_set_eq_transpo
  */
 inline const DoubleTab& Modele_turbulence_hyd_K_Omega::get_tabF1() const
 {
-  return tabF1_;
+  return tabF1_->valeurs();
 }
 
 /*! @brief Returns the blending table F1 for SST.
@@ -122,7 +122,7 @@ inline const DoubleTab& Modele_turbulence_hyd_K_Omega::get_tabF1() const
  */
 inline DoubleTab& Modele_turbulence_hyd_K_Omega::get_tabF1()
 {
-  return tabF1_;
+  return tabF1_->valeurs();
 }
 
 /*! @brief Returns the table F2 for SST.
@@ -133,7 +133,7 @@ inline DoubleTab& Modele_turbulence_hyd_K_Omega::get_tabF1()
  */
 inline const DoubleTab& Modele_turbulence_hyd_K_Omega::get_tabF2() const
 {
-  return tabF2_;
+  return tabF2_->valeurs();
 }
 
 /*! @brief Returns the table F2 for SST.
@@ -142,7 +142,7 @@ inline const DoubleTab& Modele_turbulence_hyd_K_Omega::get_tabF2() const
  */
 inline DoubleTab& Modele_turbulence_hyd_K_Omega::get_tabF2()
 {
-  return tabF2_;
+  return tabF2_->valeurs();
 }
 
 /*! @brief Returns the field enstrophy.
@@ -153,7 +153,7 @@ inline DoubleTab& Modele_turbulence_hyd_K_Omega::get_tabF2()
  */
 inline const DoubleTab& Modele_turbulence_hyd_K_Omega::get_enstrophy() const
 {
-  return enstrophy_;
+  return enstrophy_->valeurs();
 }
 
 /*! @brief Returns the field F2.
@@ -162,7 +162,7 @@ inline const DoubleTab& Modele_turbulence_hyd_K_Omega::get_enstrophy() const
  */
 inline DoubleTab& Modele_turbulence_hyd_K_Omega::get_enstrophy()
 {
-  return enstrophy_;
+  return enstrophy_->valeurs();
 }
 
 #endif /* Modele_turbulence_hyd_K_Omega_included */

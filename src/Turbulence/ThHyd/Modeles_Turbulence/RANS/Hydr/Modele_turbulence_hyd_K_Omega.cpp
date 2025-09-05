@@ -36,6 +36,8 @@
 #include <Debog.h>
 #include <Domaine_VDF.h>
 #include <Domaine_VEF.h>
+#include <VDF_discretisation.h>
+#include <VEF_discretisation.h>
 
 
 Implemente_instanciable(Modele_turbulence_hyd_K_Omega, "Modele_turbulence_hyd_K_Omega", Modele_turbulence_hyd_RANS_K_Omega_base);
@@ -67,6 +69,7 @@ void Modele_turbulence_hyd_K_Omega::set_param(Param& param)
   param.ajouter("PRANDTL_Omega", &Prandtl_Omega_);
   param.ajouter("model_variant", &model_variant_, Param::OPTIONAL); // XD_ADD_P chaine Model variant for k-omega (default value STD)
 }
+
 
 /*! @brief Calcule la viscosite turbulente au temps demande.
  *
@@ -156,7 +159,6 @@ void Modele_turbulence_hyd_K_Omega::fill_turbulent_viscosity_tab(const DoubleTab
   for (int i = 0; i < tab_K_Omega.dimension(0); ++i)
     {
       const double omega = tab_K_Omega(i, 1);
-
       if (omega <= OMEGA_MIN_)
         turbulent_viscosity[i] = 0;
       else
@@ -164,52 +166,86 @@ void Modele_turbulence_hyd_K_Omega::fill_turbulent_viscosity_tab(const DoubleTab
           const double enerK = tab_K_Omega(i, 0);
           turbulent_viscosity[i] = is_SST()
                                    ? enerK*CST_A1/std::max(CST_A1*omega,
-                                                           enstrophy_[i]*tabF2_[i])
+                                                           enstrophy_->valeurs()[i]*tabF2_->valeurs()[i])
                                    : enerK/omega;
         }
     }
 }
 
-/*! @brief Initialise three tabs when turbulence model variant is SST
- *
- *  The tables F1, F2 and enstrophy are used to computer a blending function.
- *  They are initialised with the total (real+virtual) DoF.
- *
- */
-void Modele_turbulence_hyd_K_Omega::init_F1_F2_enstrophy()
+
+void Modele_turbulence_hyd_K_Omega::get_noms_champs_postraitables(Noms& nom,
+                                                                  Option opt) const
 {
-  const Domaine_VF& domain = ref_cast(Domaine_VF, get_eq_transport().domaine_dis());
+  Modele_turbulence_hyd_RANS_K_Omega_base::get_noms_champs_postraitables(nom, opt);
+  Noms noms_compris = champs_compris_.liste_noms_compris();
+  noms_compris.add("tab_F1");
+  noms_compris.add("tab_F2");
+  noms_compris.add("enstrophy");
+
+  if (opt == DESCRIPTION)
+    Cerr << " Modele_turbulence_hyd_K_Omega : " << noms_compris << finl;
+  else
+    nom.add(noms_compris);
+}
+
+void Modele_turbulence_hyd_K_Omega::creer_champ(const Motcle& nom)
+{
+  Modele_turbulence_hyd_RANS_K_Omega_base::creer_champ(nom);
   if (sub_type(Domaine_VDF,get_eq_transport().domaine_dis()))
     {
-      const MD_Vector& mdf = domain.domaine().md_vector_elements();
-      const int n = domain.nb_elem();
-
-      tabF1_.resize(n, 1);
-      MD_Vector_tools::creer_tableau_distribue(mdf, tabF1_);
-
-      tabF2_.resize(n);
-      MD_Vector_tools::creer_tableau_distribue(mdf, tabF2_);
-
-      enstrophy_.resize(n);
-      MD_Vector_tools::creer_tableau_distribue(mdf, enstrophy_);
+      const VDF_discretisation& disc = ref_cast(VDF_discretisation, equation().discretisation());
+      Noms noms(1), unites(1);
+      if (tabF1_.est_nul())
+        {
+          noms[0] = "tab_F1";
+          disc.discretiser_champ("champ_elem", equation().domaine_dis(), scalaire,
+                                 noms, unites, 1, 0, tabF1_);
+          champs_compris_.ajoute_champ(tabF1_);
+        }
+      if (tabF2_.est_nul())
+        {
+          noms[0] = "tab_F2";
+          disc.discretiser_champ("champ_elem", equation().domaine_dis(), scalaire,
+                                 noms, unites, 1, 0, tabF2_);
+          champs_compris_.ajoute_champ(tabF2_);
+        }
+      if (enstrophy_.est_nul())
+        {
+          noms[0] = "enstrophy";
+          disc.discretiser_champ("champ_elem", equation().domaine_dis(), scalaire,
+                                 noms, unites, 1, 0, enstrophy_);
+          champs_compris_.ajoute_champ(enstrophy_);
+        }
     }
   else if (sub_type(Domaine_VEF,get_eq_transport().domaine_dis()))
     {
-      const MD_Vector& mdf = domain.md_vector_faces();
-      const int n = domain.nb_faces();
-
-      tabF1_.resize(n, 1);
-      MD_Vector_tools::creer_tableau_distribue(mdf, tabF1_);
-
-      tabF2_.resize(n);
-      MD_Vector_tools::creer_tableau_distribue(mdf, tabF2_);
-
-      enstrophy_.resize(n);
-      MD_Vector_tools::creer_tableau_distribue(mdf, enstrophy_);
+      const VEF_discretisation& disc = ref_cast(VEF_discretisation, equation().discretisation());
+      Noms noms(1), unites(1);
+      if (tabF1_.est_nul())
+        {
+          noms[0] = "tab_F1";
+          disc.discretiser_champ("champ_face", equation().domaine_dis(), scalaire,
+                                 noms, unites, 1, 0, tabF1_);
+          champs_compris_.ajoute_champ(tabF1_);
+        }
+      if (tabF2_.est_nul())
+        {
+          noms[0] = "tab_F2";
+          disc.discretiser_champ("champ_face", equation().domaine_dis(), scalaire,
+                                 noms, unites, 1, 0, tabF2_);
+          champs_compris_.ajoute_champ(tabF2_);
+        }
+      if (enstrophy_.est_nul())
+        {
+          noms[0] = "enstrophy";
+          disc.discretiser_champ("champ_face", equation().domaine_dis(), scalaire,
+                                 noms, unites, 1, 0, enstrophy_);
+          champs_compris_.ajoute_champ(enstrophy_);
+        }
     }
   else
     {
-      Cerr << "Modele_turbulence_hyd_K_Omega::init_F1_F2_enstrophy: "
+      Cerr << "Modele_turbulence_hyd_K_Omega::creer_champ: "
            << "The domain must be VDF or VEF." << finl;
       Process::exit();
     }
@@ -224,8 +260,6 @@ int Modele_turbulence_hyd_K_Omega::preparer_calcul()
 {
   get_set_eq_transport().preparer_calcul();
   Modele_turbulence_hyd_RANS_K_Omega_base::preparer_calcul();
-  if (is_SST())
-    init_F1_F2_enstrophy();
   calculate_limit_viscosity<MODELE_TYPE::K_OMEGA>(get_set_eq_K_Omega(), -123. /* unused */ );
   Debog::verifier("Modele_turbulence_hyd_K_Omega::preparer_calcul la_viscosite_turbulente", la_viscosite_turbulente_->valeurs());
   return 1;
