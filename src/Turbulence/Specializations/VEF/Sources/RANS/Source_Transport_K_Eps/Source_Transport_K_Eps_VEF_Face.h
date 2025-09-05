@@ -41,10 +41,14 @@ public:
   Source_Transport_K_Eps_VEF_Face(double cte1 = C1__, double cte2 = C2__) : Source_Transport_VEF_Face_base(cte1,cte2) { }
   DoubleTab& ajouter(DoubleTab& ) const override;
   void contribuer_a_avec(const DoubleTab&, Matrice_Morse&) const override ;
+  void creer_champ(const Motcle&) override;
+  void get_noms_champs_postraitables(Noms& nom,Option opt=NONE) const override;
+
 
 protected:
   void associer_pb(const Probleme_base& pb) override;
   OBS_PTR(Transport_K_Eps)  mon_eq_transport_K_Eps;
+  OWN_PTR(Champ_Fonc_base)  production_k_face_;
 
 private:
   const DoubleTab& get_visc_turb() const override;

@@ -50,6 +50,14 @@ protected :
   virtual  void fill_resu_k_omega(const DoubleVect& , const DoubleTrav& , const DoubleTab&, DoubleTab& ) const { return not_implemented<void>(__func__); }
 
   OBS_PTR(Modele_turbulence_hyd_K_Omega) turbulence_model;
+  OWN_PTR(Champ_Fonc_base)  grad_k_omega_; /* produit : grad (K) * grad (omega)*/
+  OWN_PTR(Champ_Fonc_base)  grad_k_elem_;
+  OWN_PTR(Champ_Fonc_base)  grad_omega_elem_;
+  OWN_PTR(Champ_Fonc_base)  production_k_face_;
+  OWN_PTR(Champ_Fonc_base)  production_omega_face_;
+  OWN_PTR(Champ_Fonc_base)  dissipation_k_face_;
+  OWN_PTR(Champ_Fonc_base)  dissipation_omega_face_;
+  OWN_PTR(Champ_Fonc_base)  cross_diffusion_k_omega_face_;
 
   // Constants for the classic k-omega model Wilcox 1988
   static constexpr double BETA_K = 0.09; // Cmu or BETA_STAR, but clearer with _K

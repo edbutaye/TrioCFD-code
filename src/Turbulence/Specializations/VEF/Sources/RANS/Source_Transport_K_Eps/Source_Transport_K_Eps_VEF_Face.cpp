@@ -22,6 +22,7 @@
 #include <TRUSTTabs_forward.h>
 #include <Source_Transport_K_Eps_VEF_Face.h>
 #include <Modele_turbulence_hyd_K_Eps.h>
+#include <VEF_discretisation.h>
 #include <Transport_K_Eps.h>
 #include <Milieu_base.h>
 #include <Domaine_VEF.h>
@@ -46,6 +47,35 @@ void Source_Transport_K_Eps_VEF_Face::associer_pb(const Probleme_base& pb)
   Source_Transport_VEF_Face_base::associer_pb(pb);
   mon_eq_transport_K_Eps = ref_cast(Transport_K_Eps, equation());
 }
+
+void Source_Transport_K_Eps_VEF_Face::creer_champ(const Motcle& nom)
+{
+  Source_Transport_VEF_Face_base::creer_champ(nom);
+  const VEF_discretisation& disc = ref_cast(VEF_discretisation, equation().discretisation());
+  Noms noms(1), unites(1);
+
+  if (production_k_face_.est_nul())
+    {
+      noms[0] = "production_k";
+      disc.discretiser_champ("champ_face", equation().domaine_dis(), scalaire,
+                             noms , unites, 1, 0, production_k_face_);
+      champs_compris_.ajoute_champ(production_k_face_);
+    }
+}
+
+void Source_Transport_K_Eps_VEF_Face::get_noms_champs_postraitables(Noms& nom,
+                                                                    Option opt) const
+{
+  Source_Transport_VEF_Face_base::get_noms_champs_postraitables(nom, opt);
+  Noms noms_compris = champs_compris_.liste_noms_compris();
+  noms_compris.add("production_k");
+
+  if (opt == DESCRIPTION)
+    Cerr << " Source_Transport_K_Omega_VEF_Face : " << noms_compris << finl;
+  else
+    nom.add(noms_compris);
+}
+
 const DoubleTab& Source_Transport_K_Eps_VEF_Face::get_visc_turb() const
 {
   return mon_eq_transport_K_Eps->modele_turbulence().viscosite_turbulente().valeurs();
@@ -124,10 +154,12 @@ void Source_Transport_K_Eps_VEF_Face::fill_resu(const DoubleVect& volumes_entrel
 {
   const DoubleTab& K_eps = mon_eq_transport_K_Eps->inconnue().valeurs();
   const double LeK_MIN = mon_eq_transport_K_Eps->modele_turbulence().get_K_MIN();
+  DoubleTab& production_k_face = ref_cast_non_const(DoubleTab,production_k_face_->valeurs());
   for (int fac = 0; fac < le_dom_VEF->nb_faces(); fac++)
     {
       const double tke = K_eps(fac, 0);
       const double eps = K_eps(fac, 1);
+      production_k_face(fac)=prod(fac);
       resu(fac, 0) += (prod(fac) - eps)*volumes_entrelaces(fac);
       if (K_eps(fac, 0) >= LeK_MIN)
         resu(fac, 1) += (C1*prod(fac) - C2*eps)*eps/tke*volumes_entrelaces(fac);

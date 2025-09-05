@@ -54,7 +54,7 @@ protected:
   void fill_resu_k_omega(const DoubleVect& , const DoubleTrav& , const DoubleTab&, DoubleTab& ) const override;
 
 private:
-  OWN_PTR(Champ_Fonc_base)  grad_k_omega_; /* produit : grad (K) * grad (omega)*/
+
   const DoubleTab& get_visc_turb() const override;
   const DoubleTab& get_cisaillement_paroi() const override;
   const DoubleTab& get_K_pour_production() const override;

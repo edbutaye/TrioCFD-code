@@ -65,16 +65,68 @@ void Source_Transport_K_Omega_VEF_Face::get_noms_champs_postraitables(Noms& nom,
 void Source_Transport_K_Omega_VEF_Face::creer_champ(const Motcle& nom)
 {
   Source_Transport_K_Omega_VEF_Face_base::creer_champ(nom);
+  const VEF_discretisation& disc = ref_cast(VEF_discretisation, equation().discretisation());
+  Noms noms(1), unites(1);
 
   if (grad_k_omega_.est_nul())
     {
-      const VEF_discretisation& disc = ref_cast(VEF_discretisation, equation().discretisation());
-      Noms noms(1), unites(1);
+
       noms[0] = "grad_k_grad_omega";
       disc.discretiser_champ("champ_elem", equation().domaine_dis(), scalaire,
                              noms , unites, 1, 0, grad_k_omega_);
       champs_compris_.ajoute_champ(grad_k_omega_);
     }
+  if (grad_k_elem_.est_nul())
+    {
+      noms[0] = "grad_k";
+      disc.discretiser_champ("vitesse", equation().domaine_dis(), scalaire,
+                             noms , unites, dimension, 0, grad_k_elem_);
+      champs_compris_.ajoute_champ(grad_k_elem_);
+    }
+  if (grad_omega_elem_.est_nul())
+    {
+      noms[0] = "grad_omega";
+      disc.discretiser_champ("vitesse", equation().domaine_dis(), scalaire,
+                             noms , unites, dimension, 0, grad_omega_elem_);
+      champs_compris_.ajoute_champ(grad_omega_elem_);
+    }
+
+  if (production_k_face_.est_nul())
+    {
+      noms[0] = "production_k";
+      disc.discretiser_champ("champ_face", equation().domaine_dis(), scalaire,
+                             noms , unites, 1, 0, production_k_face_);
+      champs_compris_.ajoute_champ(production_k_face_);
+    }
+  if (production_omega_face_.est_nul())
+    {
+      noms[0] = "production_omega";
+      disc.discretiser_champ("champ_face", equation().domaine_dis(), scalaire,
+                             noms, unites, 1, 0, production_omega_face_);
+      champs_compris_.ajoute_champ(production_omega_face_);
+    }
+  if (dissipation_k_face_.est_nul())
+    {
+      noms[0] = "dissipation_k";
+      disc.discretiser_champ("champ_face", equation().domaine_dis(), scalaire,
+                             noms, unites, 1, 0, dissipation_k_face_);
+      champs_compris_.ajoute_champ(dissipation_k_face_);
+    }
+  if (dissipation_omega_face_.est_nul())
+    {
+      noms[0] = "dissipation_omega";
+      disc.discretiser_champ("champ_face", equation().domaine_dis(), scalaire,
+                             noms, unites, 1, 0, dissipation_omega_face_);
+      champs_compris_.ajoute_champ(dissipation_omega_face_);
+    }
+  if (cross_diffusion_k_omega_face_.est_nul())
+    {
+      noms[0] = "cross_diffusion_k_omega";
+      disc.discretiser_champ("champ_face", equation().domaine_dis(), scalaire,
+                             noms, unites, 1, 0, cross_diffusion_k_omega_face_);
+      champs_compris_.ajoute_champ(cross_diffusion_k_omega_face_);
+    }
+
 }
 
 void Source_Transport_K_Omega_VEF_Face::associer_pb(const Probleme_base& pb)
@@ -114,7 +166,7 @@ void Source_Transport_K_Omega_VEF_Face::compute_blending_F1(DoubleTab& gradKgrad
   DoubleTab& tabF2 = ref_cast_non_const(DoubleTab, turbulence_model->get_tabF2());
 
   DoubleTab visc_face(le_dom_VEF->nb_faces_tot()); // dimension_tot(0)
-  // Discretisation_tools::cells_to_faces(le_dom_VEF.valeur(), kinematic_viscosity, visc_face);
+
   elem_to_face(le_dom_VEF.valeur(), kinematic_viscosity, visc_face);
 
   for (int face = 0; face < le_dom_VEF->nb_faces(); face++)
@@ -168,10 +220,8 @@ void Source_Transport_K_Omega_VEF_Face::compute_cross_diffusion(DoubleTab& gradK
   const DoubleTab& velocity_field_face = eqHyd.vitesse().valeurs(); // Velocity on faces
   const int nbr_velocity_components = velocity_field_face.dimension(1); // dimension_tot ?
 
-  DoubleTab gradK_elem; // field on elements
-  DoubleTab gradOmega_elem; // field on elements
-  gradK_elem.resize(le_dom_VEF->nb_elem_tot(), nbr_velocity_components);
-  gradOmega_elem.resize(le_dom_VEF->nb_elem_tot(), nbr_velocity_components);
+  DoubleTab& gradK_elem = ref_cast_non_const(DoubleTab, grad_k_elem_->valeurs());
+  DoubleTab& gradOmega_elem = ref_cast_non_const(DoubleTab, grad_omega_elem_->valeurs());
 
   // Compute the two gradients
   const Operateur_Grad& Op_Grad_komega = eqn_K_Omega->gradient_operator_komega();
@@ -209,13 +259,19 @@ void Source_Transport_K_Omega_VEF_Face::fill_resu_k_omega(const DoubleVect& volu
 {
   const DoubleTab& K_Omega = eqn_K_Omega->inconnue().valeurs();
   const double LeK_MIN = eqn_K_Omega->modele_turbulence().get_K_MIN();
+  DoubleTab& production_omega_face = ref_cast_non_const(DoubleTab,production_omega_face_->valeurs());
+  DoubleTab& production_k_face = ref_cast_non_const(DoubleTab,production_k_face_->valeurs());
+  DoubleTab& dissipation_k_face = ref_cast_non_const(DoubleTab,dissipation_k_face_->valeurs());
+  DoubleTab& dissipation_omega_face = ref_cast_non_const(DoubleTab,dissipation_omega_face_->valeurs());
+  DoubleTab& cross_diffusion_k_omega_face = ref_cast_non_const(DoubleTab,cross_diffusion_k_omega_face_->valeurs());
 
   for (int face = 0; face < le_dom_VEF->nb_faces(); face++)
     {
       const double tke = K_Omega(face, 0);
       const double omega = K_Omega(face, 1);
-
-      resu(face, 0) += (ProdK(face) - BETA_K*tke*omega)*volumes_entrelaces(face);
+      production_k_face(face) = ProdK(face);
+      dissipation_k_face(face) = BETA_K*tke*omega;
+      resu(face, 0) += (ProdK(face) - dissipation_k_face(face))*volumes_entrelaces(face);
 
       if (tke >= LeK_MIN)
         {
@@ -225,14 +281,20 @@ void Source_Transport_K_Omega_VEF_Face::fill_resu_k_omega(const DoubleVect& volu
           const double cBETA = turbulence_model->is_SST()
                                ? blender(BETA1, BETA2, face)
                                : BETA_OMEGA;
-          const double cSIGMA = turbulence_model->is_SST()
-                                ? 2*(1 - turbulence_model->get_tabF1()(face)*SIGMA_OMEGA2)
-                                : (gradKgradOmega(face) > 0)*1/8;
+          double cSIGMA;
+          if (turbulence_model->is_SST())
+        	  cSIGMA = 2*(1 - turbulence_model->get_tabF1()(face)*SIGMA_OMEGA2);
+          else
+        	  cSIGMA = (gradKgradOmega(face) > 0) ? 0.125 : 0.;
 
           double contrib {0};
-          contrib += cALPHA*ProdK(face)*omega/tke; // production
-          contrib += - cBETA*omega*omega; // dissipation
-          contrib += cSIGMA/omega*gradKgradOmega(face); // cross diffusion
+          production_omega_face(face) = cALPHA * ProdK(face) * omega / tke; // production
+          dissipation_omega_face(face) = cBETA * omega * omega; // dissipation
+          cross_diffusion_k_omega_face(face) =  cSIGMA / omega * gradKgradOmega(face);;
+
+          contrib += production_omega_face(face); // production
+          contrib -= dissipation_omega_face(face); // dissipation
+          contrib += cross_diffusion_k_omega_face(face); // cross diffusion
           contrib *= volumes_entrelaces(face);
           resu(face, 1) += contrib;
         }
