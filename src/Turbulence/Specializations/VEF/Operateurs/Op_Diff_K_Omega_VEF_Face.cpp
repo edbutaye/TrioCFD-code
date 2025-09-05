@@ -109,11 +109,23 @@ void Op_Diff_K_Omega_VEF_Face::contribuer_a_avec(const DoubleTab& inco,
   int n_tot = nu_.dimension_tot(0); //TODO peut mieux faire
   DoubleTab nu_turb_m(n_tot, 2);
 
-  for (int elem=0; elem<n_tot; elem++)
+  if (is_SST)
     {
-      nu_turb_m(elem,0) = nu_turb(elem) * (is_SST ? 1/(F1elem(elem)*SIGMA_K1 + (1 - F1elem(elem))*SIGMA_K2) : invPrdtK);
-      nu_turb_m(elem,1) = nu_turb(elem) * (is_SST ? 1/(F1elem(elem)*SIGMA_OMEGA1 + (1 - F1elem(elem))*SIGMA_OMEGA2) : invPrdtOmega);
+      for (int elem=0; elem<n_tot; elem++)
+        {
+          nu_turb_m(elem,0) = nu_turb(elem) * 1/(F1elem(elem)*SIGMA_K1 + (1 - F1elem(elem))*SIGMA_K2);
+          nu_turb_m(elem,1) = nu_turb(elem) * 1/(F1elem(elem)*SIGMA_OMEGA1 + (1 - F1elem(elem))*SIGMA_OMEGA2);
+        }
     }
+  else
+    {
+      for (int elem=0; elem<n_tot; elem++)
+        {
+          nu_turb_m(elem,0) = nu_turb(elem) * invPrdtK;
+          nu_turb_m(elem,1) = nu_turb(elem) * invPrdtOmega;
+        }
+    }
+
 
   int marq = phi_psi_diffuse(equation());
 

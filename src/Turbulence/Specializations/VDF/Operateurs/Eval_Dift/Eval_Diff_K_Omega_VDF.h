@@ -53,11 +53,28 @@ public:
     Prdt[0] = Pr_K;
     Prdt[1] = Pr_Omega;
   }
-
+  inline void associer_Pr_K_Omega_SST(double Pr_K1, double Pr_K2, double Pr_Omega1, double Pr_Omega2)
+  {
+    Prdt_K_SST_[0] = Pr_K1;
+    Prdt_K_SST_[1] = Pr_K2;
+    Prdt_Omega_SST_[0] = Pr_Omega1;
+    Prdt_Omega_SST_[1] = Pr_Omega2;
+  }
   inline void associer(const Champ_base& diffu)
   {
     diffusivite_ =  diffu;
     if (sub_type(Champ_Uniforme, diffu))  db_diffusivite = diffu.valeurs()(0,0);
+  }
+
+  inline void associer_tab_F1(const DoubleTab& tabF1)
+  {
+    tab_F1_.ref(tabF1);
+  }
+  inline void raise_is_SST() { is_SST_=1; }
+  inline void initialize_tab_F1(const int nb_elem)
+  {
+    tab_F1_.resize(nb_elem);
+    tab_F1_=0;
   }
 
   inline virtual void mettre_a_jour()
@@ -77,7 +94,10 @@ public:
 protected:
   static constexpr double PRDT_K_DEFAUT = 2, PRDT_OMEGA_DEFAUT = 2; // cAlan: inverse of the litterature constant due to implementation in one over sigma.
   double Prdt_K, Prdt_Omega, db_diffusivite, Prdt[2];
+  double Prdt_K_SST_[2], Prdt_Omega_SST_[2];
   DoubleVect dv_diffusivite_turbulente, dv_mvol;
+  DoubleTab tab_F1_;
+  int is_SST_=0;
   OBS_PTR(Champ_Fonc_base) diffusivite_turbulente_;
   OBS_PTR(Champ_base) masse_volumique_, diffusivite_;
 };

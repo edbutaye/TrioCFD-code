@@ -40,7 +40,7 @@ public:
   Modele_turbulence_hyd_RANS_K_Omega_base()
   {
     // cAlan: careful, it is the inverse of the classical definition for code purpose
-    Prandtl_K_ = 1/0.6; // from Wilcox STD model, 1/Prandtl_K_ = sigma_k = 0.6
+    Prandtl_K_ = 1/0.5; // from Wilcox STD model, 1/Prandtl_K_ = sigma_k = 0.5. EB (05/09/25): change from 0.6 to 0.5 for consistency with Source_Transport_K_Omega_VDF_Elem_base
     Prandtl_Omega_ = 1/0.5; // from Wilcox STD model, 1/Prandtl_Omega_ = sigma_omega = 0.5
     model_variant_ = "SST";
   }
@@ -59,9 +59,19 @@ public:
 
   inline const Motcle& get_model_variant() const { return model_variant_; }
 
+  const double& get_Prdtl_K1() const { return Prandtl_K1_; }
+  const double& get_Prdtl_K2() const { return Prandtl_K2_; }
+  const double& get_Prdtl_Omega1() const { return Prandtl_OMEGA1_; }
+  const double& get_Prdtl_Omega2() const { return Prandtl_OMEGA2_; }
+
 protected:
   Motcle model_variant_; // default model will be k-omega STD
   static constexpr double CST_A1 = 0.31;
+  // For SST model
+  static constexpr double Prandtl_K1_ = 1./0.85;
+  static constexpr double Prandtl_K2_ = 1.0;
+  static constexpr double Prandtl_OMEGA1_ = 1./2.;
+  static constexpr double Prandtl_OMEGA2_ = 1./0.856;
 };
 
 #endif /* Modele_turbulence_hyd_RANS_K_Omega_base_included */

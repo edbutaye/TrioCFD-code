@@ -53,6 +53,24 @@ void Op_Diff_K_Omega_VDF_base::completer()
           const Champ_Fonc_base& diff_turb = mod_turb.viscosite_turbulente();
           eval_diff.associer_Pr_K_Omega(mod_turb.get_Prandtl_K(),mod_turb.get_Prandtl_Omega());
           eval_diff.associer_diff_turb(diff_turb);
+
+          if (mod_turb.is_SST())
+            {
+              eval_diff.associer_Pr_K_Omega_SST(
+                mod_turb.get_Prdtl_K1(),
+                mod_turb.get_Prdtl_K2(),
+                mod_turb.get_Prdtl_Omega1(),
+                mod_turb.get_Prdtl_Omega2());
+              eval_diff.associer_tab_F1(mod_turb.get_tabF1());
+              eval_diff.raise_is_SST();
+            }
+          else
+            {
+              const int nb_elem = mod_turb.get_eq_transport().domaine_dis().domaine().nb_elem();
+              const int dump = 1;
+              eval_diff.associer_Pr_K_Omega_SST(dump,dump,dump,dump); // to avoid division by zero in eval_diff
+              eval_diff.initialize_tab_F1(nb_elem);
+            }
         }
     }
   else
