@@ -58,19 +58,29 @@ DoubleTab& Op_Diff_K_Omega_VEF_Face::ajouter(const DoubleTab& inconnue_org, Doub
 
   double invPrdtK = 1./Prdt_K;
   double invPrdtOmega = 1./Prdt_Omega;
-  const bool is_SST = turbulence_model->is_SST();
+  const bool is_SST_or_BSL = turbulence_model->is_SST_or_BSL();
   DoubleTab F1elem(domaine_VEF.nb_elem_tot(), 1);
   const DoubleTab& F1face = turbulence_model->get_tabF1();
-  if (is_SST)
+  if (is_SST_or_BSL)
     Discretisation_tools::faces_to_cells(domaine_VEF, F1face, F1elem);
 
   int n_tot = nu_.dimension_tot(0); //TODO peut mieux faire
   DoubleTab nu_turb_m(n_tot, 2);
-
-  for (int elem=0; elem<n_tot; elem++)
+  if (is_SST_or_BSL)
     {
-      nu_turb_m(elem,0) = nu_turb(elem) * (is_SST ? 1/(F1elem(elem)*SIGMA_K1 + (1 - F1elem(elem))*SIGMA_K2) : invPrdtK);
-      nu_turb_m(elem,1) = nu_turb(elem) * (is_SST ? 1/(F1elem(elem)*SIGMA_OMEGA1 + (1 - F1elem(elem))*SIGMA_OMEGA2) : invPrdtOmega);
+      for (int elem=0; elem<n_tot; elem++)
+        {
+          nu_turb_m(elem,0) = nu_turb(elem) * 1/(F1elem(elem)*SIGMA_K1 + (1 - F1elem(elem))*SIGMA_K2);
+          nu_turb_m(elem,1) = nu_turb(elem) * 1/(F1elem(elem)*SIGMA_OMEGA1 + (1 - F1elem(elem))*SIGMA_OMEGA2);
+        }
+    }
+  else
+    {
+      for (int elem=0; elem<n_tot; elem++)
+        {
+          nu_turb_m(elem,0) = nu_turb(elem) * invPrdtK;
+          nu_turb_m(elem,1) = nu_turb(elem) * invPrdtOmega;
+        }
     }
 
   ajouter_bord_gen<Type_Champ::SCALAIRE, true>(inconnue_org, resu, flux_bords_, nu_, nu_turb_m);
@@ -100,16 +110,16 @@ void Op_Diff_K_Omega_VEF_Face::contribuer_a_avec(const DoubleTab& inco,
 
   double invPrdtK = 1./Prdt_K;
   double invPrdtOmega = 1./Prdt_Omega;
-  const bool is_SST = turbulence_model->is_SST();
+  const bool is_SST_or_BSL = turbulence_model->is_SST_or_BSL();
   DoubleTab F1elem(domaine_VEF.nb_elem_tot(), 1);
   const DoubleTab& F1face = turbulence_model->get_tabF1();
-  if (is_SST)
+  if (is_SST_or_BSL)
     Discretisation_tools::faces_to_cells(domaine_VEF, F1face, F1elem);
 
   int n_tot = nu_.dimension_tot(0); //TODO peut mieux faire
   DoubleTab nu_turb_m(n_tot, 2);
 
-  if (is_SST)
+  if (is_SST_or_BSL)
     {
       for (int elem=0; elem<n_tot; elem++)
         {

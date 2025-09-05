@@ -54,7 +54,7 @@ void Op_Diff_K_Omega_VDF_base::completer()
           eval_diff.associer_Pr_K_Omega(mod_turb.get_Prandtl_K(),mod_turb.get_Prandtl_Omega());
           eval_diff.associer_diff_turb(diff_turb);
 
-          if (mod_turb.is_SST())
+          if (mod_turb.is_SST_or_BSL())
             {
               eval_diff.associer_Pr_K_Omega_SST(
                 mod_turb.get_Prdtl_K1(),
@@ -62,7 +62,7 @@ void Op_Diff_K_Omega_VDF_base::completer()
                 mod_turb.get_Prdtl_Omega1(),
                 mod_turb.get_Prdtl_Omega2());
               eval_diff.associer_tab_F1(mod_turb.get_tabF1());
-              eval_diff.raise_is_SST();
+              eval_diff.raise_is_SST_or_BSL();
             }
           else
             {

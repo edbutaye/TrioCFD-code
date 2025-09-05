@@ -79,14 +79,14 @@ void Source_Transport_K_Omega_VEF_Face::creer_champ(const Motcle& nom)
   if (grad_k_elem_.est_nul())
     {
       noms[0] = "grad_k";
-      disc.discretiser_champ("vitesse", equation().domaine_dis(), scalaire,
+      disc.discretiser_champ("champ_elem", equation().domaine_dis(), scalaire,
                              noms , unites, dimension, 0, grad_k_elem_);
       champs_compris_.ajoute_champ(grad_k_elem_);
     }
   if (grad_omega_elem_.est_nul())
     {
       noms[0] = "grad_omega";
-      disc.discretiser_champ("vitesse", equation().domaine_dis(), scalaire,
+      disc.discretiser_champ("champ_elem", equation().domaine_dis(), scalaire,
                              noms , unites, dimension, 0, grad_omega_elem_);
       champs_compris_.ajoute_champ(grad_omega_elem_);
     }
@@ -186,6 +186,8 @@ void Source_Transport_K_Omega_VEF_Face::compute_blending_F1(DoubleTab& gradKgrad
       double const arg2 = std::max(2.*tmp1, tmp2);
       tabF2(face) = std::tanh(arg2*arg2);
     }
+  tabF1.echange_espace_virtuel();
+  tabF2.echange_espace_virtuel();
 }
 
 double Source_Transport_K_Omega_VEF_Face::blender(double const val1, double const val2,
@@ -275,17 +277,17 @@ void Source_Transport_K_Omega_VEF_Face::fill_resu_k_omega(const DoubleVect& volu
 
       if (tke >= LeK_MIN)
         {
-          const double cALPHA = turbulence_model->is_SST()
+          const double cALPHA = turbulence_model->is_SST_or_BSL()
                                 ? blender(GAMMA1, GAMMA2, face)
                                 : ALPHA_OMEGA;
-          const double cBETA = turbulence_model->is_SST()
+          const double cBETA = turbulence_model->is_SST_or_BSL()
                                ? blender(BETA1, BETA2, face)
                                : BETA_OMEGA;
           double cSIGMA;
-          if (turbulence_model->is_SST())
-        	  cSIGMA = 2*(1 - turbulence_model->get_tabF1()(face)*SIGMA_OMEGA2);
+          if (turbulence_model->is_SST_or_BSL())
+            cSIGMA = 2*(1 - turbulence_model->get_tabF1()(face)*SIGMA_OMEGA2);
           else
-        	  cSIGMA = (gradKgradOmega(face) > 0) ? 0.125 : 0.;
+            cSIGMA = (gradKgradOmega(face) > 0) ? 0.125 : 0.;
 
           double contrib {0};
           production_omega_face(face) = cALPHA * ProdK(face) * omega / tke; // production
@@ -340,15 +342,15 @@ void Source_Transport_K_Omega_VEF_Face::contribuer_a_avec(const DoubleTab& a,
         const double coef_k = BETA_K*omega*volporo; // K_Omega(face, 1)/K_Omega(face, 0)*volporo;
         matrice(face*2, face*2) += coef_k;
 
-        const double cALPHA = turbulence_model->is_SST()
+        const double cALPHA = turbulence_model->is_SST_or_BSL()
                               ? blender(GAMMA1, GAMMA2, face)
                               : ALPHA_OMEGA;
 
-        const double cBETA = turbulence_model->is_SST()
+        const double cBETA = turbulence_model->is_SST_or_BSL()
                              ? blender(BETA1, BETA2, face)
                              : BETA_OMEGA;
 
-        const double cSIGMA = turbulence_model->is_SST()
+        const double cSIGMA = turbulence_model->is_SST_or_BSL()
                               ? 2*(1 - turbulence_model->get_tabF1()(face)*SIGMA_OMEGA2)
                               : (gradKgradOmega(face) > 0)*1/8;
 

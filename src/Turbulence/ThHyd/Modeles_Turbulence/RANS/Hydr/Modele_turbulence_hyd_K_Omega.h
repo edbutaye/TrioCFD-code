@@ -57,7 +57,8 @@ public:
   void controler() override { get_set_eq_transport().controler_K_Omega(); }
   virtual Champ_Fonc_base& calculer_viscosite_turbulente(double );
 
-  inline bool is_SST() const { return is_SST_ ;};
+  inline bool is_SST() const { return is_SST_ ;}
+  inline bool is_SST_or_BSL() const { return is_BSL_ ;} // if SST is a specialization of BSL
 
 protected:
   void fill_turbulent_viscosity_tab(const DoubleTab& K_Omega, DoubleTab& turbulent_viscosity);
@@ -65,6 +66,7 @@ protected:
   OWN_PTR(Champ_Fonc_base) tabF2_; // for the turbulent viscosity in the SST model
   OWN_PTR(Champ_Fonc_base) enstrophy_; // for the turbulent viscosity in the SST model
   bool is_SST_; // check if model variant is SST
+  bool is_BSL_; // check if model variant is BSL
 };
 
 /*! @brief Renvoie le champ inconnue du modele de turbulence i.

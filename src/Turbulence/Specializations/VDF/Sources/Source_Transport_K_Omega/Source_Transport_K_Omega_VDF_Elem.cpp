@@ -173,18 +173,18 @@ void Source_Transport_K_Omega_VDF_Elem::fill_resu(const DoubleVect& P, DoubleTab
 
       if (tke >= LeK_MIN)
         {
-          const double cALPHA = turbulence_model->is_SST()
+          const double cALPHA = turbulence_model->is_SST_or_BSL()
                                 ? blender(GAMMA1, GAMMA2, elem)
                                 : ALPHA_OMEGA;
-          const double cBETA = turbulence_model->is_SST()
+          const double cBETA = turbulence_model->is_SST_or_BSL()
                                ? blender(BETA1, BETA2, elem)
                                : BETA_OMEGA;
 
           double cSIGMA;
-          if (turbulence_model->is_SST())
-        	  cSIGMA = 2*(1 - turbulence_model->get_tabF1()(elem)*SIGMA_OMEGA2);
+          if (turbulence_model->is_SST_or_BSL())
+            cSIGMA = 2*(1 - turbulence_model->get_tabF1()(elem)*SIGMA_OMEGA2);
           else
-        	  cSIGMA = (gradKgradOmega_elem(elem) > 0) ? 0.125 : 0.;
+            cSIGMA = (gradKgradOmega_elem(elem) > 0) ? 0.125 : 0.;
 
           double contrib { 0 };
           production_omega_elem(elem) = cALPHA * P(elem) * omega / tke; // production
@@ -226,16 +226,16 @@ void Source_Transport_K_Omega_VDF_Elem::ajouter_blocs(matrices_t matrices, Doubl
           // cAlan : a adapter
           double coef_k = porosite(c)*volumes(c)*BETA_K*omega;
           (*mat)(c*2, c*2) += coef_k;
-          const double cALPHA = turbulence_model->is_SST()
+          const double cALPHA = turbulence_model->is_SST_or_BSL()
                                 ? blender(GAMMA1, GAMMA2, c)
                                 : ALPHA_OMEGA;
 
-          const double cBETA = turbulence_model->is_SST()
+          const double cBETA = turbulence_model->is_SST_or_BSL()
                                ? blender(BETA1, BETA2, c)
                                : BETA_OMEGA;
 
           double cSIGMA;
-          if (turbulence_model->is_SST())
+          if (turbulence_model->is_SST_or_BSL())
             cSIGMA = 2*(1 - turbulence_model->get_tabF1()(c)*SIGMA_OMEGA2);
           else
             cSIGMA = (gradKgradOmega_elem(c) > 0) ? 0.125 : 0.;
@@ -334,6 +334,8 @@ void Source_Transport_K_Omega_VDF_Elem::compute_blending_F1() const
       double const arg2 = std::max(2.*tmp1, tmp2);
       tabF2(elem) = std::tanh(arg2*arg2);
     }
+  tabF1.echange_espace_virtuel();
+  tabF2.echange_espace_virtuel();
 }
 
 double Source_Transport_K_Omega_VDF_Elem::blender(double const val1, double const val2,

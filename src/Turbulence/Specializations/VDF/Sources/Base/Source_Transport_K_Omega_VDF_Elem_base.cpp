@@ -62,7 +62,7 @@ DoubleTab& Source_Transport_K_Omega_VDF_Elem_base::ajouter_komega(DoubleTab& res
   Champ_Face_VDF& ch_vit = ref_cast_non_const(Champ_Face_VDF, eq_hydraulique->inconnue());
 
   compute_cross_diffusion();
-  if (turbulence_model->is_SST())
+  if (turbulence_model->is_SST_or_BSL())
     compute_blending_F1();
 
   DoubleVect& P = ref_cast_non_const(DoubleVect,production_k_elem_->valeurs()); // Ajout d'un espace virtuel au tableau P

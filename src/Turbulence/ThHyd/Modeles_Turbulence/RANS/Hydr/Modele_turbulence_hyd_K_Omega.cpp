@@ -52,12 +52,28 @@ Entree& Modele_turbulence_hyd_K_Omega::readOn(Entree& s)
 {
   Modele_turbulence_hyd_RANS_K_Omega_base::readOn(s);
   is_SST_ = false;
+  is_BSL_ = false;
   if (model_variant_ == "SST")
     {
       Cout << "SST model: initialize wall distances." << "\n";
       Navier_Stokes_std& moneq = ref_cast(Navier_Stokes_std, equation());
       moneq.creer_champ("distance_paroi_globale");
       is_SST_ = true;
+      is_BSL_ = true;
+    }
+  else if (model_variant_ == "BSL")
+    {
+      Cout << "BSL model: initialize wall distances." << "\n";
+      Navier_Stokes_std& moneq = ref_cast(Navier_Stokes_std, equation());
+      moneq.creer_champ("distance_paroi_globale");
+      is_BSL_ = true;
+    }
+  else if (model_variant_ != "STD" && model_variant_ != "")
+    {
+      Cerr << "Error in Modele_turbulence_hyd_K_Omega::readOn()" << finl;
+      Cerr << "Unknown model_variant_ : " << model_variant_ << finl;
+      Cerr << "Valid options are: STD (default), SST (Shear Stress Tensor)  or BSL (Baseline)." << finl;
+      Process::exit();
     }
   return s;
 }

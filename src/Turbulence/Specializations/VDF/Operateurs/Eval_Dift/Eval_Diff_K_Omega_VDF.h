@@ -70,7 +70,7 @@ public:
   {
     tab_F1_.ref(tabF1);
   }
-  inline void raise_is_SST() { is_SST_=1; }
+  inline void raise_is_SST_or_BSL() { is_SST_or_BSL_=1; }
   inline void initialize_tab_F1(const int nb_elem)
   {
     tab_F1_.resize(nb_elem);
@@ -97,7 +97,7 @@ protected:
   double Prdt_K_SST_[2], Prdt_Omega_SST_[2];
   DoubleVect dv_diffusivite_turbulente, dv_mvol;
   DoubleTab tab_F1_;
-  int is_SST_=0;
+  int is_SST_or_BSL_=0;
   OBS_PTR(Champ_Fonc_base) diffusivite_turbulente_;
   OBS_PTR(Champ_base) masse_volumique_, diffusivite_;
 };

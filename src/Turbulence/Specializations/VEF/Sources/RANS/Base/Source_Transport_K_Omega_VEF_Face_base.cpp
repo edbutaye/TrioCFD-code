@@ -98,7 +98,7 @@ DoubleTab& Source_Transport_K_Omega_VEF_Face_base::ajouter_komega(DoubleTab& res
   DoubleTab gradKgradOmega(le_dom_VEF->nb_faces_tot());
   compute_cross_diffusion(gradKgradOmega);
 
-  if (turbulence_model->is_SST())
+  if (turbulence_model->is_SST_or_BSL())
     compute_blending_F1(gradKgradOmega);
 
   const DoubleTab& TKE = get_K_pour_production(); // voir les classes filles
