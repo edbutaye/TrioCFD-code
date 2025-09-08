@@ -32,7 +32,7 @@
 #include <Equation_base.h>
 #include <Nom.h>
 
-Implemente_instanciable(Transport_K_Eps,"Transport_K_Eps",Transport_K_Eps_base);
+Implemente_instanciable(Transport_K_Eps,"Transport_K_Epsilon",Transport_K_Eps_base);
 
 /*! @brief Imprime le type de l'equation sur un flot de sortie.
  *

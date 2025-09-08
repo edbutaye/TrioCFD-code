@@ -89,7 +89,7 @@ Read pb
 			 Entree frontiere_ouverte_vitesse_imposee Champ_Front_Fonc_XYZ  3   1.0 0. 0.
 		}
 		modele_turbulence K_Epsilon {
-       			Transport_equation transport_k_eps 
+       			Transport_equation transport_k_epsilon 
 			{
 			   	convection { amont }
 				diffusion { }

@@ -108,7 +108,7 @@ coefficient_diffusion Champ_Uniforme 1 2.8e-10
 
 		modele_turbulence K_Epsilon {
 
-       			Transport_equation transport_k_eps 
+       			Transport_equation transport_k_epsilon 
 			{
 			   	# parametre_equation parametre_implicite { resolution_explicite } #
 				parametre_equation parametre_implicite { } # implicite now available #

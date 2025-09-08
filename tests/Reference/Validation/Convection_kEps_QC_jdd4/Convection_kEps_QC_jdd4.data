@@ -150,7 +150,7 @@ gravite Champ_Uniforme 2 0 -9.81
 
       		 modele_turbulence K_Epsilon 
                 {
-           	   	Transport_equation transport_k_eps 
+           	   	Transport_equation transport_k_epsilon 
                   		{
            		  convection { quick }
                  	  diffusion { }

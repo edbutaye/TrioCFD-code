@@ -96,7 +96,7 @@ Read pb
 					Bas	paroi_fixe
 					}
 		Modele_turbulence K_Epsilon {
-					Transport_equation transport_k_eps {
+					Transport_equation transport_k_epsilon {
 						Convection { EF_stab { volumes_etendus alpha 1 } }
 						Diffusion  { }
 						Boundary_conditions {

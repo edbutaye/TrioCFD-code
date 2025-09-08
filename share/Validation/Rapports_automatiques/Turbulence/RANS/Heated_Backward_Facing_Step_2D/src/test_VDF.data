@@ -101,7 +101,7 @@ Read pb
 		Modele_turbulence K_epsilon
 		{
 			cmu 0.09
-			Transport_equation transport_k_eps
+			Transport_equation transport_k_epsilon
 			{
 				diffusion { }
 				convection { amont }		

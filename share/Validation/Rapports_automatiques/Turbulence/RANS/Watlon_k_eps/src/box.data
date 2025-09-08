@@ -79,7 +79,7 @@ Lire pb
 		}
 		modele_turbulence K_Epsilon 
 		{
-			Transport_equation transport_k_eps 
+			Transport_equation transport_k_epsilon 
                   	{
 				convection { amont }
 				diffusion { }

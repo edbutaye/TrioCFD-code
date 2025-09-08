@@ -89,7 +89,7 @@ Read pb
 		Sources { Canal_perio { bord perio } }
 	       modele_turbulence K_Epsilon
 	       {
-		 Transport_equation transport_k_eps
+		 Transport_equation transport_k_epsilon
                   		{
 			# with_nu yes #
            		  convection { ef_stab { } }

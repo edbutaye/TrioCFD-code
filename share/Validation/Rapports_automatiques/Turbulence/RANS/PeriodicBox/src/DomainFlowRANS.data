@@ -91,7 +91,7 @@ Read pb_box
         modele_turbulence K_Epsilon
         {
             # K-Eps transport equation definition #
-            Transport_equation transport_k_eps
+            Transport_equation transport_k_epsilon
             {
                 # Upwind scheme for the advection operators #
                 convection { amont }
@@ -210,7 +210,7 @@ Read pb_dom
         # RANS model used: standard K-Epsilon #
         Modele_turbulence K_Epsilon {
             # K-Eps transport equation definition #
-            Transport_equation transport_k_eps
+            Transport_equation transport_k_epsilon
             {
                 # Upwind scheme for the advection operators #
                 convection { amont }

@@ -59,7 +59,7 @@ Lire pb
             perioz  periodique
         }
         modele_turbulence k_epsilon {
-            Transport_equation transport_k_eps {
+            Transport_equation transport_k_epsilon {
                 equation_non_resolue  (t>0)
                 convection { centre }
                 diffusion { }

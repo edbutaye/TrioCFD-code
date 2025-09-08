@@ -95,7 +95,7 @@ Read pb
                         perio Periodique
                 }
         	Modele_turbulence K_Epsilon {
-                        Transport_equation transport_k_eps
+                        Transport_equation transport_k_epsilon
                         {
                                 convection { EF_stab { } }
                                 diffusion { }

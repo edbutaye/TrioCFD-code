@@ -79,7 +79,7 @@ Fluide_Quasi_Compressible
                         Entree frontiere_ouverte_vitesse_imposee Champ_front_Uniforme 2 .25 0.
 		}
 
-                modele_turbulence k_epsilon { Transport_equation transport_k_eps 
+                modele_turbulence k_epsilon { Transport_equation transport_k_epsilon 
 			{
                                 convection { amont }
                                 diffusion { }

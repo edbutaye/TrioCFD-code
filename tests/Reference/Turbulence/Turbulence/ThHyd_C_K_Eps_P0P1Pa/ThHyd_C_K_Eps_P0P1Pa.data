@@ -109,7 +109,7 @@ Constituant
                 }                                                
                  Modele_turbulence K_epsilon
                    {
-                         Transport_equation transport_k_eps
+                         Transport_equation transport_k_epsilon
                          {
                                convection { ef_stab { alpha 1.0 } }
                                diffusion { }

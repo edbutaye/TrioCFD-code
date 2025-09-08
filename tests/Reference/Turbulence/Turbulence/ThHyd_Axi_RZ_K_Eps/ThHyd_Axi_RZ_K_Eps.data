@@ -191,7 +191,7 @@ Fluide_Incompressible
                         plaf        paroi_fixe
 		}
 		Modele_turbulence K_Epsilon {
-		    Transport_equation transport_k_eps {
+		    Transport_equation transport_k_epsilon {
 		         Convection { amont }
 			 Diffusion { }
 			 initial_conditions { K_Eps Champ_Uniforme 2 .02 .5  }   

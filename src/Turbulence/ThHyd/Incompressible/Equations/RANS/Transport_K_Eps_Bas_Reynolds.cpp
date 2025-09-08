@@ -26,7 +26,7 @@
 #include <Param.h>
 #include <Fluide_base.h>
 
-Implemente_instanciable(Transport_K_Eps_Bas_Reynolds,"Transport_K_Eps_Bas_Reynolds",Transport_K_Eps_non_std);
+Implemente_instanciable(Transport_K_Eps_Bas_Reynolds,"Transport_K_Epsilon_Bas_Reynolds",Transport_K_Eps_non_std);
 
 // printOn et readOn
 

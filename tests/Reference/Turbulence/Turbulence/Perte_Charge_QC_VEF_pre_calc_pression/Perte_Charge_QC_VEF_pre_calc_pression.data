@@ -143,7 +143,7 @@ Read pb
 		}
 		Modele_Turbulence K_epsilon
 		{
-			Transport_equation transport_k_eps
+			Transport_equation transport_k_epsilon
 			{
 				parametre_equation parametre_implicite { resolution_explicite }
 				convection { amont }

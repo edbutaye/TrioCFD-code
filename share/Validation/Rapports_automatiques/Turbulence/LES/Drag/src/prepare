@@ -38,7 +38,7 @@ do
           sed -i "s?Distance_paroi??g" $modele.data
           echo "
                modele_turbulence K_Epsilon {
-                     Transport_equation Transport_K_Eps
+                     Transport_equation Transport_K_Epsilon
                      {
 
                              convection { amont }
@@ -59,7 +59,7 @@ do
           sed -i "s?Distance_paroi??g" $modele.data
           echo "
                modele_turbulence K_Epsilon_Realisable {
-                     Transport_equation Transport_K_Eps_Realisable
+                     Transport_equation Transport_K_Epsilon_Realisable
                      {
 
                              convection { amont }
@@ -84,7 +84,7 @@ do
           sed -i "s?Distance_paroi??g" $modele.data
           echo "
                modele_turbulence K_Epsilon_Realisable {
-                     Transport_equation Transport_K_Eps_Realisable
+                     Transport_equation Transport_K_Epsilon_Realisable
                      {
 
                              convection { amont }

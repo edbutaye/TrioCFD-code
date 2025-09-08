@@ -59,7 +59,7 @@ Read pb
 			champ_front_calc pb INTER vitesse
 		}
                 modele_turbulence K_Epsilon {
-                        Transport_equation transport_k_eps 
+                        Transport_equation transport_k_epsilon 
                         {
                                 convection { amont }
                                 diffusion { negligeable }

@@ -87,7 +87,7 @@ coefficient_diffusion Champ_Uniforme 4 0.02 0.02 0.02 0.02
                         Entree frontiere_ouverte_vitesse_imposee  Champ_Front_Uniforme 2  3. 0.
                 }
                 modele_turbulence K_Epsilon {
-                        Transport_equation transport_k_eps 
+                        Transport_equation transport_k_epsilon 
                         {
                                 convection { amont }
                                 diffusion { }

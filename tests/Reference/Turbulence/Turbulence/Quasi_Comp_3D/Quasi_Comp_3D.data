@@ -103,7 +103,7 @@ Fluide_Quasi_Compressible
 
     modele_turbulence K_epsilon
       {
-        Transport_equation transport_k_eps 
+        Transport_equation transport_k_epsilon 
           {
             convection { amont }
             diffusion { }

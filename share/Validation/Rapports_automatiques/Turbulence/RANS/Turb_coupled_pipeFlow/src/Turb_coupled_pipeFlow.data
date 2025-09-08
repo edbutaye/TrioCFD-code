@@ -78,7 +78,7 @@ Lire pb_fluide
 
         Modele_turbulence K_epsilon
         {
-            Transport_equation transport_k_eps
+            Transport_equation transport_k_epsilon
             {
                 diffusion { }
                 convection { KEPS_SCHEME }
