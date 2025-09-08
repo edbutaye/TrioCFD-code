@@ -21,13 +21,10 @@
 #ifndef Op_Diff_K_Omega_VEF_base_included
 #define Op_Diff_K_Omega_VEF_base_included
 
-#define PRDT_K_DEFAUT 1/0.6 // from Wilcox STD model, 1/Prandtl_K_ = sigma_k = 0.6
-#define PRDT_OMEGA_DEFAUT 1/0.5 // from Wilcox STD model, 1/Prandtl_Omega_ = sigma_omega = 0.5
-
 #include <Op_Dift_VEF_base.h>
 #include <Op_VEF_Face.h>
 #include <Modele_turbulence_hyd_K_Omega.h>
-
+#include <K_Omega_constants.h>
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -42,22 +39,24 @@ class Op_Diff_K_Omega_VEF_base : public Op_Dift_VEF_base
 
 public:
 
-  Op_Diff_K_Omega_VEF_base(double Prandt_K = PRDT_K_DEFAUT ,
-                           double Prandt_Omega = PRDT_OMEGA_DEFAUT ) : Prdt_K(Prandt_K) , Prdt_Omega(Prandt_Omega)
+  Op_Diff_K_Omega_VEF_base(double Prandt_K = PRANDTL_K ,
+                           double Prandt_Omega = PRANDTL_OMEGA,
+                           double Sigma_K1 = SIGMA_K1,
+                           double Sigma_K2 = SIGMA_K2,
+                           double Sigma_OMEGA1 = SIGMA_OMEGA1,
+                           double Sigma_OMEGA2 = SIGMA_OMEGA2
+                          ) : Prdt_K_(Prandt_K) , Prdt_Omega_(Prandt_Omega), Sigma_K1_(Sigma_K1), Sigma_K2_(Sigma_K2), Sigma_OMEGA1_(Sigma_OMEGA1), Sigma_OMEGA2_(Sigma_OMEGA2)
   { }
 
   void completer() override;
 
 
 protected:
-  double Prdt_K;
-  double Prdt_Omega;
-
-  // For SST model
-  static constexpr double SIGMA_K1 = 0.85;
-  static constexpr double SIGMA_K2 = 1.0;
-  static constexpr double SIGMA_OMEGA1 = 0.5;
-  static constexpr double SIGMA_OMEGA2 = 0.856;
+  double Prdt_K_;
+  double Prdt_Omega_;
+  double Sigma_K_;
+  double Sigma_Omega_;
+  double Sigma_K1_,Sigma_K2_,Sigma_OMEGA1_,Sigma_OMEGA2_;
 
   OBS_PTR(Modele_turbulence_hyd_K_Omega) turbulence_model;
 };

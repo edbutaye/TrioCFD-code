@@ -47,8 +47,12 @@ void Op_Diff_K_Omega_VEF_base::completer()
 
   turbulence_model = mod_turb;
 
-  Prdt_K = mod_turb.get_Prandtl_K();
-  Prdt_Omega = mod_turb.get_Prandtl_Omega();
-
-
+  Prdt_K_ = mod_turb.get_Prandtl_K();
+  Prdt_Omega_ = mod_turb.get_Prandtl_Omega();
+  Sigma_K1_ = mod_turb.get_Sigma_K1();
+  Sigma_K2_ = mod_turb.get_Sigma_K2();
+  Sigma_OMEGA1_ = mod_turb.get_Sigma_Omega1();
+  Sigma_OMEGA2_ = mod_turb.get_Sigma_Omega2();
+  Sigma_K_ = 1/Prdt_K_;
+  Sigma_Omega_ = 1/Prdt_Omega_;
 }

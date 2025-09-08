@@ -56,8 +56,6 @@ DoubleTab& Op_Diff_K_Omega_VEF_Face::ajouter(const DoubleTab& inconnue_org, Doub
 
   const Domaine_VEF& domaine_VEF = le_dom_vef.valeur();
 
-  double invPrdtK = 1./Prdt_K;
-  double invPrdtOmega = 1./Prdt_Omega;
   const bool is_SST_or_BSL = turbulence_model->is_SST_or_BSL();
   DoubleTab F1elem(domaine_VEF.nb_elem_tot(), 1);
   const DoubleTab& F1face = turbulence_model->get_tabF1();
@@ -70,16 +68,16 @@ DoubleTab& Op_Diff_K_Omega_VEF_Face::ajouter(const DoubleTab& inconnue_org, Doub
     {
       for (int elem=0; elem<n_tot; elem++)
         {
-          nu_turb_m(elem,0) = nu_turb(elem) * 1/(F1elem(elem)*SIGMA_K1 + (1 - F1elem(elem))*SIGMA_K2);
-          nu_turb_m(elem,1) = nu_turb(elem) * 1/(F1elem(elem)*SIGMA_OMEGA1 + (1 - F1elem(elem))*SIGMA_OMEGA2);
+          nu_turb_m(elem,0) = nu_turb(elem) * (F1elem(elem)*Sigma_K1_ + (1 - F1elem(elem))*Sigma_K2_);
+          nu_turb_m(elem,1) = nu_turb(elem) * (F1elem(elem)*Sigma_OMEGA1_ + (1 - F1elem(elem))*Sigma_OMEGA2_);
         }
     }
   else
     {
       for (int elem=0; elem<n_tot; elem++)
         {
-          nu_turb_m(elem,0) = nu_turb(elem) * invPrdtK;
-          nu_turb_m(elem,1) = nu_turb(elem) * invPrdtOmega;
+          nu_turb_m(elem,0) = nu_turb(elem) * Sigma_K_;
+          nu_turb_m(elem,1) = nu_turb(elem) * Sigma_Omega_;
         }
     }
 
@@ -108,8 +106,6 @@ void Op_Diff_K_Omega_VEF_Face::contribuer_a_avec(const DoubleTab& inco,
 
   const Domaine_VEF& domaine_VEF = le_dom_vef.valeur();
 
-  double invPrdtK = 1./Prdt_K;
-  double invPrdtOmega = 1./Prdt_Omega;
   const bool is_SST_or_BSL = turbulence_model->is_SST_or_BSL();
   DoubleTab F1elem(domaine_VEF.nb_elem_tot(), 1);
   const DoubleTab& F1face = turbulence_model->get_tabF1();
@@ -123,16 +119,16 @@ void Op_Diff_K_Omega_VEF_Face::contribuer_a_avec(const DoubleTab& inco,
     {
       for (int elem=0; elem<n_tot; elem++)
         {
-          nu_turb_m(elem,0) = nu_turb(elem) * 1/(F1elem(elem)*SIGMA_K1 + (1 - F1elem(elem))*SIGMA_K2);
-          nu_turb_m(elem,1) = nu_turb(elem) * 1/(F1elem(elem)*SIGMA_OMEGA1 + (1 - F1elem(elem))*SIGMA_OMEGA2);
+          nu_turb_m(elem,0) = nu_turb(elem) * (F1elem(elem)*SIGMA_K1 + (1 - F1elem(elem))*SIGMA_K2);
+          nu_turb_m(elem,1) = nu_turb(elem) * (F1elem(elem)*SIGMA_OMEGA1 + (1 - F1elem(elem))*SIGMA_OMEGA2);
         }
     }
   else
     {
       for (int elem=0; elem<n_tot; elem++)
         {
-          nu_turb_m(elem,0) = nu_turb(elem) * invPrdtK;
-          nu_turb_m(elem,1) = nu_turb(elem) * invPrdtOmega;
+          nu_turb_m(elem,0) = nu_turb(elem) * Sigma_K_;
+          nu_turb_m(elem,1) = nu_turb(elem) * Sigma_Omega_;
         }
     }
 
