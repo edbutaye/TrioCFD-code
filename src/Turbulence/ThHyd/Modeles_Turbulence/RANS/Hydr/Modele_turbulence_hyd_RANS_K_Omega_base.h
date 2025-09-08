@@ -25,6 +25,7 @@
 
 #include <Modele_turbulence_hyd_2_eq_base.h>
 #include <Modele_turbulence_hyd_RANS_Gen.h>
+#include <K_Omega_constants.h>
 
 class Transport_K_Omega_base;
 
@@ -39,10 +40,15 @@ public:
 
   Modele_turbulence_hyd_RANS_K_Omega_base()
   {
-    // cAlan: careful, it is the inverse of the classical definition for code purpose
-    Prandtl_K_ = 1/0.5; // from Wilcox STD model, 1/Prandtl_K_ = sigma_k = 0.5. EB (05/09/25): change from 0.6 to 0.5 for consistency with Source_Transport_K_Omega_VDF_Elem_base
-    Prandtl_Omega_ = 1/0.5; // from Wilcox STD model, 1/Prandtl_Omega_ = sigma_omega = 0.5
+    Prandtl_K_ = PRANDTL_K;
+    Prandtl_Omega_ = PRANDTL_OMEGA;
     model_variant_ = "SST";
+    Sigma_K_ = SIGMA_K;
+    Sigma_Omega_ = SIGMA_OMEGA;
+    Sigma_K1_ = SIGMA_K1;
+    Sigma_K2_ = SIGMA_K2;
+    Sigma_OMEGA1_ = SIGMA_OMEGA1;
+    Sigma_OMEGA2_ = SIGMA_OMEGA2;
   }
 
   void set_param(Param& param) override;
@@ -59,19 +65,21 @@ public:
 
   inline const Motcle& get_model_variant() const { return model_variant_; }
 
-  const double& get_Prdtl_K1() const { return Prandtl_K1_; }
-  const double& get_Prdtl_K2() const { return Prandtl_K2_; }
-  const double& get_Prdtl_Omega1() const { return Prandtl_OMEGA1_; }
-  const double& get_Prdtl_Omega2() const { return Prandtl_OMEGA2_; }
+  const double& get_Sigma_K() const { return Sigma_K_; }
+  const double& get_Sigma_Omega() const { return Sigma_Omega_; }
+  const double& get_Sigma_K1() const { return Sigma_K1_; }
+  const double& get_Sigma_K2() const { return Sigma_K2_; }
+  const double& get_Sigma_Omega1() const { return Sigma_OMEGA1_; }
+  const double& get_Sigma_Omega2() const { return Sigma_OMEGA2_; }
+
+
 
 protected:
   Motcle model_variant_; // default model will be k-omega STD
   static constexpr double CST_A1 = 0.31;
-  // For SST model
-  static constexpr double Prandtl_K1_ = 1./0.85;
-  static constexpr double Prandtl_K2_ = 1.0;
-  static constexpr double Prandtl_OMEGA1_ = 1./2.;
-  static constexpr double Prandtl_OMEGA2_ = 1./0.856;
+  double Sigma_K_, Sigma_Omega_;
+  double Sigma_K1_, Sigma_K2_, Sigma_OMEGA1_, Sigma_OMEGA2_;
+
 };
 
 #endif /* Modele_turbulence_hyd_RANS_K_Omega_base_included */

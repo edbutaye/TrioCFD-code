@@ -27,6 +27,7 @@
 #include <Milieu_base.h>
 #include <TRUSTTrav.h>
 #include <VDF_discretisation.h>
+#include <K_Omega_constants.h>
 
 Implemente_instanciable_sans_constructeur(Source_Transport_K_Omega_VDF_Elem,
                                           "Source_Transport_K_Omega_VDF_P0_VDF",

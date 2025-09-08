@@ -1,0 +1,46 @@
+/****************************************************************************
+* Copyright (c) 2025, CEA
+* All rights reserved.
+*
+* Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+* 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+* 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+* 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+*
+* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+* IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+* OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*
+*****************************************************************************/
+//////////////////////////////////////////////////////////////////////////////
+//
+// File:        K_Omega_Constants.h
+// Directory:   $TURBULENCE_ROOT/Specializations/
+//
+//////////////////////////////////////////////////////////////////////////////
+
+#ifndef K_Omega_Constants
+#define K_Omega_Constants
+
+#include <cmath>
+
+// Constants for the classic k-omega model Wilcox 1988
+static constexpr double BETA_K = 0.09; // Cmu or BETA_STAR, but clearer with _K
+static constexpr double BETA_OMEGA = 3./40.; // BETA
+static constexpr double PRANDTL_K = 2.; // SIGMA_STAR 1/Prandtl_K_ = sigma_k
+static constexpr double PRANDTL_OMEGA = 2.; // SIGMA
+static constexpr double SIGMA_K = 1/PRANDTL_K; // SIGMA_STAR.
+static constexpr double SIGMA_OMEGA = 1/PRANDTL_OMEGA; // SIGMA
+static constexpr double ALPHA_OMEGA = 5./9.; // ALPHA
+
+// Constants for the k-omega SST model
+static constexpr double SIGMA_K1 = 0.85;
+static constexpr double SIGMA_K2 = 1.0;
+static constexpr double SIGMA_OMEGA1 = 0.5;
+static constexpr double SIGMA_OMEGA2 = 0.856;
+static constexpr double BETA1 = 0.075;
+static constexpr double BETA2 = 0.0828;
+static constexpr double KAPPA = 0.41;
+static constexpr double GAMMA1 = BETA1/BETA_K - SIGMA_OMEGA1*KAPPA*KAPPA/sqrt(BETA_K);
+static constexpr double GAMMA2 = BETA2/BETA_K - SIGMA_OMEGA2*KAPPA*KAPPA/sqrt(BETA_K);
+#endif

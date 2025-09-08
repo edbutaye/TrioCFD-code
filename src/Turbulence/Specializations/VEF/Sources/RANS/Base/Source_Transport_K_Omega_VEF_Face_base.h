@@ -59,23 +59,6 @@ protected :
   OWN_PTR(Champ_Fonc_base)  dissipation_omega_face_;
   OWN_PTR(Champ_Fonc_base)  cross_diffusion_k_omega_face_;
 
-  // Constants for the classic k-omega model Wilcox 1988
-  static constexpr double BETA_K = 0.09; // Cmu or BETA_STAR, but clearer with _K
-  static constexpr double BETA_OMEGA = 3./40.; // BETA
-  static constexpr double SIGMA_K = 0.5; // SIGMA_STAR
-  static constexpr double SIGMA_OMEGA = 0.5; // SIGMA
-  static constexpr double ALPHA_OMEGA = 5./9.; // ALPHA
-
-  // Constants for the k-omega SST model
-  static constexpr double SIGMA_K1 = 0.85;
-  static constexpr double SIGMA_K2 = 1.0;
-  static constexpr double SIGMA_OMEGA1 = 0.5;
-  static constexpr double SIGMA_OMEGA2 = 0.856;
-  static constexpr double BETA1 = 0.075;
-  static constexpr double BETA2 = 0.0828;
-  static constexpr double KAPPA = 0.41;
-  double const GAMMA1 = BETA1/BETA_K - SIGMA_OMEGA1*KAPPA*KAPPA/sqrt(BETA_K);
-  double const GAMMA2 = BETA2/BETA_K - SIGMA_OMEGA2*KAPPA*KAPPA/sqrt(BETA_K);
 
   std::map<std::string, DoubleTab> contrib_komega;
 };

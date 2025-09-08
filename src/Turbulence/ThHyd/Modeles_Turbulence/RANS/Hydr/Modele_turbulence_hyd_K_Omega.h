@@ -38,6 +38,7 @@ class Modele_turbulence_hyd_K_Omega: public Modele_turbulence_hyd_RANS_K_Omega_b
 public:
   void set_param(Param& param) override;
   int preparer_calcul() override;
+  void completer() override;
   bool initTimeStep(double dt) override;
   void mettre_a_jour(double) override;
   virtual inline Champ_Inc_base& get_set_eq_K_Omega();
