@@ -30,7 +30,7 @@ public:
   // Methods used by the flux computation in template class:
   inline double nu_1_impl(int i, int compo) const
   {
-    return db_diffusivite + dv_diffusivite_turbulente(i)* ( is_SST_or_BSL_/(tab_F1_(i)*Prdt_K_SST_[compo] + (1 - tab_F1_(i))*Prdt_Omega_SST_[compo])+(1-is_SST_or_BSL_)/Prdt[compo]);
+    return db_diffusivite_ + dv_diffusivite_turbulente_(i)* ( is_SST_or_BSL_*(tab_F1_(i)*Sigma_K_SST_[compo] + (1 - tab_F1_(i))*Sigma_Omega_SST_[compo])+(1-is_SST_or_BSL_)*Sigma_[compo]);
   }
 
   inline double nu_2_impl(int i, int compo) const { return nu_1_impl(i,compo); }

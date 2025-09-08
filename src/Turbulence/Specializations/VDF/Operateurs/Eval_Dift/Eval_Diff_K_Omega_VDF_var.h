@@ -32,23 +32,20 @@ public:
   inline void associer(const Champ_Don_base& diffu)
   {
     diffusivite_ = diffu;
-    dv_diffusivite.ref(diffu.valeurs());
+    dv_diffusivite_.ref(diffu.valeurs());
   }
 
   inline void mettre_a_jour()  override
   {
     (diffusivite_->valeurs().echange_espace_virtuel());
-    dv_diffusivite.ref(diffusivite_->valeurs());
-    dv_diffusivite_turbulente.ref(diffusivite_turbulente_->valeurs());
+    dv_diffusivite_.ref(diffusivite_->valeurs());
+    dv_diffusivite_turbulente_.ref(diffusivite_turbulente_->valeurs());
   }
 
   // Methods used by the flux computation in template class:
   inline double nu_1_impl(int i, int compo) const
   {
-    return db_diffusivite + dv_diffusivite_turbulente(i)* (
-             is_SST_or_BSL_/(tab_F1_(i)*Prdt_K_SST_[compo] +
-                             (1 - tab_F1_(i))*Prdt_Omega_SST_[compo])+
-             (1-is_SST_or_BSL_)/Prdt[compo]);
+    return db_diffusivite_ + dv_diffusivite_turbulente_(i)* ( is_SST_or_BSL_*(tab_F1_(i)*Sigma_K_SST_[compo] + (1 - tab_F1_(i))*Sigma_Omega_SST_[compo])+(1-is_SST_or_BSL_)*Sigma_[compo]);
   }
 
 
@@ -57,7 +54,7 @@ public:
   inline double compute_heq_impl(double d0, int i, double d1, int j, int compo) const { return 0.5*(nu_1_impl(i,compo)+nu_1_impl(j,compo))/(d0+d1); }
 
 protected:
-  DoubleVect dv_diffusivite;
+  DoubleVect dv_diffusivite_;
 };
 
 #endif /* Eval_Diff_K_Omega_VDF_var_included */

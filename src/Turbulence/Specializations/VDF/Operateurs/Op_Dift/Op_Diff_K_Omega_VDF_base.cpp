@@ -51,25 +51,25 @@ void Op_Diff_K_Omega_VDF_base::completer()
           const Modele_turbulence_hyd_K_Omega& mod_turb = ref_cast(Modele_turbulence_hyd_K_Omega,eqn_transport.modele_turbulence());
           Eval_Diff_K_Omega_VDF_Elem& eval_diff = static_cast<Eval_Diff_K_Omega_VDF_Elem&> (iter->evaluateur());
           const Champ_Fonc_base& diff_turb = mod_turb.viscosite_turbulente();
-          eval_diff.associer_Pr_K_Omega(mod_turb.get_Prandtl_K(),mod_turb.get_Prandtl_Omega());
+          eval_diff.associer_Sigma_K_Omega(mod_turb.get_Sigma_K(),mod_turb.get_Sigma_Omega());
           eval_diff.associer_diff_turb(diff_turb);
 
           if (mod_turb.is_SST_or_BSL())
             {
-              eval_diff.associer_Pr_K_Omega_SST(
-                mod_turb.get_Prdtl_K1(),
-                mod_turb.get_Prdtl_K2(),
-                mod_turb.get_Prdtl_Omega1(),
-                mod_turb.get_Prdtl_Omega2());
+              eval_diff.associer_Sigma_K_Omega_SST(
+                mod_turb.get_Sigma_K1(),
+                mod_turb.get_Sigma_K2(),
+                mod_turb.get_Sigma_Omega1(),
+                mod_turb.get_Sigma_Omega2());
               eval_diff.associer_tab_F1(mod_turb.get_tabF1());
               eval_diff.raise_is_SST_or_BSL();
             }
           else
             {
-              const int nb_elem = mod_turb.get_eq_transport().domaine_dis().domaine().nb_elem();
+              const int nb_elem_tot = mod_turb.get_eq_transport().domaine_dis().domaine().nb_elem_tot();
               const int dump = 1;
-              eval_diff.associer_Pr_K_Omega_SST(dump,dump,dump,dump); // to avoid division by zero in eval_diff
-              eval_diff.initialize_tab_F1(nb_elem);
+              eval_diff.associer_Sigma_K_Omega_SST(dump,dump,dump,dump); // to avoid division by zero in eval_diff
+              eval_diff.initialize_tab_F1(nb_elem_tot);
             }
         }
     }
