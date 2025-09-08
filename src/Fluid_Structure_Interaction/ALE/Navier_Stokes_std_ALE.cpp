@@ -312,9 +312,11 @@ void Navier_Stokes_std_ALE::mettre_a_jour(double temps)
 void Navier_Stokes_std_ALE::updateFluidForce(DoubleTab& velocity)
 {
   // in case of implicit coupling with a structural code: update the fluxes (used for computing the fluid force) during implicit sub-iterations
+
   Domaine_ALE& dom_ale=ref_cast(Domaine_ALE, probleme().domaine());
   if(dom_ale.getCouplingMethod()) //implicit coupling case
     {
+      Cout<<" Implicit coupling: Navier_Stokes_std_ALE::updateFluidForce "<<finl;
       //update diffusion operator
       DoubleTab field_value = velocity;
       field_value = 0.;
@@ -326,8 +328,17 @@ void Navier_Stokes_std_ALE::updateFluidForce(DoubleTab& velocity)
       calculer_la_pression_en_pa();
       Op_Grad_VEF_P1B_Face& op_grad_vef = ref_cast(Op_Grad_VEF_P1B_Face, operateur_gradient().l_op_base());
       op_grad_vef.calculer_flux_bords();
-
     }
+}
+void Navier_Stokes_std_ALE::setPressureTimeN()
+{
+
+  Domaine_ALE& dom_ale=ref_cast(Domaine_ALE, probleme().domaine());
+  if(dom_ale.getCouplingMethod()) //implicit coupling case
+
+    // Equivalent of setting present = past for velocity done in for eg. Schema_Euler_Implicite::test_stationnaire.
+    // Ensures sub-iterations start with the correct pressure for implicit coupling
+    pression().valeurs()= getPressureTimeN();
 }
 bool Navier_Stokes_std_ALE::getCouplingInfoForFiltering() const
 {
