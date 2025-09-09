@@ -23,6 +23,7 @@ Mailler dom
     bord OUTLT  X = 1.   0. <= Y <= 1
   }
 }
+trianguler_h dom
 # END MESH #
 
 # BEGIN PARTITION
@@ -56,7 +57,7 @@ Read sch
 Associate pb dom
 Associate pb sch
 
-VDF dis
+VEFPreP1B dis
 Discretize pb dis
 
 Read pb
@@ -70,7 +71,7 @@ Read pb
   Navier_Stokes_Turbulent
   {
     solveur_pression petsc cholesky { }
-    convection { amont }
+    convection { ef_stab { alpha 0.2 } }
     diffusion { }
     conditions_initiales
     {
@@ -85,23 +86,20 @@ Read pb
 
     }
 
-    modele_turbulence k_epsilon_realisable {
-      Transport_equation transport_k_eps_realisable
+    modele_turbulence K_Omega {
+      model_variant BSL
+      Transport_equation Transport_K_Omega
       {
         convection { amont }
         diffusion { }
         boundary_conditions {
           WALL1 paroi
           WALL2 paroi
-          INLET frontiere_ouverte_K_eps_impose Champ_front_Uniforme 2 .00004356 1.44e-4
-          OUTLT frontiere_ouverte K_EPS_EXT Champ_Front_Uniforme 2 .00004356 1.44e-4
+          INLET frontiere_ouverte_K_omega_impose Champ_front_Uniforme 2 .00004356 3.31439394
+          OUTLT frontiere_ouverte K_OMEGA_EXT Champ_Front_Uniforme 2 .00004356 3.31439394
         }
-        conditions_initiales { k_eps Champ_Uniforme 2 .00004356 1.44e-4 }
-        sources { source_transport_k_eps_realisable { C2_eps 1.9 } }
+        conditions_initiales { k_omega Champ_Uniforme 2 .00004356 3.31439394 }
       }
-      Prandtl_K 1
-      Prandtl_Eps 1.2
-      modele_fonc_realisable Shih_Zhu_Lumley { A0 4.04 }
       turbulence_paroi loi_standard_hydr
     }
   }
@@ -121,7 +119,7 @@ Read pb
       y_plus elem
       viscosite_turbulente elem
       k elem
-      eps elem
+      omega elem
     }
   }
 }

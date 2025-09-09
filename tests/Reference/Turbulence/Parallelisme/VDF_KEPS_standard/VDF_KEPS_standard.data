@@ -23,7 +23,6 @@ Mailler dom
     bord OUTLT  X = 1.   0. <= Y <= 1
   }
 }
-trianguler_h dom
 # END MESH #
 
 # BEGIN PARTITION
@@ -57,7 +56,7 @@ Read sch
 Associate pb dom
 Associate pb sch
 
-VEFPreP1B dis
+VDF dis
 Discretize pb dis
 
 Read pb
@@ -71,7 +70,7 @@ Read pb
   Navier_Stokes_Turbulent
   {
     solveur_pression petsc cholesky { }
-    convection { ef_stab { alpha 0.2 } }
+    convection { amont }
     diffusion { }
     conditions_initiales
     {
