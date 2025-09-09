@@ -1892,6 +1892,16 @@ int Domaine_ALE::getCouplingMethod()
 
 bool Domaine_ALE::getUpdateTheGrid()
 {
+  Probleme_base& pb_base=(eq.valeur()).probleme(); // get the probleme from stored ref to equation
+  if (pb_base.checkOutputIntEntry("UpdateTheGrid"))
+    {
+      int updateStatus=pb_base.getOutputIntValue("UpdateTheGrid");
+      if (updateStatus == 1) {
+         Cerr << "Update of the fluid grid forced from ICoCo" << finl ;
+         UpdateTheGrid=true;
+      }
+    }
+  
   return UpdateTheGrid;
 }
 
