@@ -53,6 +53,40 @@ function fully_prepare_venv
    return 0 # ok
 }
 
+function install_mfront
+{
+  mfront_version=$1
+  if [ ! -f share/Mfront/tfel-TFEL-$mfront_version.tar.gz ]; then
+    echo "Missing source archive share/Mfront/tfel-TFEL-$mfront_version.tar.gz for the referenced version of Tfel/Mfront"
+    exit 1
+  fi
+    
+  mkdir share/build_mfront_tmp
+  current_path=$PWD
+  cd share/build_mfront_tmp
+  tar -xzvf ../Mfront/tfel-TFEL-$mfront_version.tar.gz &> ../Mfront/build-tfel-TFEL-$mfront_version.LOG
+  mkdir build
+  cd build
+  echo "CC=$TRUST_cc_BASE CXX=$TRUST_CC_base FC=$TRUST_F77_BASE cmake ../tfel-TFEL-$mfront_version -DCMAKE_BUILD_TYPE=Release -Denable-reference-doc=OFF -Denable-website=OFF -DCMAKE_INSTALL_PREFIX=$current_path/share"
+  CC=$TRUST_cc_BASE CXX=$TRUST_CC_base FC=$TRUST_F77_BASE cmake ../tfel-TFEL-$mfront_version -DCMAKE_BUILD_TYPE=Release -Denable-reference-doc=OFF -Denable-website=OFF -DCMAKE_INSTALL_PREFIX=$current_path/share &>> ../../Mfront/build-tfel-TFEL-$mfront_version.LOG
+
+  np=`nproc 2> /dev/null`
+  if [ ! $np ]; then
+    echo "make"
+    make &>> ../../Mfront/build-tfel-TFEL-$mfront_version.LOG
+  else
+    echo "make with $np processes"
+    make -j $np &>> ../../Mfront/build-tfel-TFEL-$mfront_version.LOG
+  fi
+  echo "make install"
+  make install &>> ../../Mfront/build-tfel-TFEL-$mfront_version.LOG
+  cd $current_path
+  rm -rf share/build_mfront_tmp
+  echo "export LD_LIBRARY_PATH=\${project_directory}/share/lib:\$LD_LIBRARY_PATH" >> env_TrioCFD.sh
+  echo "export LD_LIBRARY_PATH=\${project_directory}/share/lib:\$LD_LIBRARY_PATH" >> full_env_TrioCFD.sh
+  echo " "
+}
+
 # ------------------------------------------------------------------------------ 
 # Beginnig of the script
 # ------------------------------------------------------------------------------ 
@@ -118,5 +152,18 @@ then
   done
 fi
 
+# --------------------------------
+# For Tfel/Mfront : 
+# --------------------------------
+if [ $TRIOCFD_USE_MFRONT ]; then
+  echo " "
+  if [ ! $TRIOCFD_MFRONT_VERSION ]; then 
+   # Default version for Tfel/Mfront
+   TRIOCFD_MFRONT_VERSION="4.2.3"
+  fi
+
+  echo "Install Tfel/Mfront version $TRIOCFD_MFRONT_VERSION"
+  install_mfront $TRIOCFD_MFRONT_VERSION
+fi
 exit 0
 
