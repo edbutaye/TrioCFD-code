@@ -1,6 +1,9 @@
 --------------------------------------------------------------------------------------------------
 Release notes version 1.9.7_beta : Enhancements, modifications and corrected bugs since version 1.9.6 :
 --------------------------------------------------------------------------------------------------
+12/09/25 (TrioCFD) Syntax      : Turbulence - keyword 'transport_k_epsilon' should now be replaced by 'transport_equation transport_k_epsilon' in datafiles
+12/09/25 (TrioCFD) Syntax      : Turbulence - keyword 'transport_k_omega' should now be replaced by 'transport_equation transport_k_omega' in datafiles
+12/09/25 (TrioCFD) Syntax      : Turbulence - keyword 'Transport_K_Epsilon_Realisable' should now be replaced by 'transport_equation Transport_K_Epsilon_Realisable' in datafiles
 12/09/25 (TrioCFD) Bug fix     : Correction of the computation of (nu_lam + nu_turb*sigma) for VEF k_omega turbulence model
 12/09/25 (TrioCFD) New feature : K_omega turbulence model is available for VDF discretization. Model variants are: standard, SST, BSL. See https://turbmodels.larc.nasa.gov/index.html.
 12/09/25 (TrioCFD) New feature : BSL model variant is available for VEF discretization.
