@@ -106,8 +106,8 @@ Lire pb
 							sources			{ source_transport_eps { C1_eps 1.44 C2_eps 1.92 } }
 						}
 					}
-					Prandtl_K 1
-					Prandtl_Eps 1.2
+					Sigma_K 1
+					Sigma_Eps 1.2
 					turbulence_paroi loi_standard_hydr dt_impr_ustar_mean_only { dt_impr 1e-6 }
 					}
 		Sources			{ canal_perio { bord periox } }

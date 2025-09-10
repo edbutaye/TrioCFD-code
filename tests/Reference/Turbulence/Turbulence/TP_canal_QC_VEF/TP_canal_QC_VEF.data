@@ -121,8 +121,8 @@ Fluide_Quasi_Compressible
                                 }
                         }
                         Cmu 0.09
-                        Prandtl_K 1.0
-                        Prandtl_Eps 1.3
+                        Sigma_K 1.0
+                        Sigma_Eps 1.3
                         Turbulence_paroi loi_standard_hydr 
                                 dt_impr_ustar_mean_only { dt_impr 0.1 boundaries 2 Haut Bas }
                 }

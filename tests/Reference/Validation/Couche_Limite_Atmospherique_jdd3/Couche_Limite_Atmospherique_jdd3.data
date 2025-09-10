@@ -94,7 +94,7 @@ Read pb
 					k_Eps Champ_Uniforme 2 2.77 1.828
 			  	}
 			 }
-			 Prandtl_Eps 1.196
+			 Sigma_Eps 1.196
 			 turbulence_paroi loi_standard_hydr dt_impr_ustar 5.
 		} 
 	}

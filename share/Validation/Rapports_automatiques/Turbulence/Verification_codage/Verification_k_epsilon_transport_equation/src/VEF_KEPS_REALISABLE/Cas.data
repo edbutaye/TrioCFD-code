@@ -76,8 +76,8 @@ Lire pb
                 }
                 sources { source_transport_k_eps_realisable { C2_eps 1.9 } }
             }
-            Prandtl_K 1
-            Prandtl_Eps 1.2
+            Sigma_K 1
+            Sigma_Eps 1.2
             modele_fonc_realisable Shih_Zhu_Lumley { A0 4.04 }
             turbulence_paroi negligeable
         }

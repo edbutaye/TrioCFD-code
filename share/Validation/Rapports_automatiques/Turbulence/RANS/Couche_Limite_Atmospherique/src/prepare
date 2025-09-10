@@ -12,7 +12,7 @@ sed "s/SOL	Paroi_fixe/SOL	Paroi_Rugueuse { Erugu 0.00016811635902202942 }/" ../C
 cp ../post_run .
 
 cd ../Sol_rugueux_Erugu+sigma
-sed "s/Prandtl_Eps 1.3/Prandtl_Eps 1.196/" ../Sol_rugueux_Erugu/Sol_rugueux_Erugu.data > Sol_rugueux_Erugu+sigma.data
+sed "s/Sigma_Eps 1.3/Sigma_Eps 1.196/" ../Sol_rugueux_Erugu/Sol_rugueux_Erugu.data > Sol_rugueux_Erugu+sigma.data
 cp ../post_run .
 
 cd ../

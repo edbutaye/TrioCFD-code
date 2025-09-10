@@ -145,8 +145,8 @@ Read pb
 			  	}
 			 }
 			 Cmu 0.12 # Au lieu de 0.09 #
-			 Prandtl_K 1.1 # Test de Prandtl_K a 1.1 au lieu 1.0 #
-			 Prandtl_Eps 1.4 # Test de Prandtl_Eps a 1.4 au lieu 1.3 #
+			 Sigma_K 1.1 # Test de Sigma_K a 1.1 au lieu 1.0 #
+			 Sigma_Eps 1.4 # Test de Sigma_Eps a 1.4 au lieu 1.3 #
 			 turbulence_paroi loi_standard_hydr dt_impr_ustar 10. eps_min 1.e-15
 		} 
 	}

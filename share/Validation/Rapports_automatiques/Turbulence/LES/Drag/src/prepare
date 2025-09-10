@@ -74,8 +74,8 @@ do
                              }
                              conditions_initiales { k_Eps Champ_Uniforme 2 1.44 43 }
                       }
-			 Prandtl_K 1
-			 Prandtl_Eps 1.2
+			 Sigma_K 1
+			 Sigma_Eps 1.2
                          turbulence_paroi loi_standard_hydr
 			 Modele_fonc_realisable Shih_Zhu_Lumley { A0 4.04 }
                 }" >> $modele.data    
@@ -99,8 +99,8 @@ do
                              }
                              conditions_initiales { k_Eps Champ_Uniforme 2 1.44 43 }
                       }
-			 Prandtl_K 1
-			 Prandtl_Eps 1.2
+			 Sigma_K 1
+			 Sigma_Eps 1.2
                          turbulence_paroi loi_standard_hydr
 			 Modele_fonc_realisable Shih_Zhu_Lumley { A0 3.2 }
                 }" >> $modele.data                    
