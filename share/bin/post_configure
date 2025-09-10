@@ -56,6 +56,7 @@ function fully_prepare_venv
 function install_mfront
 {
   mfront_version=$1
+
   if [ ! -f share/Mfront/tfel-TFEL-$mfront_version.tar.gz ]; then
     echo "Missing source archive share/Mfront/tfel-TFEL-$mfront_version.tar.gz for the referenced version of Tfel/Mfront"
     exit 1
@@ -99,9 +100,42 @@ function install_mfront
 
   cd $current_path
   rm -rf share/build_mfront_tmp
-  echo "export LD_LIBRARY_PATH=\${project_directory}/share/lib:\$LD_LIBRARY_PATH" >> env_TrioCFD.sh
-  echo "export LD_LIBRARY_PATH=\${project_directory}/share/lib:\$LD_LIBRARY_PATH" >> full_env_TrioCFD.sh
   echo " "
+}
+
+function compile_mfront_libraries
+{
+  current_path=$PWD
+  
+  echo "Build libraries for available material models in $current_path/share/Mfront"
+  export PATH=${current_path}/share/bin:$PATH
+  export LD_LIBRARY_PATH=${current_path}/share/lib:$LD_LIBRARY_PATH
+  echo "Mfront version is:" 
+  eval "mfront --version"
+  if ((ret)); then
+    echo "Error with Tfel/Mfront installation, try to re-run configure with environment variable TRIOCFD_USE_MFRONT set to 1"
+    exit 1
+  fi
+
+  [[ ! -d share/Mfront_material_libraries ]] && mkdir share/Mfront_material_libraries
+  cd share/Mfront_material_libraries
+
+  for matmodel in $current_path/share/Mfront/*.mfront ; do
+    echo "---> Compiling material model: "$matmodel
+    matname=$(basename -- "$matmodel")
+    matname="${matname%.*}"
+    eval "mfront --build --interface=generic $matmodel &> $current_path/share/Mfront_material_libraries/compile-$matname.LOG"
+    ret=$?
+    if ((ret)); then
+      echo "Error in compiling Mfront material model $matmodel, see file $current_path/share/Mfront_material_libraries/compile-$matname.LOG"
+      exit 1
+    else
+      echo "---> OK"
+    fi
+  done
+
+  echo " "
+  cd $current_path
 }
 
 # ------------------------------------------------------------------------------ 
@@ -182,5 +216,11 @@ if [ $TRIOCFD_USE_MFRONT ]; then
   echo "Install Tfel/Mfront version $TRIOCFD_MFRONT_VERSION"
   install_mfront $TRIOCFD_MFRONT_VERSION
 fi
+if [ -f share/bin/mfront ]; then
+  echo "export LD_LIBRARY_PATH=\${project_directory}/share/lib:\$LD_LIBRARY_PATH" >> env_TrioCFD.sh
+  echo "export LD_LIBRARY_PATH=\${project_directory}/share/lib:\$LD_LIBRARY_PATH" >> full_env_TrioCFD.sh
+fi
+[[ $BUILD_MFRONT_LIBRARIES ]] && compile_mfront_libraries
+
 exit 0
 
