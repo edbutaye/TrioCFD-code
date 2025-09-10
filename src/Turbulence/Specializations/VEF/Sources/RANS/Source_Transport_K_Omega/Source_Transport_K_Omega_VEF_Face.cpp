@@ -31,7 +31,7 @@
 #include <VEF_discretisation.h>
 #include <Domaine_VEF.h>
 #include <Domaine_Cl_VEF.h>
-#include <K_Omega_constants.h>
+#include <K_Omega_Eps_constants.h>
 
 Implemente_instanciable_sans_constructeur(Source_Transport_K_Omega_VEF_Face,
                                           "Source_Transport_K_Omega_VEF_P1NC",

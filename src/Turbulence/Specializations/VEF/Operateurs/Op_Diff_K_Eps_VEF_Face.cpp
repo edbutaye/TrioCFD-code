@@ -49,8 +49,8 @@ DoubleTab& Op_Diff_K_Eps_VEF_Face::ajouter(const DoubleTab& inconnue_org, Double
   DoubleTab nu_turb_m(n_tot, 2);
   for (int k=0; k<n_tot; k++)
     {
-      nu_turb_m(k,0) = nu_turb(k)/Prdt[0];
-      nu_turb_m(k,1) = nu_turb(k)/Prdt[1];
+      nu_turb_m(k,0) = nu_turb(k)/Sigma_[0];
+      nu_turb_m(k,1) = nu_turb(k)/Sigma_[1];
     }
 
   ajouter_bord_gen<Type_Champ::SCALAIRE, true>(inconnue_org, resu, flux_bords_, nu_, nu_turb_m);
@@ -72,8 +72,8 @@ void Op_Diff_K_Eps_VEF_Face::contribuer_a_avec(const DoubleTab& inco, Matrice_Mo
   DoubleTab nu_turb_m(n_tot, 2);
   for (int k=0; k<n_tot; k++)
     {
-      nu_turb_m(k,0) = nu_turb(k)/Prdt[0];
-      nu_turb_m(k,1) = nu_turb(k)/Prdt[1];
+      nu_turb_m(k,0) = nu_turb(k)/Sigma_[0];
+      nu_turb_m(k,1) = nu_turb(k)/Sigma_[1];
     }
 
   int marq = phi_psi_diffuse(equation());

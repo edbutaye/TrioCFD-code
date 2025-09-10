@@ -24,6 +24,7 @@
 
 #include <Eval_Diff_VDF.h>
 #include <TRUST_Ref.h>
+#include <K_Omega_Eps_constants.h>
 
 class Champ_Fonc_base;
 class Champ_Uniforme;
@@ -31,10 +32,10 @@ class Champ_Uniforme;
 class  Eval_Diff_K_Eps_Bas_Re_VDF_var : public Eval_Diff_VDF
 {
 public:
-  Eval_Diff_K_Eps_Bas_Re_VDF_var(double Prandt_K = PRDT_K_DEFAUT , double Prandt_Eps =PRDT_EPS_DEFAUT ) : Prdt_K(Prandt_K) , Prdt_Eps(Prandt_Eps)
+  Eval_Diff_K_Eps_Bas_Re_VDF_var(double Sigma_K = SIGMA_K_KEPS , double Sigma_Eps =SIGMA_EPS_KEPS ) : Sigma_K_(Sigma_K) , Sigma_Eps_(Sigma_Eps)
   {
-    Prdt[0]=Prandt_K;
-    Prdt[1]=Prandt_Eps;
+    Sigma_[0]=Sigma_K;
+    Sigma_[1]=Sigma_Eps;
   }
 
   inline void associer_diff_turb(const Champ_Fonc_base& diffu) { diffusivite_turbulente_ = diffu; }
@@ -44,7 +45,7 @@ public:
   // pour CRTP
   inline double nu_1_impl(int i, int compo) const
   {
-    return tab_diffusivite_(i) + dv_diffusivite_turbulente(i)/Prdt[compo];
+    return tab_diffusivite_(i) + dv_diffusivite_turbulente(i)/Sigma_[compo];
   }
 
   inline double compute_heq_impl(double d0, int i, double d1, int j, int compo) const
@@ -53,8 +54,7 @@ public:
   }
 
 protected:
-  static constexpr double PRDT_K_DEFAUT = 1.0, PRDT_EPS_DEFAUT = 1.3;
-  double Prdt_K, Prdt_Eps, Prdt[2];
+  double Sigma_K_, Sigma_Eps_, Sigma_[2];
   OBS_PTR(Champ_Fonc_base) diffusivite_turbulente_;
   DoubleVect dv_diffusivite_turbulente;
 };

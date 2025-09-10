@@ -53,7 +53,7 @@ void Op_Diff_K_Eps_VDF_base::completer()
           const Modele_turbulence_hyd_K_Eps& mod_turb = ref_cast(Modele_turbulence_hyd_K_Eps,eqn_transport.modele_turbulence());
           Eval_Diff_K_Eps_VDF_Elem& eval_diff = static_cast<Eval_Diff_K_Eps_VDF_Elem&> (iter->evaluateur());
           const Champ_Fonc_base& diff_turb = mod_turb.viscosite_turbulente();
-          eval_diff.associer_Pr_K_Eps(mod_turb.get_Prandtl_K(),mod_turb.get_Prandtl_Eps());
+          eval_diff.associer_Pr_K_Eps(mod_turb.get_Sigma_K(),mod_turb.get_Sigma_Eps());
           eval_diff.associer_diff_turb(diff_turb);
         }
     }
@@ -65,7 +65,7 @@ void Op_Diff_K_Eps_VDF_base::completer()
           const Modele_turbulence_hyd_K_Eps_Realisable& mod_turb = ref_cast(Modele_turbulence_hyd_K_Eps_Realisable,eqn_transport.modele_turbulence());
           Eval_Diff_K_Eps_VDF_Elem& eval_diff = static_cast<Eval_Diff_K_Eps_VDF_Elem&> (iter->evaluateur());
           const Champ_Fonc_base& diff_turb = mod_turb.viscosite_turbulente();
-          eval_diff.associer_Pr_K_Eps(mod_turb.get_Prandtl_K(),mod_turb.get_Prandtl_Eps());
+          eval_diff.associer_Pr_K_Eps(mod_turb.get_Sigma_K(),mod_turb.get_Sigma_Eps());
           eval_diff.associer_diff_turb(diff_turb);
         }
     }
@@ -80,13 +80,13 @@ void Op_Diff_K_Eps_VDF_base::completer()
           if ( eqn_transport.transporte_t_il_K( ) )
             {
               Eval_Diff_K_VDF_Elem& eval_diff = static_cast<Eval_Diff_K_VDF_Elem&> (iter->evaluateur());
-              eval_diff.associer_Pr_K_Eps(mod_turb.get_Prandtl_K(),mod_turb.get_Prandtl_Eps());
+              eval_diff.associer_Pr_K_Eps(mod_turb.get_Sigma_K(),mod_turb.get_Sigma_Eps());
               eval_diff.associer_diff_turb(diff_turb);
             }
           else
             {
               Eval_Diff_Eps_VDF_Elem& eval_diff = static_cast<Eval_Diff_Eps_VDF_Elem&> (iter->evaluateur());
-              eval_diff.associer_Pr_K_Eps(mod_turb.get_Prandtl_K(),mod_turb.get_Prandtl_Eps());
+              eval_diff.associer_Pr_K_Eps(mod_turb.get_Sigma_K(),mod_turb.get_Sigma_Eps());
               eval_diff.associer_diff_turb(diff_turb);
             }
         }

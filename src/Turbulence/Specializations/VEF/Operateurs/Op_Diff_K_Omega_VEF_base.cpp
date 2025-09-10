@@ -47,12 +47,24 @@ void Op_Diff_K_Omega_VEF_base::completer()
 
   turbulence_model = mod_turb;
 
-  Prdt_K_ = mod_turb.get_Prandtl_K();
-  Prdt_Omega_ = mod_turb.get_Prandtl_Omega();
   Sigma_K1_ = mod_turb.get_Sigma_K1();
   Sigma_K2_ = mod_turb.get_Sigma_K2();
   Sigma_OMEGA1_ = mod_turb.get_Sigma_Omega1();
   Sigma_OMEGA2_ = mod_turb.get_Sigma_Omega2();
-  Sigma_K_ = 1/Prdt_K_;
-  Sigma_Omega_ = 1/Prdt_Omega_;
+  if (mod_turb.is_SST_or_BSL())
+    {
+      is_SST_or_BSL_=1;
+      associer_tab_F1(mod_turb.get_tabF1());
+    }
+  else
+    {
+      const Domaine_VF& domain_VF = ref_cast(Domaine_VF,mod_turb.get_eq_transport().domaine_dis());
+      const int nb_faces_tot = domain_VF.nb_faces_tot();
+      initialize_tab_F1(nb_faces_tot);
+    }
+
+  const Domaine_VEF& domain_VEF = le_dom_vef.valeur();
+  nu_turb_m_.resize(domain_VEF.nb_elem_tot(), 2);
+  domain_VEF.domaine().creer_tableau_elements(nu_turb_m_,RESIZE_OPTIONS::NOCOPY_NOINIT);
+  nu_turb_m_=0.;
 }

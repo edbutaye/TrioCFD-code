@@ -27,8 +27,8 @@
 #include <Milieu_base.h>
 #include <TRUSTTrav.h>
 #include <VDF_discretisation.h>
-#include <K_Omega_constants.h>
 #include <Champ_Fonc_Face_VDF.h>
+#include <K_Omega_Eps_constants.h>
 
 Implemente_instanciable_sans_constructeur(Source_Transport_K_Omega_VDF_Elem,
                                           "Source_Transport_K_Omega_VDF_P0_VDF",
@@ -64,7 +64,8 @@ void Source_Transport_K_Omega_VDF_Elem::creer_champ(const Motcle& nom)
   if (grad_k_omega_elem_.est_nul())
     {
       noms[0] = "grad_k_grad_omega";
-      disc.discretiser_champ("champ_elem", equation().domaine_dis(), scalaire,
+      disc.discretiser_champ("champ_elem", equation().domaine_dis(), scalaire, // DoubleTab gradk_new=
+
                              noms , unites, 1, 0, grad_k_omega_elem_);
       champs_compris_.ajoute_champ(grad_k_omega_elem_);
     }
@@ -76,6 +77,7 @@ void Source_Transport_K_Omega_VDF_Elem::creer_champ(const Motcle& nom)
       grad_k_face_->valeurs() = 0.;
       Noms name_gradk;
       name_gradk.add("grad_k_face");
+      grad_k_face_->fixer_nb_comp(Objet_U::dimension); // EB: VERY important to enter in Champ_Face_VDF::interpolation in Champ_Face_VDF_implementation::valeur_a_elem_
       grad_k_face_->fixer_noms_compo(name_gradk);
       champs_compris_.ajoute_champ(grad_k_face_);
     }
@@ -87,6 +89,7 @@ void Source_Transport_K_Omega_VDF_Elem::creer_champ(const Motcle& nom)
       grad_omega_face_->valeurs() = 0.;
       Noms name_gradk;
       name_gradk.add("grad_omega_face");
+      grad_omega_face_->fixer_nb_comp(Objet_U::dimension);  // EB: VERY important to enter in Champ_Face_VDF::interpolation in Champ_Face_VDF_implementation::valeur_a_elem_
       grad_omega_face_->fixer_noms_compo(name_gradk);
       champs_compris_.ajoute_champ(grad_omega_face_);
     }
@@ -287,6 +290,7 @@ void Source_Transport_K_Omega_VDF_Elem::compute_cross_diffusion() const
   const Domaine_dis_base& domaine_dis = mon_equation->inconnue().domaine_dis_base();
   DoubleTab& tab_gradK_elem = ref_cast_non_const(DoubleTab, grad_k_elem_->valeurs());
   DoubleTab& tab_gradOmega_elem = ref_cast_non_const(DoubleTab, grad_omega_elem_->valeurs());
+
   grad_k_face_->valeur_aux_centres_de_gravite(domaine_dis.domaine(), tab_gradK_elem);
   grad_omega_face_->valeur_aux_centres_de_gravite(domaine_dis.domaine(), tab_gradOmega_elem);
 

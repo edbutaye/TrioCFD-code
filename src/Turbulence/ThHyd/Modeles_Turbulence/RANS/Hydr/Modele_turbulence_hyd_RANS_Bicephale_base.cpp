@@ -36,8 +36,8 @@ void Modele_turbulence_hyd_RANS_Bicephale_base::set_param(Param& param)
   param.ajouter_non_std("List_transport_equations", (this), Param::REQUIRED);
   param.ajouter("eps_min", &EPS_MIN_); // XD_ADD_P double Lower limitation of epsilon (default value 1.e-10).
   param.ajouter("eps_max", &EPS_MAX_); // XD_ADD_P double Upper limitation of epsilon (default value 1.e+10).
-  param.ajouter("PRANDTL_K", &Prandtl_K_); // XD_ADD_P double Keyword to change the Prk value (default 1.0).
-  param.ajouter("PRANDTL_EPS", &Prandtl_Eps_); // XD_ADD_P double Keyword to change the Pre value (default 1.3)
+  param.ajouter("PRANDTL_K|Sigma_K", &Sigma_K_); // XD_ADD_P double Keyword to change the Prk|Sigma_K value (default 1.0). See https://turbmodels.larc.nasa.gov/ke-chien.html
+  param.ajouter("PRANDTL_EPS|Sigma_Eps", &Sigma_Eps_); // XD_ADD_P double Keyword to change the Pre|Sigma_Eps value (default 1.3).
 }
 
 int Modele_turbulence_hyd_RANS_Bicephale_base::lire_motcle_non_standard(const Motcle& mot, Entree& is)

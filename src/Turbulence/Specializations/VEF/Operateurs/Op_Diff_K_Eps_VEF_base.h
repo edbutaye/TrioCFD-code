@@ -21,13 +21,10 @@
 #ifndef Op_Diff_K_Eps_VEF_base_included
 #define Op_Diff_K_Eps_VEF_base_included
 
-#define PRDT_K_DEFAUT 1
-#define PRDT_EPS_DEFAUT 1.3
-
 #include <Op_Dift_VEF_base.h>
 #include <Op_VEF_Face.h>
 #include <TRUST_Ref.h>
-
+#include <K_Omega_Eps_constants.h>
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -40,10 +37,10 @@ class Op_Diff_K_Eps_VEF_base : public Op_Dift_VEF_base
 
   Declare_instanciable_sans_constructeur(Op_Diff_K_Eps_VEF_base);
 
-  Op_Diff_K_Eps_VEF_base(double Prandt_K = PRDT_K_DEFAUT, double Prandt_Eps = PRDT_EPS_DEFAUT ) : Prdt_K(Prandt_K) , Prdt_Eps(Prandt_Eps)
+  Op_Diff_K_Eps_VEF_base(double Sigma_K = SIGMA_K_KEPS, double Sigma_Eps = SIGMA_EPS_KEPS ) : Sigma_K_(Sigma_K) , Sigma_Eps_(Sigma_Eps)
   {
-    Prdt[0]=Prandt_K;
-    Prdt[1]=Prandt_Eps;
+    Sigma_[0]=Sigma_K;
+    Sigma_[1]=Sigma_Eps;
   }
 
 public:
@@ -51,9 +48,9 @@ public:
   void completer() override;
 
 protected:
-  double Prdt_K;
-  double Prdt_Eps;
-  double Prdt[2];
+  double Sigma_K_;
+  double Sigma_Eps_;
+  double Sigma_[2];
 
 };
 

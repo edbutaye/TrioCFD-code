@@ -26,7 +26,7 @@
 #include <Champ_Uniforme.h>
 #include <Champ_base.h>
 #include <TRUST_Ref.h>
-#include <K_Omega_constants.h>
+#include <K_Omega_Eps_constants.h>
 
 class Eval_Diff_K_Omega_VDF
 {

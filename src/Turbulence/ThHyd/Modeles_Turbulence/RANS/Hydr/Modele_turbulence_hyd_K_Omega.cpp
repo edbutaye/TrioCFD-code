@@ -81,19 +81,18 @@ Entree& Modele_turbulence_hyd_K_Omega::readOn(Entree& s)
 void Modele_turbulence_hyd_K_Omega::set_param(Param& param)
 {
   Modele_turbulence_hyd_RANS_K_Omega_base::set_param(param);
-  param.ajouter("PRANDTL_K", &Prandtl_K_); // XD_ADD_P double Prandtl_K (default value 1./2.).
-  param.ajouter("PRANDTL_Omega", &Prandtl_Omega_); // XD_ADD_P double Prandtl_Omega  (default value 1./2.).
+  param.ajouter("PRANDTL_K|Sigma_K", &Sigma_K_); // XD_ADD_P double Prandtl_K|Sigma_K (default value 1./2.). See https://turbmodels.larc.nasa.gov/wilcox.html
+  param.ajouter("PRANDTL_Omega|Sigma_Omega", &Sigma_Omega_); // XD_ADD_P double Prandtl_Omega|Sigma_Omega  (default value 1./2.).
   param.ajouter("model_variant", &model_variant_, Param::OPTIONAL); // XD_ADD_P chaine Model variant for k-omega (default value STD)
-  param.ajouter("Sigma_K1", &Sigma_K1_); // XD_ADD_P double Sigma_K1 for SST model (default value 0.85).
+  param.ajouter("Sigma_K1", &Sigma_K1_); // XD_ADD_P double Sigma_K1 for SST model (default value 0.85). See https://turbmodels.larc.nasa.gov/sst.html
   param.ajouter("Sigma_K2", &Sigma_K2_); // XD_ADD_P double Sigma_K2 for SST model (default value 1.).
-  param.ajouter("Sigma_Omega1", &Sigma_OMEGA1_); // XD_ADD_P double Sigma_Omega1 for SST model (default value 1/2.).
+  param.ajouter("Sigma_Omega1", &Sigma_OMEGA1_); // XD_ADD_P double Sigma_Omega1 for SST model (default value 1./2.).
   param.ajouter("Sigma_Omega2", &Sigma_OMEGA2_); // XD_ADD_P double Prandt_Omega2 for SST model (default value 0.856).
 }
+
 void Modele_turbulence_hyd_K_Omega::completer()
 {
   Modele_turbulence_hyd_RANS_K_Omega_base::completer();
-  Sigma_K_=1/Prandtl_K_; // update default value if Prandtl_K is define in the data file
-  Sigma_Omega_=1/Prandtl_Omega_; // update default value if Prandtl_Omega is define in the data file
 }
 
 /*! @brief Calcule la viscosite turbulente au temps demande.

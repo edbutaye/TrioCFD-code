@@ -58,28 +58,18 @@ DoubleTab& Op_Diff_K_Omega_VEF_Face::ajouter(const DoubleTab& inconnue_org, Doub
 
   const bool is_SST_or_BSL = turbulence_model->is_SST_or_BSL();
   DoubleTab F1elem(domaine_VEF.nb_elem_tot(), 1);
-  const DoubleTab& F1face = turbulence_model->get_tabF1();
-  if (is_SST_or_BSL)
-    Discretisation_tools::faces_to_cells(domaine_VEF, F1face, F1elem);
 
-  int n_tot = nu_.dimension_tot(0); //TODO peut mieux faire
-  DoubleTab nu_turb_m(n_tot, 2);
   if (is_SST_or_BSL)
+    Discretisation_tools::faces_to_cells(domaine_VEF, tab_F1_face_, F1elem);
+
+  const int nb_elem = domaine_VEF.nb_elem();
+  DoubleTab nu_turb_m = ref_cast_non_const(DoubleTab, nu_turb_m_);
+  for (int elem=0; elem<nb_elem; elem++)
     {
-      for (int elem=0; elem<n_tot; elem++)
-        {
-          nu_turb_m(elem,0) = nu_turb(elem) * (F1elem(elem)*Sigma_K1_ + (1 - F1elem(elem))*Sigma_K2_);
-          nu_turb_m(elem,1) = nu_turb(elem) * (F1elem(elem)*Sigma_OMEGA1_ + (1 - F1elem(elem))*Sigma_OMEGA2_);
-        }
+      nu_turb_m(elem,0) = nu_turb(elem) * ( is_SST_or_BSL_*(F1elem(elem)*Sigma_K1_ + (1 - F1elem(elem))*Sigma_K2_) + (1 - is_SST_or_BSL_)*Sigma_K_ );
+      nu_turb_m(elem,1) = nu_turb(elem) * (is_SST_or_BSL_*(F1elem(elem)*Sigma_OMEGA1_ + (1 - F1elem(elem))*Sigma_OMEGA2_)+ (1 - is_SST_or_BSL_)*Sigma_Omega_ );
     }
-  else
-    {
-      for (int elem=0; elem<n_tot; elem++)
-        {
-          nu_turb_m(elem,0) = nu_turb(elem) * Sigma_K_;
-          nu_turb_m(elem,1) = nu_turb(elem) * Sigma_Omega_;
-        }
-    }
+  nu_turb_m.echange_espace_virtuel();
 
   ajouter_bord_gen<Type_Champ::SCALAIRE, true>(inconnue_org, resu, flux_bords_, nu_, nu_turb_m);
   ajouter_interne_gen<Type_Champ::SCALAIRE, true>(inconnue_org, resu, flux_bords_, nu_, nu_turb_m);
@@ -108,30 +98,17 @@ void Op_Diff_K_Omega_VEF_Face::contribuer_a_avec(const DoubleTab& inco,
 
   const bool is_SST_or_BSL = turbulence_model->is_SST_or_BSL();
   DoubleTab F1elem(domaine_VEF.nb_elem_tot(), 1);
-  const DoubleTab& F1face = turbulence_model->get_tabF1();
   if (is_SST_or_BSL)
-    Discretisation_tools::faces_to_cells(domaine_VEF, F1face, F1elem);
+    Discretisation_tools::faces_to_cells(domaine_VEF, tab_F1_face_, F1elem);
 
-  int n_tot = nu_.dimension_tot(0); //TODO peut mieux faire
-  DoubleTab nu_turb_m(n_tot, 2);
-
-  if (is_SST_or_BSL)
+  const int nb_elem = domaine_VEF.nb_elem();
+  DoubleTab nu_turb_m = ref_cast_non_const(DoubleTab, nu_turb_m_);
+  for (int elem=0; elem<nb_elem; elem++)
     {
-      for (int elem=0; elem<n_tot; elem++)
-        {
-          nu_turb_m(elem,0) = nu_turb(elem) * (F1elem(elem)*SIGMA_K1 + (1 - F1elem(elem))*SIGMA_K2);
-          nu_turb_m(elem,1) = nu_turb(elem) * (F1elem(elem)*SIGMA_OMEGA1 + (1 - F1elem(elem))*SIGMA_OMEGA2);
-        }
+      nu_turb_m(elem,0) = nu_turb(elem) * ( is_SST_or_BSL_*(F1elem(elem)*Sigma_K1_ + (1 - F1elem(elem))*Sigma_K2_) + (1 - is_SST_or_BSL_)*Sigma_K_ );
+      nu_turb_m(elem,1) = nu_turb(elem) * (is_SST_or_BSL_*(F1elem(elem)*Sigma_OMEGA1_ + (1 - F1elem(elem))*Sigma_OMEGA2_)+ (1 - is_SST_or_BSL_)*Sigma_Omega_ );
     }
-  else
-    {
-      for (int elem=0; elem<n_tot; elem++)
-        {
-          nu_turb_m(elem,0) = nu_turb(elem) * Sigma_K_;
-          nu_turb_m(elem,1) = nu_turb(elem) * Sigma_Omega_;
-        }
-    }
-
+  nu_turb_m.echange_espace_virtuel();
 
   int marq = phi_psi_diffuse(equation());
 

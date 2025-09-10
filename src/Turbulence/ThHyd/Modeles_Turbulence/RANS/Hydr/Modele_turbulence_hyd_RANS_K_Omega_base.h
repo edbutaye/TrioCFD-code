@@ -25,7 +25,7 @@
 
 #include <Modele_turbulence_hyd_2_eq_base.h>
 #include <Modele_turbulence_hyd_RANS_Gen.h>
-#include <K_Omega_constants.h>
+#include <K_Omega_Eps_constants.h>
 
 class Transport_K_Omega_base;
 
@@ -40,8 +40,6 @@ public:
 
   Modele_turbulence_hyd_RANS_K_Omega_base()
   {
-    Prandtl_K_ = PRANDTL_K;
-    Prandtl_Omega_ = PRANDTL_OMEGA;
     model_variant_ = "SST";
     Sigma_K_ = SIGMA_K;
     Sigma_Omega_ = SIGMA_OMEGA;

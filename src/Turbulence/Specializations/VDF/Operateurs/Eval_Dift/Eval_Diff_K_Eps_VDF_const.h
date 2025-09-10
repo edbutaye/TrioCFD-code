@@ -30,7 +30,7 @@ public:
   // Methods used by the flux computation in template class:
   inline double nu_1_impl(int i, int compo) const
   {
-    return db_diffusivite + dv_diffusivite_turbulente(i)/Prdt[compo];
+    return db_diffusivite + dv_diffusivite_turbulente(i)/Sigma_[compo];
   }
 
   inline double nu_2_impl(int i, int compo) const { return nu_1_impl(i,compo); }
@@ -45,7 +45,7 @@ class Eval_Diff_K_ou_Eps_VDF_const : public Eval_Diff_K_Eps_VDF
 {
 public:
   // Methods used by the flux computation in template class:
-  inline double nu_1_impl(int i, int compo) const { return dv_diffusivite_turbulente(i)/Prdt[compo]; }
+  inline double nu_1_impl(int i, int compo) const { return dv_diffusivite_turbulente(i)/Sigma_[compo]; }
 
   inline double nu_2_impl(int i, int compo) const { return dv_diffusivite_turbulente(i); }
 
@@ -61,7 +61,7 @@ public:
   // Methods used by the flux computation in template class:
   inline double nu_1_impl(int i, int compo) const
   {
-    return db_diffusivite + dv_diffusivite_turbulente(i)/Prdt[compo];
+    return db_diffusivite + dv_diffusivite_turbulente(i)/Sigma_[compo];
   }
 
   inline double nu_2_impl(int i, int compo) const { return db_diffusivite; }

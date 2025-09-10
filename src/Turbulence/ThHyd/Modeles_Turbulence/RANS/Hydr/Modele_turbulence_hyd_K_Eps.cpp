@@ -50,8 +50,8 @@ void Modele_turbulence_hyd_K_Eps::set_param(Param& param)
   Modele_turbulence_hyd_RANS_K_Eps_base::set_param(param);
   param.ajouter_non_std("Modele_Fonc_Bas_Reynolds", (this)); // XD_ADD_P modele_fonction_bas_reynolds_base This keyword is used to set the bas Reynolds model used.
   param.ajouter("CMU", &LeCmu_); // XD_ADD_P double Keyword to modify the Cmu constant of k-eps model : Nut=Cmu*k*k/eps Default value is 0.09
-  param.ajouter("PRANDTL_K", &Prandtl_K_); // XD_ADD_P double Keyword to change the Prk value (default 1.0).
-  param.ajouter("PRANDTL_EPS", &Prandtl_Eps_); // XD_ADD_P double Keyword to change the Pre value (default 1.3).
+  param.ajouter("PRANDTL_K|Sigma_K", &Sigma_K_); // XD_ADD_P double Keyword to change the Prk|Sigma_K value (default 1.0). See https://turbmodels.larc.nasa.gov/ke-chien.html
+  param.ajouter("PRANDTL_EPS|Sigma_Eps", &Sigma_Eps_); // XD_ADD_P double Keyword to change the Pre|Sigma_Eps value (default 1.3).
 }
 
 int Modele_turbulence_hyd_K_Eps::lire_motcle_non_standard(const Motcle& mot, Entree& is)

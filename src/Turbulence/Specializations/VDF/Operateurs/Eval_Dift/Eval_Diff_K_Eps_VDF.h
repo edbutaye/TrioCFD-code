@@ -26,17 +26,17 @@
 #include <Champ_Uniforme.h>
 #include <Champ_base.h>
 #include <TRUST_Ref.h>
-
+#include <K_Omega_Eps_constants.h>
 
 class Eval_Diff_K_Eps_VDF
 {
 public:
   virtual ~Eval_Diff_K_Eps_VDF() { }
 
-  Eval_Diff_K_Eps_VDF(double Prandt_K = PRDT_K_DEFAUT, double Prandt_Eps = PRDT_EPS_DEFAUT ) : Prdt_K(Prandt_K) , Prdt_Eps(Prandt_Eps), db_diffusivite(-123.)
+  Eval_Diff_K_Eps_VDF(double Sigma_K = SIGMA_K_KEPS, double Sigma_Eps = SIGMA_EPS_KEPS ) : Sigma_K_(Sigma_K) , Sigma_Eps_(Sigma_Eps), db_diffusivite(-123.)
   {
-    Prdt[0]=Prandt_K;
-    Prdt[1]=Prandt_Eps;
+    Sigma_[0]=Sigma_K;
+    Sigma_[1]=Sigma_Eps;
   }
 
   inline void associer_diff_turb(const Champ_Fonc_base& diffu) { diffusivite_turbulente_ = diffu; }
@@ -47,12 +47,12 @@ public:
     dv_mvol.ref(mvol.valeurs());
   }
 
-  inline void associer_Pr_K_Eps(double Pr_K,double Pr_Eps)
+  inline void associer_Pr_K_Eps(double Sigma_K,double Sigma_Eps)
   {
-    Prdt_K = Pr_K;
-    Prdt_Eps = Pr_Eps;
-    Prdt[0] = Pr_K;
-    Prdt[1] = Pr_Eps;
+    Sigma_K_ = Sigma_K;
+    Sigma_Eps_ = Sigma_Eps;
+    Sigma_[0] = Sigma_K;
+    Sigma_[1] = Sigma_Eps;
   }
 
   inline void associer(const Champ_base& diffu)
@@ -76,8 +76,7 @@ public:
   inline double get_dv_mvol(const int i) const { return dv_mvol[i]; }
 
 protected:
-  static constexpr double PRDT_K_DEFAUT = 1.0, PRDT_EPS_DEFAUT = 1.3;
-  double Prdt_K, Prdt_Eps, db_diffusivite, Prdt[2];
+  double Sigma_K_, Sigma_Eps_, db_diffusivite, Sigma_[2];
   DoubleVect dv_diffusivite_turbulente, dv_mvol;
   OBS_PTR(Champ_Fonc_base) diffusivite_turbulente_;
   OBS_PTR(Champ_base) masse_volumique_, diffusivite_;

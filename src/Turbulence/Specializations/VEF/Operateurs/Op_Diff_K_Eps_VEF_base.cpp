@@ -54,13 +54,13 @@ void Op_Diff_K_Eps_VEF_base::completer()
     {
       const Transport_K_ou_Eps& eqn_transport = ref_cast(Transport_K_ou_Eps,mon_equation.valeur());
       if (eqn_transport.transporte_t_il_K( ))
-        Prdt[0] = mod_turb.get_Prandtl_K();
+        Sigma_[0] = mod_turb.get_Sigma_K();
       else
-        Prdt[0] = mod_turb.get_Prandtl_Eps();
+        Sigma_[0] = mod_turb.get_Sigma_Eps();
     }
   else
     {
-      Prdt[0] = mod_turb.get_Prandtl_K();
-      Prdt[1] = mod_turb.get_Prandtl_Eps();
+      Sigma_[0] = mod_turb.get_Sigma_K();
+      Sigma_[1] = mod_turb.get_Sigma_Eps();
     }
 }
