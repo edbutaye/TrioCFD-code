@@ -68,18 +68,35 @@ function install_mfront
   mkdir build
   cd build
   echo "CC=$TRUST_cc_BASE CXX=$TRUST_CC_base FC=$TRUST_F77_BASE cmake ../tfel-TFEL-$mfront_version -DCMAKE_BUILD_TYPE=Release -Denable-reference-doc=OFF -Denable-website=OFF -DCMAKE_INSTALL_PREFIX=$current_path/share"
-  CC=$TRUST_cc_BASE CXX=$TRUST_CC_base FC=$TRUST_F77_BASE cmake ../tfel-TFEL-$mfront_version -DCMAKE_BUILD_TYPE=Release -Denable-reference-doc=OFF -Denable-website=OFF -DCMAKE_INSTALL_PREFIX=$current_path/share &>> ../../Mfront/build-tfel-TFEL-$mfront_version.LOG
+  eval "CC=$TRUST_cc_BASE CXX=$TRUST_CC_base FC=$TRUST_F77_BASE cmake ../tfel-TFEL-$mfront_version -DCMAKE_BUILD_TYPE=Release -Denable-reference-doc=OFF -Denable-website=OFF -DCMAKE_INSTALL_PREFIX=$current_path/share &>> ../../Mfront/build-tfel-TFEL-$mfront_version.LOG"
+  ret=$?
+  if ((ret)); then
+     echo "Error in configuring Tfel/MFront, see file $current_path/share/Mfront/build-tfel-TFEL-$mfront_version.LOG"
+     exit 1
+  fi
 
   np=`nproc 2> /dev/null`
   if [ ! $np ]; then
     echo "make"
-    make &>> ../../Mfront/build-tfel-TFEL-$mfront_version.LOG
+    eval "make &>> ../../Mfront/build-tfel-TFEL-$mfront_version.LOG"
   else
     echo "make with $np processes"
-    make -j $np &>> ../../Mfront/build-tfel-TFEL-$mfront_version.LOG
+    eval "make -j $np &>> ../../Mfront/build-tfel-TFEL-$mfront_version.LOG"
   fi
+  ret=$?
+  if ((ret)); then
+     echo "Error in building Tfel/MFront, see file $current_path/share/Mfront/build-tfel-TFEL-$mfront_version.LOG"
+     exit 1
+  fi
+
   echo "make install"
-  make install &>> ../../Mfront/build-tfel-TFEL-$mfront_version.LOG
+  eval "make install &>> ../../Mfront/build-tfel-TFEL-$mfront_version.LOG"
+  ret=$?
+  if ((ret)); then
+     echo "Error in installing Tfel/MFront, see file $current_path/share/Mfront/build-tfel-TFEL-$mfront_version.LOG"
+     exit 1
+  fi
+
   cd $current_path
   rm -rf share/build_mfront_tmp
   echo "export LD_LIBRARY_PATH=\${project_directory}/share/lib:\$LD_LIBRARY_PATH" >> env_TrioCFD.sh
