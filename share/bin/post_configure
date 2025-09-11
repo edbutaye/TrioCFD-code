@@ -124,14 +124,18 @@ function compile_mfront_libraries
     echo "---> Compiling material model: "$matmodel
     matname=$(basename -- "$matmodel")
     matname="${matname%.*}"
-    eval "mfront --build --interface=generic $matmodel &> $current_path/share/Mfront_material_libraries/compile-$matname.LOG"
+
+    [[ ! -d $matname ]] && mkdir $matname
+    cd $matname
+    eval "mfront --build --interface=generic $matmodel &> compile-$matname.LOG"
     ret=$?
     if ((ret)); then
-      echo "Error in compiling Mfront material model $matmodel, see file $current_path/share/Mfront_material_libraries/compile-$matname.LOG"
+      echo "Error in compiling Mfront material model $matmodel, see file $current_path/share/Mfront_material_libraries/$matname/compile-$matname.LOG"
       exit 1
     else
       echo "---> OK"
     fi
+    cd ..
   done
 
   echo " "
