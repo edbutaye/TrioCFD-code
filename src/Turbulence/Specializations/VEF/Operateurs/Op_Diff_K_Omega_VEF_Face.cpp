@@ -63,7 +63,7 @@ DoubleTab& Op_Diff_K_Omega_VEF_Face::ajouter(const DoubleTab& inconnue_org, Doub
     Discretisation_tools::faces_to_cells(domaine_VEF, tab_F1_face_, F1elem);
 
   const int nb_elem = domaine_VEF.nb_elem();
-  DoubleTab nu_turb_m = ref_cast_non_const(DoubleTab, nu_turb_m_);
+  DoubleTab& nu_turb_m = ref_cast_non_const(DoubleTab, nu_turb_m_);
   for (int elem=0; elem<nb_elem; elem++)
     {
       nu_turb_m(elem,0) = nu_turb(elem) * ( is_SST_or_BSL_*(F1elem(elem)*Sigma_K1_ + (1 - F1elem(elem))*Sigma_K2_) + (1 - is_SST_or_BSL_)*Sigma_K_ );
@@ -102,7 +102,7 @@ void Op_Diff_K_Omega_VEF_Face::contribuer_a_avec(const DoubleTab& inco,
     Discretisation_tools::faces_to_cells(domaine_VEF, tab_F1_face_, F1elem);
 
   const int nb_elem = domaine_VEF.nb_elem();
-  DoubleTab nu_turb_m = ref_cast_non_const(DoubleTab, nu_turb_m_);
+  DoubleTab& nu_turb_m = ref_cast_non_const(DoubleTab, nu_turb_m_);
   for (int elem=0; elem<nb_elem; elem++)
     {
       nu_turb_m(elem,0) = nu_turb(elem) * ( is_SST_or_BSL_*(F1elem(elem)*Sigma_K1_ + (1 - F1elem(elem))*Sigma_K2_) + (1 - is_SST_or_BSL_)*Sigma_K_ );
