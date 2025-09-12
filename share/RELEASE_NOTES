@@ -1,7 +1,11 @@
 --------------------------------------------------------------------------------------------------
 Release notes version 1.9.7_beta : Enhancements, modifications and corrected bugs since version 1.9.6 :
 --------------------------------------------------------------------------------------------------
-XX/09/25 (TrioCFD) Keyword     : FTD - parameter 'iterations_correction_volume N' is now obsolete. To get the same behavior as previously, your should replace it by:
+12/09/25 (TrioCFD) Bug fix     : Correction of the computation of (nu_lam + nu_turb*sigma) for VEF k_omega turbulence model
+12/09/25 (TrioCFD) New feature : K_omega turbulence model is available for VDF discretization. Model variants are: standard, SST, BSL. See https://turbmodels.larc.nasa.gov/index.html.
+12/09/25 (TrioCFD) New feature : BSL model variant is available for VEF discretization.
+12/09/25 (TrioCFD) New feature : Post-processing of production and dissipation term are available for k_omega turbulence model (VEF,VDF). Cross_diffusion, grad_k_face, grad_omega_face are also post-processable as well as F1, F2 and enstrophy for SST model.
+10/09/25 (TrioCFD) Keyword     : FTD - parameter 'iterations_correction_volume N' is now obsolete. To get the same behavior as previously, your should replace it by:
                                  VOFlike_correction_volume M  # M = 1 if N>0, otherwise M = 0  #
                                  nb_lissage_correction_volume N
                                  nb_iterations_correction_volume N
