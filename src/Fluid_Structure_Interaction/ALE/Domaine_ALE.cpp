@@ -960,6 +960,12 @@ void Domaine_ALE::resumptionJacobian(DoubleTab& ValueOf_ALEjacobian_old, DoubleT
   ALEjacobian_new=ValueOf_ALEjacobian_new;
   resumption=1;
 }
+
+void Domaine_ALE::resumptionStructuralDynamicsMesh(DoubleTab& u_n, DoubleTab& v_n, DoubleTab& a_n, DoubleTab& x_n)
+{
+  str_mesh_model.resumptionMesh(u_n, v_n, a_n, x_n);
+}
+
 void Domaine_ALE::reading_vit_bords_ALE(Entree& is)
 {
   Motcle accolade_ouverte("{");
@@ -1824,6 +1830,26 @@ const DoubleVect& Domaine_ALE::getMeshPbVonMises() const
 const DoubleTab& Domaine_ALE::getMeshPbForceFace() const
 {
   return str_mesh_model.getMeshPbForceFace() ;
+}
+
+
+
+const DoubleVect& Domaine_ALE::getMeshDisplacement() const
+{
+  return str_mesh_model.getMeshDisplacement();
+}
+const DoubleVect& Domaine_ALE::getMeshVelocity() const
+{
+  return str_mesh_model.getMeshVelocity();
+}
+const DoubleVect& Domaine_ALE::getMeshAcceleration() const
+{
+  return str_mesh_model.getMeshAcceleration();
+}
+
+const DoubleVect& Domaine_ALE::getMeshPosition() const
+{
+  return str_mesh_model.getMeshPosition();
 }
 
 void Domaine_ALE::update_coord_dom_extrait_surface()

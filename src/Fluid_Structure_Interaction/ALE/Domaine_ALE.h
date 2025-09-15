@@ -109,6 +109,10 @@ public :
   const DoubleVect& getMeshPbPressure() const ;
   const DoubleVect& getMeshPbVonMises() const ;
   const DoubleTab& getMeshPbForceFace() const ;
+  const DoubleVect& getMeshDisplacement() const ;
+  const DoubleVect& getMeshVelocity() const ;
+  const DoubleVect& getMeshAcceleration() const ;
+  const DoubleVect& getMeshPosition() const ;
 
   inline const IntTab& les_elems_extrait_surf_reference() const;
   inline void set_les_elems_extrait_surf_reference(const IntTab& );
@@ -118,6 +122,7 @@ public :
   void solveDynamicMeshProblem(const double temps, const DoubleTab& imposedVelocity, const IntVect& imposedVelocityTag,
                                DoubleTab& outputMeshVelocity, const int nbSom, const int nbElem, const int nbSomElem,
                                const IntTab& sommets, const int nbFace, const int nbSomFace, const IntTab& face_sommets) ;
+  void resumptionStructuralDynamicsMesh(DoubleTab&, DoubleTab&, DoubleTab&, DoubleTab&);
 
 protected:
 

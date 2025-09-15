@@ -52,6 +52,8 @@ Structural_dynamic_mesh_model::Structural_dynamic_mesh_model()
   maxAddedMassRatio = 0 ;
 
   doConfigurationReset = false ;
+  resumption = 0;
+
 
 }
 Structural_dynamic_mesh_model::~Structural_dynamic_mesh_model()
@@ -72,6 +74,7 @@ Entree& Structural_dynamic_mesh_model::readOn(Entree& is)
 
 Entree& Structural_dynamic_mesh_model::interpreter_(Entree& is)
 {
+
   associer_domaine(is);
   Domaine_ALE& dom=ref_cast(Domaine_ALE, domaine());
   dom.reading_structural_dynamic_mesh_model(is);
@@ -192,7 +195,6 @@ void Structural_dynamic_mesh_model::initMfrontBehaviour()
 
 void Structural_dynamic_mesh_model::initDynamicMeshProblem(const int nsom, const int nelem, const int nface, const MD_Vector& md, const MD_Vector& mde, const MD_Vector& mdf)
 {
-
   switch (dimension)
     {
     case (2) :
@@ -231,11 +233,15 @@ void Structural_dynamic_mesh_model::initDynamicMeshProblem(const int nsom, const
       break ;
     }
 
-  x.resize(nsom,dimension) ;
-  u.resize(nsom,dimension) ;
-  v.resize(nsom,dimension) ;
+  if(!resumption)
+    {
+      u.resize(nsom,dimension) ;
+      v.resize(nsom,dimension) ;
+      a.resize(nsom,dimension) ;
+      x.resize(nsom,dimension) ;
+    }
+
   vp.resize(nsom,dimension) ;
-  a.resize(nsom,dimension) ;
   ff.resize(nsom,dimension) ;
 
   mass.resize(nsom) ;
@@ -260,10 +266,14 @@ void Structural_dynamic_mesh_model::initDynamicMeshProblem(const int nsom, const
   MD_Vector_tools::creer_tableau_distribue(md, mass) ;
   if (getGridDtMin() > 0.) MD_Vector_tools::creer_tableau_distribue(md, nodalScaleMass) ;
 
-  u=0 ;
-  v=0 ;
+  if(!resumption)
+    {
+      u=0 ;
+      v=0 ;
+      a=0 ;
+    }
+
   vp=0 ;
-  a=0 ;
   ff=0 ;
   mass=0. ;
   if (getGridDtMin() > 0.) nodalScaleMass=0. ;
@@ -917,3 +927,12 @@ void Structural_dynamic_mesh_model::checkElemOrientation(int elnodes[4], const i
     }
 
 }
+void Structural_dynamic_mesh_model::resumptionMesh(DoubleTab& u_n, DoubleTab& v_n, DoubleTab& a_n,  DoubleTab& x_n)
+{
+  u=u_n;
+  v=v_n;
+  a=a_n;
+  x=x_n;
+  resumption = 1;
+}
+

@@ -65,9 +65,14 @@ public:
   inline double getDampingCoefficient() ;
   inline double getGridDtMin() ;
   inline void setMassElem(const double& elmass) ;
-  inline const DoubleVect& getMeshPbPressure() const ;
-  inline const DoubleVect& getMeshPbVonMises() const ;
-  inline const DoubleTab& getMeshPbForceFace() const ;
+  inline const DoubleVect& getMeshPbPressure() const;
+  inline const DoubleVect& getMeshPbVonMises() const;
+  inline const DoubleTab& getMeshPbForceFace() const;
+  inline const DoubleVect& getMeshDisplacement() const {return u; }
+  inline const DoubleVect& getMeshVelocity() const {return v; }
+  inline const DoubleVect& getMeshAcceleration() const {return a; }
+  inline const DoubleVect& getMeshPosition() const {return x; }
+
   inline void applyDtCoefficient() ;
 
   void initMfrontBehaviour() ;
@@ -79,6 +84,7 @@ public:
   double computeCriticalDt(const double volume, const double xlong, const double cSound, const double dtMin, double& scaleMass) ;
   void computeForceFaces(const int nb_faces, const int nb_som_face, const IntTab& face_sommets) ;
   void checkElemOrientation(int elnodes[4], const int elem) ;
+  void resumptionMesh(DoubleTab&, DoubleTab&, DoubleTab&, DoubleTab&);
 
   // Global vectors and arrays for dynamic time integration
   // ------------------------------------------------------
@@ -109,6 +115,9 @@ public:
   bool AddedMassRatioExceeded = false; // looking at the code, this is never set to true.
 
   bool doConfigurationReset=false ;
+
+  int resumption; //1 if resumption of calculation else 0
+
 
 protected:
 
