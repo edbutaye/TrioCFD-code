@@ -193,7 +193,7 @@ void Structural_dynamic_mesh_model::initMfrontBehaviour()
 
 }
 
-void Structural_dynamic_mesh_model::initDynamicMeshProblem(const int nsom, const int nelem, const int nface, const MD_Vector& md, const MD_Vector& mde, const MD_Vector& mdf)
+void Structural_dynamic_mesh_model::initDynamicMeshProblem(const double temps, const int nsom, const int nelem, const int nface, const MD_Vector& md, const MD_Vector& mde, const MD_Vector& mdf)
 {
   switch (dimension)
     {
@@ -247,9 +247,13 @@ void Structural_dynamic_mesh_model::initDynamicMeshProblem(const int nsom, const
   mass.resize(nsom) ;
   if (getGridDtMin() > 0.) nodalScaleMass.resize(nsom) ;
 
-  B0_.resize(nelem,dimension*nbn_) ;
-  Ft_.resize(nelem, nSymSize_) ;
-  Stress_.resize(nelem, symSize_) ;
+  dimB0_=dimension*nbn_;
+  if(!resumption)
+    {
+      B0_.resize(nelem,dimB0_) ;
+      Ft_.resize(nelem, nSymSize_) ;
+      Stress_.resize(nelem, symSize_) ;
+    }
 
   invertNum_.resize(nelem) ;
 
@@ -272,14 +276,22 @@ void Structural_dynamic_mesh_model::initDynamicMeshProblem(const int nsom, const
       v=0 ;
       a=0 ;
     }
+  else
+    {
+      Cerr << "Reset gridTime, temps= " << temps << finl ;
+      gridTime=temps;
+    }
 
   vp=0 ;
   ff=0 ;
   mass=0. ;
   if (getGridDtMin() > 0.) nodalScaleMass=0. ;
 
-  B0_ = 0. ;
-  Stress_ = 0. ;
+  if(!resumption)
+    {
+      B0_ = 0. ;
+      Stress_ = 0. ;
+    }
   invertNum_ = 0 ; // 0 = no numerotation inversion by default
   massElem_ = 0. ;
   mfrontEvars_ = 0. ;
@@ -293,33 +305,36 @@ void Structural_dynamic_mesh_model::initDynamicMeshProblem(const int nsom, const
   MD_Vector_tools::creer_tableau_distribue(mdf, meshPbForceFace_) ;
 
   // Initial transformation gradient is identity
-  for(int i=0; i<nelem; i++)
+  if(!resumption)
     {
-      switch (dimension)
+      for(int i=0; i<nelem; i++)
         {
-        case (2) :
+          switch (dimension)
+            {
+            case (2) :
 
-          Ft_(i,0) = 1. ;
-          Ft_(i,1) = 1. ;
-          Ft_(i,2) = 1. ;
-          Ft_(i,3) = 0. ;
-          Ft_(i,4) = 0. ;
+              Ft_(i,0) = 1. ;
+              Ft_(i,1) = 1. ;
+              Ft_(i,2) = 1. ;
+              Ft_(i,3) = 0. ;
+              Ft_(i,4) = 0. ;
 
-          break ;
+              break ;
 
-        case (3) :
+            case (3) :
 
-          Ft_(i,0) = 1. ;
-          Ft_(i,1) = 1. ;
-          Ft_(i,2) = 1. ;
-          Ft_(i,3) = 0. ;
-          Ft_(i,4) = 0. ;
-          Ft_(i,5) = 0. ;
-          Ft_(i,6) = 0. ;
-          Ft_(i,7) = 0. ;
-          Ft_(i,8) = 0. ;
+              Ft_(i,0) = 1. ;
+              Ft_(i,1) = 1. ;
+              Ft_(i,2) = 1. ;
+              Ft_(i,3) = 0. ;
+              Ft_(i,4) = 0. ;
+              Ft_(i,5) = 0. ;
+              Ft_(i,6) = 0. ;
+              Ft_(i,7) = 0. ;
+              Ft_(i,8) = 0. ;
 
-          break ;
+              break ;
+            }
         }
     }
 
@@ -927,12 +942,17 @@ void Structural_dynamic_mesh_model::checkElemOrientation(int elnodes[4], const i
     }
 
 }
-void Structural_dynamic_mesh_model::resumptionMesh(DoubleTab& u_n, DoubleTab& v_n, DoubleTab& a_n,  DoubleTab& x_n)
+void Structural_dynamic_mesh_model::resumptionMesh(DoubleTab& u_n, DoubleTab& v_n, DoubleTab& a_n,  DoubleTab& x_n, DoubleTab& B0_n, DoubleTab& Ft_n, DoubleTab& Stress_n)
 {
   u=u_n;
   v=v_n;
   a=a_n;
   x=x_n;
+
+  B0_=B0_n;
+  Ft_=Ft_n;
+  Stress_=Stress_n;
+
   resumption = 1;
 }
 

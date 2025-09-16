@@ -72,11 +72,17 @@ public:
   inline const DoubleVect& getMeshVelocity() const {return v; }
   inline const DoubleVect& getMeshAcceleration() const {return a; }
   inline const DoubleVect& getMeshPosition() const {return x; }
+  inline const DoubleVect& getMeshReferenceConfiguration() const {return B0_; }
+  inline const DoubleVect& getMeshTransformationGradient() const {return Ft_; }
+  inline const DoubleVect& getMeshStress() const {return Stress_; }
+  inline const int& getMeshReferenceConfigurationNbComp() const {return dimB0_;}
+  inline const int& getMeshTransformationGradientNbComp() const {return nSymSize_;}
+  inline const int& getMeshStressNbComp() const {return symSize_;}
 
   inline void applyDtCoefficient() ;
 
   void initMfrontBehaviour() ;
-  void initDynamicMeshProblem(const int nsom, const int nelem, const int nface, const MD_Vector& md, const MD_Vector& mde, const MD_Vector& mdf) ;
+  void initDynamicMeshProblem(const double temps, const int nsom, const int nelem, const int nface, const MD_Vector& md, const MD_Vector& mde, const MD_Vector& mdf) ;
 
   void setLocalFields(const int elnodes[4], const int elem) ;
   void computeInternalForces(double& volume, double& xlong, double& cSound, double& Pressure, double& VonMises) ;
@@ -84,7 +90,7 @@ public:
   double computeCriticalDt(const double volume, const double xlong, const double cSound, const double dtMin, double& scaleMass) ;
   void computeForceFaces(const int nb_faces, const int nb_som_face, const IntTab& face_sommets) ;
   void checkElemOrientation(int elnodes[4], const int elem) ;
-  void resumptionMesh(DoubleTab&, DoubleTab&, DoubleTab&, DoubleTab&);
+  void resumptionMesh(DoubleTab&, DoubleTab&, DoubleTab&, DoubleTab&, DoubleTab&, DoubleTab&, DoubleTab&);
 
   // Global vectors and arrays for dynamic time integration
   // ------------------------------------------------------
@@ -179,6 +185,7 @@ protected:
 
   int nSymSize_ ; // length of non-symetric tensor in Voigt notation
   int symSize_ ; // length of symetric tensor in Voigt notation
+  int dimB0_ ; // lenght of reference configuration array
   DoubleTab Eta_ ; // Shape function derivatives
 
   // Local variables for internal forces computation

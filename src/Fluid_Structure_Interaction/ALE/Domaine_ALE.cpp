@@ -444,7 +444,7 @@ void Domaine_ALE::initialiser (double temps, Domaine_dis_base& le_domaine_dis,Pr
       int nelem = nb_elem() ;
       const MD_Vector& mds = md_vector_sommets();
       const MD_Vector& mde = md_vector_elements();
-      str_mesh_model.initDynamicMeshProblem(nsom, nelem, nb_faces, mds, mde, mdf) ;
+      str_mesh_model.initDynamicMeshProblem(temps, nsom, nelem, nb_faces, mds, mde, mdf) ;
     }
 
 
@@ -961,9 +961,9 @@ void Domaine_ALE::resumptionJacobian(DoubleTab& ValueOf_ALEjacobian_old, DoubleT
   resumption=1;
 }
 
-void Domaine_ALE::resumptionStructuralDynamicsMesh(DoubleTab& u_n, DoubleTab& v_n, DoubleTab& a_n, DoubleTab& x_n)
+void Domaine_ALE::resumptionStructuralDynamicsMesh(DoubleTab& u_n, DoubleTab& v_n, DoubleTab& a_n, DoubleTab& x_n, DoubleTab& B0_n, DoubleTab& Ft_n, DoubleTab& Stress_n)
 {
-  str_mesh_model.resumptionMesh(u_n, v_n, a_n, x_n);
+  str_mesh_model.resumptionMesh(u_n, v_n, a_n, x_n, B0_n, Ft_n, Stress_n);
 }
 
 void Domaine_ALE::reading_vit_bords_ALE(Entree& is)
@@ -1846,10 +1846,33 @@ const DoubleVect& Domaine_ALE::getMeshAcceleration() const
 {
   return str_mesh_model.getMeshAcceleration();
 }
-
 const DoubleVect& Domaine_ALE::getMeshPosition() const
 {
   return str_mesh_model.getMeshPosition();
+}
+const DoubleVect& Domaine_ALE::getMeshReferenceConfiguration() const
+{
+  return str_mesh_model.getMeshReferenceConfiguration();
+}
+const DoubleVect& Domaine_ALE::getMeshTransformationGradient() const
+{
+  return str_mesh_model.getMeshTransformationGradient();
+}
+const DoubleVect& Domaine_ALE::getMeshStress() const
+{
+  return str_mesh_model.getMeshStress();
+}
+const int& Domaine_ALE::getMeshReferenceConfigurationNbComp() const
+{
+  return str_mesh_model.getMeshReferenceConfigurationNbComp();
+}
+const int& Domaine_ALE::getMeshTransformationGradientNbComp() const
+{
+  return str_mesh_model.getMeshTransformationGradientNbComp();
+}
+const int& Domaine_ALE::getMeshStressNbComp() const
+{
+  return str_mesh_model.getMeshStressNbComp();
 }
 
 void Domaine_ALE::update_coord_dom_extrait_surface()

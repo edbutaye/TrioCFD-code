@@ -90,6 +90,25 @@ std::vector<YAML_data> Navier_Stokes_std_ALE::data_a_sauvegarder() const
       std::transform(name.begin(), name.end(), name.begin(), ::toupper);
       YAML_data posold(name, "double", nb_dim);
       data.push_back(posold);
+
+      int nbComp=dom_ale.getMeshReferenceConfigurationNbComp();
+      name = probleme().le_nom().getString() + "_MeshReferenceConfiguration";
+      std::transform(name.begin(), name.end(), name.begin(), ::toupper);
+      YAML_data refconfold(name, "double", nbComp);
+      data.push_back(refconfold);
+
+      nbComp=dom_ale.getMeshTransformationGradientNbComp();
+      name = probleme().le_nom().getString() + "_MeshTransformationGradient";
+      std::transform(name.begin(), name.end(), name.begin(), ::toupper);
+      YAML_data transgradold(name, "double", nbComp);
+      data.push_back(transgradold);
+
+      nbComp=dom_ale.getMeshStressNbComp();
+      name = probleme().le_nom().getString() + "_MeshStress";
+      std::transform(name.begin(), name.end(), name.begin(), ::toupper);
+      YAML_data stressold(name, "double", nbComp);
+      data.push_back(stressold);
+
     }
 
 
@@ -143,6 +162,21 @@ int Navier_Stokes_std_ALE::sauvegarder(Sortie& os) const
           dis.discretiser_champ("Champ_sommets", domaine_dis(),"meshPosition","none",nb_dim,temps,meshPosition);
           meshPosition->valeurs()=dom_ale.getMeshPosition();
 
+          int nbComp=dom_ale.getMeshReferenceConfigurationNbComp();
+          OWN_PTR(Champ_Don_base) meshReferenceConfiguration;
+          dis.discretiser_champ("Champ_elem", domaine_dis(),"meshReferenceConfiguration","none",nbComp,temps,meshReferenceConfiguration);
+          meshReferenceConfiguration->valeurs()=dom_ale.getMeshReferenceConfiguration();
+
+          nbComp=dom_ale.getMeshTransformationGradientNbComp();
+          OWN_PTR(Champ_Don_base) meshTransformationGradient;
+          dis.discretiser_champ("Champ_elem", domaine_dis(),"meshTransformationGradient","none",nbComp,temps,meshTransformationGradient);
+          meshTransformationGradient->valeurs()=dom_ale.getMeshTransformationGradient();
+
+          nbComp=dom_ale.getMeshStressNbComp();
+          OWN_PTR(Champ_Don_base) meshStress;
+          dis.discretiser_champ("Champ_elem", domaine_dis(),"meshStress","none",nbComp,temps,meshStress);
+          meshStress->valeurs()=dom_ale.getMeshStress();
+
           if (special && Process::nproc() > 1)
             Cerr << "ATTENTION : For a parallel calculation, the field meshDisplacement is not saved in xyz format ... " << finl;
           else
@@ -151,6 +185,9 @@ int Navier_Stokes_std_ALE::sauvegarder(Sortie& os) const
               bytes += meshVelocity->sauvegarder(os);
               bytes += meshAcceleration->sauvegarder(os);
               bytes += meshPosition->sauvegarder(os);
+              bytes += meshReferenceConfiguration->sauvegarder(os);
+              bytes += meshTransformationGradient->sauvegarder(os);
+              bytes += meshStress->sauvegarder(os);
             }
         }
 
@@ -264,7 +301,43 @@ int Navier_Stokes_std_ALE::reprendre(Entree& is)
       field_tag_Pos += probleme().domaine().le_nom();
       field_tag_Pos += Nom(probleme().schema_temps().temps_courant(),probleme().reprise_format_temps());
 
+      int nbn=0, nSymSize=0, symSize=0;
+      if (nb_dim == 2)
+        {
+          nbn=3;
+          nSymSize=5;
+          symSize=4;
+        }
+      else if (nb_dim == 3)
+        {
+          nbn=4;
+          nSymSize=9;
+          symSize=6;
+        }
 
+      int nbComp=nb_dim*nbn;
+      OWN_PTR(Champ_Don_base) meshReferenceConfiguration;
+      dis.discretiser_champ("Champ_elem", domaine_dis(),"meshReferenceConfiguration","none",nbComp,temps,meshReferenceConfiguration);
+      Nom field_tag_RefConf(meshReferenceConfiguration->le_nom());
+      field_tag_RefConf += meshReferenceConfiguration->que_suis_je();
+      field_tag_RefConf += probleme().domaine().le_nom();
+      field_tag_RefConf += Nom(probleme().schema_temps().temps_courant(),probleme().reprise_format_temps());
+
+      nbComp=nSymSize;
+      OWN_PTR(Champ_Don_base) meshTransformationGradient;
+      dis.discretiser_champ("Champ_elem", domaine_dis(),"meshTransformationGradient","none",nbComp,temps,meshTransformationGradient);
+      Nom field_tag_TransGrad(meshTransformationGradient->le_nom());
+      field_tag_TransGrad += meshTransformationGradient->que_suis_je();
+      field_tag_TransGrad += probleme().domaine().le_nom();
+      field_tag_TransGrad += Nom(probleme().schema_temps().temps_courant(),probleme().reprise_format_temps());
+
+      nbComp=symSize;
+      OWN_PTR(Champ_Don_base) meshStress;
+      dis.discretiser_champ("Champ_elem", domaine_dis(),"meshStress","none",nbComp,temps,meshStress);
+      Nom field_tag_Stress(meshStress->le_nom());
+      field_tag_Stress += meshStress->que_suis_je();
+      field_tag_Stress += probleme().domaine().le_nom();
+      field_tag_Stress += Nom(probleme().schema_temps().temps_courant(),probleme().reprise_format_temps());
 
       if(!TRUST_2_PDI::is_PDI_restart())
         avancer_fichier(is, field_tag_Displ);
@@ -282,7 +355,20 @@ int Navier_Stokes_std_ALE::reprendre(Entree& is)
         avancer_fichier(is, field_tag_Pos);
       meshPosition->reprendre(is);
 
-      dom_ale.resumptionStructuralDynamicsMesh(meshDisplacement->valeurs(), meshVelocity->valeurs(), meshAcceleration->valeurs(), meshPosition->valeurs());
+      if(!TRUST_2_PDI::is_PDI_restart())
+        avancer_fichier(is, field_tag_RefConf);
+      meshReferenceConfiguration->reprendre(is);
+
+      if(!TRUST_2_PDI::is_PDI_restart())
+        avancer_fichier(is, field_tag_TransGrad);
+      meshTransformationGradient->reprendre(is);
+
+      if(!TRUST_2_PDI::is_PDI_restart())
+        avancer_fichier(is, field_tag_Stress);
+      meshStress->reprendre(is);
+
+      dom_ale.resumptionStructuralDynamicsMesh(meshDisplacement->valeurs(), meshVelocity->valeurs(), meshAcceleration->valeurs(), meshPosition->valeurs(),
+                                               meshReferenceConfiguration->valeurs(), meshTransformationGradient->valeurs(), meshStress->valeurs());
 
     }
 
