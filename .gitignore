@@ -28,3 +28,9 @@ build_init/
 old_rapport*
 preserve.tgz
 preserve_FAILED.tgz
+
+
+# eclipse
+eclipse-trust-config
+README_BALTIK_ECLIPSE
+*.launch
