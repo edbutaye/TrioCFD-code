@@ -961,9 +961,9 @@ void Domaine_ALE::resumptionJacobian(DoubleTab& ValueOf_ALEjacobian_old, DoubleT
   resumption=1;
 }
 
-void Domaine_ALE::resumptionStructuralDynamicsMesh(DoubleTab& u_n, DoubleTab& v_n, DoubleTab& a_n, DoubleTab& x_n, DoubleTab& B0_n, DoubleTab& Ft_n, DoubleTab& Stress_n)
+void Domaine_ALE::resumptionStructuralDynamicsMesh(double tinit, DoubleTab& u_n, DoubleTab& v_n, DoubleTab& a_n, DoubleTab& x_n, DoubleTab& B0_n, DoubleTab& Ft_n, DoubleTab& Stress_n)
 {
-  str_mesh_model.resumptionMesh(u_n, v_n, a_n, x_n, B0_n, Ft_n, Stress_n);
+  str_mesh_model.resumptionMesh(tinit, u_n, v_n, a_n, x_n, B0_n, Ft_n, Stress_n);
 }
 
 void Domaine_ALE::reading_vit_bords_ALE(Entree& is)

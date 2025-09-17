@@ -128,7 +128,7 @@ public :
   void solveDynamicMeshProblem(const double temps, const DoubleTab& imposedVelocity, const IntVect& imposedVelocityTag,
                                DoubleTab& outputMeshVelocity, const int nbSom, const int nbElem, const int nbSomElem,
                                const IntTab& sommets, const int nbFace, const int nbSomFace, const IntTab& face_sommets) ;
-  void resumptionStructuralDynamicsMesh(DoubleTab&, DoubleTab&, DoubleTab&, DoubleTab&, DoubleTab&, DoubleTab&, DoubleTab&);
+  void resumptionStructuralDynamicsMesh(double, DoubleTab&, DoubleTab&, DoubleTab&, DoubleTab&, DoubleTab&, DoubleTab&, DoubleTab&);
 
 protected:
 

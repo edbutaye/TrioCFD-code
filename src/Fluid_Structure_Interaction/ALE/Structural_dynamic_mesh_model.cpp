@@ -276,12 +276,6 @@ void Structural_dynamic_mesh_model::initDynamicMeshProblem(const double temps, c
       v=0 ;
       a=0 ;
     }
-  else
-    {
-      Cerr << "Reset gridTime, temps= " << temps << finl ;
-      gridTime=temps;
-    }
-
   vp=0 ;
   ff=0 ;
   mass=0. ;
@@ -942,7 +936,7 @@ void Structural_dynamic_mesh_model::checkElemOrientation(int elnodes[4], const i
     }
 
 }
-void Structural_dynamic_mesh_model::resumptionMesh(DoubleTab& u_n, DoubleTab& v_n, DoubleTab& a_n,  DoubleTab& x_n, DoubleTab& B0_n, DoubleTab& Ft_n, DoubleTab& Stress_n)
+void Structural_dynamic_mesh_model::resumptionMesh(double tinit,DoubleTab& u_n, DoubleTab& v_n, DoubleTab& a_n,  DoubleTab& x_n, DoubleTab& B0_n, DoubleTab& Ft_n, DoubleTab& Stress_n)
 {
   u=u_n;
   v=v_n;
@@ -952,6 +946,8 @@ void Structural_dynamic_mesh_model::resumptionMesh(DoubleTab& u_n, DoubleTab& v_
   B0_=B0_n;
   Ft_=Ft_n;
   Stress_=Stress_n;
+
+  gridTime=tinit;
 
   resumption = 1;
 }

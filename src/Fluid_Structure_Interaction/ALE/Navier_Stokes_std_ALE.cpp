@@ -367,7 +367,7 @@ int Navier_Stokes_std_ALE::reprendre(Entree& is)
         avancer_fichier(is, field_tag_Stress);
       meshStress->reprendre(is);
 
-      dom_ale.resumptionStructuralDynamicsMesh(meshDisplacement->valeurs(), meshVelocity->valeurs(), meshAcceleration->valeurs(), meshPosition->valeurs(),
+      dom_ale.resumptionStructuralDynamicsMesh(probleme().schema_temps().temps_courant(), meshDisplacement->valeurs(), meshVelocity->valeurs(), meshAcceleration->valeurs(), meshPosition->valeurs(),
                                                meshReferenceConfiguration->valeurs(), meshTransformationGradient->valeurs(), meshStress->valeurs());
 
     }

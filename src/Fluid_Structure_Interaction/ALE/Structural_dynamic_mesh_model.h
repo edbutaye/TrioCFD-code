@@ -90,7 +90,7 @@ public:
   double computeCriticalDt(const double volume, const double xlong, const double cSound, const double dtMin, double& scaleMass) ;
   void computeForceFaces(const int nb_faces, const int nb_som_face, const IntTab& face_sommets) ;
   void checkElemOrientation(int elnodes[4], const int elem) ;
-  void resumptionMesh(DoubleTab&, DoubleTab&, DoubleTab&, DoubleTab&, DoubleTab&, DoubleTab&, DoubleTab&);
+  void resumptionMesh(double, DoubleTab&, DoubleTab&, DoubleTab&, DoubleTab&, DoubleTab&, DoubleTab&, DoubleTab&);
 
   // Global vectors and arrays for dynamic time integration
   // ------------------------------------------------------
