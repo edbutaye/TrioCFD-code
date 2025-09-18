@@ -293,7 +293,7 @@ int Navier_Stokes_std_ALE::reprendre(Entree& is)
     }
   // set resumption field
   dom_ale.resumptionJacobianCoords(JacobianOld->valeurs(), JacobianNew->valeurs(), meshCoords->valeurs());
-
+  dom_ale.updateMetrics(domaine_dis(), probleme());
 
   //resumption the mesh motion: displacement, velocity, and acceleration
   if(dom_ale.getMeshMotionModel()==1)

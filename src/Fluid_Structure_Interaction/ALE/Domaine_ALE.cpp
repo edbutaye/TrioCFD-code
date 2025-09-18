@@ -143,131 +143,137 @@ void Domaine_ALE::mettre_a_jour (double temps, Domaine_dis_base& le_domaine_dis,
             }
         }
 
-
+      //update mesh metrics
+      updateMetrics(le_domaine_dis, pb);
       //On recalcule les vitesses aux faces
       Domaine_VF& le_dom_VF=ref_cast(Domaine_VF,le_domaine_dis);
-
       int nb_faces=le_dom_VF.nb_faces();
       int nb_som_face=le_dom_VF.nb_som_face();
       IntTab& face_sommets=le_dom_VF.face_sommets();
-      creer_mes_domaines_frontieres(le_dom_VF);//update the boundary surface domain
-      update_coord_dom_extrait_surface();//update coord for dom extrait_surface_ale
-
       calculer_vitesse_faces(ALE_mesh_velocity,nb_faces,nb_som_face,face_sommets);
 
-      //On recalcule les metriques
-      le_dom_VF.volumes()=0;
-      calculer_volumes(le_dom_VF.volumes(),le_dom_VF.inverse_volumes());
-      le_dom_VF.xp()=0;
-      calculer_centres_gravite(le_dom_VF.xp());
+    }
+}
 
-      DoubleTab& xv=le_dom_VF.xv();
-      xv.reset();
-      Type_Face type_face=type_elem()->type_face();
-      IntTab& elem_faces=le_dom_VF.elem_faces();
-      IntTab& face_voisins=le_dom_VF.face_voisins();
+void Domaine_ALE::updateMetrics(Domaine_dis_base& le_domaine_dis, Probleme_base& pb)
+{
+  //update mesh metrics
 
-      Faces::Calculer_centres_gravite(xv, type_face,
-                                      sommets_, face_sommets);
+  Domaine_VF& le_dom_VF=ref_cast(Domaine_VF,le_domaine_dis);
+  IntTab& face_sommets=le_dom_VF.face_sommets();
+  creer_mes_domaines_frontieres(le_dom_VF);//update the boundary surface domain
+  update_coord_dom_extrait_surface();//update coord for dom extrait_surface_ale
 
-      /* if(sub_type(Domaine_VDF, le_dom_VF))
-         {
-           Domaine_VDF& le_dom_VDF=ref_cast(Domaine_VDF,le_domaine_dis);
-           le_dom_VF.volumes_entrelaces()=0;
-           le_dom_VDF.calculer_volumes_entrelaces();
-         }*/
-      if(sub_type(Domaine_VEF, le_dom_VF))
+  le_dom_VF.volumes()=0;
+  calculer_volumes(le_dom_VF.volumes(),le_dom_VF.inverse_volumes());
+  le_dom_VF.xp()=0;
+  calculer_centres_gravite(le_dom_VF.xp());
+
+  DoubleTab& xv=le_dom_VF.xv();
+  xv.reset();
+  Type_Face type_face=type_elem()->type_face();
+  IntTab& elem_faces=le_dom_VF.elem_faces();
+  IntTab& face_voisins=le_dom_VF.face_voisins();
+
+  Faces::Calculer_centres_gravite(xv, type_face,
+                                  sommets_, face_sommets);
+
+  /* if(sub_type(Domaine_VDF, le_dom_VF))
+     {
+       Domaine_VDF& le_dom_VDF=ref_cast(Domaine_VDF,le_domaine_dis);
+       le_dom_VF.volumes_entrelaces()=0;
+       le_dom_VDF.calculer_volumes_entrelaces();
+     }*/
+  if(sub_type(Domaine_VEF, le_dom_VF))
+    {
+      Domaine_VEF& le_dom_VEF=ref_cast(Domaine_VEF,le_domaine_dis);
+      DoubleTab& normales=le_dom_VEF.face_normales();
+      DoubleTab& facette_normales_=le_dom_VEF.facette_normales();
+      IntVect& rang_elem_non_standard=le_dom_VEF.rang_elem_non_std();
+      le_dom_VF.volumes_entrelaces()=0;
+      le_dom_VEF.calculer_volumes_entrelaces();
+
+      int nb_faces_tot=face_sommets.dimension_tot(0);
+      le_dom_VEF.calculer_h_carre();
+      const Elem_VEF_base& type_elem=le_dom_VEF.type_elem();
+
+      /*          for (int i=0; i<nb_faces_tot; i++)
+                  {
+                    Cerr <<  "face : " << i << " face normal " << normales(i,0) << " " << normales(i,1) <<  "position : " << i << " x y  " << le_dom_VEF.xv(i,0) << " " << le_dom_VEF.xv(i,1) <<finl;
+                  }*/
+
+
+      // Recalcul des normales
+      normales=0.;
+      for (int num_face=0; num_face<nb_faces_tot; num_face++)
+        type_elem.normale(num_face,normales, face_sommets,
+                          face_voisins,elem_faces,
+                          *this) ;
+
+      //specific treatment for the periodic boundary conditions (the orientations of certain normals are changed)
+      //impose face_normales_(faassociee,k) = face_normales_(face,k)
+      //as it is done during the first call to the function Domain_VEF::modifier_pour_Cl .
+      //we cannot use this function again to update the direction of the normals because on the periodic edges the neighbors are no longer =-1
+      //after the first call to Domain_VEF::modifier_pour_Cl
+      //and therefore we no longer go through the loop because of the test "if ( ( face_neighbors_(face,0) == -1) || (face_neighbors_(face,1) == -1) )"
+
+      IntVect fait(nb_faces_tot);
+      fait=0;
+      const Domaine_VEF& domaine_VEF=ref_cast(Domaine_VEF,le_domaine_dis);
+      const Domaine_Cl_VEF& domaine_Cl_VEF = ref_cast(Domaine_Cl_VEF, pb.equation(0).domaine_Cl_dis());
+      for (int n_bord=0; n_bord<domaine_VEF.nb_front_Cl(); n_bord++)
         {
-          Domaine_VEF& le_dom_VEF=ref_cast(Domaine_VEF,le_domaine_dis);
-          DoubleTab& normales=le_dom_VEF.face_normales();
-          DoubleTab& facette_normales_=le_dom_VEF.facette_normales();
-          IntVect& rang_elem_non_standard=le_dom_VEF.rang_elem_non_std();
-          le_dom_VF.volumes_entrelaces()=0;
-          le_dom_VEF.calculer_volumes_entrelaces();
-
-          int nb_faces_tot=face_sommets.dimension_tot(0);
-          le_dom_VEF.calculer_h_carre();
-          const Elem_VEF_base& type_elem=le_dom_VEF.type_elem();
-
-          /*          for (int i=0; i<nb_faces_tot; i++)
-                      {
-                        Cerr <<  "face : " << i << " face normal " << normales(i,0) << " " << normales(i,1) <<  "position : " << i << " x y  " << le_dom_VEF.xv(i,0) << " " << le_dom_VEF.xv(i,1) <<finl;
-                      }*/
-
-
-          // Recalcul des normales
-          normales=0.;
-          for (int num_face=0; num_face<nb_faces_tot; num_face++)
-            type_elem.normale(num_face,normales, face_sommets,
-                              face_voisins,elem_faces,
-                              *this) ;
-
-          //specific treatment for the periodic boundary conditions (the orientations of certain normals are changed)
-          //impose face_normales_(faassociee,k) = face_normales_(face,k)
-          //as it is done during the first call to the function Domain_VEF::modifier_pour_Cl .
-          //we cannot use this function again to update the direction of the normals because on the periodic edges the neighbors are no longer =-1
-          //after the first call to Domain_VEF::modifier_pour_Cl
-          //and therefore we no longer go through the loop because of the test "if ( ( face_neighbors_(face,0) == -1) || (face_neighbors_(face,1) == -1) )"
-
-          IntVect fait(nb_faces_tot);
-          fait=0;
-          const Domaine_VEF& domaine_VEF=ref_cast(Domaine_VEF,le_domaine_dis);
-          const Domaine_Cl_VEF& domaine_Cl_VEF = ref_cast(Domaine_Cl_VEF, pb.equation(0).domaine_Cl_dis());
-          for (int n_bord=0; n_bord<domaine_VEF.nb_front_Cl(); n_bord++)
+          const Cond_lim& la_cl = domaine_Cl_VEF.les_conditions_limites(n_bord);
+          if (sub_type(Periodique,la_cl.valeur()))
             {
-              const Cond_lim& la_cl = domaine_Cl_VEF.les_conditions_limites(n_bord);
-              if (sub_type(Periodique,la_cl.valeur()))
+              const Cond_lim_base& cl = la_cl.valeur();
+              const Periodique& la_cl_period = ref_cast(Periodique,cl);
+              const Front_VF& le_bord = ref_cast(Front_VF,la_cl->frontiere_dis());
+              int ndeb = 0;
+              int nfin = le_bord.nb_faces_tot();
+              for (int num_face=ndeb; num_face<nfin; num_face++)
                 {
-                  const Cond_lim_base& cl = la_cl.valeur();
-                  const Periodique& la_cl_period = ref_cast(Periodique,cl);
-                  const Front_VF& le_bord = ref_cast(Front_VF,la_cl->frontiere_dis());
-                  int ndeb = 0;
-                  int nfin = le_bord.nb_faces_tot();
-                  for (int num_face=ndeb; num_face<nfin; num_face++)
+                  int face = le_bord.num_face(num_face);
+                  if(fait(face) == 0 )
                     {
-                      int face = le_bord.num_face(num_face);
-                      if(fait(face) == 0 )
-                        {
-                          int faassociee = le_bord.num_face(la_cl_period.face_associee(num_face));
-                          fait(face)=1;
-                          fait(faassociee)=1;
-                          for (int k=0; k<dimension; k++)
-                            normales(faassociee,k) = normales(face,k);
-                        }
+                      int faassociee = le_bord.num_face(la_cl_period.face_associee(num_face));
+                      fait(face)=1;
+                      fait(faassociee)=1;
+                      for (int k=0; k<dimension; k++)
+                        normales(faassociee,k) = normales(face,k);
                     }
                 }
             }
-
-          type_elem.creer_facette_normales(*this, facette_normales_, rang_elem_non_standard);
-          //Cerr << "carre_pas_du_maillage : " << le_dom_VEF.carre_pas_du_maillage() << finl;
-
-
-          int nb_eqn=pb.nombre_d_equations();
-          for(int num_eq=0; num_eq<nb_eqn; num_eq++)
-            {
-              Domaine_Cl_dis_base& zcl_dis=pb.equation(num_eq).domaine_Cl_dis();
-              Domaine_Cl_VEF& la_zcl_VEF=ref_cast(Domaine_Cl_VEF, zcl_dis);
-              la_zcl_VEF.remplir_volumes_entrelaces_Cl(le_dom_VEF);
-              la_zcl_VEF.remplir_normales_facettes_Cl(le_dom_VEF );
-            }
-          // Recalcul des surfaces avec les normales:
-          DoubleVect face_surfaces_(nb_faces_tot);
-          for (int i=0; i<nb_faces_tot; i++)
-            {
-              double surf=0;
-              for (int k=0; k<dimension; k++)
-                surf += (le_dom_VF.face_normales(i,k)*le_dom_VF.face_normales(i,k));
-              face_surfaces_(i) = sqrt(surf);
-            }
-          le_dom_VF.calculer_face_surfaces(face_surfaces_);
         }
-      else
+
+      type_elem.creer_facette_normales(*this, facette_normales_, rang_elem_non_standard);
+      //Cerr << "carre_pas_du_maillage : " << le_dom_VEF.carre_pas_du_maillage() << finl;
+
+
+      int nb_eqn=pb.nombre_d_equations();
+      for(int num_eq=0; num_eq<nb_eqn; num_eq++)
         {
-          Cerr << "Discretization not recognized by ALE!" << finl;
-          Cerr << "Change with finite element volume discretization: VEFPreP1B and restart" << finl;
-          Process::exit();
+          Domaine_Cl_dis_base& zcl_dis=pb.equation(num_eq).domaine_Cl_dis();
+          Domaine_Cl_VEF& la_zcl_VEF=ref_cast(Domaine_Cl_VEF, zcl_dis);
+          la_zcl_VEF.remplir_volumes_entrelaces_Cl(le_dom_VEF);
+          la_zcl_VEF.remplir_normales_facettes_Cl(le_dom_VEF );
         }
-
+      // Recalcul des surfaces avec les normales:
+      DoubleVect face_surfaces_(nb_faces_tot);
+      for (int i=0; i<nb_faces_tot; i++)
+        {
+          double surf=0;
+          for (int k=0; k<dimension; k++)
+            surf += (le_dom_VF.face_normales(i,k)*le_dom_VF.face_normales(i,k));
+          face_surfaces_(i) = sqrt(surf);
+        }
+      le_dom_VF.calculer_face_surfaces(face_surfaces_);
+    }
+  else
+    {
+      Cerr << "Discretization not recognized by ALE!" << finl;
+      Cerr << "Change with finite element volume discretization: VEFPreP1B and restart" << finl;
+      Process::exit();
     }
 }
 

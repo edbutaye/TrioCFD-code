@@ -87,6 +87,7 @@ public :
   inline const DoubleTab& getNewJacobian() const;
   inline  DoubleTab getMeshCoords() const;
   inline int getMeshMotionModel() const ;
+  void updateMetrics(Domaine_dis_base&, Probleme_base& );
 
   int getCouplingMethod();
   bool getCouplingMethod() const;
