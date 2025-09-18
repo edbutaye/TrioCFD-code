@@ -72,7 +72,7 @@ void Navier_Stokes_FTD_IJK::set_param(Param& param)
   param.ajouter("expression_vy_init", &expression_vitesse_initiale_[1]); // XD_ADD_P chaine initial field for y-velocity component (parser of x,y,z)
   param.ajouter("expression_vz_init", &expression_vitesse_initiale_[2]); // XD_ADD_P chaine initial field for z-velocity component (parser of x,y,z)
   param.ajouter("expression_p_init", &expression_pression_initiale_); // XD_ADD_P chaine initial pressure field (optional)
-  param.ajouter("velocity_diffusion_op", &velocity_diffusion_op_);
+  param.ajouter("velocity_diffusion_op", &velocity_diffusion_op_); // XD_ADD_P chaine Type of velocity diffusion scheme
   param.ajouter("velocity_convection_op", &velocity_convection_op_); // XD_ADD_P chaine Type of velocity convection scheme
 
   // ATTENTION les fichiers reprises sont des fichiers .lata ou sauv.lata
@@ -97,7 +97,7 @@ void Navier_Stokes_FTD_IJK::set_param(Param& param)
   param.ajouter_flag("use_inv_rho_for_mass_solver_and_calculer_rho_v", &use_inv_rho_for_mass_solver_and_calculer_rho_v_); // XD_ADD_P chaine not_set
   param.ajouter_flag("use_inv_rho_in_poisson_solver", &use_inv_rho_in_poisson_solver_); // XD_ADD_P flag not_set
   param.ajouter_flag("diffusion_alternative", &diffusion_alternative_); // XD_ADD_P chaine not_set
-  param.ajouter_flag("test_etapes_et_bilan", &test_etapes_et_bilan_); // XD_ADD_P chaine not_set
+  param.ajouter_flag("test_etapes_et_bilan", &test_etapes_et_bilan_); // XD_ADD_P flag not_set
   param.ajouter_flag("ajout_init_a_reprise", &add_initial_field_); // XD_ADD_P chaine not_set
   param.ajouter_flag("improved_initial_pressure_guess", &improved_initial_pressure_guess_); // XD_ADD_P chaine not_set
   param.ajouter_flag("include_pressure_gradient_in_ustar", &include_pressure_gradient_in_ustar_); // XD_ADD_P chaine not_set
@@ -149,7 +149,7 @@ void Navier_Stokes_FTD_IJK::set_param(Param& param)
 
   param.ajouter("expression_potential_phi", &expression_potential_phi_); // XD_ADD_P chaine parser to define phi and make a momentum source Nabla phi.
 
-  param.ajouter("forcage", &forcage_);  // XD_ADD_P chaine not_set
+  param.ajouter("forcage", &forcage_);  // XD_ADD_P bloc_lecture not_set
   param.ajouter("corrections_qdm", &qdm_corrections_); // XD_ADD_P bloc_lecture not_set
 
 
