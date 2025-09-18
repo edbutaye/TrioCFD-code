@@ -36,7 +36,7 @@
 #include <Nom.h>
 
 Implemente_instanciable(Transport_K_Omega, "Transport_K_Omega", Transport_K_Omega_base);
-// XD transport_k_omega eqn_base transport_k_omega -1 The (k-omega) transport equation.
+// XD transport_k_omega transport_equation_deriv transport_k_omega -1 The (k-omega) transport equation.
 
 /*! @brief Imprime le type de l'equation sur un flot de sortie.
  *
