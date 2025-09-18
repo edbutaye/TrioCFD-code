@@ -68,6 +68,11 @@ std::vector<YAML_data> Navier_Stokes_std_ALE::data_a_sauvegarder() const
   YAML_data jnew(name, "double", nb_dim);
   data.push_back(jnew);
 
+  name = probleme().le_nom().getString() + "_MeshCoords";
+  std::transform(name.begin(), name.end(), name.begin(), ::toupper);
+  YAML_data coords(name, "double", nb_dim);
+  data.push_back(coords);
+
   const Domaine_ALE& dom_ale=ref_cast(Domaine_ALE, probleme().domaine());
   if(dom_ale.getMeshMotionModel()==1)
     {
@@ -132,20 +137,26 @@ int Navier_Stokes_std_ALE::sauvegarder(Sortie& os) const
       JacobianNew->nommer("JacobianNew");
       JacobianNew->valeurs() = dom_ale.getNewJacobian(); // Use good values
 
+      int nb_dim = vitesse().valeurs().nb_dim();
+      double temps = schema_temps().temps_courant();
+      const Discret_Thyd& dis=ref_cast(Discret_Thyd,discretisation());
+
+      OWN_PTR(Champ_Don_base) meshCoords;
+      dis.discretiser_champ("Champ_sommets", domaine_dis(),"meshCoords","none",nb_dim,temps,meshCoords);
+      meshCoords->valeurs()=dom_ale.getMeshCoords();
+
+
       if (special && Process::nproc() > 1)
         Cerr << "ATTENTION : For a parallel calculation, the field Jacobian is not saved in xyz format ... " << finl;
       else
         {
           bytes += JacobianOld->sauvegarder(os);
           bytes += JacobianNew->sauvegarder(os);
+          bytes += meshCoords->sauvegarder(os);
         }
 
       if(dom_ale.getMeshMotionModel()==1) //save the mesh motion: displacement, velocity, and acceleration
         {
-          int nb_dim = vitesse().valeurs().nb_dim();
-          double temps = schema_temps().temps_courant();
-          const Discret_Thyd& dis=ref_cast(Discret_Thyd,discretisation());
-
           OWN_PTR(Champ_Don_base) meshDisplacement;
           dis.discretiser_champ("Champ_sommets", domaine_dis(),"meshDisplacement","none",nb_dim,temps,meshDisplacement);
           meshDisplacement->valeurs()=dom_ale.getMeshDisplacement();
@@ -214,6 +225,8 @@ int Navier_Stokes_std_ALE::sauvegarder(Sortie& os) const
       bytes += write_tab(dom_ale.getOldJacobian(), name.majuscule());
       name = probleme().le_nom() + "_JacobianNew";
       bytes += write_tab(dom_ale.getNewJacobian(), name.majuscule());
+      name = probleme().le_nom() + "_meshCoords";
+      bytes += write_tab(dom_ale.getMeshCoords(), name.majuscule());
       if(dom_ale.getMeshMotionModel()==1)
         {
           //TODO
@@ -247,6 +260,18 @@ int Navier_Stokes_std_ALE::reprendre(Entree& is)
   field_tag_JNew += Nom(probleme().schema_temps().temps_courant(),probleme().reprise_format_temps());
 
 
+  int nb_dim = vitesse().valeurs().nb_dim();
+  double temps = schema_temps().temps_courant();
+  const Discret_Thyd& dis=ref_cast(Discret_Thyd,discretisation());
+
+  OWN_PTR(Champ_Don_base) meshCoords;
+  dis.discretiser_champ("Champ_sommets", domaine_dis(),"meshCoords","none",nb_dim,temps,meshCoords);
+  Nom field_tag_coords(meshCoords->le_nom());
+  field_tag_coords += meshCoords->que_suis_je();
+  field_tag_coords += probleme().domaine().le_nom();
+  field_tag_coords += Nom(probleme().schema_temps().temps_courant(),probleme().reprise_format_temps());
+
+
   if (EcritureLectureSpecial::is_lecture_special() && Process::nproc() > 1)
     {
       Cerr << "Error in Navier_Stokes_std_ALE::reprendre !" << finl;
@@ -261,18 +286,18 @@ int Navier_Stokes_std_ALE::reprendre(Entree& is)
       if(!TRUST_2_PDI::is_PDI_restart())
         avancer_fichier(is, field_tag_JNew);
       JacobianNew->reprendre(is);
+
+      if(!TRUST_2_PDI::is_PDI_restart())
+        avancer_fichier(is, field_tag_coords);
+      meshCoords->reprendre(is);
     }
   // set resumption field
-  dom_ale.resumptionJacobian(JacobianOld->valeurs(), JacobianNew->valeurs());
+  dom_ale.resumptionJacobianCoords(JacobianOld->valeurs(), JacobianNew->valeurs(), meshCoords->valeurs());
 
 
   //resumption the mesh motion: displacement, velocity, and acceleration
   if(dom_ale.getMeshMotionModel()==1)
     {
-      int nb_dim = vitesse().valeurs().nb_dim();
-      double temps = schema_temps().temps_courant();
-      const Discret_Thyd& dis=ref_cast(Discret_Thyd,discretisation());
-
       OWN_PTR(Champ_Don_base) meshDisplacement;
       dis.discretiser_champ("Champ_sommets", domaine_dis(),"meshDisplacement","none",nb_dim,temps,meshDisplacement);
       Nom field_tag_Displ(meshDisplacement->le_nom());

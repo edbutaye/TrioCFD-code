@@ -954,10 +954,18 @@ void Domaine_ALE::update_ALEjacobians(DoubleTab& NewValueOf_ALEjacobian_old,Doub
     }
 }
 
-void Domaine_ALE::resumptionJacobian(DoubleTab& ValueOf_ALEjacobian_old, DoubleTab& ValueOf_ALEjacobian_new)
+void Domaine_ALE::resumptionJacobianCoords(DoubleTab& ValueOf_ALEjacobian_old, DoubleTab& ValueOf_ALEjacobian_new, DoubleTab& ValueOf_MeshCoords)
 {
   ALEjacobian_old=ValueOf_ALEjacobian_old;
   ALEjacobian_new=ValueOf_ALEjacobian_new;
+
+  for (int i=0; i<nb_som_tot(); i++)
+    {
+      for (int k=0; k<dimension; k++)
+        {
+          coord(i,k)=ValueOf_MeshCoords(i,k);
+        }
+    }
   resumption=1;
 }
 

@@ -80,11 +80,12 @@ public :
   int update_or_not_matrix_coeffs() const;
   inline void setUpdateJacobian_Old(const bool status) {updateJacobian_Old_ = status ;}
   void update_ALEjacobians(DoubleTab&, DoubleTab&, int);
-  void resumptionJacobian(DoubleTab&, DoubleTab&);
+  void resumptionJacobianCoords(DoubleTab&, DoubleTab&, DoubleTab&);
   inline const DoubleTab& getOldJacobian();
   inline const DoubleTab& getOldJacobian() const;
   inline const DoubleTab& getNewJacobian();
   inline const DoubleTab& getNewJacobian() const;
+  inline  DoubleTab getMeshCoords() const;
   inline int getMeshMotionModel() const ;
 
   int getCouplingMethod();
@@ -211,6 +212,21 @@ inline const DoubleTab& Domaine_ALE::getNewJacobian() const
 {
   return ALEjacobian_new;
 }
+
+inline DoubleTab Domaine_ALE::getMeshCoords() const
+{
+  int nbSom=nb_som_tot();
+  DoubleTab meshCoords(nbSom, dimension);
+  for (int i=0; i<nbSom; i++)
+    {
+      for (int k=0; k<dimension; k++)
+        {
+          meshCoords(i,k) =  coord(i,k);
+        }
+    }
+  return meshCoords;
+}
+
 
 inline void Domaine_ALE::associer_equation(const Equation_base& une_eq)
 {
