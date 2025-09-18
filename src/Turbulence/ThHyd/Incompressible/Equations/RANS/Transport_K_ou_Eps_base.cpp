@@ -58,7 +58,6 @@ Entree& Transport_K_ou_Eps_base::readOn(Entree& is)
 void Transport_K_ou_Eps_base::set_param(Param& param)
 {
   Transport_2eq_base::set_param(param);
-  param.ajouter_flag("K_equation", &transporte_K_);
 }
 
 void Transport_K_ou_Eps_base::discretiser()

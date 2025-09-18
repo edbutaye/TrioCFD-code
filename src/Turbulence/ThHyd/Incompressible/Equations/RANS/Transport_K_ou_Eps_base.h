@@ -31,10 +31,11 @@
 class Milieu_base;
 class Champ_Inc_base;
 
-/*! @brief Classe Transport_K_ou_Eps_base Classe de base pour l'equation
+/*! @brief Classe de base pour l'equation de transport des modeles k_Epsilon
+ *  dans une approche ou K et Epsilon sont traites par deux equations differentes.
  *
- *     de transport des modeles k_Epsilon dans une approche ou K et Epsilon sont traites par deux equations differentes.
- *
+ * Defaults to an equation on k (transporte_K_=false).
+ * Must call set_K_equation() from the outside to change the class to an equation on epsilon.
  */
 class Transport_K_ou_Eps_base: public Transport_2eq_base
 {
@@ -54,7 +55,7 @@ public:
   bool has_champ(const Motcle& nom, OBS_PTR(Champ_base) &ref_champ) const override;
   bool has_champ(const Motcle& nom) const override;
 
-  inline bool transporte_t_il_K() const;
+  bool transporte_t_il_K() const { return transporte_K_; };
   void set_K_equation() { transporte_K_=true; }
 
 protected:
@@ -88,9 +89,5 @@ inline const Champ_Inc_base& Transport_K_ou_Eps_base::inconnue() const
   return le_champ_;
 }
 
-inline bool Transport_K_ou_Eps_base::transporte_t_il_K() const
-{
-  return transporte_K_;
-}
 
 #endif

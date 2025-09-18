@@ -1,6 +1,8 @@
 --------------------------------------------------------------------------------------------------
 Release notes version 1.9.7_beta : Enhancements, modifications and corrected bugs since version 1.9.6 :
 --------------------------------------------------------------------------------------------------
+12/09/25 (TrioCFD) Bug fix     : Turbulence - fix an error in Modele_turbulence_hyd_RANS_Bicephale_base where the k_equation was not set to an equation on k because of multiple hidden initialization of parameter transporte_K_ of class Transport_K_ou_Eps_base.
+                                 Results from the bicephale model are now much better and closer to standard k_eps models (as seen in validation report Canal_plan_VDF_VEF_k_eps_standard_bicephale).
 12/09/25 (TrioCFD) Syntax      : Turbulence - keyword 'transport_k_epsilon' should now be replaced by 'transport_equation transport_k_epsilon' in datafiles
 12/09/25 (TrioCFD) Syntax      : Turbulence - keyword 'transport_k_omega' should now be replaced by 'transport_equation transport_k_omega' in datafiles
 12/09/25 (TrioCFD) Syntax      : Turbulence - keyword 'Transport_K_Epsilon_Realisable' should now be replaced by 'transport_equation Transport_K_Epsilon_Realisable' in datafiles
