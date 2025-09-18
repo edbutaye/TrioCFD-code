@@ -369,7 +369,10 @@ Entree& IJK_Interfaces::readOn(Entree& is)
   param.ajouter_flag("active_repulsion_paroi", &active_repulsion_paroi_);
   param.ajouter("no_octree_method", &no_octree_method_);  // XD_ADD_P entier if the bubbles repel each other, what method should be used to compute relative velocities? Octree method by default, otherwise we used the IJK discretization
   param.ajouter_flag("follow_colors", &follow_colors_);
-  param.ajouter_flag("compute_distance_autres_interfaces", &compute_distance_autres_interfaces_); // XD_ADD_P rien not_set
+  if (not compute_distance_autres_interfaces_)   //
+    {
+      param.ajouter_flag("compute_distance_autres_interfaces", &compute_distance_autres_interfaces_); // XD_ADD_P rien not_set
+    }
   param.ajouter("reprise_colors", &through_yminus_);
   param.ajouter_flag("correction_gradient_potentiel", &correction_gradient_potentiel_);
   param.ajouter_flag("avoid_duplicata", &avoid_duplicata_);
