@@ -59,14 +59,13 @@ void Source_Transport_K_Omega_VDF_Elem::creer_champ(const Motcle& nom)
 {
   Source_Transport_K_Omega_VDF_Elem_base::creer_champ(nom);
   const VDF_discretisation& disc = ref_cast(VDF_discretisation, equation().discretisation());
-  Noms noms(1), unites(1);
 
   if (grad_k_omega_elem_.est_nul())
     {
+      Noms noms(1);
+      Noms unites(1);
       noms[0] = "grad_k_grad_omega";
-      disc.discretiser_champ("champ_elem", equation().domaine_dis(), scalaire, // DoubleTab gradk_new=
-
-                             noms , unites, 1, 0, grad_k_omega_elem_);
+      disc.discretiser_champ("champ_elem", equation().domaine_dis(), scalaire, noms, unites, 1, 0, grad_k_omega_elem_);
       champs_compris_.ajoute_champ(grad_k_omega_elem_);
     }
   if (grad_k_face_.est_nul())
@@ -75,10 +74,10 @@ void Source_Transport_K_Omega_VDF_Elem::creer_champ(const Motcle& nom)
       grad_k_face_->associer_domaine_dis_base(equation().domaine_dis());
       grad_k_face_->valeurs() = ref_cast(Navier_Stokes_std, equation().probleme().equation(0)).grad_P().valeurs();
       grad_k_face_->valeurs() = 0.;
-      Noms name_gradk;
-      name_gradk.add("grad_k_face");
+      grad_k_face_->nommer(Nom("grad_k_face"));
       grad_k_face_->fixer_nb_comp(Objet_U::dimension); // EB: VERY important to enter in Champ_Face_VDF::interpolation in Champ_Face_VDF_implementation::valeur_a_elem_
-      grad_k_face_->fixer_noms_compo(name_gradk);
+      // Noms names(Objet_U::dimension);
+      // grad_k_face_->fixer_noms_compo(names);
       champs_compris_.ajoute_champ(grad_k_face_);
     }
   if (grad_omega_face_.est_nul())
@@ -87,14 +86,16 @@ void Source_Transport_K_Omega_VDF_Elem::creer_champ(const Motcle& nom)
       grad_omega_face_->associer_domaine_dis_base(equation().domaine_dis());
       grad_omega_face_->valeurs() = ref_cast(Navier_Stokes_std, equation().probleme().equation(0)).grad_P().valeurs();
       grad_omega_face_->valeurs() = 0.;
-      Noms name_gradk;
-      name_gradk.add("grad_omega_face");
+      grad_omega_face_->nommer(Nom("grad_omega_face"));
       grad_omega_face_->fixer_nb_comp(Objet_U::dimension);  // EB: VERY important to enter in Champ_Face_VDF::interpolation in Champ_Face_VDF_implementation::valeur_a_elem_
-      grad_omega_face_->fixer_noms_compo(name_gradk);
+      // Noms names(Objet_U::dimension);
+      // grad_omega_face_->fixer_noms_compo(names); // teo boutin: not necessary it seems. Not sure what this is supposed to do.
       champs_compris_.ajoute_champ(grad_omega_face_);
     }
   if (grad_k_elem_.est_nul())
     {
+      Noms noms(1);
+      Noms unites(1);
       noms[0] = "grad_k_elem";
       disc.discretiser_champ("champ_elem", equation().domaine_dis(), scalaire,
                              noms , unites, dimension, 0, grad_k_elem_);
@@ -102,6 +103,8 @@ void Source_Transport_K_Omega_VDF_Elem::creer_champ(const Motcle& nom)
     }
   if (grad_omega_elem_.est_nul())
     {
+      Noms noms(1);
+      Noms unites(1);
       noms[0] = "grad_omega_elem";
       disc.discretiser_champ("champ_elem", equation().domaine_dis(), scalaire,
                              noms , unites, dimension, 0, grad_omega_elem_);
@@ -109,6 +112,8 @@ void Source_Transport_K_Omega_VDF_Elem::creer_champ(const Motcle& nom)
     }
   if (production_k_elem_.est_nul())
     {
+      Noms noms(1);
+      Noms unites(1);
       noms[0] = "production_k";
       disc.discretiser_champ("champ_elem", equation().domaine_dis(), scalaire,
                              noms , unites, 1, 0, production_k_elem_);
@@ -116,6 +121,8 @@ void Source_Transport_K_Omega_VDF_Elem::creer_champ(const Motcle& nom)
     }
   if (production_omega_elem_.est_nul())
     {
+      Noms noms(1);
+      Noms unites(1);
       noms[0] = "production_omega";
       disc.discretiser_champ("champ_elem", equation().domaine_dis(), scalaire,
                              noms, unites, 1, 0, production_omega_elem_);
@@ -123,6 +130,8 @@ void Source_Transport_K_Omega_VDF_Elem::creer_champ(const Motcle& nom)
     }
   if (dissipation_k_elem_.est_nul())
     {
+      Noms noms(1);
+      Noms unites(1);
       noms[0] = "dissipation_k";
       disc.discretiser_champ("champ_elem", equation().domaine_dis(), scalaire,
                              noms, unites, 1, 0, dissipation_k_elem_);
@@ -130,6 +139,8 @@ void Source_Transport_K_Omega_VDF_Elem::creer_champ(const Motcle& nom)
     }
   if (dissipation_omega_elem_.est_nul())
     {
+      Noms noms(1);
+      Noms unites(1);
       noms[0] = "dissipation_omega";
       disc.discretiser_champ("champ_elem", equation().domaine_dis(), scalaire,
                              noms, unites, 1, 0, dissipation_omega_elem_);
@@ -137,6 +148,8 @@ void Source_Transport_K_Omega_VDF_Elem::creer_champ(const Motcle& nom)
     }
   if (cross_diffusion_k_omega_elem_.est_nul())
     {
+      Noms noms(1);
+      Noms unites(1);
       noms[0] = "cross_diffusion_k_omega";
       disc.discretiser_champ("champ_elem", equation().domaine_dis(), scalaire,
                              noms, unites, 1, 0, cross_diffusion_k_omega_elem_);
