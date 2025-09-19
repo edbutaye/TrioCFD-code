@@ -64,7 +64,6 @@ std::vector<YAML_data> Navier_Stokes_std_ALE::data_a_sauvegarder() const
 
   name = probleme().le_nom().getString() + "_JacobianNew";
   std::transform(name.begin(), name.end(), name.begin(), ::toupper);
-  nb_dim = vitesse().valeurs().nb_dim();
   YAML_data jnew(name, "double", nb_dim);
   data.push_back(jnew);
 
@@ -143,8 +142,7 @@ int Navier_Stokes_std_ALE::sauvegarder(Sortie& os) const
 
       OWN_PTR(Champ_Don_base) meshCoords;
       dis.discretiser_champ("Champ_sommets", domaine_dis(),"meshCoords","none",nb_dim,temps,meshCoords);
-      meshCoords->valeurs()=dom_ale.getMeshCoords();
-
+      meshCoords->valeurs()= domaine_dis().domaine().les_sommets();
 
       if (special && Process::nproc() > 1)
         Cerr << "ATTENTION : For a parallel calculation, the field Jacobian is not saved in xyz format ... " << finl;
@@ -226,11 +224,29 @@ int Navier_Stokes_std_ALE::sauvegarder(Sortie& os) const
       name = probleme().le_nom() + "_JacobianNew";
       bytes += write_tab(dom_ale.getNewJacobian(), name.majuscule());
       name = probleme().le_nom() + "_meshCoords";
-      bytes += write_tab(dom_ale.getMeshCoords(), name.majuscule());
+      bytes += write_tab(domaine_dis().domaine().les_sommets(), name.majuscule());
       if(dom_ale.getMeshMotionModel()==1)
         {
-          //TODO
-          Cerr <<"ATTENTION : option not available with the Structural_dynamic_mesh_model"<<finl;
+          name = probleme().le_nom() + "_meshDisplacement";
+          bytes += write_tab(dom_ale.getMeshDisplacement(), name.majuscule());
+
+          name = probleme().le_nom() + "_meshVelocity";
+          bytes += write_tab(dom_ale.getMeshVelocity(), name.majuscule());
+
+          name = probleme().le_nom() + "_meshAcceleration";
+          bytes += write_tab(dom_ale.getMeshAcceleration(), name.majuscule());
+
+          name = probleme().le_nom() + "_meshPosition";
+          bytes += write_tab(dom_ale.getMeshPosition(), name.majuscule());
+
+          name = probleme().le_nom() + "_meshReferenceConfiguration";
+          bytes += write_tab(dom_ale.getMeshReferenceConfiguration(), name.majuscule());
+
+          name = probleme().le_nom() + "_meshTransformationGradient";
+          bytes += write_tab(dom_ale.getMeshTransformationGradient(), name.majuscule());
+
+          name = probleme().le_nom() + "_meshStress";
+          bytes += write_tab(dom_ale.getMeshStress(), name.majuscule());
         }
 
     }

@@ -964,8 +964,8 @@ void Domaine_ALE::resumptionJacobianCoords(DoubleTab& ValueOf_ALEjacobian_old, D
 {
   ALEjacobian_old=ValueOf_ALEjacobian_old;
   ALEjacobian_new=ValueOf_ALEjacobian_new;
-
-  for (int i=0; i<nb_som_tot(); i++)
+  int nbValues=ValueOf_MeshCoords.size()/dimension;
+  for (int i=0; i<nbValues; i++)
     {
       for (int k=0; k<dimension; k++)
         {
@@ -1846,33 +1846,31 @@ const DoubleTab& Domaine_ALE::getMeshPbForceFace() const
   return str_mesh_model.getMeshPbForceFace() ;
 }
 
-
-
-const DoubleVect& Domaine_ALE::getMeshDisplacement() const
+const DoubleTab& Domaine_ALE::getMeshDisplacement() const
 {
   return str_mesh_model.getMeshDisplacement();
 }
-const DoubleVect& Domaine_ALE::getMeshVelocity() const
+const DoubleTab& Domaine_ALE::getMeshVelocity() const
 {
   return str_mesh_model.getMeshVelocity();
 }
-const DoubleVect& Domaine_ALE::getMeshAcceleration() const
+const DoubleTab& Domaine_ALE::getMeshAcceleration() const
 {
   return str_mesh_model.getMeshAcceleration();
 }
-const DoubleVect& Domaine_ALE::getMeshPosition() const
+const DoubleTab& Domaine_ALE::getMeshPosition() const
 {
   return str_mesh_model.getMeshPosition();
 }
-const DoubleVect& Domaine_ALE::getMeshReferenceConfiguration() const
+const DoubleTab& Domaine_ALE::getMeshReferenceConfiguration() const
 {
   return str_mesh_model.getMeshReferenceConfiguration();
 }
-const DoubleVect& Domaine_ALE::getMeshTransformationGradient() const
+const DoubleTab& Domaine_ALE::getMeshTransformationGradient() const
 {
   return str_mesh_model.getMeshTransformationGradient();
 }
-const DoubleVect& Domaine_ALE::getMeshStress() const
+const DoubleTab& Domaine_ALE::getMeshStress() const
 {
   return str_mesh_model.getMeshStress();
 }

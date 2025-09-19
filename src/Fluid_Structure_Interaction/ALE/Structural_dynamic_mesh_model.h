@@ -68,13 +68,13 @@ public:
   inline const DoubleVect& getMeshPbPressure() const;
   inline const DoubleVect& getMeshPbVonMises() const;
   inline const DoubleTab& getMeshPbForceFace() const;
-  inline const DoubleVect& getMeshDisplacement() const {return u; }
-  inline const DoubleVect& getMeshVelocity() const {return v; }
-  inline const DoubleVect& getMeshAcceleration() const {return a; }
-  inline const DoubleVect& getMeshPosition() const {return x; }
-  inline const DoubleVect& getMeshReferenceConfiguration() const {return B0_; }
-  inline const DoubleVect& getMeshTransformationGradient() const {return Ft_; }
-  inline const DoubleVect& getMeshStress() const {return Stress_; }
+  inline const DoubleTab& getMeshDisplacement() const {return u; }
+  inline const DoubleTab& getMeshVelocity() const {return v; }
+  inline const DoubleTab& getMeshAcceleration() const {return a; }
+  inline const DoubleTab& getMeshPosition() const {return x; }
+  inline const DoubleTab& getMeshReferenceConfiguration() const {return B0_; }
+  inline const DoubleTab& getMeshTransformationGradient() const {return Ft_; }
+  inline const DoubleTab& getMeshStress() const {return Stress_; }
   inline const int& getMeshReferenceConfigurationNbComp() const {return dimB0_;}
   inline const int& getMeshTransformationGradientNbComp() const {return nSymSize_;}
   inline const int& getMeshStressNbComp() const {return symSize_;}

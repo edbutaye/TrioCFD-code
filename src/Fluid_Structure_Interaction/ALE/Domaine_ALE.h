@@ -85,7 +85,6 @@ public :
   inline const DoubleTab& getOldJacobian() const;
   inline const DoubleTab& getNewJacobian();
   inline const DoubleTab& getNewJacobian() const;
-  inline  DoubleTab getMeshCoords() const;
   inline int getMeshMotionModel() const ;
   void updateMetrics(Domaine_dis_base&, Probleme_base& );
 
@@ -111,13 +110,13 @@ public :
   const DoubleVect& getMeshPbPressure() const ;
   const DoubleVect& getMeshPbVonMises() const ;
   const DoubleTab& getMeshPbForceFace() const ;
-  const DoubleVect& getMeshDisplacement() const ;
-  const DoubleVect& getMeshVelocity() const ;
-  const DoubleVect& getMeshAcceleration() const ;
-  const DoubleVect& getMeshPosition() const ;
-  const DoubleVect& getMeshReferenceConfiguration() const ;
-  const DoubleVect& getMeshTransformationGradient() const ;
-  const DoubleVect& getMeshStress() const ;
+  const DoubleTab& getMeshDisplacement() const ;
+  const DoubleTab& getMeshVelocity() const ;
+  const DoubleTab& getMeshAcceleration() const ;
+  const DoubleTab& getMeshPosition() const ;
+  const DoubleTab& getMeshReferenceConfiguration() const ;
+  const DoubleTab& getMeshTransformationGradient() const ;
+  const DoubleTab& getMeshStress() const ;
   const int& getMeshReferenceConfigurationNbComp() const ;
   const int& getMeshTransformationGradientNbComp() const ;
   const int& getMeshStressNbComp() const ;
@@ -213,21 +212,6 @@ inline const DoubleTab& Domaine_ALE::getNewJacobian() const
 {
   return ALEjacobian_new;
 }
-
-inline DoubleTab Domaine_ALE::getMeshCoords() const
-{
-  int nbSom=nb_som_tot();
-  DoubleTab meshCoords(nbSom, dimension);
-  for (int i=0; i<nbSom; i++)
-    {
-      for (int k=0; k<dimension; k++)
-        {
-          meshCoords(i,k) =  coord(i,k);
-        }
-    }
-  return meshCoords;
-}
-
 
 inline void Domaine_ALE::associer_equation(const Equation_base& une_eq)
 {

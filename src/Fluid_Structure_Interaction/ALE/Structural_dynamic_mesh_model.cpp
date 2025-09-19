@@ -193,7 +193,7 @@ void Structural_dynamic_mesh_model::initMfrontBehaviour()
 
 }
 
-void Structural_dynamic_mesh_model::initDynamicMeshProblem(const double temps, const int nsom, const int nelem, const int nface, const MD_Vector& md, const MD_Vector& mde, const MD_Vector& mdf)
+void Structural_dynamic_mesh_model::initDynamicMeshProblem(const double temps, const int nsom, const int nelem, const int nface, const MD_Vector& mds, const MD_Vector& mde, const MD_Vector& mdf)
 {
   switch (dimension)
     {
@@ -236,9 +236,16 @@ void Structural_dynamic_mesh_model::initDynamicMeshProblem(const double temps, c
   if(!resumption)
     {
       u.resize(nsom,dimension) ;
+      MD_Vector_tools::creer_tableau_distribue(mds, u);
       v.resize(nsom,dimension) ;
+      MD_Vector_tools::creer_tableau_distribue(mds, v);
+
       a.resize(nsom,dimension) ;
+      MD_Vector_tools::creer_tableau_distribue(mds, a);
+
       x.resize(nsom,dimension) ;
+      MD_Vector_tools::creer_tableau_distribue(mds, x);
+
     }
 
   vp.resize(nsom,dimension) ;
@@ -251,8 +258,12 @@ void Structural_dynamic_mesh_model::initDynamicMeshProblem(const double temps, c
   if(!resumption)
     {
       B0_.resize(nelem,dimB0_) ;
+      MD_Vector_tools::creer_tableau_distribue(mde, B0_);
       Ft_.resize(nelem, nSymSize_) ;
+      MD_Vector_tools::creer_tableau_distribue(mde, Ft_);
       Stress_.resize(nelem, symSize_) ;
+      MD_Vector_tools::creer_tableau_distribue(mde, Stress_);
+
     }
 
   invertNum_.resize(nelem) ;
@@ -266,9 +277,9 @@ void Structural_dynamic_mesh_model::initDynamicMeshProblem(const double temps, c
   mfrontEvars_.resize(nelem, sizeEvars_) ;
 
   // Only ff and mass need to be built as distributed arrays
-  MD_Vector_tools::creer_tableau_distribue(md, ff) ;
-  MD_Vector_tools::creer_tableau_distribue(md, mass) ;
-  if (getGridDtMin() > 0.) MD_Vector_tools::creer_tableau_distribue(md, nodalScaleMass) ;
+  MD_Vector_tools::creer_tableau_distribue(mds, ff) ;
+  MD_Vector_tools::creer_tableau_distribue(mds, mass) ;
+  if (getGridDtMin() > 0.) MD_Vector_tools::creer_tableau_distribue(mds, nodalScaleMass) ;
 
   if(!resumption)
     {
