@@ -69,7 +69,7 @@ std::vector<YAML_data> Navier_Stokes_std_ALE::data_a_sauvegarder() const
 
   name = probleme().le_nom().getString() + "_MeshCoords";
   std::transform(name.begin(), name.end(), name.begin(), ::toupper);
-  YAML_data coords(name, "double", nb_dim);
+  YAML_data coords(name, "double", dimension);
   data.push_back(coords);
 
   const Domaine_ALE& dom_ale=ref_cast(Domaine_ALE, probleme().domaine());
@@ -77,22 +77,22 @@ std::vector<YAML_data> Navier_Stokes_std_ALE::data_a_sauvegarder() const
     {
       name = probleme().le_nom().getString() + "_MeshDisplacement";
       std::transform(name.begin(), name.end(), name.begin(), ::toupper);
-      YAML_data displold(name, "double", nb_dim);
+      YAML_data displold(name, "double", dimension);
       data.push_back(displold);
 
       name = probleme().le_nom().getString() + "_MeshVelocity";
       std::transform(name.begin(), name.end(), name.begin(), ::toupper);
-      YAML_data velold(name, "double", nb_dim);
+      YAML_data velold(name, "double", dimension);
       data.push_back(velold);
 
       name = probleme().le_nom().getString() + "_MeshAcceleration";
       std::transform(name.begin(), name.end(), name.begin(), ::toupper);
-      YAML_data accold(name, "double", nb_dim);
+      YAML_data accold(name, "double", dimension);
       data.push_back(accold);
 
       name = probleme().le_nom().getString() + "_MeshPosition";
       std::transform(name.begin(), name.end(), name.begin(), ::toupper);
-      YAML_data posold(name, "double", nb_dim);
+      YAML_data posold(name, "double", dimension);
       data.push_back(posold);
 
       int nbComp=dom_ale.getMeshReferenceConfigurationNbComp();
@@ -136,12 +136,11 @@ int Navier_Stokes_std_ALE::sauvegarder(Sortie& os) const
       JacobianNew->nommer("JacobianNew");
       JacobianNew->valeurs() = dom_ale.getNewJacobian(); // Use good values
 
-      int nb_dim = vitesse().valeurs().nb_dim();
       double temps = schema_temps().temps_courant();
       const Discret_Thyd& dis=ref_cast(Discret_Thyd,discretisation());
 
       OWN_PTR(Champ_Don_base) meshCoords;
-      dis.discretiser_champ("Champ_sommets", domaine_dis(),"meshCoords","none",nb_dim,temps,meshCoords);
+      dis.discretiser_champ("Champ_sommets", domaine_dis(),"meshCoords","none",dimension,temps,meshCoords);
       meshCoords->valeurs()= domaine_dis().domaine().les_sommets();
 
       if (special && Process::nproc() > 1)
@@ -156,19 +155,19 @@ int Navier_Stokes_std_ALE::sauvegarder(Sortie& os) const
       if(dom_ale.getMeshMotionModel()==1) //save the mesh motion: displacement, velocity, and acceleration
         {
           OWN_PTR(Champ_Don_base) meshDisplacement;
-          dis.discretiser_champ("Champ_sommets", domaine_dis(),"meshDisplacement","none",nb_dim,temps,meshDisplacement);
+          dis.discretiser_champ("Champ_sommets", domaine_dis(),"meshDisplacement","none",dimension,temps,meshDisplacement);
           meshDisplacement->valeurs()=dom_ale.getMeshDisplacement();
 
           OWN_PTR(Champ_Don_base) meshVelocity;
-          dis.discretiser_champ("Champ_sommets", domaine_dis(),"meshVelocity","none",nb_dim,temps,meshVelocity);
+          dis.discretiser_champ("Champ_sommets", domaine_dis(),"meshVelocity","none",dimension,temps,meshVelocity);
           meshVelocity->valeurs()=dom_ale.getMeshVelocity();
 
           OWN_PTR(Champ_Don_base) meshAcceleration;
-          dis.discretiser_champ("Champ_sommets", domaine_dis(),"meshAcceleration","none",nb_dim,temps,meshAcceleration);
+          dis.discretiser_champ("Champ_sommets", domaine_dis(),"meshAcceleration","none",dimension,temps,meshAcceleration);
           meshAcceleration->valeurs()=dom_ale.getMeshAcceleration();
 
           OWN_PTR(Champ_Don_base) meshPosition;
-          dis.discretiser_champ("Champ_sommets", domaine_dis(),"meshPosition","none",nb_dim,temps,meshPosition);
+          dis.discretiser_champ("Champ_sommets", domaine_dis(),"meshPosition","none",dimension,temps,meshPosition);
           meshPosition->valeurs()=dom_ale.getMeshPosition();
 
           int nbComp=dom_ale.getMeshReferenceConfigurationNbComp();
@@ -276,17 +275,15 @@ int Navier_Stokes_std_ALE::reprendre(Entree& is)
   field_tag_JNew += Nom(probleme().schema_temps().temps_courant(),probleme().reprise_format_temps());
 
 
-  int nb_dim = vitesse().valeurs().nb_dim();
   double temps = schema_temps().temps_courant();
   const Discret_Thyd& dis=ref_cast(Discret_Thyd,discretisation());
 
   OWN_PTR(Champ_Don_base) meshCoords;
-  dis.discretiser_champ("Champ_sommets", domaine_dis(),"meshCoords","none",nb_dim,temps,meshCoords);
+  dis.discretiser_champ("Champ_sommets", domaine_dis(),"meshCoords","none",dimension,temps,meshCoords);
   Nom field_tag_coords(meshCoords->le_nom());
   field_tag_coords += meshCoords->que_suis_je();
   field_tag_coords += probleme().domaine().le_nom();
   field_tag_coords += Nom(probleme().schema_temps().temps_courant(),probleme().reprise_format_temps());
-
 
   if (EcritureLectureSpecial::is_lecture_special() && Process::nproc() > 1)
     {
@@ -315,48 +312,48 @@ int Navier_Stokes_std_ALE::reprendre(Entree& is)
   if(dom_ale.getMeshMotionModel()==1)
     {
       OWN_PTR(Champ_Don_base) meshDisplacement;
-      dis.discretiser_champ("Champ_sommets", domaine_dis(),"meshDisplacement","none",nb_dim,temps,meshDisplacement);
+      dis.discretiser_champ("Champ_sommets", domaine_dis(),"meshDisplacement","none",dimension,temps,meshDisplacement);
       Nom field_tag_Displ(meshDisplacement->le_nom());
       field_tag_Displ += meshDisplacement->que_suis_je();
       field_tag_Displ += probleme().domaine().le_nom();
       field_tag_Displ += Nom(probleme().schema_temps().temps_courant(),probleme().reprise_format_temps());
 
       OWN_PTR(Champ_Don_base)  meshVelocity;
-      dis.discretiser_champ("Champ_sommets", domaine_dis(),"meshVelocity","none",nb_dim,temps,meshVelocity);
+      dis.discretiser_champ("Champ_sommets", domaine_dis(),"meshVelocity","none",dimension,temps,meshVelocity);
       Nom  field_tag_Vel(meshVelocity->le_nom());
       field_tag_Vel += meshVelocity->que_suis_je();
       field_tag_Vel += probleme().domaine().le_nom();
       field_tag_Vel +=Nom(probleme().schema_temps().temps_courant(),probleme().reprise_format_temps());
 
       OWN_PTR(Champ_Don_base) meshAcceleration;
-      dis.discretiser_champ("Champ_sommets", domaine_dis(),"meshAcceleration","none",nb_dim,temps,meshAcceleration);
+      dis.discretiser_champ("Champ_sommets", domaine_dis(),"meshAcceleration","none",dimension,temps,meshAcceleration);
       Nom field_tag_Acc(meshAcceleration->le_nom());
       field_tag_Acc += meshAcceleration->que_suis_je();
       field_tag_Acc += probleme().domaine().le_nom();
       field_tag_Acc += Nom(probleme().schema_temps().temps_courant(),probleme().reprise_format_temps());
 
       OWN_PTR(Champ_Don_base) meshPosition;
-      dis.discretiser_champ("Champ_sommets", domaine_dis(),"meshPosition","none",nb_dim,temps,meshPosition);
+      dis.discretiser_champ("Champ_sommets", domaine_dis(),"meshPosition","none",dimension,temps,meshPosition);
       Nom field_tag_Pos(meshPosition->le_nom());
       field_tag_Pos += meshPosition->que_suis_je();
       field_tag_Pos += probleme().domaine().le_nom();
       field_tag_Pos += Nom(probleme().schema_temps().temps_courant(),probleme().reprise_format_temps());
 
       int nbn=0, nSymSize=0, symSize=0;
-      if (nb_dim == 2)
+      if (dimension == 2)
         {
           nbn=3;
           nSymSize=5;
           symSize=4;
         }
-      else if (nb_dim == 3)
+      else if (dimension == 3)
         {
           nbn=4;
           nSymSize=9;
           symSize=6;
         }
 
-      int nbComp=nb_dim*nbn;
+      int nbComp=dimension*nbn;
       OWN_PTR(Champ_Don_base) meshReferenceConfiguration;
       dis.discretiser_champ("Champ_elem", domaine_dis(),"meshReferenceConfiguration","none",nbComp,temps,meshReferenceConfiguration);
       Nom field_tag_RefConf(meshReferenceConfiguration->le_nom());

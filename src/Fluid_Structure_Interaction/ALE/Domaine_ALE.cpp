@@ -964,6 +964,7 @@ void Domaine_ALE::resumptionJacobianCoords(DoubleTab& ValueOf_ALEjacobian_old, D
 {
   ALEjacobian_old=ValueOf_ALEjacobian_old;
   ALEjacobian_new=ValueOf_ALEjacobian_new;
+
   int nbValues=ValueOf_MeshCoords.size()/dimension;
   for (int i=0; i<nbValues; i++)
     {
