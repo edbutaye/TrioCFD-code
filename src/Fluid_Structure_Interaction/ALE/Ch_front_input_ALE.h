@@ -59,7 +59,7 @@ public:
 protected:
 
   DoubleTab vit_som_bord_ALE;
-  bool alreadyInit_;
+  bool alreadyInit_ = false;
 
 };
 

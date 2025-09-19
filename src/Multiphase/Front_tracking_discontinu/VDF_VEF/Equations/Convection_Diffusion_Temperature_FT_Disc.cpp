@@ -55,8 +55,6 @@ Convection_Diffusion_Temperature_FT_Disc::Convection_Diffusion_Temperature_FT_Di
   stencil_width_ = 8; //GB : Valeur par defaut de stencil_width_
   temp_moy_ini_ = 0.; //GB : Valeur par defaut de la temperature moyenne initiale
   nom_sous_domaine_ = "unknown_sous_domaine"; //GB : Valeur par defaut de la sous-domaine de moyenne
-  maintien_temperature_ = false;
-  is_prescribed_mpoint_ = false;
   prescribed_mpoint_ = -1.e30;
   mixed_elems_.resize_array(0);
   lost_fluxes_.resize_array(0);

@@ -191,7 +191,7 @@ protected:
   // Statistiques spectrale de la turbulence
   Fourier_trans partie_fourier_;
   int dt_post_spectral_;
-  bool reprise_spectrale_;
+  bool reprise_spectrale_ = false;
   Domaine_IJK post_splitting_;
 
   // Sauvegarde des lata par plan
@@ -272,8 +272,8 @@ protected:
   bool flag_nu_anisotropic_;
   IJK_Field_double turbulent_mu_;
   FixedVector<IJK_Field_double, 6> turbulent_mu_tensor_;
-  bool turbulent_viscosity_;
-  bool variation_cste_modele_fonctionnel_;
+  bool turbulent_viscosity_ = false;
+  bool variation_cste_modele_fonctionnel_ = false;
   // M.D 10/2021
   double smoothing_center_fr_;
   double smoothing_factor_fr_;
@@ -294,15 +294,15 @@ protected:
   bool flag_kappa_anisotropic_;
   IJK_Field_double turbulent_kappa_;
   IJK_Field_vector3_double turbulent_kappa_vector_;
-  bool turbulent_diffusivity_;
+  bool turbulent_diffusivity_ = false;
 
   Nom filter_kernel_name_;
   Filter_kernel_base* kernel_;
-  bool flag_filtrage_convection_qdm_;
-  bool flag_filtrage_turbulent_diffusion_qdm_;
-  bool flag_filtrage_structural_diffusion_qdm_;
-  bool flag_convection_qdm_sans_rho_;
-  bool flag_convection_qdm_sans_divergence_;
+  bool flag_filtrage_convection_qdm_ = false;
+  bool flag_filtrage_turbulent_diffusion_qdm_ = false;
+  bool flag_filtrage_structural_diffusion_qdm_ = false;
+  bool flag_convection_qdm_sans_rho_ = false;
+  bool flag_convection_qdm_sans_divergence_ = false;
   IJK_Field_vector3_double velocity_filtre_;
   IJK_Field_double rho_filtre_;
   IJK_Field_double rho_velocity_i_filtre_ ;
@@ -331,7 +331,7 @@ protected:
   FixedVector<IJK_Field_double, 6> structural_uu_tensor_; // Vector with 6 components, 0:xx 1:xy 2:xz 3:yy 4:yz 5:zz
   bool flag_structural_uu_tmp_;
   FixedVector<IJK_Field_double, 6> structural_uu_tmp_tensor_; // Vector with 6 components, 0:xx 1:xy 2:xz 3:yy 4:yz 5:zz
-  bool structural_uu_;
+  bool structural_uu_ = false;
 
   Nom structural_uscalar_model_;
   Nom structural_uscalar_dynamic_type_;
@@ -340,7 +340,7 @@ protected:
   IJK_Field_vector3_double structural_uscalar_vector_;
   bool flag_structural_uscalar_tmp_;
   IJK_Field_vector3_double structural_uscalar_tmp_vector_;
-  bool structural_uscalar_;
+  bool structural_uscalar_ = false;
 
   Nom large_eddy_simulation_formulation_;
   double facteur_delta_x_;
@@ -389,15 +389,15 @@ protected:
 
   double dt_save_oscillating_cycle_raw_data_; // saves raw_data every physical dt
   double dt_save_cycle_;                      // incremented timestep for saving
-  bool postraiter_sous_pas_de_temps_; // drapeau 0 ou 1
+  bool postraiter_sous_pas_de_temps_ = false; // drapeau 0 ou 1
   Nom nom_sauvegarde_;
   Nom nom_reprise_;
   // Pour numeroter les fichiers .lata il faut compter combien on en a ecrit:
   int compteur_post_instantanes_;
-  bool calcul_2d_; // drapeau 0 ou 1
+  bool calcul_2d_ = false; // drapeau 0 ou 1
   Nom check_stop_file_; // Nom du fichier stop
-  bool check_divergence_;
-  bool projection_initiale_demandee_;
+  bool check_divergence_ = false;
+  bool projection_initiale_demandee_ = false;
   double puit_;
 
   // Le jeu de donnees doit fournir soit des fichiers de reprise: ..
@@ -423,13 +423,13 @@ protected:
   double rho_bulk_;
   /* double sum_entering_flux_; */
 
-  bool convection_rho_amont_;
-  bool convection_rho_centre2_;
-  bool convection_rho_centre4_;
+  bool convection_rho_amont_ = false;
+  bool convection_rho_centre2_ = false;
+  bool convection_rho_centre4_ = false;
 
-  bool convection_velocity_amont_;
-  bool convection_velocity_centre2_;
-  bool convection_velocity_quicksharp_;
+  bool convection_velocity_amont_ = false;
+  bool convection_velocity_centre2_ = false;
+  bool convection_velocity_quicksharp_ = false;
 
 
 
@@ -446,14 +446,14 @@ protected:
   double gamma_;
 
   // F.A 17/03/14 ajout diffs et convection negligeables
-  bool diff_qdm_negligeable_;
-  bool diff_temp_negligeable_;
+  bool diff_qdm_negligeable_ = false;
+  bool diff_temp_negligeable_ = false;
 
-  bool conv_qdm_negligeable_;
-  bool conv_rho_negligeable_;
+  bool conv_qdm_negligeable_ = false;
+  bool conv_rho_negligeable_ = false;
 
   // DD,2016-10-14: ajout disable_solveur_poisson_
-  bool disable_solveur_poisson_;
+  bool disable_solveur_poisson_ = false;
 
   // F.A 17/03/14 ajout possibiltie de dt_start
   double dt_start_;
@@ -469,22 +469,22 @@ protected:
 
   // DD,2016-28-01: statistiques a partir de fichiers lata uniquement
   Noms statlata_namelist_;
-  bool sauvegarde_post_instantanes_;
-  bool lecture_post_instantanes_;
-  bool lecture_post_instantanes_filtrer_u_;
-  bool lecture_post_instantanes_filtrer_rho_;
-  bool lecture_post_instantanes_filtrer_p_;
-  bool lecture_post_instantanes_filtrer_tous_;
+  bool sauvegarde_post_instantanes_ = false;
+  bool lecture_post_instantanes_ = false;
+  bool lecture_post_instantanes_filtrer_u_ = false;
+  bool lecture_post_instantanes_filtrer_rho_ = false;
+  bool lecture_post_instantanes_filtrer_p_ = false;
+  bool lecture_post_instantanes_filtrer_tous_ = false;
 
   // DD,2016-06-15: changement des pas de temps de stabilite,
   // pour faciliter les tests, j'ajoute un parametre pour avoir l'ancienne version
-  bool old_dtstab_;
+  bool old_dtstab_ = false;
 
   // Adding expression for oscillating boundary condition
   // Nom expression_oscillating_boundary;
   double amplitude_oscillating_boundary_;
   double frequency_oscillating_boundary_;
-  bool flag_oscillating_boundary;
+  bool flag_oscillating_boundary = false;
 
   // Saving each delta_t time
   bool flag_save_each_delta_t_ = false;

@@ -37,8 +37,6 @@ public:
   Fluide_Diphasique()
   {
     indic_rayo_ = NONRAYO;
-    formule_mu_ = "standard";
-    is_solid_particle_ = false;
   }
 
   const Fluide_Incompressible& fluide_phase(int la_phase) const;
@@ -72,9 +70,9 @@ protected:
   OWN_PTR(Milieu_base) phase0_, phase1_;
   OWN_PTR(Champ_Don_base) sigma_; // Tension de surface (J/m^2)
   OWN_PTR(Champ_Don_base) chaleur_latente_; // Enthalpie de changement de phase h(phase1_) - h(phase0_) (J/kg/K)
-  Motcle formule_mu_; // Formule utilisee pour le calcul de la moyenne de mu
-  bool is_solid_particle_; // True if phase0_ or phase1_ is a Solid_Particle
-  int id_fluid_phase_; // number (0 or 1) of the Fluid_Incompressible phase
+  Motcle formule_mu_ = "standard"; // Formule utilisee pour le calcul de la moyenne de mu
+  bool is_solid_particle_ = false; // True if phase0_ or phase1_ is a Solid_Particle
+  int id_fluid_phase_ = -1; // number (0 or 1) of the Fluid_Incompressible phase
   template <typename RETURN_TYPE>
   RETURN_TYPE invalid_(const char * nom_funct) const
   {

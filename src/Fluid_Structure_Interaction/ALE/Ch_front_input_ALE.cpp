@@ -34,8 +34,7 @@
 Implemente_instanciable_sans_constructeur(Ch_front_input_ALE,"Ch_front_input_ALE",Ch_front_input_P1);
 // XD Ch_front_input_ALE  front_field_base  Ch_front_input_ALE  -1 Class to define a boundary condition on a moving boundary of a mesh (only for the Arbitrary Lagrangian-Eulerian  framework ) .  NL2  Example:  Ch_front_input_ALE { nb_comp 3 nom VITESSE_IN_ALE probleme pb initial_value 3 1. 0. 0. }
 
-Ch_front_input_ALE::Ch_front_input_ALE():
-  alreadyInit_(false)
+Ch_front_input_ALE::Ch_front_input_ALE()
 {
 }
 

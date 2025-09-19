@@ -30,7 +30,7 @@
 
 Implemente_instanciable_sans_constructeur_ni_destructeur( Navier_Stokes_std_sensibility, "Navier_Stokes_standard_sensibility", Navier_Stokes_std) ;
 // XD Navier_Stokes_standard_sensibility navier_stokes_standard Navier_Stokes_standard_sensibility -1 Resolution of Navier-Stokes sensitivity problem
-Navier_Stokes_std_sensibility::Navier_Stokes_std_sensibility() : uncertain_var("velocity"),  poly_chaos(0), adjoint(false)
+Navier_Stokes_std_sensibility::Navier_Stokes_std_sensibility() : uncertain_var("velocity"),  poly_chaos(0)
 {
 
 }

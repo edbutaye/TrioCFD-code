@@ -110,8 +110,8 @@ protected:
   int is_solid_particle_;
   Nom nom_sous_domaine_;
   double temp_moy_ini_;
-  bool maintien_temperature_;
-  bool is_prescribed_mpoint_;
+  bool maintien_temperature_ = false;
+  bool is_prescribed_mpoint_ = false;
   double prescribed_mpoint_;
   ArrOfInt correction_mpoint_diff_conv_energy_ ; // on attend trois flags 0 ou 1
 

@@ -167,7 +167,7 @@ protected:
   // reinjection: if a re-injection of interface if nessaire
   bool reinjection_tcl_ = false;
   double tempC_tcl_;
-  bool ready_inject_tcl_;
+  bool ready_inject_tcl_ = false;
   // summaries:
   //        - when reinjection_tcl_ is 0;  i.e., by default, the pinching breakup with be used,
   //           Rc_tcl_GridN_ thetaC_tcl_ control the breakup, thetaC_tcl_ should be large

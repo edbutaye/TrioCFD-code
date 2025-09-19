@@ -45,7 +45,6 @@ Structural_dynamic_mesh_model::Structural_dynamic_mesh_model()
   gridNStep = 0 ;
   gridTime = 0. ;
   gridDt = 0. ;
-  isMassBuilt = false ;
 
   configurationResetDt = 0 ;
   gridResetTime = 0 ;

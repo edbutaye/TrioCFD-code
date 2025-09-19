@@ -100,13 +100,13 @@ public:
   int gridNStep ;
   double gridTime ;
   double gridDt ;
-  bool isMassBuilt ;
+  bool isMassBuilt = false;
 
   double configurationResetDt ;
   double gridResetTime ;
 
   double maxAddedMassRatio ;
-  bool AddedMassRatioExceeded ;
+  bool AddedMassRatioExceeded = false; // looking at the code, this is never set to true.
 
   bool doConfigurationReset=false ;
 

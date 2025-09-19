@@ -66,8 +66,8 @@ protected:
   OWN_PTR(Champ_Fonc_base) tabF1_; // Blending field for SST model
   OWN_PTR(Champ_Fonc_base) tabF2_; // for the turbulent viscosity in the SST model
   OWN_PTR(Champ_Fonc_base) enstrophy_; // for the turbulent viscosity in the SST model
-  bool is_SST_; // check if model variant is SST
-  bool is_BSL_; // check if model variant is BSL
+  bool is_SST_ = false; // check if model variant is SST
+  bool is_BSL_ = false; // check if model variant is BSL
 };
 
 /*! @brief Renvoie le champ inconnue du modele de turbulence i.

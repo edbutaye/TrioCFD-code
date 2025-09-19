@@ -82,7 +82,6 @@ void Domaine_ALE::clear()
   eq = OBS_PTR(Equation_base)();
   field_ALE_projection_ = Champs_front_ALE_projection();
   name_ALE_boundary_projection_ = Noms();
-  associate_eq = false;
   name_boundary_with_Neumann_BC= Noms();
   les_elems_extrait_surf_reference_.reset();
   extrait_surf_dom_deformable_ = false;
@@ -1614,6 +1613,7 @@ void Domaine_ALE::solveDynamicMeshProblem(const double temps, const DoubleTab& i
 
   if (str_mesh_model.maxAddedMassRatio > 0)
     {
+      // from looking at the code, this parameter is never set to true, hence this if branch is not reachable. whatever...
       if (str_mesh_model.AddedMassRatioExceeded) str_mesh_model.doConfigurationReset=true ;
       str_mesh_model.AddedMassRatioExceeded=false ;
     }

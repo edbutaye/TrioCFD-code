@@ -66,7 +66,6 @@ Triple_Line_Model_FT_Disc::Triple_Line_Model_FT_Disc() :
   Rc_inject_(8e-05),
   thetaC_tcl_(150.),
   tempC_tcl_(10.),
-  ready_inject_tcl_(0),
   integration_time_(0.),
   instant_mmicro_evap_(0.),
   instant_mmeso_evap_(0.),

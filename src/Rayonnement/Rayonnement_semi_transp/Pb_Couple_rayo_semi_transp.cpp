@@ -191,22 +191,3 @@ void Pb_Couple_rayo_semi_transp::le_modele_rayo_associe(const Modele_rayo_semi_t
 
 }
 
-// bool Pb_Couple_rayo_semi_transp::initTimeStep(double dt) {
-//   bool ok = Probleme_Couple::initTimeStep(dt);
-//   ok = ok && modele().initTimeStep(dt);
-//   return ok;
-// }
-
-// bool Pb_Couple_rayo_semi_transp::iterateTimeStep(bool& converged) {
-//   bool cv;
-//   bool ok = Probleme_Couple::iterateTimeStep(converged);
-//   ok = ok && modele().iterateTimeStep(cv);
-//   converged = converged && cv;
-//   return ok;
-// }
-
-// void Pb_Couple_rayo_semi_transp::validateTimeStep() {
-//   Probleme_Couple::validateTimeStep();
-//   modele().validateTimeStep();
-// }
-
