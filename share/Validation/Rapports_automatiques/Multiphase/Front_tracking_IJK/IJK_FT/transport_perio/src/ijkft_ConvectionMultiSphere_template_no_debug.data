@@ -81,10 +81,9 @@ lire pb
       }
       multigrid_solver {
         solver_precision mixed
-        coarsen_operators 3
+        coarsen_operators 2
         Coarsen_Operator_Uniform {  }
         Coarsen_Operator_Uniform {  }
-        Coarsen_Operator_Uniform {  } 	
         ghost_size 1
         pre_smooth_steps 1 7
         smooth_steps 1 7
