@@ -72,7 +72,6 @@ void Domaine_ALE::clear()
   les_champs_front = TRUST_Vector<OWN_PTR(Champ_front_base)>();
   nb_bords_ALE = 0;
   les_bords_ALE.vide();
-  update_or_not_matrix_coeffs_ = 1;
   ALEjacobian_old.reset();
   ALEjacobian_new.reset();
   resumption = 0;
@@ -106,8 +105,6 @@ void Domaine_ALE::mettre_a_jour (double temps, Domaine_dis_base& le_domaine_dis,
   invalide_octree();
   //Modification des coordonnees du maillage
   int N_som=nb_som_tot();
-
-  update_or_not_matrix_coeffs_=0;
 
   //Cerr<<"Domaine_ALE::mettre_a_jour"<<finl;
 
@@ -145,6 +142,9 @@ void Domaine_ALE::mettre_a_jour (double temps, Domaine_dis_base& le_domaine_dis,
 
       //update mesh metrics
       updateMetrics(le_domaine_dis, pb);
+      Navier_Stokes_std_ALE& eqn_hydr_ale = ref_cast(Navier_Stokes_std_ALE,getEquation());
+      eqn_hydr_ale.update_pressure_matrix();
+
       //On recalcule les vitesses aux faces
       Domaine_VF& le_dom_VF=ref_cast(Domaine_VF,le_domaine_dis);
       int nb_faces=le_dom_VF.nb_faces();
@@ -737,7 +737,6 @@ DoubleTab Domaine_ALE::calculer_vitesse(double temps, Domaine_dis_base& le_domai
   else
     {
       check_NoZero_ALE = false;
-      update_or_not_matrix_coeffs_=1;
     }
 
   Debog::verifier("Domaine_ALE::calculer_vitesse -vit_maillage", vit_maillage);

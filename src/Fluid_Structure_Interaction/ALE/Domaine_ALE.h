@@ -77,7 +77,6 @@ public :
   void  update_ALE_projection(double, Nom&, Champ_front_ALE_projection& , int);
   void  update_ALE_projection(const double);
   DoubleTab& laplacien(Domaine_dis_base&, Probleme_base&, const DoubleTab&, DoubleTab&);
-  int update_or_not_matrix_coeffs() const;
   inline void setUpdateJacobian_Old(const bool status) {updateJacobian_Old_ = status ;}
   void update_ALEjacobians(DoubleTab&, DoubleTab&, int);
   void resumptionJacobianCoords(DoubleTab&, DoubleTab&, DoubleTab&);
@@ -142,7 +141,6 @@ protected:
   TRUST_Vector<OWN_PTR(Champ_front_base)> les_champs_front;
   int nb_bords_ALE;
   Bords les_bords_ALE;
-  int update_or_not_matrix_coeffs_; //=1 in case of zero ALE boundary/mesh velocity, =0 otherwise (see Domaine_ALE::calculer_vitesse).
   DoubleTab ALEjacobian_old; // n
   DoubleTab ALEjacobian_new; // n+1
   int resumption; //1 if resumption of calculation else 0
@@ -191,10 +189,10 @@ inline const DoubleTab& Domaine_ALE::vitesse_faces() const
 {
   return vf;
 }
-inline int Domaine_ALE::update_or_not_matrix_coeffs() const
+/*inline int Domaine_ALE::update_or_not_matrix_coeffs() const
 {
   return update_or_not_matrix_coeffs_;
-}
+}*/
 inline const DoubleTab& Domaine_ALE::getOldJacobian()
 {
   return ALEjacobian_old;

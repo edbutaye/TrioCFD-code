@@ -480,13 +480,10 @@ void Navier_Stokes_std_ALE::div_ale_derivative( DoubleTrav& deriveeALE, double t
 
 void Navier_Stokes_std_ALE::update_pressure_matrix()
 {
-  //In case of zero ALE mesh velocity (..._coeffs()=1), BM-1Bt matrix stays unchanged.
-  Domaine_ALE& dom_ale=ref_cast(Domaine_ALE, probleme().domaine());
-  if(dom_ale.update_or_not_matrix_coeffs() == 0)
-    {
-      assembleur_pression_->assembler(matrice_pression_); // Here B M-1 Bt is assembled.
-      solveur_pression_->reinit();
-    }
+  // BM-1Bt matrix is assembled.
+  assembleur_pression_->assembler(matrice_pression_);
+  solveur_pression_->reinit();
+
 }
 
 void Navier_Stokes_std_ALE::discretiser()
