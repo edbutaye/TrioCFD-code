@@ -33,6 +33,7 @@
 #include <Avanc.h>
 #include <TRUST_2_PDI.h>
 #include <Discret_Thyd.h>
+#include <Champ_Inc_base.h>
 
 
 Implemente_instanciable(Navier_Stokes_std_ALE,"Navier_Stokes_standard_ALE",Navier_Stokes_std);
@@ -139,9 +140,17 @@ int Navier_Stokes_std_ALE::sauvegarder(Sortie& os) const
       double temps = schema_temps().temps_courant();
       const Discret_Thyd& dis=ref_cast(Discret_Thyd,discretisation());
 
-      OWN_PTR(Champ_Don_base) meshCoords;
-      dis.discretiser_champ("Champ_sommets", domaine_dis(),"meshCoords","none",dimension,temps,meshCoords);
+      OWN_PTR(Champ_Inc_base) meshCoords;
+      Noms noms(1);
+      Noms unit(1);
+      noms[0] = "meshCoords";
+      unit[0] = "none";
+      dis.discretiser_champ("champ_sommets", domaine_dis(),vectoriel,noms,unit, dimension,1,temps,meshCoords);
+      meshCoords->associer_eqn(*this);
       meshCoords->valeurs()= domaine_dis().domaine().les_sommets();
+
+      Cerr << "MESH COORDS " << finl;
+      Cerr << meshCoords << finl;
 
       if (special && Process::nproc() > 1)
         Cerr << "ATTENTION : For a parallel calculation, the field Jacobian is not saved in xyz format ... " << finl;
@@ -223,6 +232,9 @@ int Navier_Stokes_std_ALE::sauvegarder(Sortie& os) const
       name = probleme().le_nom() + "_JacobianNew";
       bytes += write_tab(dom_ale.getNewJacobian(), name.majuscule());
       name = probleme().le_nom() + "_meshCoords";
+
+      Cerr << "MY VERTICES" << finl;
+      Cerr << domaine_dis().domaine().les_sommets() << finl;
       bytes += write_tab(domaine_dis().domaine().les_sommets(), name.majuscule());
       if(dom_ale.getMeshMotionModel()==1)
         {
@@ -278,8 +290,13 @@ int Navier_Stokes_std_ALE::reprendre(Entree& is)
   double temps = schema_temps().temps_courant();
   const Discret_Thyd& dis=ref_cast(Discret_Thyd,discretisation());
 
-  OWN_PTR(Champ_Don_base) meshCoords;
-  dis.discretiser_champ("Champ_sommets", domaine_dis(),"meshCoords","none",dimension,temps,meshCoords);
+  OWN_PTR(Champ_Inc_base) meshCoords;
+  Noms noms(1);
+  Noms unit(1);
+  noms[0] = "meshCoords";
+  unit[0] = "none";
+  dis.discretiser_champ("champ_sommets", domaine_dis(),vectoriel,noms,unit, dimension,1,temps,meshCoords);
+  meshCoords->associer_eqn(*this);
   Nom field_tag_coords(meshCoords->le_nom());
   field_tag_coords += meshCoords->que_suis_je();
   field_tag_coords += probleme().domaine().le_nom();
