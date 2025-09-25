@@ -50,24 +50,17 @@ int Schema_Euler_explicite_ALE::faire_un_pas_de_temps_eqn_base(Equation_base& eq
   DoubleTab dudt(futur);
   Debog::verifier("Schema_Euler_explicite_ALE::faire_un_pas_de_temps_eqn_base -futur avant", futur);
 
-  // Boundary conditions applied on Un+1:
-  eqn.domaine_Cl_dis().imposer_cond_lim(eqn.inconnue(),temps_courant()+pas_de_temps());
-
-  // On tourne la roue pour que les operateurs utilisent les champs au temps futur
-  eqn.inconnue().avancer();
   eqn.derivee_en_temps_inco(dudt);
-  eqn.inconnue().reculer();
-
   // Un+1=Un+dt_*dU/dt
   futur=dudt;
   futur*=dt_;
 
   //Adding ALE Jacobians. Jacobians are renewed in Navier_Stokes_std::corriger_derivee_impl().
   // In ALE Un+1=(Jn/Jn+1)*Un+dt_*dU/dt
-  Probleme_base& problem=pb_base();
-  Domaine_ALE& domaineALE=ref_cast(Domaine_ALE, problem.domaine());
-  DoubleTab ALEjacobian_Old=domaineALE.getOldJacobian();
-  DoubleTab ALEjacobian_New=domaineALE.getNewJacobian();
+  const Probleme_base& problem=pb_base();
+  const Domaine_ALE& domaineALE=ref_cast(Domaine_ALE, problem.domaine());
+  const DoubleTab& ALEjacobian_Old=domaineALE.getOldJacobian();
+  const DoubleTab& ALEjacobian_New=domaineALE.getNewJacobian();
 
   for (int num_face=0; num_face<(futur.size()/dimension); num_face++)
     {
