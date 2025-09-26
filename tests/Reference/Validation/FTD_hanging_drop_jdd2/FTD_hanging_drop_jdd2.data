@@ -15,7 +15,7 @@ Read sch
 	nb_pas_dt_max 3
     tmax  10.
     dt_min 1.e-10
-    dt_max 0.001
+    dt_max 0.0004 # Timestep 1e-4 is not enough all along #
     dt_impr 0.2
     dt_sauv 10.
     seuil_statio -1.e-8
