@@ -175,14 +175,14 @@ for dis, mod, pb in available_config:
 for dis, mod, pb in available_config:
     if mod == keps:
         param_config[(dis, mod, pb)]["modele_turb"] = "k_epsilon"
-        param_config[(dis, mod, pb)]["equation_hydr"] = "transport_k_epsilon"
+        param_config[(dis, mod, pb)]["equation_hydr"] = "transport_equation transport_k_epsilon"
         param_config[(dis, mod, pb)]["turb"] = "k_eps"
         param_config[(dis, mod, pb)]["CL_turb"] = "frontiere_ouverte_K_eps_impose"
         param_config[(dis, mod, pb)]["turb_ext"] = "k_eps_ext"
         param_config[(dis, mod, pb)]["sources"] = "sources			{ source_transport_k_eps { C1_eps 1.44 C2_eps 1.92 } }"
     elif mod == komg:
         param_config[(dis, mod, pb)]["modele_turb"] = "k_omega"
-        param_config[(dis, mod, pb)]["equation_hydr"] = "transport_k_omega"
+        param_config[(dis, mod, pb)]["equation_hydr"] = "transport_equation transport_k_omega"
         param_config[(dis, mod, pb)]["turb"] = "k_omega"
         param_config[(dis, mod, pb)]["CL_turb"] = "frontiere_ouverte_K_omega_impose"
         param_config[(dis, mod, pb)]["turb_ext"] = "k_omega_ext"
