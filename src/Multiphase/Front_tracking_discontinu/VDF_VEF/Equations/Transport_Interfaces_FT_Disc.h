@@ -481,7 +481,7 @@ private:
 
   void fill_map_post_FT(my_map& map_post, DoubleTab *ftab) const;
 
-  int explicit_u_NS_ = 0;
+  bool explicit_u_NS_ = false;
 };
 
 class Transport_Interfaces_FT_Disc_interne : public Objet_U

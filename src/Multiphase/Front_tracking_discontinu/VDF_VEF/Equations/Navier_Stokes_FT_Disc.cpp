@@ -417,7 +417,7 @@ int Navier_Stokes_FT_Disc::lire_motcle_non_standard(const Motcle& mot, Entree& i
     }
   else if (mot == "repulsion_aux_bords")
     {
-      is_repulsion = 1;
+      is_repulsion = true;
       is >> minx;
       is >> maxx;
       is >> pente;
@@ -1023,7 +1023,7 @@ const int& Navier_Stokes_FT_Disc::get_is_penalized() const
   return variables_internes().is_penalized;
 }
 
-const int& Navier_Stokes_FT_Disc::is_shift_secmem2_activated() const
+bool Navier_Stokes_FT_Disc::is_shift_secmem2_activated() const
 {
   return variables_internes().shift_secmem2_;
 }

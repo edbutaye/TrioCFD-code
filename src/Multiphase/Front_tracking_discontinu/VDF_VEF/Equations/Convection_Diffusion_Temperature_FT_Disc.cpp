@@ -940,7 +940,7 @@ void Convection_Diffusion_Temperature_FT_Disc::compute_divergence_free_velocity_
   Navier_Stokes_FT_Disc& ns = ref_cast(Navier_Stokes_FT_Disc, ref_eq_ns_.valeur());
   // vitesse_convection_->valeurs() = (bool)(explicit_u_NS_) ? ns.inconnue()->valeurs() : ns.inconnue()->futur();
 
-  const DoubleTab& val_vitesse_ns = (bool)(explicit_u_NS_) ? ns.inconnue().valeurs() : ns.inconnue().futur();
+  const DoubleTab& val_vitesse_ns = explicit_u_NS_ ? ns.inconnue().valeurs() : ns.inconnue().futur();
 
   ns.calculer_delta_u_interface(vitesse_convection_, phase_, correction_courbure_ordre_);
   vitesse_convection_->valeurs() += val_vitesse_ns;
@@ -1120,7 +1120,7 @@ DoubleTab& Convection_Diffusion_Temperature_FT_Disc::derivee_en_temps_inco(Doubl
     {
       // Here, we are in faire_un_pas_de_temps_eqn_base() between avancer and reculer()
       // We are not in mettre_a_jour().  valeurs() has u^n; futur() is u^(n+1)
-      const DoubleTab& val_vitesse_ns = (bool)(explicit_u_NS_) ? vitesse_ns.valeurs(): vitesse_ns.futur();
+      const DoubleTab& val_vitesse_ns = explicit_u_NS_ ? vitesse_ns.valeurs(): vitesse_ns.futur();
 
       // vitesse_convection_ is Champ_Inc but never turns the wheel! So the field is always in .valeurs()
       ns.calculer_delta_u_interface(vitesse_convection_, phase_, correction_courbure_ordre_);

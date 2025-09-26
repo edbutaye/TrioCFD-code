@@ -6039,7 +6039,9 @@ void Maillage_FT_Disc::calcul_courbure_sommets(ArrOfDouble& courbure_sommets, co
 
                   double costheta = tab_cos_theta(som[i2], 0);
                   // Normale unitaire au bord
-                  double nfx, nfy, nfz;
+                  double nfx = 0.0;
+                  double nfy = 0.0;
+                  double nfz = 0.0;
                   // if som[i2] est virtuel; the "face=sommet_face_bord_[som[i2]]" are also virtual,
                   // can not directly used in calculer_normale_face_bord
                   // because sommet_face_bord_ is not well filled for virtual sommets...

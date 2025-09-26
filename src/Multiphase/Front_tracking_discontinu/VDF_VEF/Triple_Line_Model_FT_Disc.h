@@ -66,7 +66,7 @@ public :
   bool& ready_inject_tcl() { return ready_inject_tcl_; }
   const double& tempC_tcl() const { return tempC_tcl_; }
   const int& tag_tcl() const { return tag_tcl_; }
-  const int& lissage_tcl() const { return lissage_tcl_; }
+  bool lissage_tcl() const { return lissage_tcl_; }
 
   const bool& adjust_meso_ML() const
   {
@@ -201,7 +201,7 @@ protected:
 
   // if to activate lissage of Qmicro and Theta_app
   // over time period, [t_injection_, t]
-  int lissage_tcl_;
+  bool lissage_tcl_ = false;
   double t_injection_;
 
   // Information on the TCL region :

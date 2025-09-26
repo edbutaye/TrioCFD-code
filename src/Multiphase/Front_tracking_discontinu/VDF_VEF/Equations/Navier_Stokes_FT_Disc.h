@@ -66,7 +66,7 @@ public:
   virtual void calculer_dI_dt(DoubleVect& dI_dt, const DoubleTab& tab_vitesse); // const;
   const int& get_is_penalized() const;
   bool get_new_mass_source() const;
-  const int& is_shift_secmem2_activated() const ;
+  bool is_shift_secmem2_activated() const ;
   const DoubleTab& get_interfacial_area() const;
   DoubleTab& get_set_interfacial_area();  // Open access  in write-mode..
   const DoubleTab& get_mpoint() const;
@@ -133,7 +133,8 @@ private:
   Navier_Stokes_FT_Disc_interne variables_internes_;
 
   double minx = -123., maxx = -123., pente = -123.;
-  int is_repulsion = 0, correction_diffusion_pch_ = 0;
+  bool is_repulsion = false;
+  bool correction_diffusion_pch_ = false;
 };
 
 #endif /* Navier_Stokes_FT_Disc_included */

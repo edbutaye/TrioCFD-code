@@ -68,7 +68,6 @@ Triple_Line_Model_FT_Disc::Triple_Line_Model_FT_Disc() :
   thetaC_tcl_(150.),
   tempC_tcl_(10.),
   Ri_(0.),
-  lissage_tcl_(0),
   t_injection_(0.),
   integration_time_(0.),
   instant_mmicro_evap_(0.),
@@ -813,7 +812,7 @@ double Triple_Line_Model_FT_Disc::compute_Qint(const DoubleTab& in_out, const do
   if (adjust_meso_ML())
     {
       if (thetaC_tcl() >= 90.)
-        Process::exit(Nom("Triple_Line_Model_FT_Disc::compute_Qint, BAD critial angle to find Micro Layer ") + thetaC_tcl() + " ! Pls set thetaC_tcl in you dataset" );
+        Process::exit(Nom("Triple_Line_Model_FT_Disc::compute_Qint, BAD critial angle to find Micro Layer ") + Nom(thetaC_tcl()) + " ! Pls set thetaC_tcl in you dataset" );
       if ((theta_app_loc/M_PI*180. < thetaC_tcl()) || (theta_app_loc/M_PI*180. > 90.))
         {
           Cerr << "[TCL: MESO:] Micro-Layer detected with slope " << theta_app_loc/M_PI*180. << " distance to wall "<< (yl+yr)/2. <<finl;

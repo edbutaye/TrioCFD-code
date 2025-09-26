@@ -121,7 +121,7 @@ public:
 
   // Flag if to shift second member 2 due to phase change:
   // Par defaut, secmem2 is located at interface cells
-  int shift_secmem2_ = 0;
+  bool shift_secmem2_ = false;
 
   enum Type_interpol_indic_pour_dI_dt
   {
