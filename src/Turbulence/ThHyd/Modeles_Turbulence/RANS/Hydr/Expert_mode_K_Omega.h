@@ -1,5 +1,5 @@
 /****************************************************************************
-* Copyright (c) 2023, CEA
+* Copyright (c) 2025, CEA
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -14,46 +14,36 @@
 *****************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 //
-// File:        Source_Transport_K_Omega_VDF_Elem.h
-// Directory:   $TURBULENCE_ROOT/src/Specializations/VDF/Sources
+// File:        Expert_mode_K_Omega.h
+// Directory:   $TURBULENCE_ROOT/src/ThHyd/Modeles_Turbulence/RANS/Hydr
 //
 //////////////////////////////////////////////////////////////////////////////
 
-#ifndef Source_Transport_K_Omega_VDF_Elem_included
-#define Source_Transport_K_Omega_VDF_Elem_included
+#ifndef Expert_mode_K_Omega_included
+#define Expert_mode_K_Omega_included
+#include <Param.h>
 
-#include <Source_Transport_K_Omega_VDF_Elem_base.h>
-#include <TRUST_Ref.h>
+enum class Menter_version_ { ORIGINAL_1994, MODIFIED_2003 };
 
-class Transport_K_Omega;
-
-/*! @brief class Source_Transport_K_Omega_VDF_Elem Cette classe represente le terme source qui figure dans l'equation de transport du couple (k, omega) dans le cas ou les equations
- *
- *  de Navier-Stokes ne sont pas couplees a la thermique ou a l'equation de convection-diffusion d'une concentration.
- *
- */
-class Source_Transport_K_Omega_VDF_Elem : public Source_Transport_K_Omega_VDF_Elem_base
+class Expert_mode_K_Omega: public Objet_U
 {
-  Declare_instanciable_sans_constructeur(Source_Transport_K_Omega_VDF_Elem);
-
+  Declare_instanciable_sans_constructeur(Expert_mode_K_Omega);
 public:
+  Expert_mode_K_Omega()
+  {
+    deactivate_production_limiter_=false;
+    menter_version_=Menter_version_::ORIGINAL_1994;
+  }
 
-  Source_Transport_K_Omega_VDF_Elem() { };
-  void ajouter_blocs(matrices_t matrices, DoubleTab& secmem, const tabs_t& semi_impl) const override;
-  void compute_cross_diffusion() const override;
-  void compute_blending_F1() const override;
-  double blender(double const val1, double const val2, int const elem) const;
+  void set_param(Param& param);
+  int lire_motcle_non_standard(const Motcle& mot, Entree& is ) override;
+  const Menter_version_& get_menter_version() const { return menter_version_; }
+  const bool& get_deactivate_production_limiter() const { return deactivate_production_limiter_; }
+  const double get_gamma1() const;
+  const double get_gamma2() const;
 
-  void creer_champ(const Motcle&) override;
-  void get_noms_champs_postraitables(Noms& nom,Option opt=NONE) const override;
 protected:
-  OBS_PTR(Transport_K_Omega) eqn_K_Omega;
-  void associer_pb(const Probleme_base& pb) override;
-
-protected:
-  const DoubleTab& get_visc_turb() const override;
-  void calculer_terme_production(const Champ_Face_VDF&, const DoubleTab& , const DoubleTab& , DoubleVect&, const bool& deactivate_production_limiter) const override;
-  void fill_resu(const DoubleVect& , DoubleTab& ) const override;
+  bool deactivate_production_limiter_;
+  Menter_version_ menter_version_;
 };
-
 #endif

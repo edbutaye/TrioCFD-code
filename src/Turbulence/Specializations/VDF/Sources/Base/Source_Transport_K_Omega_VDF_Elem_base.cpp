@@ -66,7 +66,8 @@ DoubleTab& Source_Transport_K_Omega_VDF_Elem_base::ajouter_komega(DoubleTab& res
     compute_blending_F1();
 
   DoubleVect& P = ref_cast_non_const(DoubleVect,production_k_elem_->valeurs()); // Ajout d'un espace virtuel au tableau P
-  calculer_terme_production(ch_vit, visco_turb, vit, P); // voir les classes filles
+  const bool& deactivate_production_limiter =  turbulence_model->get_expert_mode().get_deactivate_production_limiter();
+  calculer_terme_production(ch_vit, visco_turb, vit, P,deactivate_production_limiter); // voir les classes filles
   fill_resu(P, resu);
   resu.echange_espace_virtuel();
   if (turbulence_model->is_SST())

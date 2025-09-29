@@ -96,7 +96,7 @@ DoubleVect& Calcul_Production_K_VDF::
 calculer_terme_production_K_for_komega(const Domaine_VDF& domaine_VDF, const Domaine_Cl_VDF& domaine_Cl_VDF,
                                        DoubleVect& S, const DoubleTab& K_Omega,
                                        const DoubleTab& vitesse, const Champ_Face_VDF& vit,
-                                       const DoubleTab& visco_turb) const
+                                       const DoubleTab& visco_turb,const bool deactivate_production_limiter) const
 {
   const IntTab& elem_faces = domaine_VDF.elem_faces();
   const IntVect& orientation = domaine_VDF.orientation();
@@ -127,7 +127,8 @@ calculer_terme_production_K_for_komega(const Domaine_VDF& domaine_VDF, const Dom
       S(elem) += -(2./3.)*visco_turb(elem)*coef*coef;
       S(elem) += -(2./3.)*K_Omega(elem, 0)*coef;
 
-      S(elem)=std::min(S(elem),20.*BETA_K*K_Omega(elem,0)*K_Omega(elem,1));
+      if (!deactivate_production_limiter)
+        S(elem)=std::min(S(elem),20.*BETA_K*K_Omega(elem,0)*K_Omega(elem,1));
     }
 
   Debog::verifier("Source_Transport_K_Omega_VDF_P0_VDF::calculer_terme_production_K_for_komega",

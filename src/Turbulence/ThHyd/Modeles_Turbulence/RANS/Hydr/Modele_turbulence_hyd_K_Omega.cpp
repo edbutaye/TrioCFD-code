@@ -38,7 +38,7 @@
 #include <Domaine_VEF.h>
 #include <VDF_discretisation.h>
 #include <VEF_discretisation.h>
-
+#include <Expert_mode_K_Omega.h>
 
 Implemente_instanciable(Modele_turbulence_hyd_K_Omega, "Modele_turbulence_hyd_K_Omega", Modele_turbulence_hyd_RANS_K_Omega_base);
 // XD k_omega mod_turb_hyd_rans k_omega -1 Turbulence model (k-omega).
@@ -88,7 +88,9 @@ void Modele_turbulence_hyd_K_Omega::set_param(Param& param)
   param.ajouter("Sigma_K2", &Sigma_K2_); // XD_ADD_P double Sigma_K2 for SST model (default value 1.).
   param.ajouter("Sigma_Omega1", &Sigma_OMEGA1_); // XD_ADD_P double Sigma_Omega1 for SST model (default value 1./2.).
   param.ajouter("Sigma_Omega2", &Sigma_OMEGA2_); // XD_ADD_P double Prandt_Omega2 for SST model (default value 0.856).
+  param.ajouter("expert_mode", &ptr_expert_mode_);
 }
+
 
 void Modele_turbulence_hyd_K_Omega::completer()
 {

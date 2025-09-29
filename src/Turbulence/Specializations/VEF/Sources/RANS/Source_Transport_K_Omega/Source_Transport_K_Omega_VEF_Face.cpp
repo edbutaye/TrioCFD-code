@@ -271,7 +271,8 @@ void Source_Transport_K_Omega_VEF_Face::fill_resu_k_omega(const DoubleVect& volu
   DoubleTab& dissipation_k_face = ref_cast_non_const(DoubleTab,dissipation_k_face_->valeurs());
   DoubleTab& dissipation_omega_face = ref_cast_non_const(DoubleTab,dissipation_omega_face_->valeurs());
   DoubleTab& cross_diffusion_k_omega_face = ref_cast_non_const(DoubleTab,cross_diffusion_k_omega_face_->valeurs());
-
+  const double& gamma1 = turbulence_model->get_expert_mode().get_gamma1();
+  const double& gamma2 = turbulence_model->get_expert_mode().get_gamma2();
   for (int face = 0; face < le_dom_VEF->nb_faces(); face++)
     {
       const double tke = K_Omega(face, 0);
@@ -283,7 +284,7 @@ void Source_Transport_K_Omega_VEF_Face::fill_resu_k_omega(const DoubleVect& volu
       if (tke >= LeK_MIN)
         {
           const double cALPHA = turbulence_model->is_SST_or_BSL()
-                                ? blender(GAMMA1, GAMMA2, face)
+                                ? blender(gamma1, gamma2, face)
                                 : ALPHA_OMEGA;
           const double cBETA = turbulence_model->is_SST_or_BSL()
                                ? blender(BETA1, BETA2, face)
@@ -328,18 +329,19 @@ void Source_Transport_K_Omega_VEF_Face::contribuer_a_avec(const DoubleTab& a,
   const DoubleTab& visco_turb = get_visc_turb(); // voir les classes filles
   const DoubleTab& velocity = eq_hydraulique->inconnue().valeurs();
   const DoubleTab& TKE = get_K_pour_production(); // voir les classes filles
-  const bool activate_production_limiter=true;
+  const bool& deactivate_production_limiter =  turbulence_model->get_expert_mode().get_deactivate_production_limiter();
   calculer_terme_production_K(le_dom_VEF.valeur(), domaine_Cl_VEF, production_TKE,
                               TKE, velocity, visco_turb,
                               _interpolation_viscosite_turbulente,
                               _coefficient_limiteur,
-                              activate_production_limiter);
+                              deactivate_production_limiter);
 
   DoubleTrav gradKgradOmega(le_dom_VEF->nb_faces_tot());
   compute_cross_diffusion(gradKgradOmega);
   if (turbulence_model->is_SST_or_BSL())
     compute_blending_F1(gradKgradOmega);
-
+  const double& gamma1 = turbulence_model->get_expert_mode().get_gamma1();
+  const double& gamma2 = turbulence_model->get_expert_mode().get_gamma2();
   for (int face = 0; face < K_Omega.dimension(0); face++)
     if (K_Omega(face, 0) >= LeK_MIN)
       {
@@ -352,7 +354,7 @@ void Source_Transport_K_Omega_VEF_Face::contribuer_a_avec(const DoubleTab& a,
         matrice(face*2, face*2) += coef_k;
 
         const double cALPHA = turbulence_model->is_SST_or_BSL()
-                              ? blender(GAMMA1, GAMMA2, face)
+                              ? blender(gamma1, gamma2, face)
                               : ALPHA_OMEGA;
 
         const double cBETA = turbulence_model->is_SST_or_BSL()

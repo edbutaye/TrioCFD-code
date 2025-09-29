@@ -30,6 +30,7 @@
 #include <Champ_Fonc_Face_VDF.h>
 #include <K_Omega_Eps_constants.h>
 #include <Fluide_base.h>
+#include <Expert_mode_K_Omega.h>
 
 Implemente_instanciable_sans_constructeur(Source_Transport_K_Omega_VDF_Elem,
                                           "Source_Transport_K_Omega_VDF_P0_VDF",
@@ -171,11 +172,11 @@ const DoubleTab& Source_Transport_K_Omega_VDF_Elem::get_visc_turb() const
   return eqn_K_Omega->modele_turbulence().viscosite_turbulente().valeurs();
 }
 
-void Source_Transport_K_Omega_VDF_Elem::calculer_terme_production(const Champ_Face_VDF& vitesse, const DoubleTab& visco_turb, const DoubleTab& vit, DoubleVect& P) const
+void Source_Transport_K_Omega_VDF_Elem::calculer_terme_production(const Champ_Face_VDF& vitesse, const DoubleTab& visco_turb, const DoubleTab& vit, DoubleVect& P, const bool& deactivate_production_limiter) const
 {
   const DoubleTab& K_Omega = eqn_K_Omega->inconnue().valeurs();
   if (axi) calculer_terme_production_K_Axi(le_dom_VDF.valeur(), vitesse, P, K_Omega, visco_turb);
-  else calculer_terme_production_K_for_komega(le_dom_VDF.valeur(), le_dom_Cl_VDF.valeur(), P, K_Omega, vit, vitesse, visco_turb);
+  else calculer_terme_production_K_for_komega(le_dom_VDF.valeur(), le_dom_Cl_VDF.valeur(), P, K_Omega, vit, vitesse, visco_turb, deactivate_production_limiter);
 }
 
 void Source_Transport_K_Omega_VDF_Elem::fill_resu(const DoubleVect& P, DoubleTab& resu) const
@@ -189,7 +190,8 @@ void Source_Transport_K_Omega_VDF_Elem::fill_resu(const DoubleVect& P, DoubleTab
   DoubleTab& dissipation_k_elem = ref_cast_non_const(DoubleTab,dissipation_k_elem_->valeurs());
   DoubleTab& dissipation_omega_elem = ref_cast_non_const(DoubleTab,dissipation_omega_elem_->valeurs());
   DoubleTab& cross_diffusion_k_omega_elem = ref_cast_non_const(DoubleTab,cross_diffusion_k_omega_elem_->valeurs());
-
+  const double& gamma1 = turbulence_model->get_expert_mode().get_gamma1();
+  const double& gamma2 = turbulence_model->get_expert_mode().get_gamma2();
   for (int elem = 0; elem < le_dom_VDF->nb_elem(); ++elem)
     {
       const double tke = K_Omega(elem, 0);
@@ -201,7 +203,7 @@ void Source_Transport_K_Omega_VDF_Elem::fill_resu(const DoubleVect& P, DoubleTab
       if (tke >= LeK_MIN)
         {
           const double cALPHA = turbulence_model->is_SST_or_BSL()
-                                ? blender(GAMMA1, GAMMA2, elem)
+                                ? blender(gamma1, gamma2, elem)
                                 : ALPHA_OMEGA;
           const double cBETA = turbulence_model->is_SST_or_BSL()
                                ? blender(BETA1, BETA2, elem)
@@ -242,6 +244,8 @@ void Source_Transport_K_Omega_VDF_Elem::ajouter_blocs(matrices_t matrices, Doubl
   // cAlan : impliciter omega ?
   const DoubleTab& gradKgradOmega_elem = grad_k_omega_elem_->valeurs();
   const DoubleVect& production_TKE = production_k_elem_->valeurs();
+  const double& gamma1 = turbulence_model->get_expert_mode().get_gamma1();
+  const double& gamma2 = turbulence_model->get_expert_mode().get_gamma2();
   for (int c = 0; c < size; ++c)
     {
       // -eps*vol  donne +vol dans la bonne case
@@ -254,7 +258,7 @@ void Source_Transport_K_Omega_VDF_Elem::ajouter_blocs(matrices_t matrices, Doubl
           double coef_k = porosite(c)*volumes(c)*BETA_K*omega;
           (*mat)(c*2, c*2) += coef_k;
           const double cALPHA = turbulence_model->is_SST_or_BSL()
-                                ? blender(GAMMA1, GAMMA2, c)
+                                ? blender(gamma1, gamma2, c)
                                 : ALPHA_OMEGA;
 
           const double cBETA = turbulence_model->is_SST_or_BSL()

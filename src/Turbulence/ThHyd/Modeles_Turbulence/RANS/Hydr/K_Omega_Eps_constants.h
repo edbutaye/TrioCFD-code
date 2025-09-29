@@ -43,9 +43,10 @@ static constexpr double SIGMA_OMEGA2 = 0.856;
 static constexpr double BETA1 = 0.075;
 static constexpr double BETA2 = 0.0828;
 static constexpr double KAPPA = 0.41;
-static const double GAMMA1 = BETA1/BETA_K - SIGMA_OMEGA1*KAPPA*KAPPA/sqrt(BETA_K);
-static const double GAMMA2 = BETA2/BETA_K - SIGMA_OMEGA2*KAPPA*KAPPA/sqrt(BETA_K);
-
+static const double GAMMA1_1994 = BETA1/BETA_K - SIGMA_OMEGA1*KAPPA*KAPPA/sqrt(BETA_K);
+static const double GAMMA2_1994 = BETA2/BETA_K - SIGMA_OMEGA2*KAPPA*KAPPA/sqrt(BETA_K);
+static constexpr double GAMMA1_2003 = 5./9.;// 5./9. -> Menter_2003. old : BETA1/BETA_K - SIGMA_OMEGA1*KAPPA*KAPPA/sqrt(BETA_K);
+static constexpr double GAMMA2_2003 = 0.44;// 0.44 -> Menter_2003. old :BETA2/BETA_K - SIGMA_OMEGA2*KAPPA*KAPPA/sqrt(BETA_K);
 
 // Constants for the k-epsilon model
 static constexpr double SIGMA_K_KEPS = 1.0;

@@ -37,7 +37,7 @@ protected:
   Calcul_Production_K_VEF() { }
 
   // Standard TKE production
-  DoubleTab& calculer_terme_production_K(const Domaine_VEF&, const Domaine_Cl_VEF&, DoubleTab&, const DoubleTab&, const DoubleTab&, const DoubleTab&, const int& interpol_visco, const double& limiteur, const bool activate_production_limiter=false) const;
+  DoubleTab& calculer_terme_production_K(const Domaine_VEF&, const Domaine_Cl_VEF&, DoubleTab&, const DoubleTab&, const DoubleTab&, const DoubleTab&, const int& interpol_visco, const double& limiteur, const bool& deactivate_production_limiter=false) const;
   void loop_for_internal_or_periodic_faces(DoubleTab& prodK, const DoubleTab& gradient_elem, const DoubleTab& visco_turb,
                                            const DoubleVect& volumes, const IntTab& face_voisins, const int nfaceinit, const int nfaceend,
                                            const int interpol_visco, const double limiteur, const DoubleTab& K_Omega,  const bool activate_production_limiter=false) const;

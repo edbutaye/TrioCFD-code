@@ -26,7 +26,7 @@
 #include <Modele_turbulence_hyd_2_eq_base.h>
 #include <Modele_turbulence_hyd_RANS_Gen.h>
 #include <K_Omega_Eps_constants.h>
-
+#include <Expert_mode_K_Omega.h>
 class Transport_K_Omega_base;
 
 /*! @brief Classe Modele_turbulence_hyd_RANS_K_Omega_base Classe de base des modeles de type RANS_komega
@@ -69,14 +69,14 @@ public:
   const double& get_Sigma_K2() const { return Sigma_K2_; }
   const double& get_Sigma_Omega1() const { return Sigma_OMEGA1_; }
   const double& get_Sigma_Omega2() const { return Sigma_OMEGA2_; }
-
-
+  const Expert_mode_K_Omega& get_expert_mode() const { return ptr_expert_mode_.valeur(); }
 
 protected:
   Motcle model_variant_; // default model will be k-omega STD
   static constexpr double CST_A1 = 0.31;
   double Sigma_K_, Sigma_Omega_;
   double Sigma_K1_, Sigma_K2_, Sigma_OMEGA1_, Sigma_OMEGA2_;
+  OWN_PTR(Expert_mode_K_Omega) ptr_expert_mode_;
 
 };
 
