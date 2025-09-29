@@ -7561,10 +7561,11 @@ double Transport_Interfaces_FT_Disc::suppression_interfaces(const IntVect& num_c
   return volume;
 }
 
-void Transport_Interfaces_FT_Disc::test_suppression_interfaces_sous_domaine()
+bool Transport_Interfaces_FT_Disc::test_suppression_interfaces_sous_domaine()
 {
+  bool indic_updated = false;
   if (suppression_interfaces_sous_domaine_ == "??")
-    return;
+    return false;
 
   const Sous_Domaine& sous_domaine = domaine_dis().domaine().ss_domaine(suppression_interfaces_sous_domaine_);
   const DoubleTab& indicatrice = get_indicatrice().valeurs();
@@ -7603,6 +7604,7 @@ void Transport_Interfaces_FT_Disc::test_suppression_interfaces_sous_domaine()
       if (max_array(flags_compo_a_supprimer))
         {
           update_indicatrice_normale_distance();
+          indic_updated = true;
           // Parcours de toutes les equations du probleme,
           // Pour les equations "temperature FT" on appelle la methode "suppression_interfaces"
           Probleme_base& pb = probleme();
@@ -7621,6 +7623,7 @@ void Transport_Interfaces_FT_Disc::test_suppression_interfaces_sous_domaine()
             }
         }
     }
+  return indic_updated;
 }
 
 //Integration des trajectoires de particules
@@ -7641,19 +7644,24 @@ void Transport_Interfaces_FT_Disc::mettre_a_jour(double temps)
 {
   Process::Journal() << "Transport_Interfaces_FT_Disc::mettre_a_jour " << le_nom() << " temps= "<< temps << finl;
   // Effectue le deplacement de l'interface:
-  mettre_a_jour_deplacement(temps);
+  bool is_indic_up_to_date = mettre_a_jour_deplacement(temps);
 
   // Remaillage de l'interface:
+  const int mtag = maillage_interface().get_mesh_tag();
   remailler_interface();
+  // L'indicatrice ne peut etre "encore" a jour a l'issu du remaillage que si celui-ci n'a pas change le mesh_tag!
+  is_indic_up_to_date = (mtag == maillage_interface().get_mesh_tag()) && is_indic_up_to_date;
 
   // Effectue la mise a jour de l'inconnue, des indicatrices et de tous les champs auxiliaires:
-  mettre_a_jour_hors_deplacement(temps);
+  bool update_indic = !is_indic_up_to_date;
+  mettre_a_jour_hors_deplacement(temps, true, update_indic);
 }
 
-void Transport_Interfaces_FT_Disc::mettre_a_jour_deplacement(double temps)
+bool Transport_Interfaces_FT_Disc::mettre_a_jour_deplacement(double temps)
 {
   deplacer_maillage(temps);
-  injecter_supprimer_interfaces(temps);
+  bool is_indicatrice_up_to_date = injecter_supprimer_interfaces(temps);
+  return is_indicatrice_up_to_date;
 }
 
 void Transport_Interfaces_FT_Disc::deplacer_maillage(double temps)
@@ -7752,17 +7760,19 @@ void Transport_Interfaces_FT_Disc::completer_maillage_et_changer_temps(double te
   maillage.changer_temps(temps);
 }
 
-void Transport_Interfaces_FT_Disc::injecter_supprimer_interfaces(double temps)
+bool Transport_Interfaces_FT_Disc::injecter_supprimer_interfaces(double temps)
 {
-  injecter_interfaces_par_ajout_phase(temps);
-  injecter_interfaces_pour_TCL(temps);
+  bool indic_updated = injecter_interfaces_par_ajout_phase(temps);
+  indic_updated = injecter_interfaces_pour_TCL(temps) || indic_updated;
 
 // Traitement des domaines de suppression
-  test_suppression_interfaces_sous_domaine();
+  indic_updated = test_suppression_interfaces_sous_domaine() || indic_updated;
+  return indic_updated;
 }
 
-void Transport_Interfaces_FT_Disc::injecter_interfaces_par_ajout_phase(double temps)
+bool Transport_Interfaces_FT_Disc::injecter_interfaces_par_ajout_phase(double temps)
 {
+  bool indic_updated = false;
   // injection des interfaces
   if (variables_internes_->injection_interfaces_temps_.size_array() > 0)
     {
@@ -7798,6 +7808,7 @@ void Transport_Interfaces_FT_Disc::injecter_interfaces_par_ajout_phase(double te
             {
               maillage_interface().ajouter_maillage(maillage_tmp);
               update_indicatrice_normale_distance();
+              indic_updated = true;
               double unused_vol_phase_0 = 0.;
               const double volume_phase_1_old = calculer_integrale_indicatrice(sauvegarde, unused_vol_phase_0);
               unused_vol_phase_0= 0.;
@@ -7811,6 +7822,7 @@ void Transport_Interfaces_FT_Disc::injecter_interfaces_par_ajout_phase(double te
             {
               Cerr << " failure: collision" << finl;
               variables_internes_->indicatrice_cache->valeurs() = sauvegarde;
+              indic_updated = false;
             }
         }
       if (i == n)
@@ -7822,10 +7834,12 @@ void Transport_Interfaces_FT_Disc::injecter_interfaces_par_ajout_phase(double te
           Process::exit();
         }
     }
+  return indic_updated;
 }
 
-void Transport_Interfaces_FT_Disc::injecter_interfaces_pour_TCL(double temps)
+bool Transport_Interfaces_FT_Disc::injecter_interfaces_pour_TCL(double temps)
 {
+  bool indic_updated = false;
   Probleme_base& pb = probleme();
   if (sub_type(Probleme_FT_Disc_gen,pb))
     {
@@ -7864,6 +7878,7 @@ void Transport_Interfaces_FT_Disc::injecter_interfaces_pour_TCL(double temps)
             {
               maillage_interface().ajouter_maillage (maillage_tmp);
               update_indicatrice_normale_distance();
+              indic_updated = true;
               double unused_vol_phase_0 = 0.;
               const double volume_phase_1_old = calculer_integrale_indicatrice (
                                                   sauvegarde, unused_vol_phase_0);
@@ -7886,6 +7901,7 @@ void Transport_Interfaces_FT_Disc::injecter_interfaces_pour_TCL(double temps)
               Cerr << " failure: collision" << finl;
               variables_internes_->indicatrice_cache.valeur ().valeurs () =
                 sauvegarde;
+              indic_updated = false;
             }
         }
     }
@@ -7934,6 +7950,7 @@ void Transport_Interfaces_FT_Disc::injecter_interfaces_pour_TCL(double temps)
                 {
                   maillage_interface().ajouter_maillage (maillage_tmp);
                   update_indicatrice_normale_distance();
+                  indic_updated = true;
                   double unused_vol_phase_0 = 0.;
                   const double volume_phase_1_old = calculer_integrale_indicatrice (
                                                       sauvegarde, unused_vol_phase_0);
@@ -7964,21 +7981,25 @@ void Transport_Interfaces_FT_Disc::injecter_interfaces_pour_TCL(double temps)
                   Cerr << " failure: collision" << finl;
                   variables_internes_->indicatrice_cache.valeur ().valeurs () =
                     sauvegarde;
+                  indic_updated = false;
                 }
             }
 
         }
     }
+  return indic_updated;
 }
 
-void Transport_Interfaces_FT_Disc::mettre_a_jour_hors_deplacement(double temps, const bool update_statio)
+void Transport_Interfaces_FT_Disc::mettre_a_jour_hors_deplacement(double temps, const bool update_statio
+                                                                  , const bool update_indic)
 {
   // The Eulerian fields normal and distance should be updated first (before indicatrice!!)
   // because the indicatrice calculation partly relies on the distance calculation.
   // Update normal and distance and indicatrice
   // Attention: get_indicatrice renvoie une ref a indicatrice_cache.
   //  C'est ici qu'on copie le contenu de indicatrice_cache dans indicatrice :
-  update_indicatrice_normale_distance();
+  if (update_indic)
+    update_indicatrice_normale_distance();
   // TODO GB 2024 : mettre_a_jour ferait un echange_EV en plus de changer temps. Mais l'echange EV est deja fait dans le update donc pas necessaire.
   variables_internes_->distance_interface->changer_temps(temps);
   variables_internes_->normale_interface->changer_temps(temps);

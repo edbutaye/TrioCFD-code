@@ -88,10 +88,10 @@ public:
   void assembler( Matrice_Morse& mat_morse, const DoubleTab& present, DoubleTab& secmem) override ;
 
   void    mettre_a_jour(double temps) override;
-  void    mettre_a_jour_deplacement(double temps);
-  void    mettre_a_jour_hors_deplacement(double temps, const bool update_statio=true);
+  bool    mettre_a_jour_deplacement(double temps);
+  void    mettre_a_jour_hors_deplacement(double temps, const bool update_statio=true, const bool update_indic=true);
   void deplacer_maillage(double temps);
-  void injecter_supprimer_interfaces(double temps);
+  bool injecter_supprimer_interfaces(double temps);
   void completer_maillage_et_changer_temps(double temps);
 
   std::vector<YAML_data> data_a_sauvegarder() const override;
@@ -331,9 +331,9 @@ public:
   const bool& get_is_solid_particle() const { return is_solid_particle_; }
 
 protected:
-  void injecter_interfaces_par_ajout_phase(double temps);
-  void injecter_interfaces_pour_TCL(double temps);
-  virtual void test_suppression_interfaces_sous_domaine();
+  bool injecter_interfaces_par_ajout_phase(double temps);
+  bool injecter_interfaces_pour_TCL(double temps);
+  bool test_suppression_interfaces_sous_domaine();
 
   virtual void calculer_vmoy_composantes_connexes(const Maillage_FT_Disc& maillage,
                                                   const ArrOfInt& compo_connexes_facettes,
