@@ -50,82 +50,92 @@ Entree& Navier_Stokes_std_ALE::readOn(Entree& is )
 }
 
 
+// create YAML_data with uppercase name
+YAML_data Navier_Stokes_std_ALE::make_yaml(const std::string& suffix, int nb_dim) const
+{
+  std::string name = probleme().le_nom().getString() + suffix;
+  std::transform(name.begin(), name.end(), name.begin(), ::toupper);
+  YAML_data yaml(name, "double", nb_dim);
+  return yaml;
+}
+
+
+// create a Champ_Inc_base field
+void Navier_Stokes_std_ALE::create_field(OWN_PTR(Champ_Inc_base)& champ, const std::string& name, int nbComp,const Motcle& directive) const
+{
+  double temps = schema_temps().temps_courant();
+  const Discret_Thyd& dis = ref_cast(Discret_Thyd, discretisation());
+  Noms noms(1), unit(1);
+  unit[0] = "none";
+  noms[0] = name;
+
+  dis.discretiser_champ(directive,domaine_dis(),vectoriel,noms,unit,nbComp,1,temps,champ);
+  champ->associer_eqn(*const_cast<Navier_Stokes_std_ALE*>(this));
+
+}
+// generate unique tag for resumption
+Nom Navier_Stokes_std_ALE::generate_field_tag(const Champ_Inc_base& champ) const
+{
+  Nom tag = champ.le_nom();
+  tag += champ.que_suis_je();
+  tag += probleme().domaine().le_nom();
+  tag += Nom(probleme().schema_temps().temps_courant(), probleme().reprise_format_temps());
+  return tag;
+}
+
 /*! @brief for PDI IO: retrieve name, type and dimensions of the fields to save/restore
  *
  */
 std::vector<YAML_data> Navier_Stokes_std_ALE::data_a_sauvegarder() const
 {
+  int nb_dim = vitesse().valeurs().nb_dim();
   std::vector<YAML_data> data = Navier_Stokes_std::data_a_sauvegarder();
-  int nb_dim = vitesse().valeurs().nb_dim(); // Initialize with same discretization
-
-  // Helper lambda to create YAML_data with uppercase name
-  auto make_yaml = [&](const std::string& suffix) -> YAML_data
-  {
-    std::string name = probleme().le_nom().getString() + suffix;
-    std::transform(name.begin(), name.end(), name.begin(), ::toupper);
-    return YAML_data(name, "double", nb_dim);
-  };
 
   // Add base data
-  data.push_back(make_yaml("_JacobianOld"));
-  data.push_back(make_yaml("_JacobianNew"));
-  data.push_back(make_yaml("_MeshCoords"));
+  data.push_back(make_yaml("_JacobianOld", nb_dim));
+  data.push_back(make_yaml("_JacobianNew", nb_dim));
+  data.push_back(make_yaml("_MeshCoords", nb_dim));
 
   const Domaine_ALE& dom_ale = ref_cast(Domaine_ALE, probleme().domaine());
   if (dom_ale.getMeshMotionModel() == 1)
     {
-      // Add ALE-specific data
-      data.push_back(make_yaml("_MeshDisplacement"));
-      data.push_back(make_yaml("_MeshVelocity"));
-      data.push_back(make_yaml("_MeshAcceleration"));
-      data.push_back(make_yaml("_MeshPosition"));
-      data.push_back(make_yaml("_MeshReferenceConfiguration"));
-      data.push_back(make_yaml("_MeshTransformationGradient"));
-      data.push_back(make_yaml("_MeshStress"));
+      // Add Mesh-specific data
+      data.push_back(make_yaml("_MeshDisplacement", nb_dim));
+      data.push_back(make_yaml("_MeshVelocity", nb_dim));
+      data.push_back(make_yaml("_MeshAcceleration", nb_dim));
+      data.push_back(make_yaml("_MeshPosition", nb_dim));
+      data.push_back(make_yaml("_MeshReferenceConfiguration", nb_dim));
+      data.push_back(make_yaml("_MeshTransformationGradient", nb_dim));
+      data.push_back(make_yaml("_MeshStress", nb_dim));
     }
 
   return data;
 }
 
+
 int Navier_Stokes_std_ALE::sauvegarder(Sortie& os) const
 {
-  int bytes = 0, a_faire, special;
+  int bytes=0, a_faire,special;
   bytes += Navier_Stokes_std::sauvegarder(os);
-  EcritureLectureSpecial::is_ecriture_special(special, a_faire);
-
-  const Domaine_ALE& dom_ale = ref_cast(Domaine_ALE, probleme().domaine());
-  const Discret_Thyd& dis = ref_cast(Discret_Thyd, discretisation());
-  double temps = schema_temps().temps_courant();
-  Noms noms(1), unit(1);
-  unit[0] = "none";
-
-  auto create_champ = [&](const std::string& name, int nbComp, bool elem=false, const DoubleTab& val = DoubleTab()) -> OWN_PTR(Champ_Inc_base)
-  {
-    OWN_PTR(Champ_Inc_base) champ;
-    noms[0] = name;
-    dis.discretiser_champ(elem ? "champ_elem" : "champ_sommets",
-                          domaine_dis(),
-                          vectoriel,
-                          noms,
-                          unit,
-                          nbComp,
-                          1,
-                          temps,
-                          champ);
-    champ->associer_eqn(*this);
-    champ->valeurs() = val;
-    return champ;
-  };
+  EcritureLectureSpecial::is_ecriture_special(special,a_faire);
+  const Domaine_ALE& dom_ale=ref_cast(Domaine_ALE, probleme().domaine());
 
   if (a_faire)
     {
-      // Jacobians and mesh coordinates
-      auto JacobianOld = create_champ("JacobianOld", vitesse().valeurs().nb_dim(), false, dom_ale.getOldJacobian());
-      auto JacobianNew = create_champ("JacobianNew", vitesse().valeurs().nb_dim(), false, dom_ale.getNewJacobian());
-      auto meshCoords  = create_champ("meshCoords", dimension, false, domaine_dis().domaine().les_sommets());
+      OWN_PTR(Champ_Inc_base) JacobianOld = vitesse(); // Initialize with same discretization
+      JacobianOld->nommer("JacobianOld");
+      JacobianOld->valeurs() = dom_ale.getOldJacobian(); // Use good values
+
+      OWN_PTR(Champ_Inc_base) JacobianNew = vitesse(); // Initialize with same discretization
+      JacobianNew->nommer("JacobianNew");
+      JacobianNew->valeurs() = dom_ale.getNewJacobian(); // Use good values
+
+      OWN_PTR(Champ_Inc_base) meshCoords;
+      create_field(meshCoords,"meshCoords", dimension, "champ_sommets");
+      meshCoords->valeurs()= domaine_dis().domaine().les_sommets();
 
       if (special && Process::nproc() > 1)
-        Cerr << "ATTENTION: For a parallel calculation, the field Jacobian is not saved in xyz format ..." << finl;
+        Cerr << "ATTENTION : For a parallel calculation, the field Jacobian is not saved in xyz format ... " << finl;
       else
         {
           bytes += JacobianOld->sauvegarder(os);
@@ -133,112 +143,133 @@ int Navier_Stokes_std_ALE::sauvegarder(Sortie& os) const
           bytes += meshCoords->sauvegarder(os);
         }
 
-      if (dom_ale.getMeshMotionModel() == 1)
+      if(dom_ale.getMeshMotionModel()==1) //save the mesh motion: displacement, velocity, and acceleration
         {
+          OWN_PTR(Champ_Inc_base) meshDisplacement;
+          create_field(meshDisplacement,"meshDisplacement", dimension, "champ_sommets");
+          meshDisplacement->valeurs()=dom_ale.getMeshDisplacement();
+
+          OWN_PTR(Champ_Inc_base) meshVelocity;
+          create_field(meshVelocity,"meshVelocity", dimension, "champ_sommets");
+          meshVelocity->valeurs()=dom_ale.getMeshVelocity();
+
+          OWN_PTR(Champ_Inc_base) meshAcceleration;
+          create_field(meshAcceleration,"meshAcceleration", dimension, "champ_sommets");
+          meshAcceleration->valeurs()=dom_ale.getMeshAcceleration();
+
+          OWN_PTR(Champ_Inc_base) meshPosition;
+          create_field(meshPosition, "meshPosition", dimension, "champ_sommets");
+          meshPosition->valeurs()=dom_ale.getMeshPosition();
+
           int nbn = (dimension == 2) ? 3 : 4;
           int nSymSize = (dimension == 2) ? 5 : 9;
           int symSize = (dimension == 2) ? 4 : 6;
 
-          auto meshDisplacement           = create_champ("meshDisplacement", dimension, false, dom_ale.getMeshDisplacement());
-          auto meshVelocity               = create_champ("meshVelocity", dimension, false, dom_ale.getMeshVelocity());
-          auto meshAcceleration           = create_champ("meshAcceleration", dimension, false, dom_ale.getMeshAcceleration());
-          auto meshPosition               = create_champ("meshPosition", dimension, false, dom_ale.getMeshPosition());
-          auto meshReferenceConfiguration = create_champ("meshReferenceConfiguration", dimension*nbn, true, dom_ale.getMeshReferenceConfiguration());
-          auto meshTransformationGradient = create_champ("meshTransformationGradient", nSymSize, true, dom_ale.getMeshTransformationGradient());
-          auto meshStress                 = create_champ("meshStress", symSize, true, dom_ale.getMeshStress());
+          int nbComp=dimension*nbn;
+          OWN_PTR(Champ_Inc_base) meshReferenceConfiguration;
+          create_field(meshReferenceConfiguration, "meshReferenceConfiguration", nbComp, "champ_elem");
+          meshReferenceConfiguration->valeurs()=dom_ale.getMeshReferenceConfiguration();
 
-          auto save_field = [&](OWN_PTR(Champ_Inc_base)& champ)
-          {
-            if (!(special && Process::nproc() > 1))
-              bytes += champ->sauvegarder(os);
-          };
 
-          save_field(meshDisplacement);
-          save_field(meshVelocity);
-          save_field(meshAcceleration);
-          save_field(meshPosition);
-          save_field(meshReferenceConfiguration);
-          save_field(meshTransformationGradient);
-          save_field(meshStress);
+          nbComp=nSymSize;
+          OWN_PTR(Champ_Inc_base) meshTransformationGradient;
+          create_field(meshTransformationGradient, "meshTransformationGradient", nbComp, "champ_elem");
+          meshTransformationGradient->valeurs()=dom_ale.getMeshTransformationGradient();
+
+          nbComp=symSize;
+          OWN_PTR(Champ_Inc_base) meshStress;
+          create_field(meshStress,"meshStress", nbComp, "champ_elem");
+          meshStress->valeurs()=dom_ale.getMeshStress();
+
+          if (special && Process::nproc() > 1)
+            Cerr << "ATTENTION : For a parallel calculation, the field meshDisplacement is not saved in xyz format ... " << finl;
+          else
+            {
+              bytes += meshDisplacement->sauvegarder(os);
+              bytes += meshVelocity->sauvegarder(os);
+              bytes += meshAcceleration->sauvegarder(os);
+              bytes += meshPosition->sauvegarder(os);
+              bytes += meshReferenceConfiguration->sauvegarder(os);
+              bytes += meshTransformationGradient->sauvegarder(os);
+              bytes += meshStress->sauvegarder(os);
+            }
         }
+
     }
-  else if (TRUST_2_PDI::is_PDI_checkpoint())
+  else if(TRUST_2_PDI::is_PDI_checkpoint())
     {
-      auto write_tab = [](const DoubleTab& d, const Nom& name) -> int
+      //TODO Anida: gather this in TRUSTTab or enable saving on the go for temporary values
+      auto write_tab = [](const DoubleTab& d, const Nom& name)
       {
         TRUST_2_PDI pdi_interface;
-        pdi_interface.share_TRUSTTab_dimensions(d, name, 1);
-        if (d.dimension_tot(0))
+        pdi_interface.share_TRUSTTab_dimensions(d, name, 1 /*write mode*/);
+        if( d.dimension_tot(0) )
           pdi_interface.TRUST_start_sharing(name.getString(), d.addr());
         else
           {
-            ArrOfDouble garbage(d.nb_dim());
+            ArrOfDouble garbage( d.nb_dim() );
             pdi_interface.TRUST_start_sharing(name.getString(), garbage.addr());
           }
-        return 8 * d.size_array();
+
+        int mem = 8 * d.size_array();
+        return mem;
       };
+      Nom name = probleme().le_nom() + "_JacobianOld";
+      bytes += write_tab(dom_ale.getOldJacobian(), name.majuscule());
+      name = probleme().le_nom() + "_JacobianNew";
+      bytes += write_tab(dom_ale.getNewJacobian(), name.majuscule());
+      name = probleme().le_nom() + "_meshCoords";
 
-      bytes += write_tab(dom_ale.getOldJacobian(), (probleme().le_nom() + "_JacobianOld").majuscule());
-      bytes += write_tab(dom_ale.getNewJacobian(), (probleme().le_nom() + "_JacobianNew").majuscule());
-      bytes += write_tab(domaine_dis().domaine().les_sommets(), (probleme().le_nom() + "_meshCoords").majuscule());
-
-      if (dom_ale.getMeshMotionModel() == 1)
+      bytes += write_tab(domaine_dis().domaine().les_sommets(), name.majuscule());
+      if(dom_ale.getMeshMotionModel()==1)
         {
-          bytes += write_tab(dom_ale.getMeshDisplacement(), (probleme().le_nom() + "_meshDisplacement").majuscule());
-          bytes += write_tab(dom_ale.getMeshVelocity(), (probleme().le_nom() + "_meshVelocity").majuscule());
-          bytes += write_tab(dom_ale.getMeshAcceleration(), (probleme().le_nom() + "_meshAcceleration").majuscule());
-          bytes += write_tab(dom_ale.getMeshPosition(), (probleme().le_nom() + "_meshPosition").majuscule());
-          bytes += write_tab(dom_ale.getMeshReferenceConfiguration(), (probleme().le_nom() + "_meshReferenceConfiguration").majuscule());
-          bytes += write_tab(dom_ale.getMeshTransformationGradient(), (probleme().le_nom() + "_meshTransformationGradient").majuscule());
-          bytes += write_tab(dom_ale.getMeshStress(), (probleme().le_nom() + "_meshStress").majuscule());
-        }
-    }
+          name = probleme().le_nom() + "_meshDisplacement";
+          bytes += write_tab(dom_ale.getMeshDisplacement(), name.majuscule());
 
+          name = probleme().le_nom() + "_meshVelocity";
+          bytes += write_tab(dom_ale.getMeshVelocity(), name.majuscule());
+
+          name = probleme().le_nom() + "_meshAcceleration";
+          bytes += write_tab(dom_ale.getMeshAcceleration(), name.majuscule());
+
+          name = probleme().le_nom() + "_meshPosition";
+          bytes += write_tab(dom_ale.getMeshPosition(), name.majuscule());
+
+          name = probleme().le_nom() + "_meshReferenceConfiguration";
+          bytes += write_tab(dom_ale.getMeshReferenceConfiguration(), name.majuscule());
+
+          name = probleme().le_nom() + "_meshTransformationGradient";
+          bytes += write_tab(dom_ale.getMeshTransformationGradient(), name.majuscule());
+
+          name = probleme().le_nom() + "_meshStress";
+          bytes += write_tab(dom_ale.getMeshStress(), name.majuscule());
+        }
+
+    }
   return bytes;
 }
 
 
-
 int Navier_Stokes_std_ALE::reprendre(Entree& is)
 {
-  // Base class resumption
+// start resuming
   Navier_Stokes_std::reprendre(is);
 
-  Domaine_ALE& dom_ale = ref_cast(Domaine_ALE, probleme().domaine());
-  const Discret_Thyd& dis = ref_cast(Discret_Thyd, discretisation());
-  double temps = schema_temps().temps_courant();
-  Noms noms(1), unit(1);
-  unit[0] = "none";
+  Domaine_ALE& dom_ale=ref_cast(Domaine_ALE, probleme().domaine());
 
-  auto create_field = [&](const std::string& name, int nbComp, bool elem=false) -> OWN_PTR(Champ_Inc_base)
-  {
-    OWN_PTR(Champ_Inc_base) champ;
-    noms[0] = name;
-    dis.discretiser_champ(elem ? "champ_elem" : "champ_sommets",
-                          domaine_dis(),
-                          vectoriel,
-                          noms,
-                          unit,
-                          nbComp,
-                          1,
-                          temps,
-                          champ);
-    champ->associer_eqn(*this);
+  // resumption Jacobian
+  OWN_PTR(Champ_Inc_base) JacobianOld = vitesse(); // Initialize with same discretization
+  JacobianOld->nommer("JacobianOld");
+  Nom field_tag_JOld = generate_field_tag(JacobianOld);
 
-    // Create the tag for resumption
-    Nom tag(champ->le_nom());
-    tag += champ->que_suis_je();
-    tag += probleme().domaine().le_nom();
-    tag += Nom(temps, probleme().reprise_format_temps());
-    return champ;
-  };
+  OWN_PTR(Champ_Inc_base) JacobianNew = vitesse();
+  JacobianNew->nommer("JacobianNew");
+  Nom field_tag_JNew = generate_field_tag(JacobianNew);
 
-  // Jacobians
-  auto JacobianOld = create_field("JacobianOld", vitesse().valeurs().nb_dim());
-  auto JacobianNew = create_field("JacobianNew", vitesse().valeurs().nb_dim());
 
-  // Mesh coordinates
-  auto meshCoords = create_field("meshCoords", dimension);
+  OWN_PTR(Champ_Inc_base) meshCoords;
+  create_field(meshCoords,"meshCoords", dimension, "champ_sommets");
+  Nom field_tag_coords = generate_field_tag(meshCoords);
 
   if (EcritureLectureSpecial::is_lecture_special() && Process::nproc() > 1)
     {
@@ -248,66 +279,94 @@ int Navier_Stokes_std_ALE::reprendre(Entree& is)
     }
   else
     {
-      if(!TRUST_2_PDI::is_PDI_restart()) avancer_fichier(is, Nom(JacobianOld->le_nom() + JacobianOld->que_suis_je() + probleme().domaine().le_nom() + Nom(temps, probleme().reprise_format_temps())));
+      if(!TRUST_2_PDI::is_PDI_restart())
+        avancer_fichier(is, field_tag_JOld);
       JacobianOld->reprendre(is);
-
-      if(!TRUST_2_PDI::is_PDI_restart()) avancer_fichier(is, Nom(JacobianNew->le_nom() + JacobianNew->que_suis_je() + probleme().domaine().le_nom() + Nom(temps, probleme().reprise_format_temps())));
+      if(!TRUST_2_PDI::is_PDI_restart())
+        avancer_fichier(is, field_tag_JNew);
       JacobianNew->reprendre(is);
 
-      if(!TRUST_2_PDI::is_PDI_restart()) avancer_fichier(is, Nom(meshCoords->le_nom() + meshCoords->que_suis_je() + probleme().domaine().le_nom() + Nom(temps, probleme().reprise_format_temps())));
+      if(!TRUST_2_PDI::is_PDI_restart())
+        avancer_fichier(is, field_tag_coords);
       meshCoords->reprendre(is);
     }
-
-  // Set resumption field
+  // set resumption field
   dom_ale.resumptionJacobianCoords(JacobianOld->valeurs(), JacobianNew->valeurs(), meshCoords->valeurs());
   dom_ale.updateMetrics(domaine_dis(), probleme());
 
-  // Mesh motion fields
-  if(dom_ale.getMeshMotionModel() == 1)
+  //resumption the mesh motion: displacement, velocity, and acceleration
+  if(dom_ale.getMeshMotionModel()==1)
     {
+      OWN_PTR(Champ_Inc_base) meshDisplacement;
+      create_field(meshDisplacement,"meshDisplacement", dimension, "champ_sommets");
+      Nom field_tag_Displ = generate_field_tag(meshDisplacement);
+
+
+      OWN_PTR(Champ_Inc_base) meshVelocity;
+      create_field( meshVelocity,"meshVelocity", dimension, "champ_sommets");
+      Nom  field_tag_Vel = generate_field_tag(meshVelocity);
+
+
+
+      OWN_PTR(Champ_Inc_base) meshAcceleration;
+      create_field(meshAcceleration, "meshAcceleration", dimension, "champ_sommets");
+      Nom field_tag_Acc = generate_field_tag(meshAcceleration);
+
+
+      OWN_PTR(Champ_Inc_base) meshPosition;
+      create_field(meshPosition, "meshPosition", dimension, "champ_sommets");
+      Nom field_tag_Pos = generate_field_tag(meshPosition);
+
       int nbn = (dimension == 2) ? 3 : 4;
       int nSymSize = (dimension == 2) ? 5 : 9;
       int symSize = (dimension == 2) ? 4 : 6;
 
-      auto meshDisplacement          = create_field("meshDisplacement", dimension);
-      auto meshVelocity              = create_field("meshVelocity", dimension);
-      auto meshAcceleration          = create_field("meshAcceleration", dimension);
-      auto meshPosition              = create_field("meshPosition", dimension);
-      auto meshReferenceConfiguration= create_field("meshReferenceConfiguration", dimension*nbn, true);
-      auto meshTransformationGradient= create_field("meshTransformationGradient", nSymSize, true);
-      auto meshStress                = create_field("meshStress", symSize, true);
+      int nbComp=dimension*nbn;
+      OWN_PTR(Champ_Inc_base) meshReferenceConfiguration;
+      create_field(meshReferenceConfiguration, "meshReferenceConfiguration", nbComp, "champ_elem");
+      Nom field_tag_RefConf = generate_field_tag(meshReferenceConfiguration);
 
-      auto resume_field = [&](OWN_PTR(Champ_Inc_base)& champ)
-      {
-        if(!TRUST_2_PDI::is_PDI_restart())
-          {
-            Nom tag(champ->le_nom());
-            tag += champ->que_suis_je();
-            tag += probleme().domaine().le_nom();
-            tag += Nom(temps, probleme().reprise_format_temps());
-            avancer_fichier(is, tag);
-          }
-        champ->reprendre(is);
-      };
+      nbComp=nSymSize;
+      OWN_PTR(Champ_Inc_base) meshTransformationGradient;
+      create_field(meshTransformationGradient, "meshTransformationGradient", nbComp, "champ_elem");
+      Nom field_tag_TransGrad = generate_field_tag(meshTransformationGradient);
 
-      resume_field(meshDisplacement);
-      resume_field(meshVelocity);
-      resume_field(meshAcceleration);
-      resume_field(meshPosition);
-      resume_field(meshReferenceConfiguration);
-      resume_field(meshTransformationGradient);
-      resume_field(meshStress);
+      nbComp=symSize;
+      OWN_PTR(Champ_Inc_base) meshStress;
+      create_field(meshStress, "meshStress", nbComp, "champ_elem");
+      Nom field_tag_Stress = generate_field_tag(meshStress);
 
-      dom_ale.resumptionStructuralDynamicsMesh(
-        temps,
-        meshDisplacement->valeurs(),
-        meshVelocity->valeurs(),
-        meshAcceleration->valeurs(),
-        meshPosition->valeurs(),
-        meshReferenceConfiguration->valeurs(),
-        meshTransformationGradient->valeurs(),
-        meshStress->valeurs()
-      );
+      if(!TRUST_2_PDI::is_PDI_restart())
+        avancer_fichier(is, field_tag_Displ);
+      meshDisplacement->reprendre(is);
+
+      if(!TRUST_2_PDI::is_PDI_restart())
+        avancer_fichier(is, field_tag_Vel);
+      meshVelocity->reprendre(is);
+
+      if(!TRUST_2_PDI::is_PDI_restart())
+        avancer_fichier(is, field_tag_Acc);
+      meshAcceleration->reprendre(is);
+
+      if(!TRUST_2_PDI::is_PDI_restart())
+        avancer_fichier(is, field_tag_Pos);
+      meshPosition->reprendre(is);
+
+      if(!TRUST_2_PDI::is_PDI_restart())
+        avancer_fichier(is, field_tag_RefConf);
+      meshReferenceConfiguration->reprendre(is);
+
+      if(!TRUST_2_PDI::is_PDI_restart())
+        avancer_fichier(is, field_tag_TransGrad);
+      meshTransformationGradient->reprendre(is);
+
+      if(!TRUST_2_PDI::is_PDI_restart())
+        avancer_fichier(is, field_tag_Stress);
+      meshStress->reprendre(is);
+
+      dom_ale.resumptionStructuralDynamicsMesh(probleme().schema_temps().temps_courant(), meshDisplacement->valeurs(), meshVelocity->valeurs(), meshAcceleration->valeurs(), meshPosition->valeurs(),
+                                               meshReferenceConfiguration->valeurs(), meshTransformationGradient->valeurs(), meshStress->valeurs());
+
     }
 
   return 1;

@@ -45,6 +45,14 @@ public :
   bool getCouplingInfoForFiltering() const override;   //true if implicit coupling with structural solver
   void setPressureTimeN() override;
 
+private:
+  // create  a Champ_Inc_base
+  void create_field(OWN_PTR(Champ_Inc_base)&, const std::string&, int, const Motcle&) const;
+  // generate a unique field tag for resumption
+  Nom generate_field_tag(const Champ_Inc_base& ) const;
+  // create YAML_data with uppercase name
+  YAML_data make_yaml(const std::string& , int) const;
+
 protected :
   OWN_PTR(Champ_Inc_base) ALEMeshVelocity_;
   OWN_PTR(Champ_Inc_base) ALEMeshTotalDisplacement_;
