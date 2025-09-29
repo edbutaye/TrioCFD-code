@@ -114,8 +114,20 @@ DoubleTab& Source_Transport_K_Omega_VEF_Face_base::ajouter_komega(DoubleTab& res
   fill_resu_k_omega(volumes_entrelaces, production_TKE, gradKgradOmega, resu); // voir les classes filles
 
   if (turbulence_model->is_SST())
-    compute_enstrophy(le_dom_VEF, domaine_Cl_VEF, velocity,
-                      ref_cast_non_const(DoubleTab, turbulence_model->get_enstrophy()));
+    {
+      if (turbulence_model->get_expert_mode().get_menter_version()
+          == Menter_version::ORIGINAL_1994)
+        {
+          compute_enstrophy(le_dom_VEF, domaine_Cl_VEF, velocity,
+                            ref_cast_non_const(DoubleTab, turbulence_model->get_enstrophy()));
+        }
+      else
+        {
+          compute_strain_invariant(le_dom_VEF, domaine_Cl_VEF, velocity,
+                                   ref_cast_non_const(DoubleTab, turbulence_model->get_strain_invariant()));
+        }
+
+    }
 
   return resu;
 }

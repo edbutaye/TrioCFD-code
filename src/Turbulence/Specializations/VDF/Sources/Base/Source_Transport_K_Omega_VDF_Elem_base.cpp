@@ -72,11 +72,25 @@ DoubleTab& Source_Transport_K_Omega_VDF_Elem_base::ajouter_komega(DoubleTab& res
   fill_resu(P, resu);
   resu.echange_espace_virtuel();
   if (turbulence_model->is_SST())
-    compute_enstrophy(domain_VDF,
-                      dom_Cl_VDF,
-                      vit,
-                      ch_vit,
-                      ref_cast_non_const(Navier_Stokes_Turbulent, eq_hydraulique.valeur()),
-                      ref_cast_non_const(DoubleTab, turbulence_model->get_enstrophy()));
+    {
+      if (turbulence_model->get_expert_mode().get_menter_version()
+          == Menter_version::ORIGINAL_1994)
+        {
+          compute_enstrophy(domain_VDF,
+                            dom_Cl_VDF,
+                            vit,
+                            ch_vit,
+                            ref_cast_non_const(Navier_Stokes_Turbulent, eq_hydraulique.valeur()),
+                            ref_cast_non_const(DoubleTab, turbulence_model->get_enstrophy()));
+        }
+      else
+        {
+          compute_strain_invariant(domain_VDF, dom_Cl_VDF, vit, ch_vit,
+                                   ref_cast_non_const(Navier_Stokes_Turbulent,
+                                                      eq_hydraulique.valeur()),
+                                   ref_cast_non_const(DoubleTab,
+                                                      turbulence_model->get_strain_invariant()));
+        }
+    }
   return resu;
 }

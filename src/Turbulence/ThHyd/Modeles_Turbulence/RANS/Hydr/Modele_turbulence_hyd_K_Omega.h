@@ -54,6 +54,8 @@ public:
   inline DoubleTab& get_tabF2();
   inline const DoubleTab& get_enstrophy() const;
   inline DoubleTab& get_enstrophy();
+  inline const DoubleTab& get_strain_invariant() const;
+  inline DoubleTab& get_strain_invariant();
 
   void controler() override { get_set_eq_transport().controler_K_Omega(); }
   virtual Champ_Fonc_base& calculer_viscosite_turbulente(double );
@@ -66,6 +68,8 @@ protected:
   OWN_PTR(Champ_Fonc_base) tabF1_; // Blending field for SST model
   OWN_PTR(Champ_Fonc_base) tabF2_; // for the turbulent viscosity in the SST model
   OWN_PTR(Champ_Fonc_base) enstrophy_; // for the turbulent viscosity in the SST model
+  OWN_PTR(Champ_Fonc_base) strain_invariant_; // for the turbulent viscosity in the SST model
+
   bool is_SST_ = false; // check if model variant is SST
   bool is_BSL_ = false; // check if model variant is BSL
 };
@@ -168,4 +172,23 @@ inline DoubleTab& Modele_turbulence_hyd_K_Omega::get_enstrophy()
   return enstrophy_->valeurs();
 }
 
+/*! @brief Returns the field strain_invariant.
+ *
+ *     (version const)
+ *
+ * @return (DoubleTab&) enstrophy
+ */
+inline const DoubleTab& Modele_turbulence_hyd_K_Omega::get_strain_invariant() const
+{
+  return strain_invariant_->valeurs();
+}
+
+/*! @brief Returns the field F2.
+ *
+ * @return (DoubleTab&) tabF2
+ */
+inline DoubleTab& Modele_turbulence_hyd_K_Omega::get_strain_invariant()
+{
+  return strain_invariant_->valeurs();
+}
 #endif /* Modele_turbulence_hyd_K_Omega_included */

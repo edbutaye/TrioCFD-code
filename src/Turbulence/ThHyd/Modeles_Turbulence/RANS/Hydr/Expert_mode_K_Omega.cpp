@@ -52,9 +52,9 @@ int Expert_mode_K_Omega::lire_motcle_non_standard(const Motcle& mot, Entree& is)
       Motcle menter_version_str;
       is >> menter_version_str;
       if (menter_version_str == "ORIGINAL_1994")
-        menter_version_ = Menter_version_::ORIGINAL_1994;
+        menter_version_ = Menter_version::ORIGINAL_1994;
       else if (menter_version_str == "MODIFIED_2003")
-        menter_version_ = Menter_version_::MODIFIED_2003;
+        menter_version_ = Menter_version::MODIFIED_2003;
       else
         {
           Cerr << "Error: unknown Menter version: " << menter_version_str << finl;
@@ -70,28 +70,28 @@ int Expert_mode_K_Omega::lire_motcle_non_standard(const Motcle& mot, Entree& is)
 
 const double& Expert_mode_K_Omega::get_gamma1() const
 {
-  if (menter_version_ == Menter_version_::ORIGINAL_1994)
+  if (menter_version_ == Menter_version::ORIGINAL_1994)
     return GAMMA1_1994;
   else
     return GAMMA1_2003;
 }
 const double& Expert_mode_K_Omega::get_gamma2() const
 {
-  if (menter_version_ == Menter_version_::ORIGINAL_1994)
+  if (menter_version_ == Menter_version::ORIGINAL_1994)
     return GAMMA2_1994;
   else
     return GAMMA2_2003;
 }
 const double& Expert_mode_K_Omega::get_cst_production_limiter() const
 {
-  if (menter_version_ == Menter_version_::ORIGINAL_1994)
+  if (menter_version_ == Menter_version::ORIGINAL_1994)
     return CST_PRODUCTION_LIMITER_1994;
   else
     return CST_PRODUCTION_LIMITER_2003;
 }
 const double& Expert_mode_K_Omega::get_cst_cd_komega() const
 {
-  if (menter_version_ == Menter_version_::ORIGINAL_1994)
+  if (menter_version_ == Menter_version::ORIGINAL_1994)
     return CST_MIN_CD_KOMEGA_1994;
   else
     return CST_MIN_CD_KOMEGA_2003;

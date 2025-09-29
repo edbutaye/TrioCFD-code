@@ -182,18 +182,30 @@ Champ_Fonc_base& Modele_turbulence_hyd_K_Omega::calculer_viscosite_turbulente(do
 void Modele_turbulence_hyd_K_Omega::fill_turbulent_viscosity_tab(const DoubleTab& tab_K_Omega,
                                                                  DoubleTab& turbulent_viscosity)
 {
-  for (int i = 0; i < tab_K_Omega.dimension(0); ++i)
+  const DoubleTab& val = get_expert_mode().get_menter_version()==Menter_version::ORIGINAL_1994 ?
+                         enstrophy_->valeurs() : strain_invariant_ ->valeurs();
+
+  if (is_SST())
     {
-      const double omega = tab_K_Omega(i, 1);
-      if (omega <= OMEGA_MIN_)
-        turbulent_viscosity[i] = 0;
-      else
+      for (int i = 0; i < tab_K_Omega.dimension(0); ++i)
         {
-          const double enerK = tab_K_Omega(i, 0);
-          turbulent_viscosity[i] = is_SST()
-                                   ? enerK*CST_A1/std::max(CST_A1*omega,
-                                                           enstrophy_->valeurs()[i]*tabF2_->valeurs()[i])
-                                   : enerK/omega;
+          const double omega = tab_K_Omega(i, 1);
+          if (omega <= OMEGA_MIN_)
+            turbulent_viscosity[i] = 0;
+          else
+            turbulent_viscosity[i]=tab_K_Omega(i, 0)*CST_A1/std::max(CST_A1*omega, val[i]*tabF2_->valeurs()[i]);
+        }
+    }
+  else
+    {
+      for (int i = 0; i < tab_K_Omega.dimension(0); ++i)
+        {
+          const double omega = tab_K_Omega(i, 1);
+          if (omega <= OMEGA_MIN_)
+            turbulent_viscosity[i] = 0;
+          else
+            turbulent_viscosity[i] = tab_K_Omega(i, 0)/omega;
+
         }
     }
 }
@@ -207,6 +219,7 @@ void Modele_turbulence_hyd_K_Omega::get_noms_champs_postraitables(Noms& nom,
   noms_compris.add("tab_F1");
   noms_compris.add("tab_F2");
   noms_compris.add("enstrophy");
+  noms_compris.add("strain_invariant");
 
   if (opt == DESCRIPTION)
     Cerr << " Modele_turbulence_hyd_K_Omega : " << noms_compris << finl;
@@ -242,6 +255,13 @@ void Modele_turbulence_hyd_K_Omega::creer_champ(const Motcle& nom)
                                  noms, unites, 1, 0, enstrophy_);
           champs_compris_.ajoute_champ(enstrophy_);
         }
+      if (strain_invariant_.est_nul())
+        {
+          noms[0] = "strain_invariant";
+          disc.discretiser_champ("champ_elem", equation().domaine_dis(), scalaire,
+                                 noms, unites, 1, 0, strain_invariant_);
+          champs_compris_.ajoute_champ(strain_invariant_);
+        }
     }
   else if (sub_type(Domaine_VEF,get_eq_transport().domaine_dis()))
     {
@@ -267,6 +287,13 @@ void Modele_turbulence_hyd_K_Omega::creer_champ(const Motcle& nom)
           disc.discretiser_champ("champ_face", equation().domaine_dis(), scalaire,
                                  noms, unites, 1, 0, enstrophy_);
           champs_compris_.ajoute_champ(enstrophy_);
+        }
+      if (strain_invariant_.est_nul())
+        {
+          noms[0] = "strain_invariant";
+          disc.discretiser_champ("champ_face", equation().domaine_dis(), scalaire,
+                                 noms, unites, 1, 0, strain_invariant_);
+          champs_compris_.ajoute_champ(strain_invariant_);
         }
     }
   else

@@ -43,17 +43,17 @@ void TCV::compute_enstrophy(const Domaine_VEF& dom_VEF,
   Champ_P1NC::calcul_gradient(velocity, gradient_elem, dom_BC_VEF);
 
   // Loop on edge faces
-  antisym_loop_edge_faces(dom_VEF, dom_BC_VEF, gradient_elem, enstrophy);
+  antisym_loop_edge_faces_enstrophy(dom_VEF, dom_BC_VEF, gradient_elem, enstrophy);
 
   // Loop on internal faces
-  antisym_loop_internal_faces(dom_VEF, gradient_elem, enstrophy);
+  antisym_loop_internal_faces_enstrophy(dom_VEF, gradient_elem, enstrophy);
 
 }
 
-void TCV::antisym_loop_edge_faces(const Domaine_VEF& dom_VEF,
-                                  const Domaine_Cl_VEF& dom_BC_VEF,
-                                  const DoubleTab& gradient_elem,
-                                  DoubleTab& enstrophy) const
+void TCV::antisym_loop_edge_faces_enstrophy(const Domaine_VEF& dom_VEF,
+                                            const Domaine_Cl_VEF& dom_BC_VEF,
+                                            const DoubleTab& gradient_elem,
+                                            DoubleTab& enstrophy) const
 {
   for (int n_edge = 0; n_edge < dom_VEF.nb_front_Cl(); ++n_edge)
     {
@@ -61,16 +61,186 @@ void TCV::antisym_loop_edge_faces(const Domaine_VEF& dom_VEF,
       const Front_VF& the_edge = ref_cast(Front_VF, current_BC->frontiere_dis());
 
       if (sub_type(Periodique, current_BC.valeur()))
-        antisym_loop_edges_periodiqueBC(dom_VEF, the_edge, gradient_elem, enstrophy);
+        antisym_loop_edges_periodiqueBC_enstrophy(dom_VEF, the_edge, gradient_elem, enstrophy);
       else
-        antisym_loop_edges_general(dom_VEF, the_edge, gradient_elem, enstrophy);
+        antisym_loop_edges_general_enstrophy(dom_VEF, the_edge, gradient_elem, enstrophy);
     }
 }
 
-void TCV::antisym_loop_edges_periodiqueBC(const Domaine_VEF& dom_VEF,
-                                          const Front_VF& the_edge,
-                                          const DoubleTab& gradient_elem,
-                                          DoubleTab& enstrophy) const
+void TCV::antisym_loop_edges_periodiqueBC_enstrophy(const Domaine_VEF& dom_VEF,
+                                                    const Front_VF& the_edge,
+                                                    const DoubleTab& gradient_elem,
+                                                    DoubleTab& enstrophy) const
+{
+  const IntTab& neighbour_face = dom_VEF.face_voisins();
+  const DoubleVect& volumes = dom_VEF.volumes();
+
+  const int nbegin = the_edge.num_premiere_face();
+  const int nend = nbegin + the_edge.nb_faces();
+
+  for (int nface = nbegin; nface < nend; ++nface)
+    {
+      const int f0 = neighbour_face(nface, 0);
+      const int f1 = neighbour_face(nface, 1);
+
+      const double inv_vol = 1./(volumes(f0) + volumes(f1));
+      const double vol0 = volumes(f0)*inv_vol;
+      const double vol1 = volumes(f1)*inv_vol;
+
+      // gradient_elem(elem_num, dimension, dimension)
+      const double du_dy = vol0*gradient_elem(f0, 0, 1) + vol1*gradient_elem(f1, 0, 1);
+      const double dv_dx = vol0*gradient_elem(f0, 1, 0) + vol1*gradient_elem(f1, 1, 0);
+
+      double tmp = 0.5*((du_dy - dv_dx)*(du_dy - dv_dx) +
+                        (dv_dx - du_dy)*(dv_dx - du_dy));
+
+      if (Objet_U::dimension == 3)
+        {
+          const double du_dz = vol0*gradient_elem(f0, 0, 2) + vol1*gradient_elem(f1, 0, 2);
+          const double dv_dz = vol0*gradient_elem(f0, 1, 2) + vol1*gradient_elem(f1, 1, 2);
+          const double dw_dx = vol0*gradient_elem(f0, 2, 0) + vol1*gradient_elem(f1, 2, 0);
+          const double dw_dy = vol0*gradient_elem(f0, 2, 1) + vol1*gradient_elem(f1, 2, 1);
+
+          tmp += 0.5*((du_dz - dw_dx)*(du_dz - dw_dx) +
+                      (dv_dz - dw_dy)*(dv_dz - dw_dy) +
+                      (dw_dx - du_dz)*(dw_dx - du_dz) +
+                      (dw_dy - dv_dz)*(dw_dy - dv_dz));
+
+
+        }
+
+      enstrophy(nface) = sqrt(tmp);
+    }
+}
+
+
+void TCV::antisym_loop_edges_general_enstrophy(const Domaine_VEF& dom_VEF,
+                                               const Front_VF& the_edge,
+                                               const DoubleTab& gradient_elem,
+                                               DoubleTab& enstrophy) const
+{
+  const IntTab& neighbour_face = dom_VEF.face_voisins();
+
+  const int nbegin = the_edge.num_premiere_face();
+  const int nend = nbegin + the_edge.nb_faces();
+
+  for (int nface = nbegin; nface < nend; ++nface)
+    {
+      const int f0 = neighbour_face(nface, 0);
+
+      // gradient_elem(elem_num, dimension, dimension)
+      const double du_dy = gradient_elem(f0, 0, 1);
+      const double dv_dx = gradient_elem(f0, 1, 0);
+
+      double tmp = 0.5*((du_dy - dv_dx)*(du_dy - dv_dx) +
+                        (dv_dx - du_dy)*(dv_dx - du_dy));
+
+      if (Objet_U::dimension == 3)
+        {
+          const double du_dz = gradient_elem(f0, 0, 2);
+          const double dv_dz = gradient_elem(f0, 1, 2);
+          const double dw_dx = gradient_elem(f0, 2, 0);
+          const double dw_dy = gradient_elem(f0, 2, 1);
+
+          tmp += 0.5*((du_dz - dw_dx)*(du_dz - dw_dx) +
+                      (dv_dz - dw_dy)*(dv_dz - dw_dy) +
+                      (dw_dx - du_dz)*(dw_dx - du_dz) +
+                      (dw_dy - dv_dz)*(dw_dy - dv_dz));
+
+        }
+
+      enstrophy(nface) = sqrt(tmp);
+    }
+}
+
+// Même fonction que périodique !
+void TCV::antisym_loop_internal_faces_enstrophy(const Domaine_VEF& dom_VEF,
+                                                const DoubleTab& grad_elem,
+                                                DoubleTab& enstrophy) const
+{
+  const IntTab& neighbour_face = dom_VEF.face_voisins();
+  const DoubleVect& volumes = dom_VEF.volumes();
+  const int first_internal_face = dom_VEF.premiere_face_int();
+  const int nb_faces = dom_VEF.nb_faces();
+
+  for (int nface = first_internal_face; nface < nb_faces; ++nface)
+    {
+      const int f0 = neighbour_face(nface, 0);
+      const int f1 = neighbour_face(nface, 1);
+
+      const double inv_vol = 1./(volumes(f0) + volumes(f1));
+      const double vol0 = volumes(f0)*inv_vol;
+      const double vol1 = volumes(f1)*inv_vol;
+
+      // format: grad_elem(elem_num, dimension, dimension)
+      const double du_dy = vol0*grad_elem(f0, 0, 1) + vol1*grad_elem(f1, 0, 1);
+      const double dv_dx = vol0*grad_elem(f0, 1, 0) + vol1*grad_elem(f1, 1, 0);
+
+      double tmp = 0.5*((du_dy - dv_dx)*(du_dy - dv_dx) +
+                        (dv_dx - du_dy)*(dv_dx - du_dy));
+
+      if (Objet_U::dimension == 3)
+        {
+          const double du_dz = vol0*grad_elem(f0, 0, 2) + vol1*grad_elem(f1, 0, 2);
+          const double dv_dz = vol0*grad_elem(f0, 1, 2) + vol1*grad_elem(f1, 1, 2);
+          const double dw_dx = vol0*grad_elem(f0, 2, 0) + vol1*grad_elem(f1, 2, 0);
+          const double dw_dy = vol0*grad_elem(f0, 2, 1) + vol1*grad_elem(f1, 2, 1);
+
+          tmp += 0.5*((du_dz - dw_dx)*(du_dz - dw_dx) +
+                      (dv_dz - dw_dy)*(dv_dz - dw_dy) +
+                      (dw_dx - du_dz)*(dw_dx - du_dz) +
+                      (dw_dy - dv_dz)*(dw_dy - dv_dz));
+
+        }
+
+      enstrophy(nface) = sqrt(tmp);
+    }
+}
+
+// Compute the antisymetric tensor
+void TCV::compute_strain_invariant(const Domaine_VEF& dom_VEF,
+                                   const Domaine_Cl_VEF& dom_BC_VEF,
+                                   const DoubleTab& velocity,
+                                   DoubleTab& strain_invariant) const
+{
+  // Initialisation
+  const int nb_elem_tot = dom_VEF.nb_elem_tot();
+  const int dimension = Objet_U::dimension;
+  DoubleTab gradient_elem(nb_elem_tot, dimension, dimension);
+  gradient_elem = 0;
+
+  // Computation of gradient
+  Champ_P1NC::calcul_gradient(velocity, gradient_elem, dom_BC_VEF);
+
+  // Loop on edge faces
+  antisym_loop_edge_faces_strain_invariant(dom_VEF, dom_BC_VEF, gradient_elem, strain_invariant);
+
+  // Loop on internal faces
+  antisym_loop_internal_faces_strain_invariant(dom_VEF, gradient_elem, strain_invariant);
+
+}
+
+void TCV::antisym_loop_edge_faces_strain_invariant(const Domaine_VEF& dom_VEF,
+                                                   const Domaine_Cl_VEF& dom_BC_VEF,
+                                                   const DoubleTab& gradient_elem,
+                                                   DoubleTab& strain_invariant) const
+{
+  for (int n_edge = 0; n_edge < dom_VEF.nb_front_Cl(); ++n_edge)
+    {
+      const Cond_lim& current_BC = dom_BC_VEF.les_conditions_limites(n_edge);
+      const Front_VF& the_edge = ref_cast(Front_VF, current_BC->frontiere_dis());
+
+      if (sub_type(Periodique, current_BC.valeur()))
+        antisym_loop_edges_periodiqueBC_strain_invariant(dom_VEF, the_edge, gradient_elem, strain_invariant);
+      else
+        antisym_loop_edges_general_strain_invariant(dom_VEF, the_edge, gradient_elem, strain_invariant);
+    }
+}
+
+void TCV::antisym_loop_edges_periodiqueBC_strain_invariant(const Domaine_VEF& dom_VEF,
+                                                           const Front_VF& the_edge,
+                                                           const DoubleTab& gradient_elem,
+                                                           DoubleTab& strain_invariant) const
 {
   const IntTab& neighbour_face = dom_VEF.face_voisins();
   const DoubleVect& volumes = dom_VEF.volumes();
@@ -93,8 +263,6 @@ void TCV::antisym_loop_edges_periodiqueBC(const Domaine_VEF& dom_VEF,
       const double dv_dx = vol0*gradient_elem(f0, 1, 0) + vol1*gradient_elem(f1, 1, 0);
       const double dv_dy = vol0*gradient_elem(f0, 1, 1) + vol1*gradient_elem(f1, 1, 1);
 
-      /*double tmp = 0.5*((du_dy - dv_dx)*(du_dy - dv_dx) +
-                        (dv_dx - du_dy)*(dv_dx - du_dy));*/
       double SijSij = du_dx*du_dx
                       +0.5*(du_dy+dv_dx)*(du_dy+dv_dx)
                       +dv_dy*dv_dy ;
@@ -107,25 +275,21 @@ void TCV::antisym_loop_edges_periodiqueBC(const Domaine_VEF& dom_VEF,
           const double dw_dy = vol0*gradient_elem(f0, 2, 1) + vol1*gradient_elem(f1, 2, 1);
           const double dw_dz = vol0*gradient_elem(f0, 2, 2) + vol1*gradient_elem(f1, 2, 2);
 
-          /*tmp += 0.5*((du_dz - dw_dx)*(du_dz - dw_dx) +
-                      (dv_dz - dw_dy)*(dv_dz - dw_dy) +
-                      (dw_dx - du_dz)*(dw_dx - du_dz) +
-          (dw_dy - dv_dz)*(dw_dy - dv_dz));*/
           SijSij += 0.5*(du_dz+dw_dx)*(du_dz+dw_dx)
                     + 0.5*(dv_dz+dw_dy)*(dv_dz+dw_dy)
                     + dw_dz*dw_dz ;
 
         }
 
-      enstrophy(nface) = sqrt(2*SijSij);
+      strain_invariant(nface) = sqrt(2*SijSij);
     }
 }
 
 
-void TCV::antisym_loop_edges_general(const Domaine_VEF& dom_VEF,
-                                     const Front_VF& the_edge,
-                                     const DoubleTab& gradient_elem,
-                                     DoubleTab& enstrophy) const
+void TCV::antisym_loop_edges_general_strain_invariant(const Domaine_VEF& dom_VEF,
+                                                      const Front_VF& the_edge,
+                                                      const DoubleTab& gradient_elem,
+                                                      DoubleTab& strain_invariant) const
 {
   const IntTab& neighbour_face = dom_VEF.face_voisins();
 
@@ -142,8 +306,6 @@ void TCV::antisym_loop_edges_general(const Domaine_VEF& dom_VEF,
       const double dv_dx = gradient_elem(f0, 1, 0);
       const double dv_dy = gradient_elem(f0, 1, 1);
 
-      /*double tmp = 0.5*((du_dy - dv_dx)*(du_dy - dv_dx) +
-                        (dv_dx - du_dy)*(dv_dx - du_dy));*/
       double SijSij = du_dx*du_dx
                       +0.5*(du_dy+dv_dx)*(du_dy+dv_dx)
                       +dv_dy*dv_dy ;
@@ -156,23 +318,19 @@ void TCV::antisym_loop_edges_general(const Domaine_VEF& dom_VEF,
           const double dw_dy = gradient_elem(f0, 2, 1);
           const double dw_dz = gradient_elem(f0, 2, 2);
 
-          /*tmp += 0.5*((du_dz - dw_dx)*(du_dz - dw_dx) +
-                      (dv_dz - dw_dy)*(dv_dz - dw_dy) +
-                      (dw_dx - du_dz)*(dw_dx - du_dz) +
-                      (dw_dy - dv_dz)*(dw_dy - dv_dz));*/
           SijSij += 0.5*(du_dz+dw_dx)*(du_dz+dw_dx)
                     + 0.5*(dv_dz+dw_dy)*(dv_dz+dw_dy)
                     + dw_dz*dw_dz ;
         }
 
-      enstrophy(nface) = sqrt(2*SijSij);
+      strain_invariant(nface) = sqrt(2*SijSij);
     }
 }
 
 // Même fonction que périodique !
-void TCV::antisym_loop_internal_faces(const Domaine_VEF& dom_VEF,
-                                      const DoubleTab& grad_elem,
-                                      DoubleTab& enstrophy) const
+void TCV::antisym_loop_internal_faces_strain_invariant(const Domaine_VEF& dom_VEF,
+                                                       const DoubleTab& grad_elem,
+                                                       DoubleTab& strain_invariant) const
 {
   const IntTab& neighbour_face = dom_VEF.face_voisins();
   const DoubleVect& volumes = dom_VEF.volumes();
@@ -194,8 +352,6 @@ void TCV::antisym_loop_internal_faces(const Domaine_VEF& dom_VEF,
       const double dv_dx = vol0*grad_elem(f0, 1, 0) + vol1*grad_elem(f1, 1, 0);
       const double dv_dy = vol0*grad_elem(f0, 1, 1) + vol1*grad_elem(f1, 1, 1);
 
-      /*double tmp = 0.5*((du_dy - dv_dx)*(du_dy - dv_dx) +
-                        (dv_dx - du_dy)*(dv_dx - du_dy));*/
       double SijSij = du_dx*du_dx
                       +0.5*(du_dy+dv_dx)*(du_dy+dv_dx)
                       +dv_dy*dv_dy ;
@@ -208,15 +364,11 @@ void TCV::antisym_loop_internal_faces(const Domaine_VEF& dom_VEF,
           const double dw_dy = vol0*grad_elem(f0, 2, 1) + vol1*grad_elem(f1, 2, 1);
           const double dw_dz = vol0*grad_elem(f0, 2, 2) + vol1*grad_elem(f1, 2, 2);
 
-          /*tmp += 0.5*((du_dz - dw_dx)*(du_dz - dw_dx) +
-                      (dv_dz - dw_dy)*(dv_dz - dw_dy) +
-                      (dw_dx - du_dz)*(dw_dx - du_dz) +
-                      (dw_dy - dv_dz)*(dw_dy - dv_dz));*/
           SijSij += 0.5*(du_dz+dw_dx)*(du_dz+dw_dx)
                     + 0.5*(dv_dz+dw_dy)*(dv_dz+dw_dy)
                     + dw_dz*dw_dz ;
         }
 
-      enstrophy(nface) = sqrt(2*SijSij);
+      strain_invariant(nface) = sqrt(2*SijSij);
     }
 }

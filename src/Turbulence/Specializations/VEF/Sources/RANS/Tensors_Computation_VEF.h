@@ -37,14 +37,25 @@ protected:
 
   void compute_enstrophy(const Domaine_VEF&, const Domaine_Cl_VEF&,
                          const DoubleTab& velocity, DoubleTab& enstrophy) const;
-  void antisym_loop_edge_faces(const Domaine_VEF& dom_VEF, const Domaine_Cl_VEF& dom_BC_VEF,
-                               const DoubleTab& gradient_elem, DoubleTab& enstrophy) const;
-  void antisym_loop_edges_general(const Domaine_VEF& dom_VEF, const Front_VF& the_edge,
-                                  const DoubleTab& gradient_elem, DoubleTab& enstrophy) const;
-  void antisym_loop_edges_periodiqueBC(const Domaine_VEF& dom_VEF, const Front_VF& the_edge,
-                                       const DoubleTab& gradient_elem, DoubleTab& enstrophy) const;
-  void antisym_loop_internal_faces(const Domaine_VEF& dom_VEF, const DoubleTab& gradient_elem,
-                                   DoubleTab& enstrophy) const;
+  void antisym_loop_edge_faces_enstrophy(const Domaine_VEF& dom_VEF, const Domaine_Cl_VEF& dom_BC_VEF,
+                                         const DoubleTab& gradient_elem, DoubleTab& enstrophy) const;
+  void antisym_loop_edges_general_enstrophy(const Domaine_VEF& dom_VEF, const Front_VF& the_edge,
+                                            const DoubleTab& gradient_elem, DoubleTab& enstrophy) const;
+  void antisym_loop_edges_periodiqueBC_enstrophy(const Domaine_VEF& dom_VEF, const Front_VF& the_edge,
+                                                 const DoubleTab& gradient_elem, DoubleTab& enstrophy) const;
+  void antisym_loop_internal_faces_enstrophy(const Domaine_VEF& dom_VEF, const DoubleTab& gradient_elem,
+                                             DoubleTab& enstrophy) const;
+
+  void compute_strain_invariant(const Domaine_VEF&, const Domaine_Cl_VEF&,
+                                const DoubleTab& velocity, DoubleTab& strain_invariant) const;
+  void antisym_loop_edge_faces_strain_invariant(const Domaine_VEF& dom_VEF, const Domaine_Cl_VEF& dom_BC_VEF,
+                                                const DoubleTab& gradient_elem, DoubleTab& strain_invariant) const;
+  void antisym_loop_edges_general_strain_invariant(const Domaine_VEF& dom_VEF, const Front_VF& the_edge,
+                                                   const DoubleTab& gradient_elem, DoubleTab& strain_invariant) const;
+  void antisym_loop_edges_periodiqueBC_strain_invariant(const Domaine_VEF& dom_VEF, const Front_VF& the_edge,
+                                                        const DoubleTab& gradient_elem, DoubleTab& strain_invariant) const;
+  void antisym_loop_internal_faces_strain_invariant(const Domaine_VEF& dom_VEF, const DoubleTab& gradient_elem,
+                                                    DoubleTab& strain_invariant) const;
 };
 
 #endif // Tensors_Computation_VEF_included

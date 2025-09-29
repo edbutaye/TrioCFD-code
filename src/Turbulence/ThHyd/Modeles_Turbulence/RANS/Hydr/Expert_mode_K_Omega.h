@@ -23,7 +23,7 @@
 #define Expert_mode_K_Omega_included
 #include <Param.h>
 
-enum class Menter_version_ { ORIGINAL_1994, MODIFIED_2003 };
+enum class Menter_version { ORIGINAL_1994, MODIFIED_2003 };
 
 class Expert_mode_K_Omega: public Objet_U
 {
@@ -32,12 +32,12 @@ public:
   Expert_mode_K_Omega()
   {
     deactivate_production_limiter_=false;
-    menter_version_=Menter_version_::MODIFIED_2003;
+    menter_version_=Menter_version::MODIFIED_2003;
   }
 
   void set_param(Param& param);
   int lire_motcle_non_standard(const Motcle& mot, Entree& is ) override;
-  const Menter_version_& get_menter_version() const { return menter_version_; }
+  const Menter_version& get_menter_version() const { return menter_version_; }
   const bool& get_deactivate_production_limiter() const { return deactivate_production_limiter_; }
   const double& get_gamma1() const;
   const double& get_gamma2() const;
@@ -46,6 +46,6 @@ public:
 
 protected:
   bool deactivate_production_limiter_;
-  Menter_version_ menter_version_;
+  Menter_version menter_version_;
 };
 #endif

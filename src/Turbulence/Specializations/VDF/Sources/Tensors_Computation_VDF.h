@@ -40,17 +40,20 @@ protected:
                          Champ_Face_VDF& ch_vit,
                          Navier_Stokes_Turbulent& ns_turb,
                          DoubleTab& enstrophy) const;
-  /*void antisym_loop_edge_faces(const Domaine_VDF& dom_VDF, const Domaine_Cl_VDF& dom_BC_VDF,
-                               const DoubleTab& gradient_elem, DoubleTab& enstrophy) const;
-  void antisym_loop_edges_general(const Domaine_VDF& dom_VDF, const Front_VF& the_edge,
-                                  const DoubleTab& gradient_elem, DoubleTab& enstrophy) const;
-  void antisym_loop_edges_periodiqueBC(const Domaine_VDF& dom_VDF, const Front_VF& the_edge,
-                                       const DoubleTab& gradient_elem, DoubleTab& enstrophy) const;
-   */
-  void antisym(const Domaine_VDF& dom_VDF,
-               const DoubleTab& gradient_elem,
-               DoubleTab& enstrophy) const;
+  void compute_strain_invariant(const Domaine_VDF&,
+                                const Domaine_Cl_VDF&,
+                                const DoubleTab& velocity,
+                                Champ_Face_VDF& ch_vit,
+                                Navier_Stokes_Turbulent& ns_turb,
+                                DoubleTab& strain_invariant) const;
 
+  void antisym_enstrophy(const Domaine_VDF& dom_VDF,
+                         const DoubleTab& gradient_elem,
+                         DoubleTab& enstrophy) const;
+
+  void antisym_strain_invariant(const Domaine_VDF& dom_VDF,
+                                const DoubleTab& gradient_elem,
+                                DoubleTab& strain_invariant) const;
 };
 
 
