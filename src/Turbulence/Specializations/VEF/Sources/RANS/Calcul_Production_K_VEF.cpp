@@ -30,6 +30,7 @@
 #include <Periodique.h>
 #include <Champ_Uniforme.h>
 #include <Champ_Don_base.h>
+#include <K_Omega_Eps_constants.h>
 
 /*! @brief Compute the production term for the turbulent kinetic energy.
  *
@@ -57,7 +58,8 @@ DoubleTab& Calcul_Production_K_VEF::calculer_terme_production_K(const Domaine_VE
                                                                 const DoubleTab& vit,
                                                                 const DoubleTab& visco_turb,
                                                                 const int& interpol_visco,
-                                                                const double& limiteur) const
+                                                                const double& limiteur,
+                                                                const bool activate_production_limiter) const
 {
   prodK = 0;
 
@@ -82,11 +84,11 @@ DoubleTab& Calcul_Production_K_VEF::calculer_terme_production_K(const Domaine_VE
       if (sub_type(Periodique, la_cl.valeur()))
         loop_for_internal_or_periodic_faces(prodK, gradient_elem, visco_turb, volumes,
                                             face_voisins, first_boundary_face, last_boundary_face,
-                                            interpol_visco, limiteur);
+                                            interpol_visco, limiteur, K_eps,activate_production_limiter);
       else
         loop_for_non_periodic_boundaries(prodK, gradient_elem, visco_turb, volumes,
                                          face_voisins, first_boundary_face, last_boundary_face,
-                                         interpol_visco, limiteur);
+                                         interpol_visco, limiteur, K_eps,activate_production_limiter);
     }
 
   // Internal faces
@@ -94,7 +96,7 @@ DoubleTab& Calcul_Production_K_VEF::calculer_terme_production_K(const Domaine_VE
   const int nb_faces_ = domaine_VEF.nb_faces();
   loop_for_internal_or_periodic_faces(prodK, gradient_elem, visco_turb, volumes,
                                       face_voisins, premiere_face_int, nb_faces_,
-                                      interpol_visco, limiteur);
+                                      interpol_visco, limiteur,K_eps,activate_production_limiter);
   return prodK;
 }
 
@@ -123,7 +125,9 @@ void Calcul_Production_K_VEF::loop_for_non_periodic_boundaries(DoubleTab& prodK,
                                                                const int nfaceinit,
                                                                const int nfaceend,
                                                                const int interpol_visco,
-                                                               const double limiteur
+                                                               const double limiteur,
+                                                               const DoubleTab& K_Omega,
+                                                               const bool activate_production_limiter
                                                               ) const
 {
   for (int fac = nfaceinit; fac < nfaceend; fac++)
@@ -153,7 +157,10 @@ void Calcul_Production_K_VEF::loop_for_non_periodic_boundaries(DoubleTab& prodK,
                         + ((du_dy + dv_dx) * (du_dy + dv_dx)
                            + (du_dz + dw_dx) * (du_dz + dw_dx)
                            + (dw_dy + dv_dz) * (dw_dy + dv_dz)))*visco_face;
+
         }
+      if (activate_production_limiter)
+        prodK(fac)=std::min(prodK(fac),20.*BETA_K*K_Omega(fac,0)*K_Omega(fac,1));
     }
 }
 
@@ -182,7 +189,9 @@ void Calcul_Production_K_VEF::loop_for_internal_or_periodic_faces(DoubleTab& pro
                                                                   const int nfaceinit,
                                                                   const int nfaceend,
                                                                   const int interpol_visco,
-                                                                  const double limiteur
+                                                                  const double limiteur,
+                                                                  const DoubleTab& K_Omega,
+                                                                  const bool activate_production_limiter
                                                                  ) const
 {
   for (int fac = nfaceinit; fac < nfaceend; fac++)
@@ -219,7 +228,10 @@ void Calcul_Production_K_VEF::loop_for_internal_or_periodic_faces(DoubleTab& pro
                         + ((du_dy + dv_dx)*(du_dy + dv_dx)
                            + (du_dz + dw_dx)*(du_dz + dw_dx)
                            + (dw_dy + dv_dz)*(dw_dy + dv_dz)))*visco_face;
+
         }
+      if (activate_production_limiter)
+        prodK(fac)=std::min(prodK(fac),20.*BETA_K*K_Omega(fac,0)*K_Omega(fac,1));
     }
 
 }

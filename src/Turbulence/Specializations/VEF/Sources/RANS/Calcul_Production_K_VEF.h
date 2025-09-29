@@ -37,13 +37,15 @@ protected:
   Calcul_Production_K_VEF() { }
 
   // Standard TKE production
-  DoubleTab& calculer_terme_production_K(const Domaine_VEF&, const Domaine_Cl_VEF&, DoubleTab&, const DoubleTab&, const DoubleTab&, const DoubleTab&, const int& interpol_visco, const double& limiteur) const;
-  void loop_for_internal_or_periodic_faces(DoubleTab& prodK, const DoubleTab& gradient_elem, const DoubleTab& visco_turb, const DoubleVect& volumes, const IntTab& face_voisins, const int nfaceinit, const int nfaceend, const int interpol_visco, const double limiteur) const;
-  void loop_for_non_periodic_boundaries(DoubleTab& prodK, const DoubleTab& gradient_elem, const DoubleTab& visco_turb, const DoubleVect& volumes, const IntTab& face_voisins, const int nfaceinit, const int nfaceend, const int interpol_visco, const double limiteur) const;
-
+  DoubleTab& calculer_terme_production_K(const Domaine_VEF&, const Domaine_Cl_VEF&, DoubleTab&, const DoubleTab&, const DoubleTab&, const DoubleTab&, const int& interpol_visco, const double& limiteur, const bool activate_production_limiter=false) const;
+  void loop_for_internal_or_periodic_faces(DoubleTab& prodK, const DoubleTab& gradient_elem, const DoubleTab& visco_turb,
+                                           const DoubleVect& volumes, const IntTab& face_voisins, const int nfaceinit, const int nfaceend,
+                                           const int interpol_visco, const double limiteur, const DoubleTab& K_Omega,  const bool activate_production_limiter=false) const;
+  void loop_for_non_periodic_boundaries(DoubleTab& prodK, const DoubleTab& gradient_elem, const DoubleTab& visco_turb,
+                                        const DoubleVect& volumes, const IntTab& face_voisins, const int nfaceinit, const int nfaceend,
+                                        const int interpol_visco, const double limiteur, const DoubleTab& K_Omega,  const bool activate_production_limiter=false) const;
 
   DoubleTab& calculer_terme_production_K_BiK(const Domaine_VEF&, const Domaine_Cl_VEF&, DoubleTab&, const DoubleTab&, const DoubleTab&, const DoubleTab&, const DoubleTab&, const int& interpol_visco, const double& limiteur) const;
-
   // EASM
   DoubleTab& calculer_terme_production_K_EASM(const Domaine_VEF&, const Domaine_Cl_VEF&, DoubleTab&, const DoubleTab&, const DoubleTab&, const DoubleTab&, const DoubleTab&, const int& interpol_visco, const double& limiteur) const;
   void compute_production_term_EASM(const int face, const double visco_face, const DoubleTab& Re_face, const DoubleTab& gradient_face, DoubleTab& P) const;

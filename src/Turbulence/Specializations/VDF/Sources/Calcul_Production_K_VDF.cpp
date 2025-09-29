@@ -35,6 +35,7 @@
 #include <Fluide_Quasi_Compressible.h>
 #include <Debog.h>
 #include <TRUSTTrav.h>
+#include <K_Omega_Eps_constants.h>
 
 ////////////////////////////////////////////////////////////////////////////
 //
@@ -125,6 +126,8 @@ calculer_terme_production_K_for_komega(const Domaine_VDF& domaine_VDF, const Dom
       //non nulle en Quasi-Compressible
       S(elem) += -(2./3.)*visco_turb(elem)*coef*coef;
       S(elem) += -(2./3.)*K_Omega(elem, 0)*coef;
+
+      S(elem)=std::min(S(elem),20.*BETA_K*K_Omega(elem,0)*K_Omega(elem,1));
     }
 
   Debog::verifier("Source_Transport_K_Omega_VDF_P0_VDF::calculer_terme_production_K_for_komega",
