@@ -134,6 +134,7 @@ int Navier_Stokes_std_ALE::sauvegarder(Sortie& os) const
       create_field(meshCoords,"meshCoords", dimension, "champ_sommets");
       meshCoords->valeurs()= domaine_dis().domaine().les_sommets();
 
+
       if (special && Process::nproc() > 1)
         Cerr << "ATTENTION : For a parallel calculation, the field Jacobian is not saved in xyz format ... " << finl;
       else
@@ -161,22 +162,17 @@ int Navier_Stokes_std_ALE::sauvegarder(Sortie& os) const
           create_field(meshPosition, "meshPosition", dimension, "champ_sommets");
           meshPosition->valeurs()=dom_ale.getMeshPosition();
 
-          int nbn = (dimension == 2) ? 3 : 4;
-          int nSymSize = (dimension == 2) ? 5 : 9;
-          int symSize = (dimension == 2) ? 4 : 6;
-
-          int nbComp=dimension*nbn;
+          int nbComp=dom_ale.getMeshReferenceConfigurationNbComp();
           OWN_PTR(Champ_Inc_base) meshReferenceConfiguration;
           create_field(meshReferenceConfiguration, "meshReferenceConfiguration", nbComp, "champ_elem");
           meshReferenceConfiguration->valeurs()=dom_ale.getMeshReferenceConfiguration();
 
-
-          nbComp=nSymSize;
+          nbComp=dom_ale.getMeshTransformationGradientNbComp();
           OWN_PTR(Champ_Inc_base) meshTransformationGradient;
           create_field(meshTransformationGradient, "meshTransformationGradient", nbComp, "champ_elem");
           meshTransformationGradient->valeurs()=dom_ale.getMeshTransformationGradient();
 
-          nbComp=symSize;
+          nbComp=dom_ale.getMeshStressNbComp();
           OWN_PTR(Champ_Inc_base) meshStress;
           create_field(meshStress,"meshStress", nbComp, "champ_elem");
           meshStress->valeurs()=dom_ale.getMeshStress();
@@ -306,8 +302,6 @@ int Navier_Stokes_std_ALE::reprendre(Entree& is)
       create_field( meshVelocity,"meshVelocity", dimension, "champ_sommets");
       Nom  field_tag_Vel = generate_field_tag(meshVelocity);
 
-
-
       OWN_PTR(Champ_Inc_base) meshAcceleration;
       create_field(meshAcceleration, "meshAcceleration", dimension, "champ_sommets");
       Nom field_tag_Acc = generate_field_tag(meshAcceleration);
@@ -317,21 +311,17 @@ int Navier_Stokes_std_ALE::reprendre(Entree& is)
       create_field(meshPosition, "meshPosition", dimension, "champ_sommets");
       Nom field_tag_Pos = generate_field_tag(meshPosition);
 
-      int nbn = (dimension == 2) ? 3 : 4;
-      int nSymSize = (dimension == 2) ? 5 : 9;
-      int symSize = (dimension == 2) ? 4 : 6;
-
-      int nbComp=dimension*nbn;
+      int nbComp=dom_ale.getMeshReferenceConfigurationNbComp();
       OWN_PTR(Champ_Inc_base) meshReferenceConfiguration;
       create_field(meshReferenceConfiguration, "meshReferenceConfiguration", nbComp, "champ_elem");
       Nom field_tag_RefConf = generate_field_tag(meshReferenceConfiguration);
 
-      nbComp=nSymSize;
+      nbComp=dom_ale.getMeshTransformationGradientNbComp();
       OWN_PTR(Champ_Inc_base) meshTransformationGradient;
       create_field(meshTransformationGradient, "meshTransformationGradient", nbComp, "champ_elem");
       Nom field_tag_TransGrad = generate_field_tag(meshTransformationGradient);
 
-      nbComp=symSize;
+      nbComp=dom_ale.getMeshStressNbComp();
       OWN_PTR(Champ_Inc_base) meshStress;
       create_field(meshStress, "meshStress", nbComp, "champ_elem");
       Nom field_tag_Stress = generate_field_tag(meshStress);

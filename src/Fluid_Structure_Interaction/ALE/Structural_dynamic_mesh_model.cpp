@@ -42,16 +42,26 @@ Structural_dynamic_mesh_model::Structural_dynamic_mesh_model()
   density_ = 0. ;
   inertialDamping_ = 0. ;
 
+  iel_=0;
+  nSymSize_ = (dimension == 2) ? 5 : 9;
+  symSize_  = (dimension == 2) ? 4 : 6;
+  nbn_ = (dimension == 2) ? 3 : 4;
+  dimB0_ =nbn_*dimension;
   gridNStep = 0 ;
   gridTime = 0. ;
   gridDt = 0. ;
-
+  isMassBuilt = false ;
+  totalMass=0.;
   configurationResetDt = 0 ;
   gridResetTime = 0 ;
-
+  nbIvars_=0;
+  nbEvars_=0;
   maxAddedMassRatio = 0 ;
-
+  AddedMassRatioExceeded=false;
   doConfigurationReset = false ;
+  KSize_=0;
+  matpSize_=0;
+  sizeEvars_=0;
   resumption = 0;
 
 
