@@ -160,22 +160,25 @@ const Nom Source_Transport_K_Omega_VEF_Face::get_type_paroi() const
 void Source_Transport_K_Omega_VEF_Face::compute_blending_F1(DoubleTab& gradKgradOmega) const
 {
   const DoubleTab& K_Omega = eqn_K_Omega->inconnue().valeurs();
-  const DoubleTab& kinematic_viscosity = get_visc_turb();
+  const Navier_Stokes_std& eq_ns = ref_cast(Navier_Stokes_std, eqn_K_Omega->modele_turbulence().equation());
+  const DoubleTab& tab_kinematic_viscosity = eq_ns.fluide().viscosite_cinematique().valeurs();
+  const double visc_cst=tab_kinematic_viscosity(0,0);
   const DoubleTab& distmin = le_dom_VEF->y_faces(); // Minimum distance to the edge
 
   DoubleTab& tabF1 = ref_cast_non_const(DoubleTab, turbulence_model->get_tabF1());
   DoubleTab& tabF2 = ref_cast_non_const(DoubleTab, turbulence_model->get_tabF2());
-
+  
   DoubleTab visc_face(le_dom_VEF->nb_faces_tot()); // dimension_tot(0)
 
-  elem_to_face(le_dom_VEF.valeur(), kinematic_viscosity, visc_face);
-
+  if (eq_ns.fluide().is_dilatable())
+      elem_to_face(le_dom_VEF.valeur(), kinematic_viscosity, visc_face);
+  
   for (int face = 0; face < le_dom_VEF->nb_faces(); face++)
     {
       double const dmin = std::max(distmin(face), 1e-12);
       double const enerK = K_Omega(face, 0);
       double const omega = K_Omega(face, 1);
-
+      double const kinematic_viscosity=eq_ns.fluide().is_dilatable() ? visc_face(face) : visc_cst; 
       double const tmp1 = sqrt(enerK)/(BETA_K*omega*dmin);
       double const tmp2 = 500.0*visc_face(face)/(omega*dmin*dmin);
       double const maxval = std::max(2*SIGMA_OMEGA2*gradKgradOmega(face)/omega, 1e-20);

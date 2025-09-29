@@ -29,6 +29,7 @@
 #include <VDF_discretisation.h>
 #include <Champ_Fonc_Face_VDF.h>
 #include <K_Omega_Eps_constants.h>
+#include <Fluide_base.h>
 
 Implemente_instanciable_sans_constructeur(Source_Transport_K_Omega_VDF_Elem,
                                           "Source_Transport_K_Omega_VDF_P0_VDF",
@@ -317,9 +318,11 @@ void Source_Transport_K_Omega_VDF_Elem::compute_cross_diffusion() const
 void Source_Transport_K_Omega_VDF_Elem::compute_blending_F1() const
 {
   const DoubleTab& K_Omega = eqn_K_Omega->inconnue().valeurs();
-  const DoubleTab& kinematic_viscosity = get_visc_turb();
   const DoubleTab& distmin = le_dom_VDF->y_elem(); // Minimum distance to the edge
   DoubleTab& gradKgradOmega_elem = ref_cast_non_const(DoubleTab, grad_k_omega_elem_->valeurs());
+  const Navier_Stokes_std& eq_ns = ref_cast(Navier_Stokes_std, eqn_K_Omega->modele_turbulence().equation());
+  const DoubleTab tab_kinematic_viscosity = eq_ns.fluide().viscosite_cinematique().valeurs();
+
 
   DoubleTab& tabF1 = ref_cast_non_const(DoubleTab, turbulence_model->get_tabF1());
   DoubleTab& tabF2 = ref_cast_non_const(DoubleTab, turbulence_model->get_tabF2());
@@ -329,10 +332,9 @@ void Source_Transport_K_Omega_VDF_Elem::compute_blending_F1() const
       double const dmin = std::max(distmin(elem), 1e-12);
       double const enerK = K_Omega(elem, 0);
       double const omega = K_Omega(elem, 1);
-
       double const tmp1 = sqrt(enerK)/(BETA_K*omega*dmin);
-      double const tmp2 = 500.0*kinematic_viscosity(elem)/(omega*dmin*dmin);
-      double const maxval = std::max(2*SIGMA_OMEGA2*gradKgradOmega_elem(elem)/omega, 1e-20);
+      double const tmp2 = 500.0*tab_kinematic_viscosity(elem)/(omega*dmin*dmin);
+      double const maxval = std::max(2*SIGMA_OMEGA2*gradKgradOmega_elem(elem)/omega, 1e-10);
       double const tmp3 = 4.0*SIGMA_OMEGA2*enerK/(maxval*dmin*dmin);
 
       double const arg1 = std::min(std::max(tmp1, tmp2), tmp3); // Common name of the variable
