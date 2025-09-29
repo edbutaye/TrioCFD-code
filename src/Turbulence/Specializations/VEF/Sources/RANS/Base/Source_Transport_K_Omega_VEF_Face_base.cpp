@@ -102,12 +102,14 @@ DoubleTab& Source_Transport_K_Omega_VEF_Face_base::ajouter_komega(DoubleTab& res
     compute_blending_F1(gradKgradOmega);
 
   const DoubleTab& TKE = get_K_pour_production(); // voir les classes filles
-  const bool activate_production_limiter=true;
+  const bool& deactivate_production_limiter =  turbulence_model->get_expert_mode().get_deactivate_production_limiter();
+  const double& cst_production_limiter = turbulence_model->get_expert_mode().get_cst_production_limiter();
   calculer_terme_production_K(le_dom_VEF.valeur(), domaine_Cl_VEF, production_TKE,
                               TKE, velocity, visco_turb,
                               _interpolation_viscosite_turbulente,
                               _coefficient_limiteur,
-                              activate_production_limiter);
+                              deactivate_production_limiter,
+                              cst_production_limiter);
 
   fill_resu_k_omega(volumes_entrelaces, production_TKE, gradKgradOmega, resu); // voir les classes filles
 

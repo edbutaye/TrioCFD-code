@@ -32,15 +32,17 @@ public:
   Expert_mode_K_Omega()
   {
     deactivate_production_limiter_=false;
-    menter_version_=Menter_version_::ORIGINAL_1994;
+    menter_version_=Menter_version_::MODIFIED_2003;
   }
 
   void set_param(Param& param);
   int lire_motcle_non_standard(const Motcle& mot, Entree& is ) override;
   const Menter_version_& get_menter_version() const { return menter_version_; }
   const bool& get_deactivate_production_limiter() const { return deactivate_production_limiter_; }
-  const double get_gamma1() const;
-  const double get_gamma2() const;
+  const double& get_gamma1() const;
+  const double& get_gamma2() const;
+  const double& get_cst_production_limiter() const;
+  const double& get_cst_cd_komega() const;
 
 protected:
   bool deactivate_production_limiter_;

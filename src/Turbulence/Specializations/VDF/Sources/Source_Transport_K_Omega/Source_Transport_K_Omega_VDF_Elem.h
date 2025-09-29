@@ -52,7 +52,7 @@ protected:
 
 protected:
   const DoubleTab& get_visc_turb() const override;
-  void calculer_terme_production(const Champ_Face_VDF&, const DoubleTab& , const DoubleTab& , DoubleVect&, const bool& deactivate_production_limiter) const override;
+  void calculer_terme_production(const Champ_Face_VDF&, const DoubleTab& , const DoubleTab& , DoubleVect&, const bool& deactivate_production_limiter, const double& cst_production_limiter) const override;
   void fill_resu(const DoubleVect& , DoubleTab& ) const override;
 };
 

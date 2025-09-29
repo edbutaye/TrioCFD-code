@@ -76,7 +76,7 @@ void Source_Transport_K_Omega_VDF_Elem::creer_champ(const Motcle& nom)
       grad_k_face_->associer_domaine_dis_base(equation().domaine_dis());
       grad_k_face_->valeurs() = ref_cast(Navier_Stokes_std, equation().probleme().equation(0)).grad_P().valeurs();
       grad_k_face_->valeurs() = 0.;
-      grad_k_face_->nommer(Nom("grad_k_face"));
+      grad_k_face_->nommer(Nom("grad_k"));
       grad_k_face_->fixer_nb_comp(Objet_U::dimension); // EB: VERY important to enter in Champ_Face_VDF::interpolation in Champ_Face_VDF_implementation::valeur_a_elem_
       // Noms names(Objet_U::dimension);
       // grad_k_face_->fixer_noms_compo(names);
@@ -88,7 +88,7 @@ void Source_Transport_K_Omega_VDF_Elem::creer_champ(const Motcle& nom)
       grad_omega_face_->associer_domaine_dis_base(equation().domaine_dis());
       grad_omega_face_->valeurs() = ref_cast(Navier_Stokes_std, equation().probleme().equation(0)).grad_P().valeurs();
       grad_omega_face_->valeurs() = 0.;
-      grad_omega_face_->nommer(Nom("grad_omega_face"));
+      grad_omega_face_->nommer(Nom("grad_omega"));
       grad_omega_face_->fixer_nb_comp(Objet_U::dimension);  // EB: VERY important to enter in Champ_Face_VDF::interpolation in Champ_Face_VDF_implementation::valeur_a_elem_
       // Noms names(Objet_U::dimension);
       // grad_omega_face_->fixer_noms_compo(names); // teo boutin: not necessary it seems. Not sure what this is supposed to do.
@@ -98,7 +98,7 @@ void Source_Transport_K_Omega_VDF_Elem::creer_champ(const Motcle& nom)
     {
       Noms noms(1);
       Noms unites(1);
-      noms[0] = "grad_k_elem";
+      noms[0] = "grad_k";
       disc.discretiser_champ("champ_elem", equation().domaine_dis(), scalaire,
                              noms , unites, dimension, 0, grad_k_elem_);
       champs_compris_.ajoute_champ(grad_k_elem_);
@@ -107,7 +107,7 @@ void Source_Transport_K_Omega_VDF_Elem::creer_champ(const Motcle& nom)
     {
       Noms noms(1);
       Noms unites(1);
-      noms[0] = "grad_omega_elem";
+      noms[0] = "grad_omega";
       disc.discretiser_champ("champ_elem", equation().domaine_dis(), scalaire,
                              noms , unites, dimension, 0, grad_omega_elem_);
       champs_compris_.ajoute_champ(grad_omega_elem_);
@@ -172,11 +172,11 @@ const DoubleTab& Source_Transport_K_Omega_VDF_Elem::get_visc_turb() const
   return eqn_K_Omega->modele_turbulence().viscosite_turbulente().valeurs();
 }
 
-void Source_Transport_K_Omega_VDF_Elem::calculer_terme_production(const Champ_Face_VDF& vitesse, const DoubleTab& visco_turb, const DoubleTab& vit, DoubleVect& P, const bool& deactivate_production_limiter) const
+void Source_Transport_K_Omega_VDF_Elem::calculer_terme_production(const Champ_Face_VDF& vitesse, const DoubleTab& visco_turb, const DoubleTab& vit, DoubleVect& P, const bool& deactivate_production_limiter, const double& cst_production_limiter=0.) const
 {
   const DoubleTab& K_Omega = eqn_K_Omega->inconnue().valeurs();
   if (axi) calculer_terme_production_K_Axi(le_dom_VDF.valeur(), vitesse, P, K_Omega, visco_turb);
-  else calculer_terme_production_K_for_komega(le_dom_VDF.valeur(), le_dom_Cl_VDF.valeur(), P, K_Omega, vit, vitesse, visco_turb, deactivate_production_limiter);
+  else calculer_terme_production_K_for_komega(le_dom_VDF.valeur(), le_dom_Cl_VDF.valeur(), P, K_Omega, vit, vitesse, visco_turb, deactivate_production_limiter, cst_production_limiter);
 }
 
 void Source_Transport_K_Omega_VDF_Elem::fill_resu(const DoubleVect& P, DoubleTab& resu) const
@@ -325,11 +325,11 @@ void Source_Transport_K_Omega_VDF_Elem::compute_blending_F1() const
   const DoubleTab& distmin = le_dom_VDF->y_elem(); // Minimum distance to the edge
   DoubleTab& gradKgradOmega_elem = ref_cast_non_const(DoubleTab, grad_k_omega_elem_->valeurs());
   const Navier_Stokes_std& eq_ns = ref_cast(Navier_Stokes_std, eqn_K_Omega->modele_turbulence().equation());
-  const DoubleTab tab_kinematic_viscosity = eq_ns.fluide().viscosite_cinematique().valeurs();
-
+  const double kinematic_viscosity = eq_ns.fluide().viscosite_cinematique().valeurs()(0,0);
 
   DoubleTab& tabF1 = ref_cast_non_const(DoubleTab, turbulence_model->get_tabF1());
   DoubleTab& tabF2 = ref_cast_non_const(DoubleTab, turbulence_model->get_tabF2());
+  const double& cst_min_cd_komega = turbulence_model->get_expert_mode().get_cst_cd_komega();
 
   for (int elem = 0; elem < le_dom_VDF->nb_elem(); ++elem)
     {
@@ -337,8 +337,8 @@ void Source_Transport_K_Omega_VDF_Elem::compute_blending_F1() const
       double const enerK = K_Omega(elem, 0);
       double const omega = K_Omega(elem, 1);
       double const tmp1 = sqrt(enerK)/(BETA_K*omega*dmin);
-      double const tmp2 = 500.0*tab_kinematic_viscosity(elem)/(omega*dmin*dmin);
-      double const maxval = std::max(2*SIGMA_OMEGA2*gradKgradOmega_elem(elem)/omega, 1e-10);
+      double const tmp2 = 500.0*kinematic_viscosity/(omega*dmin*dmin);
+      double const maxval = std::max(2*SIGMA_OMEGA2*gradKgradOmega_elem(elem)/omega,cst_min_cd_komega);
       double const tmp3 = 4.0*SIGMA_OMEGA2*enerK/(maxval*dmin*dmin);
 
       double const arg1 = std::min(std::max(tmp1, tmp2), tmp3); // Common name of the variable

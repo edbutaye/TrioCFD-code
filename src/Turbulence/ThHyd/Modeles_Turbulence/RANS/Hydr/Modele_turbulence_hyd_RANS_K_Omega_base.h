@@ -69,14 +69,14 @@ public:
   const double& get_Sigma_K2() const { return Sigma_K2_; }
   const double& get_Sigma_Omega1() const { return Sigma_OMEGA1_; }
   const double& get_Sigma_Omega2() const { return Sigma_OMEGA2_; }
-  const Expert_mode_K_Omega& get_expert_mode() const { return ptr_expert_mode_.valeur(); }
+  const Expert_mode_K_Omega& get_expert_mode() const { return expert_mode_; }
 
 protected:
   Motcle model_variant_; // default model will be k-omega STD
   static constexpr double CST_A1 = 0.31;
   double Sigma_K_, Sigma_Omega_;
   double Sigma_K1_, Sigma_K2_, Sigma_OMEGA1_, Sigma_OMEGA2_;
-  OWN_PTR(Expert_mode_K_Omega) ptr_expert_mode_;
+  Expert_mode_K_Omega expert_mode_;
 
 };
 

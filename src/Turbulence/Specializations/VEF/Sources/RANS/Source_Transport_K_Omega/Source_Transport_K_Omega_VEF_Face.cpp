@@ -170,6 +170,7 @@ void Source_Transport_K_Omega_VEF_Face::compute_blending_F1(DoubleTab& gradKgrad
   DoubleTab& tabF2 = ref_cast_non_const(DoubleTab, turbulence_model->get_tabF2());
 
   DoubleTab visc_face(le_dom_VEF->nb_faces_tot()); // dimension_tot(0)
+  const double& cst_min_cd_komega = turbulence_model->get_expert_mode().get_cst_cd_komega();
 
   if (eq_ns.fluide().is_dilatable())
     elem_to_face(le_dom_VEF.valeur(), tab_kinematic_viscosity, visc_face);
@@ -182,7 +183,7 @@ void Source_Transport_K_Omega_VEF_Face::compute_blending_F1(DoubleTab& gradKgrad
       double const kinematic_viscosity=eq_ns.fluide().is_dilatable() ? visc_face(face) : visc_cst;
       double const tmp1 = sqrt(enerK)/(BETA_K*omega*dmin);
       double const tmp2 = 500.0*kinematic_viscosity/(omega*dmin*dmin);
-      double const maxval = std::max(2*SIGMA_OMEGA2*gradKgradOmega(face)/omega, 1e-20);
+      double const maxval = std::max(2*SIGMA_OMEGA2*gradKgradOmega(face)/omega, cst_min_cd_komega);
       double const tmp3 = 4.0*SIGMA_OMEGA2*enerK/(maxval*dmin*dmin);
 
       double const arg1 = std::min(std::max(tmp1, tmp2), tmp3); // Common name of the variable
