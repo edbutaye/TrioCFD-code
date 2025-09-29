@@ -1826,6 +1826,7 @@ int Transport_Interfaces_FT_Disc::preparer_calcul_anticipated(void)
 
   //calcul de l'indicatrice
   update_indicatrice_normale_distance();
+  maillage_interface().compute_gravity_center_fa7();
 
   // On verifie que la methode de transport a bien ete fournie dans le jeu
   // de donnees:
