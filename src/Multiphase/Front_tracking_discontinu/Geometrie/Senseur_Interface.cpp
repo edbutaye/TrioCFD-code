@@ -97,7 +97,7 @@ int Senseur_Interface::calculer_position(ArrOfDouble& pos) const
     }
   double t_injection; // Entre 0 et 1, coordonnee de l'interface le long du segment
   const DoubleTab& xp = ref_cast(Domaine_VF, eq.domaine_dis()).xp();
-  eq.update_normale_distance_interface();
+  // No need to update distance and normal, they are already up-to-date.
   const DoubleTab& normale_interf = eq.get_normale_interface().valeurs();
   const DoubleTab& distance_interf = eq.get_distance_interface().valeurs();
   if (i < nb_points_tests_)
