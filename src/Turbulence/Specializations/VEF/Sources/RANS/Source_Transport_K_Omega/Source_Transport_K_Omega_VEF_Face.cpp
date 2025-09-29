@@ -32,6 +32,7 @@
 #include <Domaine_VEF.h>
 #include <Domaine_Cl_VEF.h>
 #include <K_Omega_Eps_constants.h>
+#include <Fluide_base.h>
 
 Implemente_instanciable_sans_constructeur(Source_Transport_K_Omega_VEF_Face,
                                           "Source_Transport_K_Omega_VEF_P1NC",
@@ -167,20 +168,20 @@ void Source_Transport_K_Omega_VEF_Face::compute_blending_F1(DoubleTab& gradKgrad
 
   DoubleTab& tabF1 = ref_cast_non_const(DoubleTab, turbulence_model->get_tabF1());
   DoubleTab& tabF2 = ref_cast_non_const(DoubleTab, turbulence_model->get_tabF2());
-  
+
   DoubleTab visc_face(le_dom_VEF->nb_faces_tot()); // dimension_tot(0)
 
   if (eq_ns.fluide().is_dilatable())
-      elem_to_face(le_dom_VEF.valeur(), kinematic_viscosity, visc_face);
-  
+    elem_to_face(le_dom_VEF.valeur(), tab_kinematic_viscosity, visc_face);
+
   for (int face = 0; face < le_dom_VEF->nb_faces(); face++)
     {
       double const dmin = std::max(distmin(face), 1e-12);
       double const enerK = K_Omega(face, 0);
       double const omega = K_Omega(face, 1);
-      double const kinematic_viscosity=eq_ns.fluide().is_dilatable() ? visc_face(face) : visc_cst; 
+      double const kinematic_viscosity=eq_ns.fluide().is_dilatable() ? visc_face(face) : visc_cst;
       double const tmp1 = sqrt(enerK)/(BETA_K*omega*dmin);
-      double const tmp2 = 500.0*visc_face(face)/(omega*dmin*dmin);
+      double const tmp2 = 500.0*kinematic_viscosity/(omega*dmin*dmin);
       double const maxval = std::max(2*SIGMA_OMEGA2*gradKgradOmega(face)/omega, 1e-20);
       double const tmp3 = 4.0*SIGMA_OMEGA2*enerK/(maxval*dmin*dmin);
 
@@ -327,13 +328,17 @@ void Source_Transport_K_Omega_VEF_Face::contribuer_a_avec(const DoubleTab& a,
   const DoubleTab& visco_turb = get_visc_turb(); // voir les classes filles
   const DoubleTab& velocity = eq_hydraulique->inconnue().valeurs();
   const DoubleTab& TKE = get_K_pour_production(); // voir les classes filles
+  const bool activate_production_limiter=true;
   calculer_terme_production_K(le_dom_VEF.valeur(), domaine_Cl_VEF, production_TKE,
                               TKE, velocity, visco_turb,
                               _interpolation_viscosite_turbulente,
-                              _coefficient_limiteur);
+                              _coefficient_limiteur,
+                              activate_production_limiter);
 
   DoubleTrav gradKgradOmega(le_dom_VEF->nb_faces_tot());
   compute_cross_diffusion(gradKgradOmega);
+  if (turbulence_model->is_SST_or_BSL())
+    compute_blending_F1(gradKgradOmega);
 
   for (int face = 0; face < K_Omega.dimension(0); face++)
     if (K_Omega(face, 0) >= LeK_MIN)
