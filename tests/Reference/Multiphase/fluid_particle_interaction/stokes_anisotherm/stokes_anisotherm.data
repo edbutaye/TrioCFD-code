@@ -29,13 +29,13 @@ Lire sch
 {
 	tinit 0.
 	tmax 1e-3
- 	# nb_pas_dt_max 10 # 
-        dt_min 4e-11
+ 	nb_pas_dt_max 100
+    dt_min 4e-11
 	dt_max 1e-6
 	dt_start dt_min
 	diffusion_implicite 1
-    	seuil_diffusion_implicite 1e-11
-    	impr_diffusion_implicite 1
+    seuil_diffusion_implicite 1e-11
+    impr_diffusion_implicite 1
 	dt_impr 0.01
 	dt_sauv 100
 	seuil_statio -1
