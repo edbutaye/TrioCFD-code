@@ -1305,7 +1305,7 @@ void Transport_Interfaces_FT_Disc::lire_maillage_ft_cao(Entree& is)
         }
     }
   // TODO : probablement plutot update_indicatrice_normale_distance(); ? A tester..
-  update_indicatrice();
+  update_indicatrice_normale_distance();
   // Postraitement des composantes connexes et de l'indicatrice
   if (lata_file != "??")
     {
@@ -1337,6 +1337,9 @@ void Transport_Interfaces_FT_Disc::lire_maillage_ft_cao(Entree& is)
       lata.ecrire_champ(un_dom, unites, noms_compo, 1, TEMPS, nom_champ, nom_dom, "elem", "scalar",
                         get_distance_interface().valeurs());
     }
+  // permettra de passer le assert et de recalculer indic et distance dans le mettre_a_jour meme si c'est inutile dans ce cas
+  // on a dû le faire une fois de trop ci-dessus pour permettre de le postprocesser juste avant ici.
+  maillage_interface().mesh_tag_increase();
 
   if (phase_of_component.size_array() > 0 && min_array(phase_of_component) < 0)
     {

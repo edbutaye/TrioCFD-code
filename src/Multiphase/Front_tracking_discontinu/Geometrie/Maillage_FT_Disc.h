@@ -68,6 +68,7 @@ public:
   double temps() const;
   double changer_temps(double t);
 
+  void mesh_tag_increase() { mesh_state_tag_++; }
   // Acces au tag :
   int get_mesh_tag() const;
 
