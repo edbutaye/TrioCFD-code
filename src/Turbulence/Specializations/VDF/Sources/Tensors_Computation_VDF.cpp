@@ -56,26 +56,36 @@ void TCV::antisym(const Domaine_VDF& dom_VDF,
   const int nb_elem = dom_VDF.nb_elem();
   for (int elem=0; elem<nb_elem; elem++)
     {
-      double tmp=0;
+      //double tmp=0;
+      double SijSij=0;
       if (Objet_U::dimension==2)
         {
+          const double du_dx= gradient_elem(elem,0);
           const double du_dy= gradient_elem(elem,1);
           const double dv_dx= gradient_elem(elem,2);
-          tmp = (du_dy-dv_dx)*(du_dy-dv_dx);
+          const double dv_dy= gradient_elem(elem,3);
+          //tmp = (du_dy-dv_dx)*(du_dy-dv_dx);
+          SijSij = du_dx*du_dx
+                   +0.5*(du_dy+dv_dx)*(du_dy+dv_dx)
+                   +dv_dy*dv_dy ;
         }
       if(Objet_U::dimension==3)
         {
-          const double du_dy= gradient_elem(elem,1);
-          const double dv_dx= gradient_elem(elem,3);
+          //const double du_dy= gradient_elem(elem,1);
+          //const double dv_dx= gradient_elem(elem,3);
           const double du_dz= gradient_elem(elem,2);
           const double dv_dz= gradient_elem(elem,5);
           const double dw_dx= gradient_elem(elem,6);
           const double dw_dy= gradient_elem(elem,7);
+          const double dw_dz= gradient_elem(elem,8);
 
-          tmp = (du_dy-dv_dx)*(du_dy-dv_dx)+
-                (dw_dy-dv_dz)*(dw_dy-dv_dz)+
-                (du_dz-dw_dx)*(du_dz-dw_dx);
+          /*tmp = (du_dy-dv_dx)*(du_dy-dv_dx)+
+                      (dw_dy-dv_dz)*(dw_dy-dv_dz)+
+                      (du_dz-dw_dx)*(du_dz-dw_dx);*/
+          SijSij += 0.5*(du_dz+dw_dx)*(du_dz+dw_dx)
+                    + 0.5*(dv_dz+dw_dy)*(dv_dz+dw_dy)
+                    + dw_dz*dw_dz ;
         }
-      enstrophy(elem) = sqrt(tmp);
+      enstrophy(elem) = sqrt(2*SijSij);
     }
 }

@@ -88,13 +88,16 @@ void TCV::antisym_loop_edges_periodiqueBC(const Domaine_VEF& dom_VEF,
       const double vol1 = volumes(f1)*inv_vol;
 
       // gradient_elem(elem_num, dimension, dimension)
-      // const double du_dx = vol0*gradient_elem(f0, 0, 0) + vol1*gradient_elem(f1, 0, 0);
+      const double du_dx = vol0*gradient_elem(f0, 0, 0) + vol1*gradient_elem(f1, 0, 0);
       const double du_dy = vol0*gradient_elem(f0, 0, 1) + vol1*gradient_elem(f1, 0, 1);
       const double dv_dx = vol0*gradient_elem(f0, 1, 0) + vol1*gradient_elem(f1, 1, 0);
-      // const double dv_dy = vol0*gradient_elem(f0, 1, 1) + vol1*gradient_elem(f1, 1, 1);
+      const double dv_dy = vol0*gradient_elem(f0, 1, 1) + vol1*gradient_elem(f1, 1, 1);
 
-      double tmp = 0.5*((du_dy - dv_dx)*(du_dy - dv_dx) +
-                        (dv_dx - du_dy)*(dv_dx - du_dy));
+      /*double tmp = 0.5*((du_dy - dv_dx)*(du_dy - dv_dx) +
+                        (dv_dx - du_dy)*(dv_dx - du_dy));*/
+      double SijSij = du_dx*du_dx
+                      +0.5*(du_dy+dv_dx)*(du_dy+dv_dx)
+                      +dv_dy*dv_dy ;
 
       if (Objet_U::dimension == 3)
         {
@@ -102,15 +105,19 @@ void TCV::antisym_loop_edges_periodiqueBC(const Domaine_VEF& dom_VEF,
           const double dv_dz = vol0*gradient_elem(f0, 1, 2) + vol1*gradient_elem(f1, 1, 2);
           const double dw_dx = vol0*gradient_elem(f0, 2, 0) + vol1*gradient_elem(f1, 2, 0);
           const double dw_dy = vol0*gradient_elem(f0, 2, 1) + vol1*gradient_elem(f1, 2, 1);
-          // const double dw_dz = vol0*gradient_elem(f0, 2, 2) + vol1*gradient_elem(f1, 2, 2);
+          const double dw_dz = vol0*gradient_elem(f0, 2, 2) + vol1*gradient_elem(f1, 2, 2);
 
-          tmp += 0.5*((du_dz - dw_dx)*(du_dz - dw_dx) +
+          /*tmp += 0.5*((du_dz - dw_dx)*(du_dz - dw_dx) +
                       (dv_dz - dw_dy)*(dv_dz - dw_dy) +
                       (dw_dx - du_dz)*(dw_dx - du_dz) +
-                      (dw_dy - dv_dz)*(dw_dy - dv_dz));
+          (dw_dy - dv_dz)*(dw_dy - dv_dz));*/
+          SijSij += 0.5*(du_dz+dw_dx)*(du_dz+dw_dx)
+                    + 0.5*(dv_dz+dw_dy)*(dv_dz+dw_dy)
+                    + dw_dz*dw_dz ;
+
         }
 
-      enstrophy(nface) = sqrt(tmp);
+      enstrophy(nface) = sqrt(2*SijSij);
     }
 }
 
@@ -130,13 +137,16 @@ void TCV::antisym_loop_edges_general(const Domaine_VEF& dom_VEF,
       const int f0 = neighbour_face(nface, 0);
 
       // gradient_elem(elem_num, dimension, dimension)
-      // const double du_dx = gradient_elem(f0, 0, 0);
+      const double du_dx = gradient_elem(f0, 0, 0);
       const double du_dy = gradient_elem(f0, 0, 1);
       const double dv_dx = gradient_elem(f0, 1, 0);
-      // const double dv_dy = gradient_elem(f0, 1, 1);
+      const double dv_dy = gradient_elem(f0, 1, 1);
 
-      double tmp = 0.5*((du_dy - dv_dx)*(du_dy - dv_dx) +
-                        (dv_dx - du_dy)*(dv_dx - du_dy));
+      /*double tmp = 0.5*((du_dy - dv_dx)*(du_dy - dv_dx) +
+                        (dv_dx - du_dy)*(dv_dx - du_dy));*/
+      double SijSij = du_dx*du_dx
+                      +0.5*(du_dy+dv_dx)*(du_dy+dv_dx)
+                      +dv_dy*dv_dy ;
 
       if (Objet_U::dimension == 3)
         {
@@ -144,15 +154,18 @@ void TCV::antisym_loop_edges_general(const Domaine_VEF& dom_VEF,
           const double dv_dz = gradient_elem(f0, 1, 2);
           const double dw_dx = gradient_elem(f0, 2, 0);
           const double dw_dy = gradient_elem(f0, 2, 1);
-          // const double dw_dz = gradient_elem(f0, 2, 2);
+          const double dw_dz = gradient_elem(f0, 2, 2);
 
-          tmp += 0.5*((du_dz - dw_dx)*(du_dz - dw_dx) +
+          /*tmp += 0.5*((du_dz - dw_dx)*(du_dz - dw_dx) +
                       (dv_dz - dw_dy)*(dv_dz - dw_dy) +
                       (dw_dx - du_dz)*(dw_dx - du_dz) +
-                      (dw_dy - dv_dz)*(dw_dy - dv_dz));
+                      (dw_dy - dv_dz)*(dw_dy - dv_dz));*/
+          SijSij += 0.5*(du_dz+dw_dx)*(du_dz+dw_dx)
+                    + 0.5*(dv_dz+dw_dy)*(dv_dz+dw_dy)
+                    + dw_dz*dw_dz ;
         }
 
-      enstrophy(nface) = sqrt(tmp);
+      enstrophy(nface) = sqrt(2*SijSij);
     }
 }
 
@@ -176,13 +189,16 @@ void TCV::antisym_loop_internal_faces(const Domaine_VEF& dom_VEF,
       const double vol1 = volumes(f1)*inv_vol;
 
       // format: grad_elem(elem_num, dimension, dimension)
-      // const double du_dx = vol0*grad_elem(f0, 0, 0) + vol1*grad_elem(f1, 0, 0);
+      const double du_dx = vol0*grad_elem(f0, 0, 0) + vol1*grad_elem(f1, 0, 0);
       const double du_dy = vol0*grad_elem(f0, 0, 1) + vol1*grad_elem(f1, 0, 1);
       const double dv_dx = vol0*grad_elem(f0, 1, 0) + vol1*grad_elem(f1, 1, 0);
-      // const double dv_dy = vol0*grad_elem(f0, 1, 1) + vol1*grad_elem(f1, 1, 1);
+      const double dv_dy = vol0*grad_elem(f0, 1, 1) + vol1*grad_elem(f1, 1, 1);
 
-      double tmp = 0.5*((du_dy - dv_dx)*(du_dy - dv_dx) +
-                        (dv_dx - du_dy)*(dv_dx - du_dy));
+      /*double tmp = 0.5*((du_dy - dv_dx)*(du_dy - dv_dx) +
+                        (dv_dx - du_dy)*(dv_dx - du_dy));*/
+      double SijSij = du_dx*du_dx
+                      +0.5*(du_dy+dv_dx)*(du_dy+dv_dx)
+                      +dv_dy*dv_dy ;
 
       if (Objet_U::dimension == 3)
         {
@@ -190,14 +206,17 @@ void TCV::antisym_loop_internal_faces(const Domaine_VEF& dom_VEF,
           const double dv_dz = vol0*grad_elem(f0, 1, 2) + vol1*grad_elem(f1, 1, 2);
           const double dw_dx = vol0*grad_elem(f0, 2, 0) + vol1*grad_elem(f1, 2, 0);
           const double dw_dy = vol0*grad_elem(f0, 2, 1) + vol1*grad_elem(f1, 2, 1);
-          // const double dw_dz = vol0*grad_elem(f0, 2, 2) + vol1*grad_elem(f1, 2, 2);
+          const double dw_dz = vol0*grad_elem(f0, 2, 2) + vol1*grad_elem(f1, 2, 2);
 
-          tmp += 0.5*((du_dz - dw_dx)*(du_dz - dw_dx) +
+          /*tmp += 0.5*((du_dz - dw_dx)*(du_dz - dw_dx) +
                       (dv_dz - dw_dy)*(dv_dz - dw_dy) +
                       (dw_dx - du_dz)*(dw_dx - du_dz) +
-                      (dw_dy - dv_dz)*(dw_dy - dv_dz));
+                      (dw_dy - dv_dz)*(dw_dy - dv_dz));*/
+          SijSij += 0.5*(du_dz+dw_dx)*(du_dz+dw_dx)
+                    + 0.5*(dv_dz+dw_dy)*(dv_dz+dw_dy)
+                    + dw_dz*dw_dz ;
         }
 
-      enstrophy(nface) = sqrt(tmp);
+      enstrophy(nface) = sqrt(2*SijSij);
     }
 }
