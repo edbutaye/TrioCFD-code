@@ -1754,13 +1754,23 @@ void Transport_Interfaces_FT_Disc::remailler_interface()
 
 int Transport_Interfaces_FT_Disc::preparer_calcul()
 {
-  Process::Journal()<<"Transport_Interfaces_FT_Disc::preparer_calcul does nothing because it has been anticipated in the problem"<<finl;
+
+  if (not(preparer_calcul_anticipated_done_))
+    {
+      preparer_calcul_anticipated();
+    }
+  else
+    {
+      Process::Journal()<<"Transport_Interfaces_FT_Disc::preparer_calcul does nothing because it has been anticipated in the problem"<<finl;
+    }
   return 1;
 }
 
 int Transport_Interfaces_FT_Disc::preparer_calcul_anticipated(void)
 {
   Process::Journal()<<"Transport_Interfaces_FT_Disc::preparer_calcul"<<finl;
+
+  preparer_calcul_anticipated_done_ = true;
 
   if (is_solid_particle_)
     {

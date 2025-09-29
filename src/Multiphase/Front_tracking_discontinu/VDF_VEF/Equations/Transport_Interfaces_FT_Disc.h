@@ -446,6 +446,9 @@ private:
 
   double temps_debut_;
 
+
+  bool preparer_calcul_anticipated_done_ = false;
+
   OBS_PTR(Milieu_base) ref_milieu_;
 
   bool interpolation_repere_local_ = false;
