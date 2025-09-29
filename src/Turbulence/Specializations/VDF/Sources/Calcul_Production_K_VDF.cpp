@@ -117,8 +117,8 @@ calculer_terme_production_K_for_komega(const Domaine_VDF& domaine_VDF, const Dom
       double coef = 0.;
       for (int i = 0; i < Objet_U::dimension; i++)
         {
-          coef += (vitesse[elem_faces(elem, i)] - vitesse[elem_faces(elem, i+Objet_U::dimension)]);
-          coef /= domaine_VDF.dim_elem(elem, orientation(elem_faces(elem, i)));
+          coef += (vitesse[elem_faces(elem, i)] - vitesse[elem_faces(elem, i+Objet_U::dimension)])
+                  / domaine_VDF.dim_elem(elem, orientation(elem_faces(elem, i)));
         }
 
       //Corrections pour prendre en compte la divergence de u
