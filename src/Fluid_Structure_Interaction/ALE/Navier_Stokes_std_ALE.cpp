@@ -49,7 +49,6 @@ Entree& Navier_Stokes_std_ALE::readOn(Entree& is )
   return Navier_Stokes_std::readOn(is);
 }
 
-
 // create YAML_data with uppercase name
 YAML_data Navier_Stokes_std_ALE::make_yaml(const std::string& suffix, int nb_dim) const
 {
@@ -58,7 +57,6 @@ YAML_data Navier_Stokes_std_ALE::make_yaml(const std::string& suffix, int nb_dim
   YAML_data yaml(name, "double", nb_dim);
   return yaml;
 }
-
 
 // create a Champ_Inc_base field
 void Navier_Stokes_std_ALE::create_field(OWN_PTR(Champ_Inc_base)& champ, const std::string& name, int nbComp,const Motcle& directive) const
@@ -71,7 +69,6 @@ void Navier_Stokes_std_ALE::create_field(OWN_PTR(Champ_Inc_base)& champ, const s
 
   dis.discretiser_champ(directive,domaine_dis(),vectoriel,noms,unit,nbComp,1,temps,champ);
   champ->associer_eqn(*const_cast<Navier_Stokes_std_ALE*>(this));
-
 }
 // generate unique tag for resumption
 Nom Navier_Stokes_std_ALE::generate_field_tag(const Champ_Inc_base& champ) const
@@ -242,6 +239,7 @@ int Navier_Stokes_std_ALE::sauvegarder(Sortie& os) const
         }
 
     }
+
   return bytes;
 }
 

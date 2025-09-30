@@ -454,7 +454,10 @@ void Domaine_ALE::initialiser (double temps, Domaine_dis_base& le_domaine_dis,Pr
     }
 
 
-  ALE_mesh_velocity=calculer_vitesse(temps,le_domaine_dis,pb,  check_NoZero_ALE);
+  if(resumption)
+    ALE_mesh_velocity=calculer_vitesse(pb.schema_temps().temps_courant(),le_domaine_dis,pb,  check_NoZero_ALE);
+  else
+    ALE_mesh_velocity=calculer_vitesse(temps,le_domaine_dis,pb,  check_NoZero_ALE);
 
 
 
@@ -1635,6 +1638,7 @@ void Domaine_ALE::solveDynamicMeshProblem(const double temps, const DoubleTab& i
 
   DoubleTab x0(str_mesh_model.x) ; // Copy coordinates at the beginning of the step
   double tt = str_mesh_model.gridTime ;
+
   double t0 = tt ;
   bool loopOnGridProblem = true ;
   int nstepCurr = 0 ;

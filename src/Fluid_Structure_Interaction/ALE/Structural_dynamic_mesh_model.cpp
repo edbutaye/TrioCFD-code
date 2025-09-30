@@ -63,6 +63,8 @@ Structural_dynamic_mesh_model::Structural_dynamic_mesh_model()
   matpSize_=0;
   sizeEvars_=0;
   resumption = 0;
+  gridDtMin_ =0.;
+  resumption=0;
 
 
 }
@@ -969,7 +971,6 @@ void Structural_dynamic_mesh_model::resumptionMesh(double tinit,DoubleTab& u_n, 
   Stress_=Stress_n;
 
   gridTime=tinit;
-
   resumption = 1;
 }
 
