@@ -139,6 +139,7 @@ void Source_Transport_K_Eps_VEF_Face::fill_resu_bas_rey(const DoubleVect& volume
 {
   const DoubleTab& K_eps = mon_eq_transport_K_Eps->inconnue().valeurs();
   const double LeK_MIN = mon_eq_transport_K_Eps->modele_turbulence().get_K_MIN();
+  ToDo_Kokkos("critical");
   for (int fac = 0; fac < le_dom_VEF->nb_faces(); fac++)
     {
       const double tke = K_eps(fac, 0);
@@ -155,6 +156,7 @@ void Source_Transport_K_Eps_VEF_Face::fill_resu(const DoubleVect& volumes_entrel
   const DoubleTab& K_eps = mon_eq_transport_K_Eps->inconnue().valeurs();
   const double LeK_MIN = mon_eq_transport_K_Eps->modele_turbulence().get_K_MIN();
   DoubleTab& production_k_face = ref_cast_non_const(DoubleTab,production_k_face_->valeurs());
+  ToDo_Kokkos("critical");
   for (int fac = 0; fac < le_dom_VEF->nb_faces(); fac++)
     {
       const double tke = K_eps(fac, 0);
@@ -180,6 +182,7 @@ void Source_Transport_K_Eps_VEF_Face::contribuer_a_avec(const DoubleTab& a,
   const DoubleVect& volumes_entrelaces = le_dom_VEF->volumes_entrelaces();
 
   // on implicite le -eps et le -eps^2/k
+  ToDo_Kokkos("critical");
   for (int face = 0; face < K_eps.dimension(0); face++)
     if (K_eps(face, 0) >= LeK_MIN) // -eps*vol  donne +vol dans la bonne case
       {

@@ -34,24 +34,33 @@ Entree& Op_Diff_K_Eps_VEF_Face::readOn(Entree& s )
   return s ;
 }
 
+void Op_Diff_K_Eps_VEF_Face::divide_nu_turb_by_prandtl(DoubleTab& tab_nu_turb_m) const
+{
+  double Prdt0 = Sigma_[0];
+  double Prdt1 = Sigma_[1];
+  int n_tot = nu_.dimension_tot(0);
+  tab_nu_turb_m.resize(n_tot, 2);
+  CDoubleArrView nu_turb = static_cast<const ArrOfDouble&>(diffusivite_turbulente().valeurs()).view_ro();
+  DoubleTabView nu_turb_m = tab_nu_turb_m.view_wo();
+  Kokkos::parallel_for(start_gpu_timer(__KERNEL_NAME__), n_tot, KOKKOS_LAMBDA(const int k)
+  {
+    nu_turb_m(k,0) = nu_turb(k)/Prdt0;
+    nu_turb_m(k,1) = nu_turb(k)/Prdt1;
+  });
+  end_gpu_timer(__KERNEL_NAME__);
+}
+
 DoubleTab& Op_Diff_K_Eps_VEF_Face::ajouter(const DoubleTab& inconnue_org, DoubleTab& resu) const
 {
   remplir_nu(nu_); // On remplit le tableau nu car ajouter peut se faire avant le premier pas de temps
 
-  const DoubleTab& nu_turb = diffusivite_turbulente().valeurs();
-  const int nb_comp = resu.line_size();
-
   // On dimensionne et initialise le tableau des bilans de flux:
+  const int nb_comp = resu.line_size();
   flux_bords_.resize(le_dom_vef->nb_faces_bord(), nb_comp);
   flux_bords_ = 0.;
 
-  int n_tot = nu_.dimension_tot(0); //TODO peut mieux faire
-  DoubleTab nu_turb_m(n_tot, 2);
-  for (int k=0; k<n_tot; k++)
-    {
-      nu_turb_m(k,0) = nu_turb(k)/Sigma_[0];
-      nu_turb_m(k,1) = nu_turb(k)/Sigma_[1];
-    }
+  DoubleTrav nu_turb_m;
+  divide_nu_turb_by_prandtl(nu_turb_m);
 
   ajouter_bord_gen<Type_Champ::SCALAIRE, true>(inconnue_org, resu, flux_bords_, nu_, nu_turb_m);
   ajouter_interne_gen<Type_Champ::SCALAIRE, true>(inconnue_org, resu, flux_bords_, nu_, nu_turb_m);
@@ -66,18 +75,12 @@ void Op_Diff_K_Eps_VEF_Face::contribuer_a_avec(const DoubleTab& inco, Matrice_Mo
   modifier_matrice_pour_periodique_avant_contribuer(matrice, equation());
   remplir_nu(nu_); // On remplit le tableau nu car l'assemblage d'une matrice avec ajouter_contribution peut se faire avant le premier pas de temps
 
-  const DoubleTab& nu_turb = diffusivite_turbulente().valeurs();
-
-  int n_tot = nu_.dimension_tot(0);
-  DoubleTab nu_turb_m(n_tot, 2);
-  for (int k=0; k<n_tot; k++)
-    {
-      nu_turb_m(k,0) = nu_turb(k)/Sigma_[0];
-      nu_turb_m(k,1) = nu_turb(k)/Sigma_[1];
-    }
+  DoubleTrav nu_turb_m;
+  divide_nu_turb_by_prandtl(nu_turb_m);
 
   int marq = phi_psi_diffuse(equation());
 
+  // ToDo Kokkos: avoid this DoubleVect re-allocation
   DoubleVect porosite_eventuelle(equation().milieu().porosite_face());
   if (!marq) porosite_eventuelle = 1;
 
@@ -88,43 +91,42 @@ void Op_Diff_K_Eps_VEF_Face::contribuer_a_avec(const DoubleTab& inco, Matrice_Mo
 }
 
 
-void Op_Diff_K_Eps_VEF_Face::modifier_pour_Cl(Matrice_Morse& matrice, DoubleTab& secmem) const
+void Op_Diff_K_Eps_VEF_Face::modifier_pour_Cl(Matrice_Morse& matrice, DoubleTab& tab_secmem) const
 {
-  Op_Dift_VEF_base::modifier_pour_Cl(matrice, secmem);
+  Op_Dift_VEF_base::modifier_pour_Cl(matrice, tab_secmem);
 
   const Turbulence_paroi_base& mod=le_modele_turbulence->loi_paroi();
   const Paroi_hyd_base_VEF& paroi=ref_cast(Paroi_hyd_base_VEF,mod);
-  const ArrOfInt& face_keps_imposee=paroi.face_keps_imposee();
-
-  if (face_keps_imposee.size_array()>0) //TODO a reformuler (Kokkos ?)
+  if (paroi.face_keps_imposee().size_array()>0) //TODO a reformuler (Kokkos ?)
     {
-      int size=secmem.dimension(0);
-      const IntVect& tab1=matrice.get_tab1();
-      DoubleVect& coeff = matrice.get_set_coeff();
-      const DoubleTab& val=equation().inconnue().valeurs();
+      int size = tab_secmem.dimension(0);
       const int nb_comp = equation().inconnue().valeurs().line_size();
 
       // en plus des dirichlets ????
       // on change la matrice et le resu sur toutes les lignes ou k_eps_ est imposee....
-      for (int face=0; face<size; face++)
-        {
-          if (face_keps_imposee[face]!=-2)
-            {
-              for (int comp=0; comp<nb_comp; comp++)
-                {
-                  // on doit remettre la ligne a l'identite et le secmem a l'inconnue
-                  int idiag = tab1[face*nb_comp+comp]-1;
-                  coeff[idiag]=1;
-                  // pour les voisins
-                  int nbvois = tab1[face*nb_comp+1+comp] - tab1[face*nb_comp+comp];
-                  for (int k=1; k < nbvois; k++)
-                    {
-                      coeff[idiag+k]=0;
-                    }
-                  secmem(face,comp)=val(face,comp);
-                }
-            }
-        }
+      CIntArrView face_keps_imposee = paroi.face_keps_imposee().view_ro();
+      CIntArrView tab1 = matrice.get_tab1().view_ro();
+      CDoubleTabView val = equation().inconnue().valeurs().view_ro();
+      DoubleArrView coeff = matrice.get_set_coeff().view_wo();
+      DoubleTabView secmem = tab_secmem.view_wo();
+      Kokkos::parallel_for(start_gpu_timer(__KERNEL_NAME__), size, KOKKOS_LAMBDA(const int face)
+      {
+        if (face_keps_imposee(face)!=-2)
+          {
+            for (int comp=0; comp<nb_comp; comp++)
+              {
+                // on doit remettre la ligne a l'identite et le secmem a l'inconnue
+                int idiag = tab1(face*nb_comp+comp)-1;
+                coeff(idiag) = 1;
+                // pour les voisins
+                int nbvois = tab1(face*nb_comp+1+comp) - tab1(face*nb_comp+comp);
+                for (int k=1; k < nbvois; k++)
+                  coeff(idiag+k) = 0;
+                secmem(face,comp) = val(face,comp);
+              }
+          }
+      });
+      end_gpu_timer(__KERNEL_NAME__);
     }
 }
 

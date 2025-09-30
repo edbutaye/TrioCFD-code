@@ -75,6 +75,7 @@ DoubleTab& Calcul_Production_K_VEF::calculer_terme_production_K(const Domaine_VE
   const DoubleVect& volumes = domaine_VEF.volumes();
 
   // Boundary conditions
+  ToDo_Kokkos("critical");
   for (int n_bord = 0; n_bord < domaine_VEF.nb_front_Cl(); n_bord++)
     {
       const Cond_lim& la_cl = zcl_VEF.les_conditions_limites(n_bord);
@@ -132,6 +133,7 @@ void Calcul_Production_K_VEF::loop_for_non_periodic_boundaries(DoubleTab& prodK,
                                                                const double& cst_production_limiter
                                                               ) const
 {
+  ToDo_Kokkos("critical");
   for (int fac = nfaceinit; fac < nfaceend; fac++)
     {
       const int poly1 = face_voisins(fac, 0);
@@ -197,6 +199,7 @@ void Calcul_Production_K_VEF::loop_for_internal_or_periodic_faces(DoubleTab& pro
                                                                   const double& cst_production_limiter
                                                                  ) const
 {
+  ToDo_Kokkos("critical");
   for (int fac = nfaceinit; fac < nfaceend; fac++)
     {
       const int poly1 = face_voisins(fac, 0);
@@ -280,6 +283,7 @@ calculer_terme_production_K_BiK(const Domaine_VEF& domaine_VEF,const Domaine_Cl_
 
   // Boucle sur les bords pour traiter les faces de bord
   // en distinguant le cas periodicite
+  ToDo_Kokkos("critical");
   for (int n_bord = 0; n_bord < domaine_VEF.nb_front_Cl(); n_bord++)
     {
       const Cond_lim& la_cl = zcl_VEF.les_conditions_limites(n_bord);
@@ -431,6 +435,7 @@ DoubleTab& Calcul_Production_K_VEF::calculer_terme_production_K_EASM(const Domai
   const DoubleVect& volumes = domaine_VEF.volumes();
 
   // Loop on boundary conditions
+  ToDo_Kokkos("critical");
   for (int n_bord = 0; n_bord < domaine_VEF.nb_front_Cl(); n_bord++)
     {
       const Cond_lim& la_cl = zcl_VEF.les_conditions_limites(n_bord);
@@ -654,6 +659,7 @@ void Calcul_Production_K_VEF::compute_utheta_nbConsti_le_1_nbCompo_eq_0(const Do
                                                                         DoubleTrav& u_theta) const
 {
   // we treat the boundaries
+  ToDo_Kokkos("critical");
   for (int n_bord = 0; n_bord < domaine_VEF.nb_front_Cl(); n_bord++)
     {
       const Cond_lim& la_cl   = zcl_VEF.les_conditions_limites(n_bord);
@@ -687,6 +693,7 @@ void Calcul_Production_K_VEF::compute_utheta_nbConsti_le_1_nbCompo_eq_0(const Do
     }
 
   // we treat the internal faces
+  ToDo_Kokkos("critical");
   const int nb_faces_tot = domaine_VEF.nb_faces_tot();
   for (int fac = 0; fac < nb_faces_tot; fac++)
     {
@@ -715,6 +722,7 @@ void Calcul_Production_K_VEF::compute_utheta_nbConsti_le_1_nbCompo_eq_1(const Do
                                                                         DoubleTrav& u_theta) const
 {
   // we treat the boundaries
+  ToDo_Kokkos("critical");
   for (int n_bord = 0; n_bord < domaine_VEF.nb_front_Cl(); n_bord++)
     {
       const Cond_lim& la_cl = zcl_VEF.les_conditions_limites(n_bord);
@@ -776,6 +784,7 @@ void Calcul_Production_K_VEF::compute_utheta_nbConsti_le_1_nbCompo_gt_1(const Do
                                                                         DoubleTrav& u_theta) const
 {
   // we treat the boundaries
+  ToDo_Kokkos("critical");
   for (int n_bord = 0; n_bord < domaine_VEF.nb_front_Cl(); n_bord++)
     {
       const Cond_lim& la_cl = zcl_VEF.les_conditions_limites(n_bord);
@@ -811,7 +820,7 @@ void Calcul_Production_K_VEF::compute_utheta_nbConsti_le_1_nbCompo_gt_1(const Do
     }
   // we treat the internal faces
   const int nb_faces_tot = domaine_VEF.nb_faces_tot();
-
+  ToDo_Kokkos("critical");
   for (int fac = 0; fac < nb_faces_tot; fac++)
     {
       const int elem1 = face_voisins(fac, 0);
@@ -840,6 +849,7 @@ void Calcul_Production_K_VEF::compute_utheta_nbConsti_gt_1_nbCompo_eq_0(const Do
                                                                         DoubleTrav& u_theta) const
 {
   // we treat the boundaries
+  ToDo_Kokkos("critical");
   for (int n_bord = 0; n_bord < domaine_VEF.nb_front_Cl(); n_bord++)
     {
       const Cond_lim& la_cl = zcl_VEF.les_conditions_limites(n_bord);
@@ -877,6 +887,7 @@ void Calcul_Production_K_VEF::compute_utheta_nbConsti_gt_1_nbCompo_eq_0(const Do
     }
 
   // we treat the internal faces
+  ToDo_Kokkos("critical");
   const int nb_faces_tot = domaine_VEF.nb_faces_tot();
   for (int fac = 0; fac < nb_faces_tot; fac++)
     {
@@ -908,6 +919,7 @@ void Calcul_Production_K_VEF::compute_utheta_nbConsti_gt_1_nbCompo_eq_1(const Do
                                                                         DoubleTrav& u_theta) const
 {
   // we treat the boundaries
+  ToDo_Kokkos("critical");
   for (int n_bord = 0; n_bord < domaine_VEF.nb_front_Cl(); n_bord++)
     {
       const Cond_lim& la_cl = zcl_VEF.les_conditions_limites(n_bord);
@@ -943,6 +955,7 @@ void Calcul_Production_K_VEF::compute_utheta_nbConsti_gt_1_nbCompo_eq_1(const Do
         }
     }
   // we treat the internal faces
+  ToDo_Kokkos("critical");
   const int nb_faces_tot = domaine_VEF.nb_faces_tot();
   for (int fac = 0; fac < nb_faces_tot; fac++)
     {
@@ -974,6 +987,7 @@ void Calcul_Production_K_VEF::compute_utheta_nbConsti_gt_1_nbCompo_gt_1(const Do
                                                                         DoubleTrav& u_theta) const
 {
   // we treat the boundaries
+  ToDo_Kokkos("critical");
   for (int n_bord = 0; n_bord < domaine_VEF.nb_front_Cl(); n_bord++)
     {
       const Cond_lim& la_cl   = zcl_VEF.les_conditions_limites(n_bord);
@@ -1010,6 +1024,7 @@ void Calcul_Production_K_VEF::compute_utheta_nbConsti_gt_1_nbCompo_gt_1(const Do
     }
   // we treat the internal faces
   const int nb_faces_tot = domaine_VEF.nb_faces_tot();
+  ToDo_Kokkos("critical");
   for (int fac = 0; fac < nb_faces_tot; fac++)
     {
       const int elem1 = face_voisins(fac, 0);
@@ -1041,7 +1056,7 @@ DoubleTab& Calcul_Production_K_VEF::calcul_tenseur_face(DoubleTab& Tenseur_face,
   const Conds_lim& les_cl = domaine_Cl_VEF.les_conditions_limites();
   const int nb_cl = les_cl.size();
   const DoubleVect& volumes = domaine_VEF.volumes();
-
+  ToDo_Kokkos("critical");
   for (int n_bord = 0; n_bord < nb_cl; n_bord++)
     {
       const Cond_lim& la_cl = domaine_Cl_VEF.les_conditions_limites(n_bord);
@@ -1080,6 +1095,7 @@ DoubleTab& Calcul_Production_K_VEF::calcul_tenseur_face(DoubleTab& Tenseur_face,
 
   const int n0 = domaine_VEF.premiere_face_int();
   const int nb_faces = domaine_VEF.nb_faces();
+  ToDo_Kokkos("critical");
   for (int fac = n0; fac < nb_faces; fac++)
     {
       const int poly1 = face_voisins(fac, 0);

@@ -44,7 +44,8 @@ public:
 
   void modifier_pour_Cl(Matrice_Morse& matrice, DoubleTab& secmem) const override;
 
-
+private:
+  void divide_nu_turb_by_prandtl(DoubleTab&) const;
 };
 
 #endif
