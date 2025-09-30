@@ -1,0 +1,4 @@
+sed "s/resume_last_time pdi Cas.sauv/# resume_last_time pdi Cas.sauv #/" SquareObstacle_ALE_Resumption.data > SquareObstacle_ALE_Resumption_debut.data
+trust SquareObstacle_ALE_Resumption_debut.data 2
+
+
