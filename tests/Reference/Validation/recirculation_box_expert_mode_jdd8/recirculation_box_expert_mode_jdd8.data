@@ -1,0 +1,148 @@
+system "mkdir -p lata"
+
+dimension 2
+Pb_Hydraulique_Turbulent pb
+Domaine dom
+
+Mailler dom
+{
+	Pave Upstream
+	{
+		Origine 0. 0.33333
+		Nombre_de_noeuds 13 201
+		Longueurs 0.012 0.66667
+		ytanh_taille_premiere_maille 0.002
+		ytanh_dilatation 1 
+	}
+	{
+		Bord Inlet      X = 0.          0.33333 <= Y <= 1.
+		Bord Outlet     X = 0.012        0.33333 <= Y <= 1.
+		Bord Top        Y = 1.          0.      <= X <= 0.012
+		Bord Bottom    Y = 0.33333      0.      <= X <= 0.012
+	}
+}
+
+Regroupebord dom PerioX { Inlet Outlet }
+VDF dis
+
+schema_euler_explicite sch
+Read sch
+{
+
+        tinit 0.
+	nb_pas_dt_max 3
+        tmax 2
+        dt_min 1e-7
+        facsec 1
+        dt_impr 1
+        seuil_statio 1.e-6
+    
+}
+
+Associate pb dom
+Associate pb sch
+
+Discretize pb dis
+
+Read pb
+{
+   
+   fluide_incompressible {
+    	mu Champ_Uniforme 1 5e-05
+   	rho Champ_Uniforme 1 2
+   }
+   	Navier_Stokes_Turbulent
+	{
+		solveur_pression petsc cholesky { }
+		convection { amont }
+		diffusion { }
+		initial_conditions { vitesse Champ_Uniforme 2 0.1875 0. }
+		boundary_conditions 
+		{
+			 Top 	symetrie
+			 Bottom 	Paroi_Fixe
+			 PerioX 	periodique
+		}
+	    Modele_turbulence k_omega
+	    {
+	      model_variant SST
+	      Transport_equation transport_k_omega
+	      {
+		convection { amont }
+		diffusion { }
+		with_nu yes
+		conditions_initiales  { k_omega champ_uniforme 2 1.e-2 1.1 }
+		conditions_limites 
+		{
+		  Top symetrie
+		  Bottom paroi
+		  PerioX periodique
+		}
+	      }
+	       turbulence_paroi loi_standard_hydr dt_impr_ustar 300     
+	       expert_mode 
+		{
+			deactivate_production_limiter
+			menter_version MODIFIED_2003
+		}
+	    }
+	     Sources { Canal_perio { bord PerioX } }
+	     Ecrire_fichier_xyz_valeur
+             {
+		dt 10
+                fields 2 vitesse k_omega
+                boundaries 1 PerioX
+             }
+	}
+        Postraitement
+        {
+                Champs dt_post 1
+                {
+                        pression elem
+                        vitesse elem
+                        k elem
+                        omega elem
+                }
+        }
+	Post_processing 
+	{
+		fichier lata/post_dom
+		format lml
+		Probes
+		{
+			velocity_probe vitesse periode 100 segment 95 0.006 0.3333 0.006 1.
+			viscosity_probe viscosite_turbulente periode 100 segment 95 0.006 0.3333 0.006 1.
+			k_probe k periode 100 segment 95 0.006 0.3333 0.006 1.
+			omega_probe omega periode 100 segment 95 0.006 0.3333 0.006 1.
+			Pk_probe production_k periode 100 segment 95 0.006 0.3333 0.006 1.
+			Pomega_probe production_omega periode 100 segment 95 0.006 0.3333 0.006 1.
+			Dk_probe dissipation_k periode 100 segment 95 0.006 0.3333 0.006 1.
+			Domega_probe dissipation_omega periode 100 segment 95 0.006 0.3333 0.006 1.
+			Ckomega_probe cross_diffusion_k_omega periode 100 segment 95 0.006 0.3333 0.006 1.
+		}
+		champs binaire dt_post 1
+		{
+			vitesse elem
+			k elem
+			omega elem
+			y_plus elem
+			pression elem
+			production_k elem
+			production_omega elem
+			dissipation_k elem
+			dissipation_omega elem
+			cross_diffusion_k_omega elem
+			enstrophy elem
+			strain_invariant elem
+			grad_k_grad_omega elem
+			tab_F1 elem
+			tab_F2 elem
+			grad_k elem
+			grad_omega elem
+			viscosite_turbulente elem
+		}	
+	}
+}
+
+Solve pb
+End
