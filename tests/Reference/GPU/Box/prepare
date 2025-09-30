@@ -1,0 +1,2 @@
+#!/bin/bash
+cp $TRUST_ROOT/tests/GPU/DomainFlowLES/check_perf.sh .

@@ -1,0 +1,130 @@
+# TrioCFD : Calcul RANS - Boite de circulation #
+
+dimension 3
+domaine box
+Pb_Hydraulique_Turbulent pb_box  # For the box #
+
+# BEGIN MESH #
+Mailler box
+{
+    Pave Entree
+    {
+        Origine 0. 0. 0.
+        Nombre_de_Noeuds 11 3 3
+        /* Nombre_de_Noeuds 101 21 21 */
+        Longueurs 5 1 1
+    }
+    {
+        Bord perio X = 0.  0. <= Y <= 1. 0. <= Z <= 1.
+        Bord perio X = 5.  0. <= Y <= 1. 0. <= Z <= 1.
+        Bord Wall Y = 0.  0. <= X <= 5. 0. <= Z <= 1.
+        Bord Wall Y = 1.  0. <= X <= 5. 0. <= Z <= 1.
+        Bord Wall Z = 0.  0. <= X <= 5. 0. <= Y <= 1.
+        Bord Wall Z = 1.  0. <= X <= 5. 0. <= Y <= 1.
+    }
+}
+Tetraedriser_homogene box
+Corriger_frontiere_periodique { domaine box bord perio }
+VerifierCoin box {  }
+# END MESH #
+# BEGIN PARTITION
+Partition box
+{
+    Partition_tool Metis { Nb_parts 2 }
+    Larg_joint 2
+    zones_name box
+}
+End
+END PARTITION #
+# BEGIN SCATTER
+Scatter box.Zones box
+END SCATTER #
+
+
+VEFPreP1B dis
+Schema_Euler_implicite sch
+Read sch
+{
+    nb_pas_dt_max 10
+    tinit 0.
+    dt_impr 0.001
+    dt_sauv 5.E-6
+    dt_min 1.E-11
+    dt_max 1.
+    facsec 5
+    facsec_max 500
+    seuil_statio 1.E-8
+    Solveur
+    Implicite
+    {
+        solveur petsc_gpu gmres { precond diag { } atol 1.e-6 impr }
+        # seuil_convergence_solveur 1.e-6 #
+    }
+}
+
+Associate pb_box box
+
+Associate pb_box sch
+Discretize pb_box dis
+
+# Read the pb_box problem #
+Read pb_box
+{
+    Fluide_Incompressible
+    {
+        mu Champ_Uniforme 1 797.22E-6
+        Rho Champ_Uniforme 1 995.65
+        Cp Champ_Uniforme 1 4000
+        Lambda Champ_Uniforme 1 0.6
+        gravite Champ_Uniforme 3 0.0 0.0 0.0
+    }
+    Navier_Stokes_Turbulent
+    {  
+        solveur_pression AMG GCP { atol 1.e-8 impr }
+        convection { EF_stab { } }
+        diffusion { }
+        initial_conditions { vitesse Champ_Uniforme 3 6.1775 0. 0. }
+        boundary_conditions
+        {
+            perio periodique
+            Wall  paroi_fixe
+        }
+	# RANS k-epsilon model used #
+        modele_turbulence K_Epsilon {
+            Transport_K_Epsilon
+            {
+                convection { amont }
+                diffusion { }
+                boundary_conditions
+                {  
+                    perio	periodique
+                    Wall 	paroi_fixe
+                }
+                conditions_initiales
+                { 
+                    k_eps field_uniform_keps_from_ud { U 6.1775 D 0.01177 }
+                } 
+            } 
+	    # Logarithmic standard wall law selected #
+	    # Friction velocity u* printed with a 0.05s period #
+            Turbulence_paroi loi_standard_hydr dt_impr_ustar 0.05
+        }
+	# Source term to force a constant flow rate #
+        sources { Canal_perio { bord perio } }
+    }
+    Post_processing
+    {
+        Probes
+        {
+            velocitypb_box 	nodes 	vitesse 	periode 1e-05 point   1 0.19 0.052 -0.019
+            k_eps_box 	        nodes 	k_eps  	periode 1e-05 point   1 0.19 0.052 -0.019
+        }
+        Format lml
+        fields dt_post 0.05
+        {
+            pression			elem
+            viscosite_turbulente	elem
+        }
+    }
+}
+solve pb_box
