@@ -1,5 +1,5 @@
 # Test Turbulent reaction of type A+B=>C #
-# OPENMP NOT #
+# GPU NOT #
 
 dimension 3
 Probleme_FT_Disc_gen pb

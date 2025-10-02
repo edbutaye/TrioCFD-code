@@ -1,6 +1,6 @@
 # Thermohydraulique 3D couplee a Thermohydraulique 3D #
 # PARALLEL NOT because difference between seq and par with compare_lata --max_delta #
-# OPENMP NOT #
+# GPU NOT #
 
 
 dimension 3

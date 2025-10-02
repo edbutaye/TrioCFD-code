@@ -1,6 +1,6 @@
 # Reacteur a bain de verre fondu avec agitateur #
 # PARALLEL RUNS #
-# OPENMP NOT #
+# GPU NOT #
 
 dimension 3
 Probleme_FT_Disc_gen pb
