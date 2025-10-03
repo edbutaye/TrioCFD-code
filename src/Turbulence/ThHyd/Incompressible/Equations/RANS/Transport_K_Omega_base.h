@@ -12,13 +12,6 @@
 * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *
 *****************************************************************************/
-//////////////////////////////////////////////////////////////////////////////
-//
-// File:        Transport_K_Omega_base.h
-// Directory:   $TURBULENCE_ROOT/src/ThHyd/Incompressible/Equations/RANS
-//
-//////////////////////////////////////////////////////////////////////////////
-
 
 #ifndef Transport_K_Omega_base_included
 #define Transport_K_Omega_base_included
@@ -56,12 +49,13 @@ protected:
   OWN_PTR(Champ_Inc_base) le_champ_K_Omega;
 
 private:
-  bool do_not_control_k_omega_=false; // default is old behavior
+  bool exit_on_negative_k_omega_ = false;
+  bool exit_on_big_omega_ = false;
 };
 
 /*! @brief Renvoie le champ inconnue de l'equation.
  *
- * Un champ vecteur contenant K et epsilon.
+ * Un champ vecteur contenant K et omega.
  *
  * @return (Champ_Inc_base&) le champ inconnue de l'equation
  */
@@ -70,7 +64,7 @@ inline Champ_Inc_base& Transport_K_Omega_base::inconnue() { return le_champ_K_Om
 
 /*! @brief Renvoie le champ inconnue de l'equation.
  *
- * Un champ vecteur contenant K et epsilon.
+ * Un champ vecteur contenant K et omega.
  *     (version const)
  *
  * @return (Champ_Inc_base&) le champ inconnue de l'equation

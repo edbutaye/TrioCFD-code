@@ -12,12 +12,6 @@
 * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *
 *****************************************************************************/
-//////////////////////////////////////////////////////////////////////////////
-//
-// File:        Transport_K_Omega_base.cpp
-// Directory:   $TURBULENCE_ROOT/src/ThHyd/Incompressible/Equations/RANS
-//
-//////////////////////////////////////////////////////////////////////////////
 
 #include <Transport_K_Omega_base.h>
 #include <Schema_Temps_base.h>
@@ -26,6 +20,7 @@
 #include <Probleme_base.h>
 #include <Discret_Thyd.h>
 #include <Domaine_VF.h>
+#include <Domaine_VEF.h>
 #include <Param.h>
 #include <Debog.h>
 
@@ -54,8 +49,10 @@ Entree& Transport_K_Omega_base::readOn(Entree& is)
 void Transport_K_Omega_base::set_param(Param& param)
 {
   Transport_2eq_base::set_param(param);
-  param.ajouter_flag("do_not_control_k_omega_", &do_not_control_k_omega_); // X_D_ADD_P flag Flag to prevent corrections which may cause errors at low Reynolds from the method 'Transport_K_Omega_base::controler_K_Omega'
+  param.ajouter_flag("exit_on_negative_k_omega", &exit_on_negative_k_omega_); // XD_ADD_P flag Flag to exit (with postprocessing of fields) if a negative value is found for k or omega
+  param.ajouter_flag("exit_on_big_omega", &exit_on_big_omega_); // XD_ADD_P flag Flag to exit (with postprocessing of fields) if an excessively big values of omega are found
 }
+
 void Transport_K_Omega_base::discretiser()
 {
   if (!sub_type(Discret_Thyd, discretisation()))
@@ -103,12 +100,14 @@ int Transport_K_Omega_base::controler_K_Omega()
       size = le_champ_K_Omega->equation().domaine_dis().domaine().nb_elem();
     }
 
-  //int size_tot=mp_sum(size);
-  // On estime pour eviter un mp_sum toujours couteux:
-  const int size_tot = size * Process::nproc();
+
+  // neg will store the amount of problematic values of k or omega found
+  // neg[0] : amount of negative k
+  // neg[1] : amount of negative omega
+  // neg[2] : amount of omega too big (> modele_turbulence().get_OMEGA_MAX())
   ArrOfInt neg(3);
   neg = 0;
-  int control = 1;
+
   const int lquiet = modele_turbulence().get_lquiet(); // cAlan remonter ce lquiet dans modele_turbu
 
   // cAlan, le 20/01/2023 : on force les valeurs au min et max comme pour le K_Eps.
@@ -133,12 +132,20 @@ int Transport_K_Omega_base::controler_K_Omega()
     {
       double& enerK = K_Omega(n, 0);
       double& omega = K_Omega(n, 1);
+
+      // correct big omega
+      if (omega > OMEGA_MAX)
+        {
+          neg[2] += 1;
+          omega = OMEGA_MAX;
+        }
+
+      // correct negative k or omega
       if ((enerK < 0 || omega < 0))
         {
           neg[0] += (enerK < 0 ? 1 : 0);
           neg[1] += (omega < 0 ? 1 : 0);
 
-          get_position_faces(position, n);
 
           // On impose une valeur plus physique (moyenne des elements voisins)
           enerK = 0;
@@ -146,112 +153,92 @@ int Transport_K_Omega_base::controler_K_Omega()
           int nenerK = 0;
           int nomega = 0;
           const int nb_faces_elem = elem_faces.line_size();
-          if (size == face_voisins.dimension(0))
+          if (sub_type(Domaine_VEF, domaine_vf))
             {
-              if (!do_not_control_k_omega_)
+              // cAlan : faire une fonction dans Transport_RANS_2eq qui fait la meme chose ?
+              // K-Eps on faces (eg:VEF)
+              for (int i = 0; i < 2; i++)
                 {
-                  // cAlan : faire une fonction dans Transport_RANS_2eq qui fait la meme chose ?
-                  // K-Eps on faces (eg:VEF)
-                  for (int i = 0; i < 2; i++)
-                    {
-                      int elem = face_voisins(n, i);
-                      if (elem != -1)
-                        for (int j = 0; j < nb_faces_elem; j++)
-                          if (j != n)
+                  int elem = face_voisins(n, i);
+                  if (elem != -1)
+                    for (int j = 0; j < nb_faces_elem; j++)
+                      if (j != n)
+                        {
+                          double k_face = K_Omega(elem_faces(elem, j), 0);
+                          if (k_face > K_MIN)
                             {
-                              double& k_face = K_Omega(elem_faces(elem, j), 0);
-                              if (k_face > K_MIN)
-                                {
-                                  enerK += k_face;
-                                  nenerK++;
-                                }
-                              double& o_face = K_Omega(elem_faces(elem, j), 1);
-                              if (o_face > OMEGA_MIN)
-                                {
-                                  omega += o_face;
-                                  nomega++;
-                                }
+                              enerK += k_face;
+                              nenerK++;
                             }
-                    }
+                          double o_face = K_Omega(elem_faces(elem, j), 1);
+                          if (o_face > OMEGA_MIN)
+                            {
+                              omega += o_face;
+                              nomega++;
+                            }
+                        }
                 }
+
             }
           else // (size != face_voisins.dimension(0))
             {
-              get_position_cells(position, n);
               nenerK = 0;   // k -> k_min
               nomega = 0; // omega -> omega_min
             } // fin de (size != face_voisins.dimension(0))
 
           if (nenerK != 0)
-            enerK /= nenerK;
+            {enerK /= nenerK;}
           else
-            enerK = K_MIN;
+            {  enerK = K_MIN;}
 
           if (nomega != 0)
-            omega /= nomega;
+            { omega /= nomega;}
           else
-            omega = OMEGA_MIN;
+            {omega = OMEGA_MIN;}
 
-          if (schema_temps().limpr() && !lquiet)
-            {
-              // Warnings printed:
-              Cerr << (control ? "***Warning***: " : "***Error***: ");
-              Cerr << "k forced to " << enerK << " on node " << n << " : " << position << finl;
-              Cerr << (control ? "***Warning***: " : "***Error***: ");
-              Cerr << "omega forced to " << omega << " on node " << n << " : " << position << finl;
-            }
-        } // fin (enerK < 0 || omega < 0)
-      else if (omega > OMEGA_MAX)
-        {
-          neg[2] += 1;
 
-          if (size == face_voisins.dimension(0))
-            get_position_faces(position, n);
-          else
-            get_position_cells(position, n);
-
-          omega = OMEGA_MAX;
-          if (schema_temps().limpr() && !lquiet)
-            {
-              // Warnings printed:
-              Cerr << (control ? "***Warning***: " : "***Error***: ");
-              Cerr << "omega forced to " << omega << " on node " << n << " : " << position << finl;
-            }
         }
     }
   Debog::verifier("Transport_K_Omega_base::controler_K_Omega K_Omega middle", K_Omega);
   K_Omega.echange_espace_virtuel();
-  if (schema_temps().limpr())
+  Debog::verifier("Transport_K_Omega_base::controler_K_Omega K_Omega after", K_Omega);
+
+
+  if (schema_temps().limpr() && !modele_turbulence().get_lquiet())
     {
-      mp_sum_for_each_item(neg);
       if (neg[0] || neg[1])
         {
-          if (Process::je_suis_maitre())
+
+
+          const double time = le_champ_K_Omega->temps();
+          Journal() << "Values forced for k and omega because:" << finl;
+          if (neg[0])
             {
-              const double time = le_champ_K_Omega->temps();
-              Cerr << "Values forced for k and omega because:" << finl;
-              if (neg[0])
-                Cerr << "Negative values found for k on "
-                     << neg[0] << "/" << size_tot << " nodes at time "
-                     << time << finl;
-              if (neg[1])
-                Cerr << "Negative values found for omega on "
-                     << neg[1] << "/" << size_tot << " nodes at time "
-                     << time << finl;
-              // Warning if more than 0.01% of nodes are values fixed
-              // cAlan : mettre une variable "experte" dans le jdd pour ajuster ce seuil ?
-              const double ratio_k = 100. * neg[0] / size_tot;
-              const double ratio_omega = 100. * neg[1] / size_tot;
-              if ((ratio_k > 0.01 || ratio_omega > 0.01) && !lquiet)
-                {
-                  // cAlan : adapter le texte pour omega
-                  Cerr << "It is possible your initial and/or boundary conditions on k and/or omega are wrong." << finl;
-                }
+              Journal() << "Negative values found for k on "
+                        << neg[0] << "/" << size << " nodes at time "
+                        << time << finl;
             }
-          if (!control && !lquiet)
+          if (neg[1])
             {
-              // On quitte en postraitant pour trouver les noeuds
-              // qui posent probleme
+              Journal() << "Negative values found for omega on "
+                        << neg[1] << "/" << size << " nodes at time "
+                        << time << finl;
+            }
+
+          // Warning if more than 0.01% of nodes are values fixed
+          // cAlan : mettre une variable "experte" dans le jdd pour ajuster ce seuil ?
+          const double ratio_k = 100. * neg[0] / size;
+          const double ratio_omega = 100. * neg[1] / size;
+          if ((ratio_k > 0.01 || ratio_omega > 0.01) && !lquiet)
+            {
+              Cerr << "WARNING: Found high ratio of invalid values for k and/or omega (more that 0.01%) on process" << Process::me() << finl;
+              Cerr << "Check journal log file for more information. These messages can be disabled with the flag 'quiet' in modele_turbulence." << finl;
+              // cAlan : adapter le texte pour omega
+              Journal() << "It is possible your initial and/or boundary conditions on k and/or omega are wrong." << finl;
+            }
+
+          if (exit_on_negative_k_omega_)
+            {
               Cerr << "The problem is postprocessed in order to find the nodes where K or Omega values go below 0." << finl;
               probleme().postraiter(1);
               Process::exit();
@@ -259,15 +246,19 @@ int Transport_K_Omega_base::controler_K_Omega()
         }
       if (neg[2])
         {
-          if (Process::je_suis_maitre())
+          const double time = le_champ_K_Omega->temps();
+          Journal() << "Values forced for omega because:" << finl;
+          Journal() << "Maximum values found for omega on " << neg[2] << "/" << size << " nodes at time " << time << finl;
+
+          if (exit_on_big_omega_)
             {
-              const double time = le_champ_K_Omega->temps();
-              Cerr << "Values forced for omega because:" << finl;
-              Cerr << "Maximum values found for omega on " << neg[2] << "/" << size_tot << " nodes at time " << time << finl;
-            }
+              Cerr << "The problem is postprocessed in order to find the nodes where Omega values too high." << finl;
+              probleme().postraiter(1);
+              Process::exit();
+            };
+
         }
     }
-  Debog::verifier("Transport_K_Omega_base::controler_K_Omega K_Omega after", K_Omega);
   return 1;
 }
 
