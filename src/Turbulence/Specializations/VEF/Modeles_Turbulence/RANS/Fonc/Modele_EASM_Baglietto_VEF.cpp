@@ -63,21 +63,10 @@ DoubleTab& Modele_EASM_Baglietto_VEF::Calcul_D(DoubleTab& D,const Domaine_dis_ba
 
 DoubleTab& Modele_EASM_Baglietto_VEF::Calcul_E(DoubleTab& E,const Domaine_dis_base& domaine_dis, const Domaine_Cl_dis_base& domaine_Cl_dis, const DoubleTab& transporte,const DoubleTab& K_eps_Bas_Re,const Champ_Don_base& ch_visco, const DoubleTab& visco_turb ) const
 {
-  double kkk = CNL1;
-  Cerr<<"kkk = " << kkk <<finl;
   E=0;
   return E;
 }
 
-/*DoubleTab& Modele_EASM_Baglietto_VEF::Calcul_F1( DoubleTab& F1, const Domaine_dis_base& domaine_dis) const
-{
-  const Domaine_VEF& le_dom = ref_cast(Domaine_VEF,domaine_dis);
-  int nb_faces = le_dom.nb_faces();
-  for (int num_face=0; num_face <nb_faces; num_face ++ )
-    F1[num_face] = 1.;
-  return F1;
-}
-*/
 DoubleTab& Modele_EASM_Baglietto_VEF::Calcul_F1( DoubleTab& F1, const Domaine_dis_base& domaine_dis, const Domaine_Cl_dis_base& domaine_Cl_dis, const DoubleTab& P, const DoubleTab& K_eps_Bas_Re,const Champ_base& ch_visco) const
 {
 
@@ -97,13 +86,8 @@ DoubleTab& Modele_EASM_Baglietto_VEF::Calcul_F1( DoubleTab& F1, const Domaine_di
   const Conds_lim& les_cl = domaine_Cl_VEF.les_conditions_limites();
   int nb_cl=les_cl.size();
   const IntTab& face_voisins = le_dom.face_voisins();
-  int num_face;
-  double Rey,Re;
-  /*
-  	for (num_face=0; num_face <nb_faces; num_face ++ )
-  		F1[num_face] = 1.;
-  	return F1;
-  */
+
+
   // Calcul de la distance a la paroi aux faces
   for (int n_bord=0; n_bord<nb_cl; n_bord++)
     {
@@ -114,25 +98,16 @@ DoubleTab& Modele_EASM_Baglietto_VEF::Calcul_F1( DoubleTab& F1, const Domaine_di
 
       if (sub_type(Periodique,la_cl.valeur()))
         {
-          for (num_face=ndeb; num_face<nfin; num_face++)
+          for (int num_face=ndeb; num_face<nfin; num_face++)
             {
               int elem1 = face_voisins(num_face,0);
               int elem2 = face_voisins(num_face,1);
               wall_length_face(num_face) = 0.5*wall_length(elem1) + 0.5*wall_length(elem2);
             }
         }
-      /* else if (sub_type(Pa,la_cl.valeur()))
-      {
-        for (int num_face=ndeb; num_face<nfin; num_face++)
-        {
-      	  int elem1 = face_voisins(num_face,0);
-      	  int elem2 = face_voisins(num_face,1);
-      			  wall_length_face(num_face) = 0.;
-        }
-      }*/
       else
         {
-          for (num_face=ndeb; num_face<nfin; num_face++)
+          for (int num_face=ndeb; num_face<nfin; num_face++)
             {
               int elem1 = face_voisins(num_face,0);
               wall_length_face(num_face) = wall_length(elem1);
@@ -140,43 +115,24 @@ DoubleTab& Modele_EASM_Baglietto_VEF::Calcul_F1( DoubleTab& F1, const Domaine_di
         }
     }
   int n0 = le_dom.premiere_face_int();
-  for (num_face=n0; num_face<nb_faces; num_face++)
+  for (int num_face=n0; num_face<nb_faces; num_face++)
     {
       int elem0 = le_dom.face_voisins(num_face,0);
       int elem1 = le_dom.face_voisins(num_face,1);
       wall_length_face(num_face) = 0.5*wall_length(elem0)+0.5*wall_length(elem1);
     }
-  // Calcul de la distance a la paroi aux faces
-  /*    for (num_face=0; num_face< le_dom.premiere_face_int(); num_face++)
-      {
-    	  int elem0 = le_dom.face_voisins(num_face,0);
-    	  if (elem0 != -1)
-    		  wall_length_face(num_face) = wall_length(elem0);
-    	  else
-    	  {
-    		  elem0 = le_dom.face_voisins(num_face,1);
-    		  wall_length_face(num_face) = wall_length(elem0);
-    	  }
-      }
 
-      for (; num_face<nb_faces; num_face++)
-      {
-    	  int elem0 = le_dom.face_voisins(num_face,0);
-    	  int elem1 = le_dom.face_voisins(num_face,1);
-    	  wall_length_face(num_face) = 0.5*wall_length(elem0)+0.5*wall_length(elem1);
-      }
-  */
-  for (num_face=0; num_face <nb_faces; num_face ++ )
+  for (int num_face=0; num_face <nb_faces; num_face ++ )
     {
-      Re = (K_eps_Bas_Re(num_face,0)*K_eps_Bas_Re(num_face,0))/(visco*K_eps_Bas_Re(num_face,1)+DMINFLOAT);
-      Rey = wall_length_face(num_face)*sqrt(K_eps_Bas_Re(num_face,0))/visco;
+      double Re = (K_eps_Bas_Re(num_face,0)*K_eps_Bas_Re(num_face,0))/(visco*K_eps_Bas_Re(num_face,1)+DMINFLOAT);
+      double Rey = wall_length_face(num_face)*sqrt(K_eps_Bas_Re(num_face,0))/visco;
       Pderive(num_face) = 1.33*(1. - 0.3*exp(-Re*Re))
                           * (P(num_face) + 2.*visco*K_eps_Bas_Re(num_face,0)/(wall_length_face(num_face)*wall_length_face(num_face)+DMINFLOAT))
                           * exp(-0.00375*Rey*Rey);
     }
 
   // Calcul de F1
-  for (num_face=0; num_face <nb_faces; num_face ++ )
+  for (int num_face=0; num_face <nb_faces; num_face ++ )
     if (P(num_face) > 0)
       F1[num_face] = 1.+ Pderive(num_face) / (P(num_face));
     else
@@ -193,16 +149,8 @@ DoubleTab& Modele_EASM_Baglietto_VEF::Calcul_F2( DoubleTab& F2, DoubleTab& Deb, 
     visco=tab_visco(0,0);
   const Domaine_VEF& le_dom = ref_cast(Domaine_VEF,domaine_dis);
   int nb_faces = le_dom.nb_faces();
-  int num_face;
-  double Re;
 
-  /*
-    for (num_face=0; num_face<nb_faces  ; num_face++)
-  	  F2[num_face] = 1.;
-    return F2;
-  */
-
-  for (num_face=0; num_face<nb_faces  ; num_face++)
+  for (int num_face=0; num_face<nb_faces  ; num_face++)
     {
       if (!is_visco_const)
         {
@@ -218,49 +166,16 @@ DoubleTab& Modele_EASM_Baglietto_VEF::Calcul_F2( DoubleTab& F2, DoubleTab& Deb, 
         }
       if (visco>0 && K_eps_Bas_Re(num_face,1)>0)
         {
-          Re = (K_eps_Bas_Re(num_face,0)*K_eps_Bas_Re(num_face,0))/(visco*K_eps_Bas_Re(num_face,1));
+          double Re = (K_eps_Bas_Re(num_face,0)*K_eps_Bas_Re(num_face,0))/(visco*K_eps_Bas_Re(num_face,1));
           F2[num_face] = 1. - (0.3*exp(-Re*Re));
         }
       else
         F2[num_face] = 1.;
     }
-  //Cerr<<F2.mp_min_vect()<<" F2 "<<F2.mp_max_vect()<<finl;
+
   return F2;
 }
-/*
-  DoubleTab& Modele_EASM_Baglietto_VEF::Calcul_F2( DoubleTab& F2, DoubleTab& D, const Domaine_dis_base& domaine_dis,const DoubleTab& K_eps_Bas_Re, const DoubleTab& tab_visco ) const
-  {
-  const Domaine_VEF& le_dom = ref_cast(Domaine_VEF,domaine_dis);
-  int nb_faces = le_dom.nb_faces();
-  int num_face,elem0,elem1;
-  double Re,nulam;
 
-  for (num_face=0; num_face<nb_faces  ; num_face++)
-  {
-  elem0 = le_dom.face_voisins(num_face,0);
-  elem1 = le_dom.face_voisins(num_face,1);
-  if (elem1!=-1)
-  {
-  nulam = tab_visco(elem0)*le_dom.volumes(elem0)+tab_visco(elem1)*le_dom.volumes(elem1);
-  nulam /= le_dom.volumes(elem0) + le_dom.volumes(elem1);
-  }
-  else
-  nulam =  tab_visco(elem0);
-
-  if (K_eps_Bas_Re(num_face,1)>0)
-  {
-  Re = (K_eps_Bas_Re(num_face,0)*K_eps_Bas_Re(num_face,0))/(nulam*K_eps_Bas_Re(num_face,1));
-  F2[num_face] = 1. - (0.3*exp(-Re*Re));
-  }
-  else
-  {
-  F2[num_face] = 1.;
-  }
-  }
-  return F2;
-  }
-
-*/
 DoubleTab&  Modele_EASM_Baglietto_VEF::Calcul_Fmu( DoubleTab& Fmu,const Domaine_dis_base& domaine_dis, const Domaine_Cl_dis_base& domaine_Cl_dis, const DoubleTab& K_eps_Bas_Re,const Champ_Don_base& ch_visco ) const
 {
   double visco=-1;
@@ -271,8 +186,6 @@ DoubleTab&  Modele_EASM_Baglietto_VEF::Calcul_Fmu( DoubleTab& Fmu,const Domaine_
   const Domaine_VEF& le_dom = ref_cast(Domaine_VEF,domaine_dis);
   const Domaine_Cl_VEF& domaine_Cl_VEF = ref_cast(Domaine_Cl_VEF,domaine_Cl_dis);
   int nb_faces = le_dom.nb_faces();
-  int num_face;
-  double Rey;
   const DoubleTab& wall_length = BR_wall_length_->valeurs();
   DoubleTab wall_length_face(0);
   le_dom.creer_tableau_faces(wall_length_face);
@@ -291,25 +204,16 @@ DoubleTab&  Modele_EASM_Baglietto_VEF::Calcul_Fmu( DoubleTab& Fmu,const Domaine_
 
       if (sub_type(Periodique,la_cl.valeur()))
         {
-          for (num_face=ndeb; num_face<nfin; num_face++)
+          for (int num_face=ndeb; num_face<nfin; num_face++)
             {
               int elem1 = face_voisins(num_face,0);
               int elem2 = face_voisins(num_face,1);
               wall_length_face(num_face) = 0.5*wall_length(elem1) + 0.5*wall_length(elem2);
             }
         }
-      /* else if (sub_type(Pa,la_cl.valeur()))
-      {
-        for (int num_face=ndeb; num_face<nfin; num_face++)
-        {
-      	  int elem1 = face_voisins(num_face,0);
-      	  int elem2 = face_voisins(num_face,1);
-      			  wall_length_face(num_face) = 0.;
-        }
-      }*/
       else
         {
-          for (num_face=ndeb; num_face<nfin; num_face++)
+          for (int num_face=ndeb; num_face<nfin; num_face++)
             {
               int elem1 = face_voisins(num_face,0);
               wall_length_face(num_face) = wall_length(elem1);
@@ -317,34 +221,15 @@ DoubleTab&  Modele_EASM_Baglietto_VEF::Calcul_Fmu( DoubleTab& Fmu,const Domaine_
         }
     }
   int n0 = le_dom.premiere_face_int();
-  for (num_face=n0; num_face<nb_faces; num_face++)
+  for (int num_face=n0; num_face<nb_faces; num_face++)
     {
       int elem0 = le_dom.face_voisins(num_face,0);
       int elem1 = le_dom.face_voisins(num_face,1);
       wall_length_face(num_face) = 0.5*wall_length(elem0)+0.5*wall_length(elem1);
     }
-//  Cerr<<wall_length_face.mp_min_vect()<<" wall_length " <<wall_length_face.mp_max_vect()<<finl;
-  /*for (num_face=0; num_face< le_dom.premiere_face_int(); num_face++)
-   {
-    int elem0 = le_dom.face_voisins(num_face,0);
-    if (elem0 != -1)
-  	  wall_length_face(num_face) = wall_length(elem0);
-    else
-    {
-  	  elem0 = le_dom.face_voisins(num_face,1);
-  	  wall_length_face(num_face) = wall_length(elem0);
-    }
-   }
-
-   for (; num_face<nb_faces; num_face++)
-   {
-    int elem0 = le_dom.face_voisins(num_face,0);
-    int elem1 = le_dom.face_voisins(num_face,1);
-    wall_length_face(num_face) = 0.5*wall_length(elem0)+0.5*wall_length(elem1);
-   }*/
 
 // Calcul de Fmu
-  for (num_face=0; num_face<nb_faces  ; num_face++)
+  for (int num_face=0; num_face<nb_faces  ; num_face++)
     {
       if (!is_visco_const)
         {
@@ -360,7 +245,7 @@ DoubleTab&  Modele_EASM_Baglietto_VEF::Calcul_Fmu( DoubleTab& Fmu,const Domaine_
         }
       if (visco>0)
         {
-          Rey = wall_length_face(num_face)*sqrt(K_eps_Bas_Re(num_face,0))/visco;
+          double Rey = wall_length_face(num_face)*sqrt(K_eps_Bas_Re(num_face,0))/visco;
           Fmu[num_face] = 1.0 - exp(-0.029*pow(Rey,0.5) - 0.00011*Rey*Rey);
         }
       else
@@ -379,8 +264,6 @@ DoubleTab&  Modele_EASM_Baglietto_VEF::Calcul_Fmu_BiK( DoubleTab& Fmu,const Doma
   const Domaine_VEF& le_dom = ref_cast(Domaine_VEF,domaine_dis);
   const Domaine_Cl_VEF& domaine_Cl_VEF = ref_cast(Domaine_Cl_VEF,domaine_Cl_dis);
   int nb_faces = le_dom.nb_faces();
-  int num_face;
-  double Rey;
   const DoubleTab& wall_length = BR_wall_length_->valeurs();
   DoubleTab wall_length_face(0);
   le_dom.creer_tableau_faces(wall_length_face);
@@ -399,25 +282,16 @@ DoubleTab&  Modele_EASM_Baglietto_VEF::Calcul_Fmu_BiK( DoubleTab& Fmu,const Doma
 
       if (sub_type(Periodique,la_cl.valeur()))
         {
-          for (num_face=ndeb; num_face<nfin; num_face++)
+          for (int num_face=ndeb; num_face<nfin; num_face++)
             {
               int elem1 = face_voisins(num_face,0);
               int elem2 = face_voisins(num_face,1);
               wall_length_face(num_face) = 0.5*wall_length(elem1) + 0.5*wall_length(elem2);
             }
         }
-      /* else if (sub_type(Pa,la_cl.valeur()))
-      {
-        for (int num_face=ndeb; num_face<nfin; num_face++)
-        {
-      	  int elem1 = face_voisins(num_face,0);
-      	  int elem2 = face_voisins(num_face,1);
-      			  wall_length_face(num_face) = 0.;
-        }
-      }*/
       else
         {
-          for (num_face=ndeb; num_face<nfin; num_face++)
+          for (int num_face=ndeb; num_face<nfin; num_face++)
             {
               int elem1 = face_voisins(num_face,0);
               wall_length_face(num_face) = wall_length(elem1);
@@ -425,34 +299,16 @@ DoubleTab&  Modele_EASM_Baglietto_VEF::Calcul_Fmu_BiK( DoubleTab& Fmu,const Doma
         }
     }
   int n0 = le_dom.premiere_face_int();
-  for (num_face=n0; num_face<nb_faces; num_face++)
+  for (int num_face=n0; num_face<nb_faces; num_face++)
     {
       int elem0 = le_dom.face_voisins(num_face,0);
       int elem1 = le_dom.face_voisins(num_face,1);
       wall_length_face(num_face) = 0.5*wall_length(elem0)+0.5*wall_length(elem1);
     }
   Cerr<<wall_length_face.mp_min_vect()<<" wall_length " <<wall_length_face.mp_max_vect()<<finl;
-  /*for (num_face=0; num_face< le_dom.premiere_face_int(); num_face++)
-   {
-    int elem0 = le_dom.face_voisins(num_face,0);
-    if (elem0 != -1)
-  	  wall_length_face(num_face) = wall_length(elem0);
-    else
-    {
-  	  elem0 = le_dom.face_voisins(num_face,1);
-  	  wall_length_face(num_face) = wall_length(elem0);
-    }
-   }
-
-   for (; num_face<nb_faces; num_face++)
-   {
-    int elem0 = le_dom.face_voisins(num_face,0);
-    int elem1 = le_dom.face_voisins(num_face,1);
-    wall_length_face(num_face) = 0.5*wall_length(elem0)+0.5*wall_length(elem1);
-   }*/
 
 // Calcul de Fmu
-  for (num_face=0; num_face<nb_faces  ; num_face++)
+  for (int num_face=0; num_face<nb_faces  ; num_face++)
     {
       if (!is_visco_const)
         {
@@ -468,7 +324,7 @@ DoubleTab&  Modele_EASM_Baglietto_VEF::Calcul_Fmu_BiK( DoubleTab& Fmu,const Doma
         }
       if (visco>0)
         {
-          Rey = wall_length_face(num_face)*sqrt(K_Bas_Re(num_face))/visco;
+          double Rey = wall_length_face(num_face)*sqrt(K_Bas_Re(num_face))/visco;
           Fmu[num_face] = 1.0 - exp(-0.029*pow(Rey,0.5) - 0.00011*Rey*Rey);
         }
       else
@@ -488,16 +344,8 @@ DoubleTab& Modele_EASM_Baglietto_VEF::Calcul_F2_BiK( DoubleTab& F2, DoubleTab& D
     visco=tab_visco(0,0);
   const Domaine_VEF& le_dom = ref_cast(Domaine_VEF,domaine_dis);
   int nb_faces = le_dom.nb_faces();
-  int num_face;
-  double Re;
 
-  /*
-    for (num_face=0; num_face<nb_faces  ; num_face++)
-  	  F2[num_face] = 1.;
-    return F2;
-  */
-
-  for (num_face=0; num_face<nb_faces  ; num_face++)
+  for (int num_face=0; num_face<nb_faces  ; num_face++)
     {
       if (!is_visco_const)
         {
@@ -513,13 +361,13 @@ DoubleTab& Modele_EASM_Baglietto_VEF::Calcul_F2_BiK( DoubleTab& F2, DoubleTab& D
         }
       if (visco>0 && eps_Bas_Re(num_face)>0)
         {
-          Re = (K_Bas_Re(num_face)*K_Bas_Re(num_face))/(visco*eps_Bas_Re(num_face));
+          double Re = (K_Bas_Re(num_face)*K_Bas_Re(num_face))/(visco*eps_Bas_Re(num_face));
           F2[num_face] = 1. - (0.3*exp(-Re*Re));
         }
       else
         F2[num_face] = 1.;
     }
-  //Cerr<<F2.mp_min_vect()<<" F2 "<<F2.mp_max_vect()<<finl;
+
   return F2;
 }
 
@@ -542,13 +390,8 @@ DoubleTab& Modele_EASM_Baglietto_VEF::Calcul_F1_BiK( DoubleTab& F1, const Domain
   const Conds_lim& les_cl = domaine_Cl_VEF.les_conditions_limites();
   int nb_cl=les_cl.size();
   const IntTab& face_voisins = le_dom.face_voisins();
-  int num_face;
-  double Rey,Re;
-  /*
-  	for (num_face=0; num_face <nb_faces; num_face ++ )
-  		F1[num_face] = 1.;
-  	return F1;
-  */
+
+
   // Calcul de la distance a la paroi aux faces
   for (int n_bord=0; n_bord<nb_cl; n_bord++)
     {
@@ -559,25 +402,16 @@ DoubleTab& Modele_EASM_Baglietto_VEF::Calcul_F1_BiK( DoubleTab& F1, const Domain
 
       if (sub_type(Periodique,la_cl.valeur()))
         {
-          for (num_face=ndeb; num_face<nfin; num_face++)
+          for (int num_face=ndeb; num_face<nfin; num_face++)
             {
               int elem1 = face_voisins(num_face,0);
               int elem2 = face_voisins(num_face,1);
               wall_length_face(num_face) = 0.5*wall_length(elem1) + 0.5*wall_length(elem2);
             }
         }
-      /* else if (sub_type(Pa,la_cl.valeur()))
-      {
-        for (int num_face=ndeb; num_face<nfin; num_face++)
-        {
-      	  int elem1 = face_voisins(num_face,0);
-      	  int elem2 = face_voisins(num_face,1);
-      			  wall_length_face(num_face) = 0.;
-        }
-      }*/
       else
         {
-          for (num_face=ndeb; num_face<nfin; num_face++)
+          for (int num_face=ndeb; num_face<nfin; num_face++)
             {
               int elem1 = face_voisins(num_face,0);
               wall_length_face(num_face) = wall_length(elem1);
@@ -585,43 +419,24 @@ DoubleTab& Modele_EASM_Baglietto_VEF::Calcul_F1_BiK( DoubleTab& F1, const Domain
         }
     }
   int n0 = le_dom.premiere_face_int();
-  for (num_face=n0; num_face<nb_faces; num_face++)
+  for (int num_face=n0; num_face<nb_faces; num_face++)
     {
       int elem0 = le_dom.face_voisins(num_face,0);
       int elem1 = le_dom.face_voisins(num_face,1);
       wall_length_face(num_face) = 0.5*wall_length(elem0)+0.5*wall_length(elem1);
     }
-  // Calcul de la distance a la paroi aux faces
-  /*    for (num_face=0; num_face< le_dom.premiere_face_int(); num_face++)
-      {
-    	  int elem0 = le_dom.face_voisins(num_face,0);
-    	  if (elem0 != -1)
-    		  wall_length_face(num_face) = wall_length(elem0);
-    	  else
-    	  {
-    		  elem0 = le_dom.face_voisins(num_face,1);
-    		  wall_length_face(num_face) = wall_length(elem0);
-    	  }
-      }
 
-      for (; num_face<nb_faces; num_face++)
-      {
-    	  int elem0 = le_dom.face_voisins(num_face,0);
-    	  int elem1 = le_dom.face_voisins(num_face,1);
-    	  wall_length_face(num_face) = 0.5*wall_length(elem0)+0.5*wall_length(elem1);
-      }
-  */
-  for (num_face=0; num_face <nb_faces; num_face ++ )
+  for (int num_face=0; num_face <nb_faces; num_face ++ )
     {
-      Re = (K_Bas_Re(num_face)*K_Bas_Re(num_face))/(visco*eps_Bas_Re(num_face)+DMINFLOAT);
-      Rey = wall_length_face(num_face)*sqrt(K_Bas_Re(num_face))/visco;
+      double Re = (K_Bas_Re(num_face)*K_Bas_Re(num_face))/(visco*eps_Bas_Re(num_face)+DMINFLOAT);
+      double Rey = wall_length_face(num_face)*sqrt(K_Bas_Re(num_face))/visco;
       Pderive(num_face) = 1.33*(1. - 0.3*exp(-Re*Re))
                           * (P(num_face) + 2.*visco*K_Bas_Re(num_face)/(wall_length_face(num_face)*wall_length_face(num_face)+DMINFLOAT))
                           * exp(-0.00375*Rey*Rey);
     }
 
   // Calcul de F1
-  for (num_face=0; num_face <nb_faces; num_face ++ )
+  for (int num_face=0; num_face <nb_faces; num_face ++ )
     if (P(num_face) > 0)
       F1[num_face] = 1.+ Pderive(num_face) / (P(num_face));
     else
