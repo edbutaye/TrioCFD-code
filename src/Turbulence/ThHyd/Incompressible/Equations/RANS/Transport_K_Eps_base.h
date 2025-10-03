@@ -12,13 +12,6 @@
 * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *
 *****************************************************************************/
-//////////////////////////////////////////////////////////////////////////////
-//
-// File:        Transport_K_Eps_base.h
-// Directory:   $TURBULENCE_ROOT/src/ThHyd/Incompressible/Equations/RANS
-//
-//////////////////////////////////////////////////////////////////////////////
-
 
 #ifndef Transport_K_Eps_base_included
 #define Transport_K_Eps_base_included
@@ -57,7 +50,8 @@ protected:
   OWN_PTR(Champ_Inc_base) le_champ_K_Eps;
 
 private:
-  bool do_not_control_k_eps_=false; // default is old behavior
+  bool exit_on_negative_k_eps_ = false;
+  bool exit_on_big_eps_ = false;
 
 };
 
