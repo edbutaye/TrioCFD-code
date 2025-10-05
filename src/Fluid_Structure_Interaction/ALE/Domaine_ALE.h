@@ -78,6 +78,7 @@ public :
   void  update_ALE_projection(const double);
   DoubleTab& laplacien(Domaine_dis_base&, Probleme_base&, const DoubleTab&, DoubleTab&);
   int update_or_not_matrix_coeffs() const;
+  inline void setUpdateJacobian_Old(const bool status) {updateJacobian_Old_ = status ;}
   void update_ALEjacobians(DoubleTab&, DoubleTab&, int);
   void resumptionJacobian(DoubleTab&, DoubleTab&);
   inline const DoubleTab& getOldJacobian();
@@ -152,8 +153,10 @@ protected:
 
   int Coupling_ICoCo_method=-1 ; //1:implicit 0:explicit -1:uninitialized
   bool UpdateTheGrid;
-  DoubleTab coord_ini;
-  DoubleTab displacement_lag;
+  // unused DoubleTab coord_ini;
+  // unused DoubleTab displacement_lag;
+
+  bool updateJacobian_Old_;
 };
 
 

@@ -45,6 +45,16 @@ void Implicite_ALE::first_special_treatment(Equation_base& eqn, Navier_Stokes_st
   int TimeStepNr=eqn.probleme().schema_temps().nb_pas_dt();
   Domaine_ALE& dom_ale=ref_cast(Domaine_ALE, eqn.probleme().domaine());
 
+  // ICoCo coupling: do not update the old jacobian during implicit sub-iterations
+  int iCoCoImplicitIteration=0;
+  if (eqn.probleme().checkOutputIntEntry("iCoCoImplicitIteration"))
+    {
+      iCoCoImplicitIteration=eqn.probleme().getOutputIntValue("iCoCoImplicitIteration");
+      Cerr << "iCoCoImplicitIteration in Implicite_ALE: " << iCoCoImplicitIteration << finl ;
+    }
+  dom_ale.setUpdateJacobian_Old(true) ; // This is the default
+  if (iCoCoImplicitIteration > 0) dom_ale.setUpdateJacobian_Old(false) ;
+
   DoubleTab New_ALEjacobian_Old=dom_ale.getNewJacobian(); //New  value for ALEjacobian_old
   DoubleTab New_ALEjacobian_New(New_ALEjacobian_Old);
   Op_Conv_ALE_VEF& opALEforJacob=ref_cast(Op_Conv_ALE_VEF, eqnNS.get_terme_convectif().valeur());

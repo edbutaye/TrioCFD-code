@@ -121,8 +121,20 @@ void Domaine_ALE::mettre_a_jour (double temps, Domaine_dis_base& le_domaine_dis,
 
   ALE_mesh_velocity = calculer_vitesse(temps,le_domaine_dis,pb, check_NoZero_ALE);
 
+  int iCoCoImplicitIteration=-1; // default value, no ICoCo implicit coupling
+  if ((eq.valeur()).probleme().checkOutputIntEntry("iCoCoImplicitIteration"))
+    {
+      iCoCoImplicitIteration=(eq.valeur()).probleme().getOutputIntValue("iCoCoImplicitIteration");
+      Cerr << "Domaine_ALE::mettre_a_jour, iCoCoImplicitIteration: " << iCoCoImplicitIteration << finl ;
+    }
+
+  // ICoCo coupling with implicit sub-iterations: save coordinates at first iteration
+  if (iCoCoImplicitIteration == 0) saveSommetsCoordinates();
+
   if(check_NoZero_ALE)
     {
+      if (iCoCoImplicitIteration > 0) resetSommetsCoordinates(); // reset coordinates to beginning-of-step in case of
+      // grid update during implicit iterations
       for (int i=0; i<N_som; i++)
         {
           for (int k=0; k<dimension; k++)
@@ -228,6 +240,7 @@ void Domaine_ALE::mettre_a_jour (double temps, Domaine_dis_base& le_domaine_dis,
 
           type_elem.creer_facette_normales(*this, facette_normales_, rang_elem_non_standard);
           //Cerr << "carre_pas_du_maillage : " << le_dom_VEF.carre_pas_du_maillage() << finl;
+
 
           int nb_eqn=pb.nombre_d_equations();
           for(int num_eq=0; num_eq<nb_eqn; num_eq++)
@@ -535,7 +548,6 @@ void Domaine_ALE::initialiser (double temps, Domaine_dis_base& le_domaine_dis,Pr
 
 DoubleTab Domaine_ALE::calculer_vitesse(double temps, Domaine_dis_base& le_domaine_dis,Probleme_base& pb, bool& check_NoZero_ALE)
 {
-
   int n; // A activer ou desactiver si on utilise le laplacien ou non
   int N_som=nb_som_tot(); //A activer ou desactiver si on utilise le laplacien ou non
 
@@ -705,7 +717,6 @@ DoubleTab Domaine_ALE::calculer_vitesse(double temps, Domaine_dis_base& le_domai
             int nbFace = domaine_VEF.nb_faces() ;
             int nbSomFace = domaine_VEF.nb_som_face() ;
             const IntTab& face_sommets = domaine_VEF.face_sommets() ;
-
             solveDynamicMeshProblem(temps, vit_bords, tag_nodes_bords, vit_maillage, nbSom, nbElem, nbSomElem, sommets,
                                     nbFace, nbSomFace, face_sommets) ;
           }
@@ -927,7 +938,6 @@ void Domaine_ALE::set_dt(double& dt)
 
 void Domaine_ALE::update_ALEjacobians(DoubleTab& NewValueOf_ALEjacobian_old,DoubleTab& NewValueOf_ALEjacobian_new, int TimeStepNr)
 {
-
   if(TimeStepNr==0 && resumption==0)
     {
       //Initially ALEjacobian_old= 1.0
@@ -938,14 +948,14 @@ void Domaine_ALE::update_ALEjacobians(DoubleTab& NewValueOf_ALEjacobian_old,Doub
     }
   else
     {
-      ALEjacobian_old=NewValueOf_ALEjacobian_old;
+      // Conditional update of old jacobian to account for ICoCo implicit sub-iterations
+      if (updateJacobian_Old_) ALEjacobian_old=NewValueOf_ALEjacobian_old;
       ALEjacobian_new=NewValueOf_ALEjacobian_new;
     }
 }
 
 void Domaine_ALE::resumptionJacobian(DoubleTab& ValueOf_ALEjacobian_old, DoubleTab& ValueOf_ALEjacobian_new)
 {
-
   ALEjacobian_old=ValueOf_ALEjacobian_old;
   ALEjacobian_new=ValueOf_ALEjacobian_new;
   resumption=1;
@@ -954,9 +964,6 @@ void Domaine_ALE::reading_vit_bords_ALE(Entree& is)
 {
   Motcle accolade_ouverte("{");
   Motcle accolade_fermee("}");
-  //Motcles couplage(3);
-  //couplage[0] = "explicit";
-  //couplage[1] = "implicit";
   Motcle motlu;
   Nom nomlu;
   is >> motlu;
@@ -970,32 +977,6 @@ void Domaine_ALE::reading_vit_bords_ALE(Entree& is)
   is >> nb_bords_ALE;
   Cerr << "nombre de bords ALE : " <<  nb_bords_ALE << finl;
   les_champs_front.dimensionner(nb_bords_ALE);
-  /*is >> motlu;
-  Cerr << "type de couplage: " << motlu << endl;
-  int rang = couplage.search(motlu);
-  switch(rang)
-    {
-    case 0:
-      {
-        Coupling_ICoCo_method = 0;
-        Cerr << "Your choose the explicit way (considering only if your calculation is coupled with EPX)" << finl;
-        break;
-      }
-    case 1:
-      {
-        Coupling_ICoCo_method = 1;
-        Cerr << "Your choose the implicit way (considering only if your calculation is coupled with EPX)" << finl;
-        break;
-      }
-    default :
-      {
-        Cerr << "Error while reading the coupling method" << finl;
-        Cerr << motlu << "is not understand here "<< finl;
-        Cerr << "We were expecting a word from " << couplage << finl;
-        exit();
-      }
-    }*/
-
   int compteur=0;
   while(1)
     {
@@ -1903,12 +1884,13 @@ bool Domaine_ALE::getUpdateTheGrid()
   if (pb_base.checkOutputIntEntry("UpdateTheGrid"))
     {
       int updateStatus=pb_base.getOutputIntValue("UpdateTheGrid");
-      if (updateStatus == 1) {
-         Cerr << "Update of the fluid grid forced from ICoCo" << finl ;
-         UpdateTheGrid=true;
-      }
+      if (updateStatus == 1)
+        {
+          Cerr << "Update of the fluid grid forced from ICoCo" << finl ;
+          UpdateTheGrid=true;
+        }
     }
-  
+
   return UpdateTheGrid;
 }
 
