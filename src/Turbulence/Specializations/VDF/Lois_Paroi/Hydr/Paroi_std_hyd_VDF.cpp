@@ -597,9 +597,8 @@ int Paroi_std_hyd_VDF::compute_layer_selection(double u_plus_d_plus, double d_vi
 int Paroi_std_hyd_VDF::compute_viscous_layer(DoubleTab& field_komega, double dist_y,
                                              double viscosity, int elem)
 {
-  // at the wall, k = 0 and omega = 6 nu/(beta1 * sqrt(y)) with beta1(default)=0.075
   field_komega(elem, 0) = 0;
-  field_komega(elem, 1) = 6.*viscosity/(BETA1*sqrt(dist_y));
+  field_komega(elem, 1) = 6.*viscosity/(BETA1*dist_y*dist_y);
   return 1;
 }
 
@@ -620,9 +619,9 @@ int Paroi_std_hyd_VDF::compute_buffer_layer(DoubleTab& field_komega, double dist
   double x = lm_plus*u_star*deriv;
 
   field_komega(elem, 0) = x*x/sCmu;//;u_star_carre/sCmu;
-  const double phiTanh = tanh(pow(0.1*yPlus,4));
-  const double omega_vis = 6.*viscosity/(BETA1*sqrt(dist_y));
-  const double omega_log = sqrt(field_komega(elem, 0))/(Cmu025*Kappa_*dist_y);
+  const double phiTanh = tanh(0.1*0.1*0.1*0.1*yPlus*yPlus*yPlus*yPlus);
+  const double omega_vis = 6.*viscosity/(BETA1*dist_y*dist_y);
+  const double omega_log = u_star/(std::sqrt(BETA_K)*Kappa_*dist_y);
   const double b1 = omega_vis + omega_log;
   const double b2 = pow(pow(omega_vis, 1.2) + pow(omega_log,1.2), 1.0/1.2);
 
@@ -633,11 +632,11 @@ int Paroi_std_hyd_VDF::compute_buffer_layer(DoubleTab& field_komega, double dist
 
 int Paroi_std_hyd_VDF::compute_log_layer(DoubleTab& field_komega, double dist_y, int elem, int face)
 {
-  double u_star = tab_u_star(face);
-  double u_star_carre = u_star*u_star;
+  const double u_star = tab_u_star(face);
+  const double u_star_carre = u_star*u_star;
 
   field_komega(elem, 0) = u_star_carre/sqrt(Cmu_);
-  field_komega(elem, 1) = sqrt(field_komega(elem, 0))/(Cmu025*Kappa_*dist_y);
+  field_komega(elem, 1) = u_star/(std::sqrt(BETA_K)*Kappa_*dist_y);
 
   return 1;
 }
@@ -1185,7 +1184,7 @@ void Paroi_std_hyd_VDF::calculer_moyennes_parois(double& U_moy_1,
           Cerr<<" visco <=0 ?"<<finl;
           Process::exit();
         }
-      //        tab_visco += DMINFLOAT;
+      //        tab_visco += DMINFLOATBETA_K;
     }
 
   for (int n_bord = 0; n_bord < nb_front_Cl; n_bord++)
