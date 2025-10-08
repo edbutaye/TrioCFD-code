@@ -36,7 +36,6 @@ public:
   }
 
   void set_param(Param& param);
-  int lire_motcle_non_standard(const Motcle& mot, Entree& is ) override;
   const Menter_version& get_menter_version() const { return menter_version_; }
   const bool& get_deactivate_production_limiter() const { return deactivate_production_limiter_; }
   const double& get_gamma1() const;

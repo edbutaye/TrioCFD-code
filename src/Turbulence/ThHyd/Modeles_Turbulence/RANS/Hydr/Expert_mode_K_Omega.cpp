@@ -42,31 +42,11 @@ Entree& Expert_mode_K_Omega::readOn(Entree& is)
 void Expert_mode_K_Omega::set_param(Param& param)
 {
   param.ajouter_flag("deactivate_production_limiter",	&deactivate_production_limiter_); // XD_ADD_P bool Deactivate the production limiter in the k equation (default value false).
-  param.ajouter_non_std("menter_version", (this)); // XD_ADD_P motcle Version of Menter SST model: "ORIGINAL_1994" or "MODIFIED_2003" (default value "ORIGINAL_1994").
+  param.ajouter("menter_version", (int*)&menter_version_); // XD_ADD_P chaine(into=["ORIGINAL_1994","MODIFIED_2003"]) Version of Menter SST model: "ORIGINAL_1994" or "MODIFIED_2003" (default value "MODIFIED_2003").)
+  param.dictionnaire("ORIGINAL_1994", (int)Menter_version::ORIGINAL_1994); // XD_ADD_P motcle Version of Menter SST model
+  param.dictionnaire("MODIFIED_2003", (int)Menter_version::MODIFIED_2003); // XD_ADD_P motcle Version of Menter SST model
 }
 
-int Expert_mode_K_Omega::lire_motcle_non_standard(const Motcle& mot, Entree& is)
-{
-  if (mot=="menter_version")
-    {
-      Motcle menter_version_str;
-      is >> menter_version_str;
-      if (menter_version_str == "ORIGINAL_1994")
-        menter_version_ = Menter_version::ORIGINAL_1994;
-      else if (menter_version_str == "MODIFIED_2003")
-        menter_version_ = Menter_version::MODIFIED_2003;
-      else
-        {
-          Cerr << "Error: unknown Menter version: " << menter_version_str << finl;
-          Cerr
-              << "Available versions are: ORIGINAL_1994 and MODIFIED_2003."
-              << finl;
-          Process::exit();
-        }
-      return 1;
-    }
-  return 1;
-}
 
 const double& Expert_mode_K_Omega::get_gamma1() const
 {
