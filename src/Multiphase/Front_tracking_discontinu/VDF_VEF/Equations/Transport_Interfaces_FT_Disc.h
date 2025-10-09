@@ -114,6 +114,7 @@ public:
   const Maillage_FT_Disc&                 maillage_interface() const;
   const Champ_base& get_indicatrice() override;
   void update_indicatrice() override;
+  void check_indicatrice_is_up_to_date() override;
   void update_indicatrice_normale_distance();
   virtual const Champ_base&               get_indicatrice_faces();
   virtual const Champ_base&               update_indicatrice_faces();

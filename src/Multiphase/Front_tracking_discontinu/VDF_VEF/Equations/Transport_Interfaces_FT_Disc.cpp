@@ -1881,7 +1881,7 @@ void Transport_Interfaces_FT_Disc::preparer_pas_de_temps()
 double Transport_Interfaces_FT_Disc::calculer_pas_de_temps() const
 {
   // TODO:
-// We should think of implementing it as in eq. 16 for instance:
+  // We should think of implementing it as in eq. 16 for instance:
   // https://hal.archives-ouvertes.fr/hal-02304125/document
   // and use the Lagrangian min edge length instead of Delta_x.
   //
@@ -1915,10 +1915,24 @@ void Transport_Interfaces_FT_Disc::update_indicatrice_normale_distance()
 void Transport_Interfaces_FT_Disc::update_indicatrice()
 {
   const int tag = maillage_interface().get_mesh_tag();
-  // assert pour verifier si l'appel est bien utile.
-  assert(tag != variables_internes_->indicatrice_cache_tag);
+
+  // Check if the call is useful
+  // can be bypassed by changing the tag before calling update_indicatrice (use this knowledge carefully)
+  if (tag == variables_internes_->indicatrice_cache_tag)
+    {
+      Cerr << "ERROR : Unneeded call to Transport_Interfaces_FT_Disc::update_indicatrice" << finl;
+      Cerr << "        indicatrice is already up to date" << finl;
+      Process::exit();
+    }
+
   // Le calcul de l'indicatrice a besoin d'une distance qui soit bien a jour...
-  assert(tag == variables_internes_->distance_normale_cache_tag);
+  if (tag != variables_internes_->distance_normale_cache_tag)
+    {
+      Cerr << "ERROR : in Transport_Interfaces_FT_Disc::update_indicatrice : distance_normale not up to date" << finl;
+      Cerr << "        Call update_indicatrice_normale_distance before or update_normale_distance_interface to do both at the same time" << finl;
+      Process::exit();
+    }
+
   DoubleVect& valeurs_indicatrice = variables_internes_->indicatrice_cache->valeurs();
   assert(maillage_interface().type_statut()>=2); // Voir s'il manque un appel a maillage_interface().parcourir_maillage();
   maillage_interface().calcul_indicatrice(valeurs_indicatrice, valeurs_indicatrice);
@@ -1926,6 +1940,21 @@ void Transport_Interfaces_FT_Disc::update_indicatrice()
 
   // TODO : nettoyer ce doublon de champs historique pour ne garder qu'un champ
   indicatrice_->valeurs() = get_indicatrice().valeurs(); // met a jour l'indicatrice a partir de indicatrice_cache qui vient d'etre calculee.
+}
+/*! @brief Checks if the indicator is up to date
+ *
+ * Exits if it is not the case. To be used when we want to be sure that update_indicatrice has been called recently enough.
+ * The same test is also done in Transport_Interfaces_FT_Disc::get_indicatrice
+ *
+ */
+void Transport_Interfaces_FT_Disc::check_indicatrice_is_up_to_date()
+{
+  const int tag = maillage_interface().get_mesh_tag();
+  if (tag != variables_internes_->indicatrice_cache_tag)
+    {
+      Cerr << "Error: indicatrice not up to date" << finl;
+      Process::exit();
+    }
 }
 
 /*! @brief getter champ variables_internes_->indicatrice_cache a partir de la position des interfaces.
@@ -1936,19 +1965,34 @@ void Transport_Interfaces_FT_Disc::update_indicatrice()
  */
 const Champ_base& Transport_Interfaces_FT_Disc::get_indicatrice()
 {
-  assert(maillage_interface().get_mesh_tag() == variables_internes_->indicatrice_cache_tag);
+  const int tag = maillage_interface().get_mesh_tag();
+  if (tag != variables_internes_->indicatrice_cache_tag)
+    {
+      Cerr << "Error: indicatrice not up to date in get_indicatrice. " << finl;
+      Process::exit();
+    }
   return variables_internes_->indicatrice_cache.valeur();
 }
 
 const Champ_base& Transport_Interfaces_FT_Disc::get_distance_interface() const
 {
-  assert(maillage_interface().get_mesh_tag() == variables_internes_->distance_normale_cache_tag);
+  const int tag = maillage_interface().get_mesh_tag();
+  if (tag != variables_internes_->distance_normale_cache_tag)
+    {
+      Cerr << "Error: indicatrice not up to date in get_distance_interface. " << finl;
+      Process::exit();
+    }
   return variables_internes_->distance_interface.valeur();
 }
 
 const Champ_base& Transport_Interfaces_FT_Disc::get_normale_interface() const
 {
-  assert(maillage_interface().get_mesh_tag() == variables_internes_->distance_normale_cache_tag);
+  const int tag = maillage_interface().get_mesh_tag();
+  if (tag != variables_internes_->distance_normale_cache_tag)
+    {
+      Cerr << "Error: indicatrice not up to date in get_normale_interface. " << finl;
+      Process::exit();
+    }
   return variables_internes_->normale_interface.valeur();
 }
 
