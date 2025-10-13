@@ -1,0 +1,125 @@
+Dimension 3
+Pb_hydraulique_turbulent pb
+
+Domaine dom
+Mailler dom
+{
+  pave bloc
+  {
+    origine 0 0 0
+    longueurs 1 1 1
+    nombre_de_noeuds 101 101 101
+  }
+  {
+    bord periox  X = 0  0 <= Y <= 1  0 <= Z <= 1
+    bord periox  X = 1  0 <= Y <= 1  0 <= Z <= 1
+    bord perioy  Y = 0  0 <= X <= 1  0 <= Z <= 1
+    bord perioy  Y = 1  0 <= X <= 1  0 <= Z <= 1
+    bord perioz  Z = 0  0 <= X <= 1  0 <= Y <= 1
+    bord perioz  Z = 1  0 <= X <= 1  0 <= Y <= 1
+  }
+}
+
+VDF dis
+
+Schema_Euler_explicite sch
+Lire sch
+{
+  tinit 0
+  nb_pas_dt_max 0
+}
+
+Associer pb dom
+Associer pb sch
+
+Discretiser pb dis
+
+Lire pb
+{
+
+  fluide_incompressible {
+    mu champ_uniforme 1 0.001
+    rho champ_uniforme 1 1000
+  }
+
+  Navier_Stokes_turbulent
+  {
+    equation_non_resolue (t>0)
+    solveur_pression GCP { precond_nul seuil 1e-10 }
+    convection { centre }
+    diffusion { }
+    conditions_initiales {
+      vitesse champ_fonc_xyz dom 3 -2*cos(2*pi*x)*sin(2*pi*y)*sin(2*pi*z) sin(2*pi*x)*cos(2*pi*y)*sin(2*pi*z) sin(2*pi*x)*sin(2*pi*y)*cos(2*pi*z)
+    }
+    conditions_limites {
+      periox  periodique
+      perioy  periodique
+      perioz  periodique
+    }
+    modele_turbulence k_omega
+    {
+      model_variant std
+      Transport_equation transport_k_omega
+      {
+        equation_non_resolue (t>0)
+        convection { centre }
+        diffusion { }
+        conditions_initiales {
+          k_omega champ_fonc_xyz dom 2 cos(2*pi*y)+2 sin(2*pi*y)+2
+        }
+        conditions_limites  {
+          periox  periodique
+          perioy  periodique
+          perioz  periodique
+        }
+        sources { }
+      }
+      turbulence_paroi negligeable
+    }
+  }
+
+  Postraitement
+  {
+    Definition_champs
+    {
+      sources_komega  operateur_eqn  {
+        numero_source 0
+        sources { refChamp { pb_champ pb k_omega } }
+      }
+      diff_komega  operateur_eqn  {
+        numero_op 0
+        sources { refChamp { pb_champ pb k_omega } }
+      }
+      conv_komega  operateur_eqn  {
+        numero_op 1
+        sources { refChamp { pb_champ pb k_omega } }
+      }
+    }
+    sondes
+    {
+      vitesseX nodes vitesseX periode 1 segment 100 0 0.005 0.005 0 0.995 0.005
+      vitesseY nodes vitesseY periode 1 segment 101 0.005 0 0.005 0.005 1 0.005
+      vitesseZ nodes vitesseZ periode 1 segment 100 0.005 0.005 0 0.005 0.995 0
+
+      komega grav k_omega periode 1 segment 100 0.005 0.005 0.005 0.005 0.995 0.005
+      nut grav viscosite_turbulente periode 1 position_like komega
+
+      sources_komega grav sources_komega periode 1 position_like komega
+      diff_komega grav diff_komega periode 1 position_like komega
+      conv_komega # grav # conv_komega periode 1 position_like komega
+    }
+    format lata
+    champs binaire dt_post 1e6
+    {
+      sources_komega elem
+      diff_komega elem
+      conv_komega elem
+    }
+  }
+}
+
+EcritureLectureSpecial 1
+
+Resoudre pb
+
+Fin
