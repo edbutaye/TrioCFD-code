@@ -169,7 +169,7 @@ int Transport_K_Eps_base::controler_K_Eps()
           int neps = 0;
           int nb_faces_elem = elem_faces.line_size();
 
-          if (sub_type(Domaine_VEF, domaine_vf))
+          if (sub_type(Domaine_VEF, domaine_vf) and not(disable_VEF_mean_value_corrections_))
             {
               // Here we are in VEF discretization
               for (int i = 0; i < 2; i++)
