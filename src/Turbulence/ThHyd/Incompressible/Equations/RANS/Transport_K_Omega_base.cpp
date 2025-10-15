@@ -101,12 +101,11 @@ int Transport_K_Omega_base::controler_K_Omega()
     }
 
 
-  // neg will store the amount of problematic values of k or omega found
-  // neg[0] : amount of negative k
-  // neg[1] : amount of negative omega
-  // neg[2] : amount of omega too big (> modele_turbulence().get_OMEGA_MAX())
-  ArrOfInt neg(3);
-  neg = 0;
+  // these will store the amount of problematic values of k or omega found
+  // for reporting at the end
+  int count_negative_k = 0;
+  int count_omega_under_threshold = 0;
+  int count_omega_too_big = 0;
 
   const int lquiet = modele_turbulence().get_lquiet(); // cAlan remonter ce lquiet dans modele_turbu
 
@@ -129,28 +128,35 @@ int Transport_K_Omega_base::controler_K_Omega()
       // correct big omega
       if (omega > OMEGA_MAX)
         {
-          neg[2] += 1;
+          count_omega_too_big++;
           omega = OMEGA_MAX;
         }
-
-      // correct negative k or omega
-      if ((enerK < 0 || omega < 0))
+      // correct small omega
+      // for k-omega, contrary to k-eps, it is important that omega does not become too small
+      // thus, we always correct small values
+      if (omega < OMEGA_MIN)
         {
-          neg[0] += (enerK < 0 ? 1 : 0);
-          neg[1] += (omega < 0 ? 1 : 0);
+          count_omega_under_threshold++;
+          omega = OMEGA_MIN;
+        }
 
+      // correct negative k
+      if (enerK < 0)
+        {
+          count_negative_k++;
 
-          // On impose une valeur plus physique (moyenne des elements voisins)
           enerK = 0;
           omega = 0;
           int nenerK = 0;
           int nomega = 0;
           const int nb_faces_elem = elem_faces.line_size();
 
+          // in VEF disc, we compute the mean value of neighbours
+          // TODO: maybe omega should use another type of mean (harmonic maybe)
+          // otherwise (VDF disc), simply set to min values
           if (sub_type(Domaine_VEF, domaine_vf))
             {
               // cAlan : faire une fonction dans Transport_RANS_2eq qui fait la meme chose ?
-              // K-Eps on faces (eg:VEF)
               for (int i = 0; i < 2; i++)
                 {
                   int elem = face_voisins(n, i);
@@ -159,13 +165,13 @@ int Transport_K_Omega_base::controler_K_Omega()
                       if (j != n)
                         {
                           double k_face = K_Omega(elem_faces(elem, j), 0);
-                          if (k_face > K_MIN)
+                          if (k_face >= K_MIN)
                             {
                               enerK += k_face;
                               nenerK++;
                             }
                           double o_face = K_Omega(elem_faces(elem, j), 1);
-                          if (o_face > OMEGA_MIN)
+                          if (o_face >= OMEGA_MIN) // case == OMEGA_MIN should be taken into account
                             {
                               omega += o_face;
                               nomega++;
@@ -195,29 +201,29 @@ int Transport_K_Omega_base::controler_K_Omega()
 
   if (schema_temps().limpr() && !modele_turbulence().get_lquiet())
     {
-      if (neg[0] || neg[1])
+      if (count_negative_k || count_omega_under_threshold)
         {
 
 
           const double time = le_champ_K_Omega->temps();
           Journal() << "Values forced for k and omega because:" << finl;
-          if (neg[0])
+          if (count_negative_k)
             {
               Journal() << "Negative values found for k on "
-                        << neg[0] << "/" << size << " nodes at time "
+                        << count_negative_k << "/" << size << " nodes at time "
                         << time << finl;
             }
-          if (neg[1])
+          if (count_omega_under_threshold)
             {
               Journal() << "Negative values found for omega on "
-                        << neg[1] << "/" << size << " nodes at time "
+                        << count_omega_under_threshold << "/" << size << " nodes at time "
                         << time << finl;
             }
 
           // Warning if more than 0.01% of nodes are values fixed
           // cAlan : mettre une variable "experte" dans le jdd pour ajuster ce seuil ?
-          const double ratio_k = 100. * neg[0] / size;
-          const double ratio_omega = 100. * neg[1] / size;
+          const double ratio_k = 100. * count_negative_k / size;
+          const double ratio_omega = 100. * count_omega_under_threshold / size;
           if ((ratio_k > 0.01 || ratio_omega > 0.01) && !lquiet)
             {
               Cerr << "WARNING: Found high ratio of invalid values for k and/or omega (more that 0.01%) on process" << Process::me() << finl;
@@ -233,11 +239,11 @@ int Transport_K_Omega_base::controler_K_Omega()
               Process::exit();
             };
         }
-      if (neg[2])
+      if (count_omega_too_big)
         {
           const double time = le_champ_K_Omega->temps();
           Journal() << "Values forced for omega because:" << finl;
-          Journal() << "Maximum values found for omega on " << neg[2] << "/" << size << " nodes at time " << time << finl;
+          Journal() << "Maximum values found for omega on " << count_omega_too_big << "/" << size << " nodes at time " << time << finl;
 
           if (exit_on_big_omega_)
             {
