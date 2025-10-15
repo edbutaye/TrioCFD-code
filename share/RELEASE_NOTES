@@ -1,6 +1,11 @@
 --------------------------------------------------------------------------------------------------
 Release notes version 1.9.7_beta : Enhancements, modifications and corrected bugs since version 1.9.6 :
 --------------------------------------------------------------------------------------------------
+15/10/25 (TrioCFD) Bug fix     : RANS k-omega: fix a bug where omega was allowed to go below OMEGA_MIN, and could reach zero, resulting in division by zero.
+15/10/25 (TrioCFD) Keyword     : RANS k-eps/k-omega: new keyword 'disable_VEF_mean_value_corrections' for Transport_K_Omega/Transport_K_Eps: flag to disable the correction using mean values (only affects VEF). Replaces keywords do_not_control_k_eps and do_not_control_k_omega from v1.9.6, which were confusing.
+15/06/25 (TrioCFD) Keyword     : RANS k-omega: new keywords 'exit_on_negative_k_omega' and 'exit_on_big_omega', to interrupt the simulation when values of k and/or omega go outside the bounds. Note that the bounds can be modified with keywords 'k_min', 'omega_min' and 'omega_max' in 'modele_turbulence'
+15/06/25 (TrioCFD) Keyword     : RANS k-eps: new keywords 'exit_on_negative_k_eps' and 'exit_on_big_eps', to interrupt the simulation when values of k and/or epsilon go outside the bounds. Note that the bounds can be modified with keywords 'k_min', 'eps_min' and 'eps_max' in 'modele_turbulence'
+15/10/25 (TrioCFD) Minor change: RANS k-eps/k-omega: logs regarding correction of negative k/eps/omega values are now less invasive, and can be disabled entirely with flag 'quiet' in 'modele_turbulence'
 12/09/25 (TrioCFD) Bug fix     : Turbulence - fix an error in Modele_turbulence_hyd_RANS_Bicephale_base where the k_equation was not set to an equation on k because of multiple hidden initialization of parameter transporte_K_ of class Transport_K_ou_Eps_base.
                                  Results from the bicephale model are now much better and closer to standard k_eps models (as seen in validation report Canal_plan_VDF_VEF_k_eps_standard_bicephale).
 12/09/25 (TrioCFD) Syntax      : Turbulence - keyword 'transport_k_epsilon' should now be replaced by 'transport_equation transport_k_epsilon' in datafiles
