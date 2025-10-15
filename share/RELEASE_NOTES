@@ -1,6 +1,7 @@
 --------------------------------------------------------------------------------------------------
 Release notes version 1.9.7_beta : Enhancements, modifications and corrected bugs since version 1.9.6 :
 --------------------------------------------------------------------------------------------------
+24/10/25 (TrioCFD) New Doc     : Documentation for Sensibility Analysis - module based on the Polynomial Chaos Method.
 16/10/25 (TrioCFD) New Doc     : New documentation of MGIS/MFront coupled with ALE for large scale grid motion
 15/10/25 (TrioCFD) Bug fix     : RANS k-omega: fix a bug where omega was allowed to go below OMEGA_MIN, and could reach zero, resulting in division by zero.
 15/10/25 (TrioCFD) Keyword     : RANS k-eps/k-omega: new keyword 'disable_VEF_mean_value_corrections' for Transport_K_Omega/Transport_K_Eps: flag to disable the correction using mean values (only affects VEF). Replaces keywords do_not_control_k_eps and do_not_control_k_omega from v1.9.6, which were confusing.
