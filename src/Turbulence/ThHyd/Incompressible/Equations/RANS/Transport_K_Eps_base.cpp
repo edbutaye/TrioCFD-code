@@ -194,12 +194,6 @@ int Transport_K_Eps_base::controler_K_Eps()
                         }
                 }
             }
-          else
-            {
-              // Here we are in VDF discretization
-              nk = 0;   // k -> k_min
-              neps = 0; // eps -> eps_min
-            }
 
           if (nk != 0) {k /= nk;}
           else {k = LeK_MIN;}

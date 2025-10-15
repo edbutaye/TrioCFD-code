@@ -117,15 +117,8 @@ int Transport_K_Omega_base::controler_K_Omega()
   const double K_MIN = modele_turbulence().get_K_MIN();
   const IntTab& face_voisins = domaine_vf.face_voisins();
   const IntTab& elem_faces = domaine_vf.elem_faces();
-  // PL on ne fixe au seuil minimum que si negatifs
-  // car la loi de paroi peut fixer a des valeurs tres petites
-  // et le rapport K*K/eps est coherent
 
-  // Changement: 13/12/07: en cas de valeurs negatives pour k OU omega
-  // on fixe k ET omega a une valeur moyenne des 2 elements voisins
-  // cAlan, le 20/01/2023. Traitement identique que pour k-epsilon. A verifier
 
-  Nom position;
   Debog::verifier("Transport_K_Omega_base::controler_K_Omega K_Omega before", K_Omega);
 
   for (int n = 0; n < size; n++)
@@ -153,6 +146,7 @@ int Transport_K_Omega_base::controler_K_Omega()
           int nenerK = 0;
           int nomega = 0;
           const int nb_faces_elem = elem_faces.line_size();
+
           if (sub_type(Domaine_VEF, domaine_vf))
             {
               // cAlan : faire une fonction dans Transport_RANS_2eq qui fait la meme chose ?
@@ -180,11 +174,6 @@ int Transport_K_Omega_base::controler_K_Omega()
                 }
 
             }
-          else // (size != face_voisins.dimension(0))
-            {
-              nenerK = 0;   // k -> k_min
-              nomega = 0; // omega -> omega_min
-            } // fin de (size != face_voisins.dimension(0))
 
           if (nenerK != 0)
             {enerK /= nenerK;}
