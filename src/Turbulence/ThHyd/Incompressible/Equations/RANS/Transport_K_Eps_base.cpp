@@ -117,21 +117,19 @@ int Transport_K_Eps_base::controler_K_Eps()
         }
     }
 
-  // neg will store the amount of problematic values of k or eps found
-  // neg[0] : amount of negative k
-  // neg[1] : amount of negative eps
-  // neg[2] : amount of eps too big (> modele_turbulence().get_EPS_MAX())
-  ArrOfInt neg(3);
-  neg = 0;
+  // these will store the amounts of problematic values of k or eps found
+  int count_negative_k = 0;
+  int count_negative_eps = 0;
+  int count_big_eps = 0;
 
 
   // On interdit K-Eps negatif pour le K-Eps seulement
   // Les autres modeles (2 couches, Launder, ne sont pas assez valides)
 
   const Domaine_VF& domaine_vf = ref_cast(Domaine_VF,domaine_dis());
-  double LeEPS_MIN = modele_turbulence().get_EPS_MIN();
-  double LeEPS_MAX = modele_turbulence().get_EPS_MAX();
-  double LeK_MIN = modele_turbulence().get_K_MIN();
+  double EPS_MIN = modele_turbulence().get_EPS_MIN();
+  double EPS_MAX = modele_turbulence().get_EPS_MAX();
+  double K_MIN = modele_turbulence().get_K_MIN();
   const IntTab& face_voisins = domaine_vf.face_voisins();
   const IntTab& elem_faces = domaine_vf.elem_faces();
 
@@ -150,17 +148,17 @@ int Transport_K_Eps_base::controler_K_Eps()
       double& eps = K_Eps(n, 1);
 
       // correct big values of epsilon
-      if (eps > LeEPS_MAX)
+      if (eps > EPS_MAX)
         {
-          neg[2] += 1;
-          eps = LeEPS_MAX;
+          count_big_eps++;
+          eps = EPS_MAX;
         }
 
       // correct negative values of k or epsilon
       if ((k < 0 || eps < 0) )
         {
-          neg[0] += (  k<0 ? 1 : 0);
-          neg[1] += (eps<0 ? 1 : 0);
+          count_negative_k += (  k<0 ? 1 : 0);
+          count_negative_eps += (eps<0 ? 1 : 0);
 
           // On impose une valeur plus physique (moyenne des elements voisins)
           k = 0;
@@ -180,13 +178,13 @@ int Transport_K_Eps_base::controler_K_Eps()
                       if (j != n)
                         {
                           double k_face = K_Eps(elem_faces(elem, j), 0);
-                          if (k_face > LeK_MIN)
+                          if (k_face >= K_MIN)
                             {
                               k += k_face;
                               nk++;
                             }
                           double e_face = K_Eps(elem_faces(elem, j), 1);
-                          if (e_face > LeEPS_MIN)
+                          if (e_face >= EPS_MIN)
                             {
                               eps += e_face;
                               neps++;
@@ -196,9 +194,9 @@ int Transport_K_Eps_base::controler_K_Eps()
             }
 
           if (nk != 0) {k /= nk;}
-          else {k = LeK_MIN;}
+          else {k = K_MIN;}
           if (neps != 0) { eps /= neps; }
-          else { eps = LeEPS_MIN; }
+          else { eps = EPS_MIN; }
 
         } // fin (k < 0 || eps < 0)
     }
@@ -211,19 +209,19 @@ int Transport_K_Eps_base::controler_K_Eps()
 
   if (schema_temps().limpr() && !modele_turbulence().get_lquiet())
     {
-      if (neg[0] > 0 || neg[1] > 0)
+      if (count_negative_k > 0 || count_negative_eps > 0)
         {
           const double time = le_champ_K_Eps->temps();
 
           Journal() << "WARNING: Some values values forced for k and eps:" << finl;
-          if (neg[0])
-            Journal() << "Negative values of k found on   :" << neg[0] << "/" << size << " nodes at time " << time << finl;
-          if (neg[1])
-            Journal() << "Negative values of eps found on :" << neg[1] << "/" << size << " nodes at time " << time << finl;
+          if (count_negative_k > 0)
+            Journal() << "Negative values of k found on   :" << count_negative_k << "/" << size << " nodes at time " << time << finl;
+          if (count_negative_eps > 0)
+            Journal() << "Negative values of eps found on :" << count_negative_eps << "/" << size << " nodes at time " << time << finl;
 
           // Warning if more than 0.01% of nodes are values fixed
-          double ratio_k = 100. * neg[0] / size;
-          double ratio_eps = 100. * neg[1] / size;
+          double ratio_k = 100. * count_negative_k / size;
+          double ratio_eps = 100. * count_negative_eps / size;
           if ((ratio_k > 0.01 || ratio_eps > 0.01))
             {
               Cerr << "WARNING: Found high ratio of invalid values for k and/or epsilon (more that 0.01%) on process" << Process::me() << finl;
@@ -251,11 +249,11 @@ int Transport_K_Eps_base::controler_K_Eps()
             };
         }
 
-      if (neg[2]> 0)
+      if (count_big_eps> 0)
         {
           const double time = le_champ_K_Eps->temps();
           Journal() << "WARNING: Some values values forced for k and eps:" << finl;
-          Journal() << "Excessive values of eps found on " << neg[2] << "/" << size << " nodes at time " << time << finl;
+          Journal() << "Excessive values of eps found on " << count_big_eps << "/" << size << " nodes at time " << time << finl;
 
           if (exit_on_big_eps_)
             {
