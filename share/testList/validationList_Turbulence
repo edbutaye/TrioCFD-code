@@ -38,6 +38,7 @@
 ./share/Validation/Rapports_automatiques/Turbulence/RANS/Backward_Facing_Step
 ./share/Validation/Rapports_automatiques/Turbulence/RANS/Baglietto
 ./share/Validation/Rapports_automatiques/Turbulence/RANS/Canal_plan_VDF_VEF_k_eps_standard_bicephale
+./share/Validation/Rapports_automatiques/Turbulence/RANS/canal_plan_vef_vdf
 ./share/Validation/Rapports_automatiques/Turbulence/RANS/Channelkeps3DVDF_fNydxdz
 ./share/Validation/Rapports_automatiques/Turbulence/RANS/Channelkeps3DVEF_fNydxdz
 ./share/Validation/Rapports_automatiques/Turbulence/RANS/ChannelKEps_CLboitePerio_entree
@@ -64,6 +65,8 @@
 ./share/Validation/Rapports_automatiques/Turbulence/RANS/Mixing_length_VEF_WF
 ./share/Validation/Rapports_automatiques/Turbulence/RANS/OBI_diffuser_VEF_k_eps
 ./share/Validation/Rapports_automatiques/Turbulence/RANS/PeriodicBox
+./share/Validation/Rapports_automatiques/Turbulence/RANS/recirculation_box_expert_mode
+./share/Validation/Rapports_automatiques/Turbulence/RANS/recirculation_box
 ./share/Validation/Rapports_automatiques/Turbulence/RANS/ThermalCoupling_TurbulentFlow_VEF
 ./share/Validation/Rapports_automatiques/Turbulence/RANS/Thermal_stratification_flow
 ./share/Validation/Rapports_automatiques/Turbulence/RANS/Tube_turb_perio_EF_stab
