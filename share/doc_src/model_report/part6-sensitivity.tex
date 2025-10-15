@@ -15,7 +15,7 @@ Methods of uncertainty propagation based on SA are particularly efficient in ter
 \chapter{The physical model}
 \lhead{The physical model}
 \label{sec_physical_model}
-In this section, we present the physical model as well as some stability estimates for it and its sensitivity.
+In this section, we present the physical model and its sensitivity. A more detailed description can be found in~\cite{FDP20}.
 \section{The state equations}
 Let us consider the domain $\Omega$ in Figure~\ref{domain}: it is a channel with walls on the top and the bottom and an obstacle of square section at distance $x_D$ from the inflow boundary. The Navier-Stokes system and the boundary conditions for this domain are:
 \begin{figure}[h]
@@ -102,11 +102,58 @@ where $\Gamma_w := \Gamma_{obst} \cup \Gamma_{top} \cup \Gamma_{bottom}$.
 These are known as the Oseen equations: an introduction on the subject can be found in \cite{john2014oseen}, both for the theoretical and the numerical aspects. A similar problem is investigated, although only from a numerical point of view, in \cite{duvigneau2005evaluation,duvigneau2006improved}, where they use the sensitivity for shape optimization problems: in their case an expansion of the normal $\mathbf{n} = \sum \mathbf{n}_k(\mathbf{x};a)\delta a^k$ is necessary, which leads to more complicated boundary conditions.
 Remark: if $\nu$ is considered as the parameter of interest, the second member of the first equation should be $\overline{\mathbf{f}}_a := \mathbf{f}_a+\nu_a\Delta\b_u$ and the Neumann boundary condition should have the additional term $\nu_a\nabla\b_u\ \mathbf{n}$, but this case is not considered in this work. 
 
+
+
+\rhead{SENSITIVITY ANALYSIS}
+\chapter{Non-adiabatic Navier–Stokes equations}
+\lhead{Non-adiabatic Navier–Stokes equations}
+\label{sec_Taylor_T}
+
+In this section, we consider the the Navier–Stokes equations coupled with a temperature equation, we present the physical model and its sensitivity. A more detailed description can be found in~\cite{FIORINI202425}.
+
+\section{The state equations}
+Let us consider the domain $\Omega = (0, \ell)^2${\color{black}, and let its boundary $\partial \Omega$ be divided into $\Gamma_N$ and $\Gamma_D$, such that $\Gamma_N \cup \Gamma_D = \partial \Omega$ and $\Gamma_N \cap \Gamma_D = \emptyset$}. We consider the Navier-Stokes equations and the energy conservation law on this domain, with correspondent boundary conditions:
+
+\begin{subequations}
+\begin{align}
+\partial_t \mathbf{u} - \nu \Delta \mathbf{u} + (\mathbf{u} \cdot \nabla) \mathbf{u} + \displaystyle \frac{1}{\rho} \nabla p &= -\beta(T-T_0)\mathbf{g}, & \mathbf{x} \in \Omega, t > 0, \label{eq:state_moment}\\
+\nabla \cdot \mathbf{u} &= 0, & \mathbf{x} \in \Omega, t>0, \label{eq:state_masse}\\
+\partial_t T - \displaystyle \frac{\lambda}{\rho_0c_p} \Delta T + \mathbf{u} \cdot \nabla T &= 0,  & \mathbf{x} \in \Omega, t>0, \label{eq:state_energie}\\
+\mathbf{u}  & = 0, & \mathbf{x} \in \partial \Omega, t > 0,\label{eq:state_Cl_D}\\
+\mathbf{u}(\mathbf{x}, 0) &= 0,  & \mathbf{x} \in \Omega, t = 0, \label{eq:state_CI}\\
+\nabla T \cdot \mathbf{n} &= 0,  & \mathbf{x} \in \Gamma_N, t>0,\label{eq:state_Cl_N}\\
+T &= f(\mathbf{x}), & \mathbf{x} \in \Gamma_D, t>0\label{eq:state_Cl_T_D},
+\end{align}
+\label{eq_NS_T}
+\end{subequations}
+where $\mathbf{u} = (u^x, u^y)^t$ is the velocity, $p$ is the pressure, $\rho$ the density, $\mathbf{g} = (0, g)^t = (0, -9.81)^t$ the acceleration due to gravity and $T$ the temperature. The coefficients $\nu$ and $\lambda$ are, respectively, the viscosity of the fluid and the diffusion parameter of the temperature, $c_p$ is the heat capacity at constant pressure and $\beta$ is the thermal diffusivity. We suppose that the density $\rho$ is constant. In the following, we will use the notation $\lambda' = \frac{\lambda}{\rho c_p}$. 
+
+\section{The sensitivity equations}
+We now consider $\mathbf{u}$ as a function of space, time and a scalar uncertain parameter $a$, $\mathbf{u} = \mathbf{u}(\mathbf{x},t;a)$ and we write a formal Taylor expansion with respect to $a$, giving the first order sensitivity equations:
+
+\begin{subequations}
+\begin{align}
+\partial_t \mathbf{u}_a - \nu \Delta \mathbf{u}_a + (\mathbf{u}_a \cdot \nabla) \mathbf{u} + (\mathbf{u} \cdot \nabla) \mathbf{u}_a +\frac{1}{\rho}\nabla p_a &= \frac{\rho_a}{\rho^2}\nabla p -\beta_a(T-T_0)\mathbf{g} \nonumber \\
+ &\hphantom{{} =}-\beta(T_a-T_{0,a})\mathbf{g},  \;\;\;\Omega, t > 0, \label{eq:sensitivity_1}\\
+\nabla \cdot \mathbf{u}_a &= 0,  \;\;\;\Omega, t > 0, \label{eq:sensitivity_2} \\
+\partial_t T_a - \lambda' \Delta T_a  + \mathbf{u} \cdot \nabla T_a &= \lambda'_a \Delta T- \mathbf{u}_a \cdot \nabla T,  \;\;\; \Omega, t > 0, \label{eq:sensitivity_3} \\
+\mathbf{u}_a  &= 0, \;\;\; \partial \Omega, t > 0, \label{eq:sensitivity_4}\\
+\mathbf{u}_a(\mathbf{x}, 0) &= 0, \;\;\; \Omega, t = 0,  \label{eq:sensitivity_5}\\
+\nabla T_a \cdot \mathbf{n} &= 0, \;\;\;  \Gamma_N, t > 0, \label{eq:sensitivity_6}\\
+T_a &= f_a(\mathbf{x}), \;\;\;  \Gamma_D, t > 0, \label{eq:sensitivity_7}
+\end{align}
+\end{subequations} 
+where $f_a(\mathbf{x})$ is the derivative with respect to $a$ of the Dirichlet boundary condition on the temperature $T$.
+
 \rhead{SENSITIVITY ANALYSIS}
 \chapter{Uncertainty propagation}
 \lhead{Uncertainty propagation}
 \label{sec_uq}
-In this section, we want to show how the sensitivity can be used to give a first order estimate of the variance of the model output. In this context, the parameter $a$ is a random variable with a known distribution, expected value $\mu_a$, and variance $\sigma_a^2$. Let $X(\mathbf{x},t;a)$ be a physical variable (i.e. the horizontal or vertical velocity, or the pressure), whose expected value $\mu_X$ and variance $\sigma_X^2$ we want to estimate. To do this, we start from a Taylor expansion of $X$ with respect to the parameter  $a$ centred in the expected value of $a$, $\mu_a$:
+In this section, we want to show how the sensitivity can be used to give a first order estimate of the variance of the model output. In this context, the parameter $a$ is a random variable with a known distribution, expected value $\mu_a$, and variance $\sigma_a^2$. 
+
+\section{Variance of the model output}
+
+Let $X(\mathbf{x},t;a)$ be a physical variable (i.e. the horizontal or vertical velocity, or the pressure), whose expected value $\mu_X$ and variance $\sigma_X^2$ we want to estimate. To do this, we start from a Taylor expansion of $X$ with respect to the parameter  $a$ centred in the expected value of $a$, $\mu_a$:
 \begin{equation}
 X(\mathbf{x},t;a) = X(\mathbf{x},t;\mu_a) + (a-\mu_a)X_a(\mathbf{x},t;a) + o(|a-\mu_a|^2),
 \label{taylor_exp}
@@ -123,6 +170,7 @@ Using again the Taylor expansion (\ref{taylor_exp}) and the estimate just obtain
 \end{equation}
 The estimates (\ref{average})-(\ref{variance}) are valid only where the Taylor expansion (\ref{taylor_exp}) holds, i.e. for small variances of the random parameter $\sigma_a^2$. However, one can have an estimate of the variance with just one simulation of the state and one of the sensitivity, which is a minimal computational cost when compared to methods such as Monte Carlo that require thousands of simulations of the state to estimate the variance. In the general case, when more than one parameter is uncertain, to provide an estimate of the variance, one would need one simulation for the state and as many simulations of the sensitivity as the number of uncertain parameters \cite{fiorini2018phd}. This makes the sensitivity approach really affordable and highly competitive when the number of uncertain parameters is small enough. In the next subsection, we compare the results of the SA approach with the well-known Monte Carlo method \cite{christian1999monte}.
 
+\section{Confidence intervals}
 The estimated variance can be used for multiple purposes. In this work, we use it to compute some confidence intervals for the physical variables, i.e. find an interval $CI_X$ such that the probability that $X$ falls into $CI_X$ is bigger that $1-\alpha$. Standard choices for $\alpha$ are $0.05$ or $0.01$. If the distribution of the random variable $X$ is known, some precise estimates for the extrema of the interval exist. However, SA does not provide any insight of what the distribution of the output is. Therefore we start from Chebyshev inequality \cite{jacod2012probability}, which states that for any random variable with finite expected value and variance
 \[
 P(|X-\mu_X| \geq \lambda) \leq \frac{\sigma^2_X}{\lambda^2}.
@@ -132,6 +180,184 @@ By imposing the desired level for confidence interval, i.e. $\alpha = \frac{\sig
 CI_X = \left[\mu_X - \frac{\sigma_X}{\sqrt{\alpha}}, \mu_X + \frac{\sigma_X}{\sqrt{\alpha}}\right].
 \label{CI}
 \end{equation}
+
+\chapter{Sensitivity analysis using the first-order polynomial chaos method}
+\lhead{SA with Polynomial Chaos Method}
+\label{sec_PCM}
+
+The following section presents the sensitivity analysis model developed using the polynomial chaos method. Further details can be found in~\cite{nouaime2024stability,nouaime2025sensitivity,nouaime5183992sensitivity,nouaime2024sensitivity}.
+
+\section{Polynomial chaos method (PCM)}
+There are several techniques to perform a sensitivity analysis. 
+The sensitivity analysis methods are generally classified as either local or global. Global Sensitivity Analysis (GSA) provides a comprehensive measure of sensitivity across the entire parameter space. The most common GSA techniques include variance-based (or Sobol) methods, as well as the Morris method, and the Monte Carlo Method (MCM).Local Sensitivity Analysis (LSA), on the other hand, examines model sensitivity around a specific set of parameter values. Within LSA, there are two primary approaches: the direct method (Taylor expansion method, Polynomial Chaos Method (PCM), etc.) and the adjoint method. In this work, the Intrusive Polynomial Chaos Method is considered.
+
+In PCM, the uncertain variables can be decomposed on the basis of complete orthogonal polynomials. 
+Let $a$ be an uncertain parameter, with known variance $\mu$ and standard deviation $\sigma$, in the Navier-Stokes equations coupled with temperature eq.~\eqref{eq_NS_T}, characterized by a mean $\mu$ and a standard deviation  $\sigma$. %The uncertain parameter $a$ is assumed to be uniformly distributed with $\mu$ the variance and $\sigma$ the standard deviation. 
+Let $Y(\textbf{x},t;a)$ be a physical variable, solution of eq.~\eqref{eq_NS_T}, i.e. typically, the horizontal or vertical velocity, the pressure or the temperature. The variable $Y$ depends on the space $\textbf{x}$, time $t$ and is assumed to depend on the additional uncertain parameter $a$.
+The PCE of the random variable $Y(\mathbf{x},t,a)$ is written
+\begin{align}
+Y(\mathbf{x},t;a)= \sum_{i=0}^{n} Y_i(\mathbf{x},t) \psi_i(a).
+\label{EQ_PCE}
+\end{align}
+The unknowns, $Y_i$, 
+are deterministic coefficients and represent the random mode $i$ of $Y$, namely the PC coefficients of the expansion of the random variable $Y$. While the $\psi_i$ are random
+polynomials of degree $i$, orthogonal with regards to the inner product, denoted $\langle \cdot,\cdot\rangle$, and defined as follows
+\begin{align}
+\langle \psi_i, \psi_j\rangle \equiv \int \zeta(a)\psi_i(a) \psi_j(a) da= \langle \psi_i,\psi_i\rangle \delta_{ij},
+\label{orthogonal}
+\end{align}
+where $\zeta(a)$ is the weighting function and $\delta_{ij}$ the Kronecker delta. If $\langle \psi_i,\psi_i \rangle =1$, the polynomials are called orthonormal. In this work, only the first-order is considered, i.e.  $n=1$ in Eq.\eqref{EQ_PCE}.  The optimal polynomials $\psi_0(a)$ and $\psi_1(a)$ for the random variable $a$ are computed in~\cite{nouaime2025sensitivity} by considering the weighting function $\zeta(a)$ to be the probability density function (PDF) of the distribution of $a$, 
+\begin{align}
+    \psi_0(a)=1, \text{ and } \psi_1(a)= \frac{a-\mu}{\sigma}.
+\end{align}
+In the current study, we have chosen to restrict the analysis to a first-order Polynomial Chaos Expansion (PCE), with $n = 1$, primarily because it is computationally efficient and sufficient for cases where the input uncertainties are relatively small. First-order PCE provides a reasonable approximation of the system’s response when the uncertainty in the input parameters is limited, ensuring a manageable model complexity while still capturing the dominant effects of the uncertain inputs.
+However, it is important to note that this choice is a limitation when dealing with problems where higher input uncertainties are expected. For cases with larger input variability or more complex uncertainty distributions, higher-order terms in the PCE, would be necessary to achieve a more accurate representation of the system's response. To more accurately capture the effects of larger uncertainties, it would be necessary to either extend the analysis to higher-order PCEs or use non-intrusive methods.
+
+
+\section{Application of Intrusive PCM to the non-adiabatic Navier–Stokes equations}
+
+The unknown variables of the non-adiabatic Navier–Stokes equations~\eqref{eq_NS_T}, i.e., the velocity $\mathbf{u}$, the pressure $p$, and the temperature $T$ that depend on the uncertain parameter $a$ are expressed by their PCEs. Thus the PCEs of a vector $\mathbf{v}$ and a scalar $b$ are respectively written as follows
+\begin{align*}
+ \mathbf{v}(\mathbf{x},t;a)& =\mathbf{v}_0(\mathbf{x},t)\psi_0(a) +\mathbf{v}_1(\mathbf{x},t)\psi_1(a)=\mathbf{v}_0(\mathbf{x},t) + \left( \frac{a-\mu}{\sigma}\right)\mathbf{v}_1(\mathbf{x},t), \\
+b(\mathbf{x},t;a) & =b_0(\mathbf{x},t)\psi_0(a) +b_1(\mathbf{x},t)\psi_1(a)
+ =b_0(\mathbf{x},t) + \left( \frac{a-\mu}{\sigma}\right)b_1(\mathbf{x},t).
+ \end{align*}
+These PCEs are inserted in eq.~\eqref{eq_NS_T}. Then each equation is multiplied by $\psi_0$ respectively $\psi_1(a)$, and to obtain the sensitivity equations the inner product is used~\cite{nouaime2024stability, nouaime2025sensitivity}. \\
+
+\underline{For $i=0$} the following system is obtained
+\begin{equation} 
+\left\lbrace
+\begin{aligned}
+& \partial_t \mathbf{u}_0(\mathbf{x},t)-\nu\Delta \mathbf{u}_0(\mathbf{x},t)+\mathbf{u}_0(\mathbf{x},t)\cdot\nabla \mathbf{u}_0(\mathbf{x},t)+{\mathbf u}_1(\mathbf{x},t)\cdot\nabla {\mathbf u}_1(\mathbf{x},t)\\
+&+\rho'\nabla p_0(\mathbf{x},t)=-\beta(T_0(\mathbf{x},t)-\tau)\mathbf{g} && \quad \Omega,t>0,\\
+& \nabla \cdot \mathbf{u}_0(\mathbf{x},t)=0 && \quad \Omega,t>0,\\
+ &\partial_t T_0(\mathbf{x},t)-\lambda'\Delta T_0(\mathbf{x},t)+\mathbf{u}_0(\mathbf{x},t)\cdot\nabla T_0(\mathbf{x},t)+\mathbf{u}_1(\mathbf{x},t)\cdot\nabla T_1(\mathbf{x},t)= 0 && \quad \Omega,t>0,\\
+ & \uvect_0(\xvect, 0)= \vect && \quad \Omega,t=0,\\
+ & T_0(\xvect, 0)= 0 && \quad \Omega,t=0,\\
+ & \uvect_0(\mathbf{x},t)=\vect && \quad \Gamma,t>0,\\
+ & \nabla T_0(\mathbf{x},t)\cdot \nvect=0 && \quad \Gamma_N,t>0,\\
+ &T_0(\mathbf{x},t)=\textcolor{black}{ f_0(\mathbf{x})} && \quad \Gamma_D,t>0.
+\end{aligned}
+\right.
+\label{syst_NS_T_coupled_sens0}
+\end{equation}
+
+\underline{For $i=1$} the following system is obtained
+\begin{equation} 
+\left\lbrace
+\begin{aligned}
+& \partial_t \mathbf{u}_1(\mathbf{x},t)-\nu\Delta \mathbf{u}_1(\mathbf{x},t)+\mathbf{u}_0(\mathbf{x},t)\cdot\nabla \mathbf{u}_1(\mathbf{x},t)+{\mathbf u}_1(\mathbf{x},t)\cdot\nabla {\mathbf u}_0(\mathbf{x},t)\\
+&+\rho'\nabla p_1(\mathbf{x},t)=-\beta T_1(\mathbf{x},t)\mathbf{g} && \quad \Omega,t>0,\\
+& \nabla \cdot \mathbf{u}_1(\mathbf{x},t)=0 && \quad \Omega,t>0,\\
+ &\partial_t T_1(\mathbf{x},t)-\lambda'\Delta T_1(\mathbf{x},t)+\mathbf{u}_0(\mathbf{x},t)\cdot\nabla T_1(\mathbf{x},t)+\mathbf{u}_1(\mathbf{x},t)\cdot\nabla T_0(\mathbf{x},t)=0 && \quad \Omega,t>0,\\
+  & \uvect_1(\xvect, 0)= \vect && \quad \Omega,t=0,\\
+  & T_1(\xvect, 0)= 0 && \quad \Omega,t=0,\\
+ & \uvect_1(\mathbf{x},t)=\vect && \quad \Gamma,t>0,\\
+ & \nabla T_1(\mathbf{x},t)\cdot \nvect=0 && \quad \Gamma_N,t>0,\\
+ &T_1(\mathbf{x},t) =\textcolor{black}{ f_1(\mathbf{x})} && \quad \Gamma_D,t>0.
+\end{aligned}
+\right.
+\label{syst_NS_T_coupled_sens1}
+\end{equation}
+
+
+One can notice that the systems Eq.~\eqref{syst_NS_T_coupled_sens0} and Eq.~\eqref{syst_NS_T_coupled_sens1} are coupled. Therefore, this makes them difficult to solve numerically. To simplify the resolution of these two systems, we perform a decoupling, i.e., we find two
+new systems of PDEs, such that the first system is independent of the second one. The second system will depend on the solution of the first one; therefore, we obtain a triangular system. This is done using the following change of variables
+ $$\mathbf{u}_1(\mathbf{x},t)=\sigma\tilde{\mathbf{u}}_1(\mathbf{x},t),\quad p_1(\mathbf{x},t)= \sigma \tilde p_1(\mathbf{x},t),  T_1(\mathbf{x},t)= \sigma \tilde T_1(\mathbf{x},t), \text{ and } f_1(\mathbf{x},t)= \sigma \tilde f_1(\mathbf{x},t)$$ 
+ then these quantities are inserted in system Eq.~\eqref{syst_NS_T_coupled_sens1}. Then system, Eq.~\eqref{syst_NS_T_coupled_sens0}, is subtracted from system Eq.~\eqref{syst_NS_T_coupled_sens1}, and according to the following change of variables $$\mathbf{u}_0(\mathbf{x},t)=\tilde {\mathbf u}_0(\mathbf{x},t)+\sigma\tilde {\mathbf u}_1(\mathbf{x},t),\quad p_0(\mathbf{x},t)= \tilde p_0(\mathbf{x},t)+\sigma\tilde p_1(\mathbf{x},t),$$ $$T_0(\mathbf{x},t)=\tilde T_0(\mathbf{x},t)+\sigma\tilde T_1(\mathbf{x},t), \text{ and } f_0(\mathbf{x},t)= \tilde f_0(\mathbf{x},t)+\sigma\tilde f_1(\mathbf{x},t)$$ two decoupled systems, Eq.~\eqref{syst_NS_T_u0} and Eq.~\eqref{syst_NS_T_u1}, equivalent to the systems Eq.~\eqref{syst_NS_T_coupled_sens0} and \mathbf{}\eqref{syst_NS_T_coupled_sens1} are obtained
+\begin{equation} 
+\left\lbrace
+\begin{aligned}
+& \partial_t \tilde{\mathbf{u}}_0(\mathbf{x},t)-\nu\Delta \tilde{\mathbf{u}}_0(\mathbf{x},t)+(\tilde{\mathbf{u}}_0(\mathbf{x},t)\cdot \nabla)\tilde{\mathbf{u}}_0+\rho'\nabla \tilde p_0(\mathbf{x},t)=-\beta(\tilde T_0(\mathbf{x},t)-\tau)\mathbf g && \quad \Omega,t>0,\\
+& \nabla\cdot\tilde{\mathbf{u}}_0(\mathbf{x},t)=0 && \quad \Omega,t>0,\\
+ &\partial_t\tilde T_0(\mathbf{x},t)-\lambda'\Delta \tilde T_0(\mathbf{x},t) +\tilde{\mathbf{u}}_0(\mathbf{x},t)\cdot \nabla\tilde T_0(\mathbf{x},t)= 0 && \quad \Omega,t>0,\\
+ & \uzt(\xvect, 0)= \vect && \quad \Omega,t=0,\\
+ & \tilde T(\xvect, 0)= 0 && \quad \Omega,t=0,\\
+ & \uzt(\mathbf{x},t)=\vect && \quad \Gamma,t>0,\\
+ & \nabla \Tzt(\mathbf{x},t)\cdot \nvect=0 && \quad \Gamma_N,t>0,\\
+ &\Tzt(\mathbf{x},t)=\textcolor{black}{\tilde f_0(\mathbf{x})} && \quad \Gamma_D,t>0,
+\end{aligned}
+\right.
+\label{syst_NS_T_u0}
+\end{equation}
+The system~\eqref{syst_NS_T_u0} corresponds to the non-adiabatic Navier–Stokes equations~\eqref{eq_NS_T}, with $\tilde{\mathbf{u}}_0(\mathbf{x},t)$, $\tilde p_0(\mathbf{x},t)$ and  $\tilde T_0(\mathbf{x},t)$ the  velocity, pressure, and the temperature of the fluid respectively.  We can also refer to Eq.~\eqref{syst_NS_T_u0} as the state equations.
+
+The following system~\eqref{syst_NS_T_u1} represents the first-order sensitivity of the Navier-Stokes equations coupled with temperature
+\begin{equation} 
+\left\lbrace
+\begin{aligned}
+& \partial_t \tilde{\mathbf{u}}_1(\mathbf{x},t)-\nu\Delta \tilde{\mathbf{u}}_1(\mathbf{x},t)+(\tilde{\mathbf{u}}_0(\mathbf{x},t)\cdot \nabla)\tilde{\mathbf{u}}_1(\mathbf{x},t)+(\tilde{\mathbf{u}}_1(\mathbf{x},t) \cdot \nabla)\tilde{\mathbf{u}}_0(\mathbf{x},t)\\ &  +2\sigma(\tilde{\mathbf{u}}_1(\mathbf{x},t)\cdot\nabla)\tilde{\mathbf{u}}_1(\mathbf{x},t)+\rho'\nabla \tilde p_1(\mathbf{x},t)=-\beta\tilde T_1(\mathbf{x},t)\mathbf g && \quad \Omega,t>0,\\[0.2cm]
+& \nabla\cdot \tilde{\mathbf{u}}_1(\mathbf{x},t)=0 && \quad \Omega,t>0,\\[0.2cm]
+ &\partial_t\tilde T_1(\mathbf{x},t)-\lambda'\Delta \tilde T_1(\mathbf{x},t) +\tilde{\mathbf{u}}_0(\mathbf{x},t)\cdot \nabla\tilde T_1(\mathbf{x},t)+\tilde{\mathbf{u}}_1(\mathbf{x},t)\cdot \nabla\tilde T_0(\mathbf{x},t)\\ &  +2\sigma\tilde{\mathbf{u}}_1(\mathbf{x},t)\cdot \nabla\tilde T_1(\mathbf{x},t)= 0 && \quad \Omega,t>0,\\
+  & \uot(\xvect, 0)= \vect && \quad \Omega,t=0,\\
+   & \tilde T(\xvect, 0)= 0 && \quad \Omega,t=0,\\
+ & \uot(\mathbf{x},t)=\vect && \quad \Gamma,t>0,\\
+ & \nabla \Tot(\mathbf{x},t)\cdot \nvect=0 && \quad \Gamma_N,t>0,\\
+ &\Tot(\mathbf{x},t)=\textcolor{black}{ f_1(\mathbf{x})} && \quad \Gamma_D,t>0,
+\end{aligned}
+\right.
+\label{syst_NS_T_u1}
+\end{equation}
+with  $\tilde{\mathbf{u}}_1(\mathbf{x},t)$, $\tilde p_1(\mathbf{x},t)$, and  $\tilde  T_1(\mathbf{x},t)$ the sensitivity of the velocity, pressure, and temperature, respectively. In the following, these equations will also be referred to as sensitivity equations. The system Eq.~\eqref{syst_NS_T_u1} can be solved once system Eq.~\eqref{syst_NS_T_u0} is solved and $\tilde{\mathbf{u}}_0$ is computed.
+
+
+The parameters $ \nu$, $\beta$, $\lambda'$, and $\tau$  can also be considered uncertain. In this case, they are expressed using their polynomial chaos expansions (PCE) as follows:
+
+$$\nu(a)=\sum_{i=0}^1\nu_i\psi_i(a), \quad \beta(a)=\sum_{i=0}^1\beta_i\psi_i(a),  \quad \lambda'(a)=\sum_{i=0}^1\lambda'_i\psi_i(a), \quad  \tau(a)=\sum_{i=0}^1\tau_i\psi_i(a).$$
+
+This formulation results in the following equations governing the state and the sensitivity
+
+\begin{equation} 
+\left\lbrace
+\begin{aligned}
+& \partial_t \tilde{\textbf{u}}_0(\textbf{x},t)-\tilde\nu_0\Delta \tilde{\textbf{u}}_0(\textbf{x},t)+(\tilde{\textbf{u}}_0(\textbf{x},t)\cdot\nabla)\tilde{\textbf{u}}_0(\textbf{x},t)+\rho'\nabla \tilde p_0(\textbf{x},t)=-\tilde\beta_0(\tilde T_0(\textbf{x},t)-\tilde\tau_0)\textbf g && \quad \Omega,t>0,\\
+& \nabla\cdot\tilde{\textbf{u}}_0(\textbf{x},t)=\textbf{0} && \quad \Omega,t>0,\\
+ &\partial_t\tilde T_0(\textbf{x},t)-\tilde\lambda'_0\Delta \tilde T_0(\textbf{x},t) +\tilde{\textbf{u}}_0.\nabla\tilde T_0(\textbf{x},t)= \textbf{0} && \quad \Omega,t>0,\\
+ & \uzt(\xvect, 0)= \vect && \quad \Omega,t=0,\\
+ & \tilde T(\xvect, 0)= 0 && \quad \Omega,t=0,\\
+ & \uzt(\mathbf{x},t)=\vect && \quad \Gamma,t>0,\\
+ & \nabla \Tzt(\mathbf{x},t)\cdot \nvect=0 && \quad \Gamma_N,t>0,\\
+ &\Tzt(\mathbf{x},t)=\textcolor{black}{\tilde f_0(\mathbf{x})} && \quad \Gamma_D,t>0,
+\end{aligned}
+\right.
+\label{syst2_NS_T_para_u0}
+\end{equation}
+
+\begin{equation} 
+\left\lbrace
+\begin{aligned}
+& \partial_t \tilde{\textbf{u}}_1(\textbf{x},t)-\tilde\nu_0\Delta \tilde{\textbf{u}}_1(\textbf{x},t)-\tilde\nu_1\Delta \tilde{\textbf{u}}_0(\textbf{x},t)-2\si\tilde\nu_1\Delta \tilde{\textbf{u}}_1(\textbf{x},t)+(\tilde{\textbf{u}}_0(\textbf{x},t)\cdot\nabla)\tilde{\textbf{u}}_1(\textbf{x},t)\\ &+(\tilde{\textbf{u}}_1(\textbf{x},t)\cdot\nabla)\tilde{\textbf{u}}_0(\textbf{x},t)+2\sigma(\tilde{\textbf{u}}_1(\textbf{x},t)\cdot\nabla)\tilde{\textbf{u}}_1(\textbf{x},t)\\ &+\rho'\nabla \tilde p_1(\textbf{x},t)=-\tilde\beta_0(\tilde T_1(\textbf{x},t)-\tilde \tau_1)\textbf g -\tilde\beta_1(\tilde T_0(\textbf{x},t)-\tilde \tau_0)\textbf g-2\si\tilde\beta_1(\tilde T_1(\textbf{x},t)-\tilde \tau_1)\textbf g  && \quad \Omega,t>0,\\
+& \nabla\cdot\tilde{\textbf{u}}_1(\textbf{x},t)=\textbf{0} && \quad \Omega,t>0,\\
+ &\partial_t\tilde T_1(\textbf{x},t)-\tilde\lambda'_0\Delta \tilde T_1(\textbf{x},t)-\tilde\lambda'_1\Delta \tilde T_0(\textbf{x},t)-2\si\tilde\lambda'_1\Delta \tilde T_1(\textbf{x},t) +\tilde{\textbf{u}}_0(\textbf{x},t)\cdot\nabla\tilde T_1(\textbf{x},t)\\ &+\tilde{\textbf{u}}_1(\textbf{x},t)\cdot\nabla\tilde T_0(\textbf{x},t)+2\sigma\tilde{\textbf{u}}_1(\textbf{x},t)\cdot\nabla\tilde T_1(\textbf{x},t)= \textbf{0} && \quad \Omega,t>0,\\
+ & \uot(\xvect, 0)= \vect && \quad \Omega,t=0,\\
+   & \tilde T(\xvect, 0)= 0 && \quad \Omega,t=0,\\
+ & \uot(\mathbf{x},t)=\vect && \quad \Gamma,t>0,\\
+ & \nabla \Tot(\mathbf{x},t)\cdot \nvect=0 && \quad \Gamma_N,t>0,\\
+ &\Tot(\mathbf{x},t)=\textcolor{black}{ f_1(\mathbf{x})} && \quad \Gamma_D,t>0,
+\end{aligned}
+\right.
+\label{syst2_NS_T_para_u1}
+\end{equation}
+
+where $\lambda'_0= \tilde \lambda'_0+\sigma\tilde \lambda'_1$,  $\nu_0= \tilde \nu_0+\sigma\tilde \nu_1$, $\tau_0= \tilde \tau_0+\sigma\tilde \tau_1$, and $\be_0= \tilde \be_0+\sigma\tilde \be_1$. For further details, see~\cite{nouaime2024sensitivity}.
+ 
+\section{Confidence intervals}
+
+The PCE provides an easy way to compute the model's mean and variance of output. Let $Y$ be a physical variable (i.e., the velocity, the temperature, or the pressure). Provided the mean $\mu$ and the variance $\sigma^2$ of the uncertain input parameter $a$, the mean, $\mu_Y $, and the variance, $\sigma_Y^2$, of the variable $Y(\mathbf{x},t, a)$ can be estimated as follows
+ \begin{align}
+& \mu_Y(\textbf{x},t)=E\left( Y_0(\textbf{x},t)+\frac{a - \mu}{\sigma}Y_1(\textbf{x},t)\right) = Y_0(\textbf{x},t) = \tilde Y_0(\textbf{x},t)+ \sigma \tilde Y_1(\textbf{x},t), \text{ and } \\
+&\sigma_Y(\textbf{x},t)= E\Bigl( \bigl( \displaystyle\sum_{i=0}^M Y_i(\textbf{x},t) - Y_0(\textbf{x},t) \bigr)^2\Bigr)  =  Y_1^2(\textbf{x},t) =  \sigma^2 \tilde Y_1^2(\textbf{x},t).
+\label{variance_univaraite_uncertain_temp_6}
+\end{align}
+
+The Chebyshev inequality is employed and the confidence interval of $Y$ is consequently defined by eq.~\eqref{CI}. The strategy in this
+work only requires $M+1$ simulations (one of the state and $M$ of the sensitivities), where $M$ is the number of uncertain parameters. Furthermore, the $M$
+simulations for the sensitivities are independent of each other, and therefore
+the problem is easily parallelisable. In cases where $M$ is small, this strategy is
+very efficient from a computational point of view.
+
+
+
 
 
 \chapter{Optimisation of a Navier–Stokes Problem: Adjoint Method}
@@ -154,6 +380,7 @@ We consider the incompressible steady-state Navier–Stokes equations, which gov
 \end{equation}
 
 where $\nu > 0$ is the kinematic viscosity, $\mathbf{f}$ is a given external force, and $\b_u_D$ denotes the imposed velocity on the boundary.
+
 
 \section{Adjoint Problem}
 
