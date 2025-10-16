@@ -2000,8 +2000,7 @@ void Operateur_Conv_sensibility_VEF::remplir_fluent(DoubleVect& tab_fluent) cons
 }
 double Operateur_Conv_sensibility_VEF::calculer_dt_stab() const
 {
-
-  return DMAXFLOAT; //on resout la sensibilite avec le meme dt que l'etat
+  return 1e9; //on resout la sensibilite avec le meme dt que l'etat
 
   const Domaine_Cl_VEF& domaine_Cl_VEF = la_zcl_vef.valeur();
   const Domaine_VEF& domaine_VEF = le_dom_vef.valeur();
