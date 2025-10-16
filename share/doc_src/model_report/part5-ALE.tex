@@ -148,6 +148,7 @@ velocity is important. This arbitrary mesh velocity keeps the movement of the me
 \mathbf{v}_{ALE} &= \mathbf{0} \;\;\;\;\; \text{at a free surface,} 
 \end{aligned}
 \right.
+\label{harmonic_mesh}
 \end{equation}
 from which the kinematics of the mesh grid is updated, i.e. ${\textbf{x}}^{new}={\textbf{x}}^{old} + \Delta t{\textbf{v}}_{ALE}$.
 
@@ -167,16 +168,222 @@ In the ALE approach, a fluid particle is identified by its position relative to 
 \end{subequations}
 with $J$ the Jacobian of the transformation between the ALE and the Lagrange descriptions. The ALE method is actually a hybrid description between the Euler and the Lagrange descriptions, both of them corresponding to the particular cases ${\textbf{v}}_{ALE}={\textbf{0}}$ and ${\textbf{v}}_{ALE}={\textbf{v}}_{particle}$, respectively. 
 
-In the ALE framework, the choice of ${\textbf{v}}_{ALE}$ is arbitrary as long as the deformation of the mesh grid remains under control. For moderate deformations, ${\textbf{v}}_{ALE}$ is usually defined as the solution of an auxiliary Laplace problem, see~\cite{duarte2004arbitrary}:
-\begin{subequations}
-\begin{align}
-\Delta {\textbf{v}}_{ALE} &= {\textbf{0}} \;\;\;\;\;\;\;\;\;\;\;\; \text{in the fluid domain,}\\
-{\textbf{v}}_{ALE} &= {\textbf{v}}_{solid} \;\;\;\;\;\; \text{at a solid interface,}\\
-{\textbf{v}}_{ALE} &= {\textbf{0}} \;\;\;\;\;\;\;\;\;\;\;\;\text{at a free surface,} 
-\end{align}
-\end{subequations}
-from which the kinematics of the mesh grid is updated, i.e. ${\textbf{x}}^{new}={\textbf{x}}^{old} + \Delta t{\textbf{v}}_{ALE}$.
+In the ALE framework, the choice of ${\textbf{v}}_{ALE}$ is arbitrary as long as the deformation of the mesh grid remains under control. For moderate deformations, ${\textbf{v}}_{ALE}$ is usually defined as the solution of an auxiliary Laplace problem, eq.~\eqref{harmonic_mesh},
+from which the kinematics of the mesh grid is updated.
 
-%\bibliographystyle{alpha}
+\rhead{Grid motion}
+\chapter{Large scale grid motion for ALE}
+\lhead{Large scale grid motion for ALE}
+
+The ability of mesh motion techniques to handle large boundary displacements remains a significant limitation of conventional approaches. To address this challenge, the present work proposes a robust, flexible, and easy-to-implement strategy designed to extend ALE methods to their limits in the context of extreme mesh distortions.
+
+The first step toward this objective involves replacing the traditional elliptic formulation with a hyperbolic one, enabling an explicit solution procedure that avoids the inversion of global systems. A proof of concept for this approach was presented in~\cite{leprevost_computationally_2023}, with a focus on evaluating its computational efficiency. The second step focuses on managing large-scale mesh distortions within this framework by flexibly incorporating fictitious material behavior through the external open-source \textbf{MGIS} interface (version 2.2, mgis-rliv-2.2-commit-21466c14, available at \url{https://github.com/thelfer/MFrontGenericInterfaceSupport}
+; see \cite{helfer_mfrontgenericinterfacesupport_2020} for details) into \textbf{MFront}, an open-source material mechanics code generation tool (version TFEL-4.2.3, available at \url{https://github.com/thelfer/tfel}
+, distributed under the GPL license; see \cite{helfer_introducing_2015} for details). This integration is a key feature of the proposed strategy, as it eliminates the need to introduce complex, application-specific material mechanics code, thereby preserving its modularity. For more details on this coupling and its implementation, see~\cite{faucher2024very}.
+
+\section{Switching to a hyperbolic equation for the nonlinear grid problem}
+
+In this new framework, the mesh motion is governed by a hyperbolic problem, which is mathematically equivalent to a wave propagation equation. The objective is to ensure that the grid’s behavior remains as close as possible to the quasi-static response obtained with the classical elliptic formulation, eq.~\eqref{harmonic_mesh}. Since the dynamic effects—such as waves and vibrations—associated with the hyperbolic equation are not of interest in this context, it is necessary to introduce significant damping to suppress any unwanted temporal oscillations in the mesh motion. To maintain computational efficiency, a simple damping model is adopted, involving a single multiplicative coefficient $d_g$. The resulting formulation for the grid motion is then given by:
+\begin{equation}
+\label{eq-final-grid-problem}
+  \begin{array}{c}
+    \displaystyle \rho_g \frac{\partial^2 \mathbf{u}_g}{\partial t^2}\left ( \mathbf{x}, t \right ) + d_g \frac{\partial \mathbf{u}_g}{\partial t}\left ( \mathbf{x}, t \right ) - \nabla \cdot \boldsymbol{\sigma}_g \left [ \mathbf{u}_g \left ( \mathbf{x}, t \right ) \right ] = 0, \forall \mathbf{x} \text{ in the fluid domain } \Omega_F (t), \\
+    \mathbf{u}_g \left ( \mathbf{x}, t \right ) = \mathbf{u}_{imp} \left ( \mathbf{x}, t \right ) \text{ on } \Gamma_{lag}(t). \\
+    \boldsymbol{\sigma}_g \left [ \mathbf{u}_g \left ( \mathbf{x}, t \right ) \right ] \cdot \mathbf{n} \left ( \mathbf{x}, t \right ) = 0  \text{ on } \partial \Omega_F (t) \setminus \Gamma_{lag}(t).
+  \end{array}
+\end{equation}
+
+\section{Time and space discretization of the hyperbolic grid problem}
+
+The first step is to discretize in time with an explicit scheme for the displacement. The \textit{central difference} scheme from the Newmark family \cite{newmark_method_1959} is chosen, for its simplicity and wide usage. It writes, between times $t^n$ and $t^{n+1}$:
+\begin{equation}
+ % \begin{aligned}
+     \dot{\mathbf{u}}_g^{n+\frac{1}{2}}  = \dot{\mathbf{u}}_g^n + \frac{\Delta t}{2} \ddot{\mathbf{u}}_g^n, \quad 
+     \mathbf{u}_g^{n+1}  = \mathbf{u}_g^n + \Delta t \dot{\mathbf{u}}_g^{n+\frac{1}{2}}, \quad
+     \dot{\mathbf{u}}_g^{n+1}  = \dot{\mathbf{u}}_g^{n+\frac{1}{2}} + \frac{\Delta t}{2} \ddot{\mathbf{u}}_g^{n+1},
+  %\end{aligned}
+\end{equation}
+\noindent with $\dot{\mathbf{u}}_g = \frac{\partial \mathbf{u}_g}{\partial t}$, $\ddot{\mathbf{u}}_g = \frac{\partial^2 \mathbf{u}_g}{\partial t^2}$, $\Delta t = t^{n+1}-t^n$,  $\mathbf{u}_g^n = \mathbf{u}_g (\mathbf{x}, t^n)$ and same for all the time derivatives and instants, and with $t^{n+\frac{1}{2}} = \dfrac{t^{n+1}-t^n}{2} = t^n + \dfrac{\Delta t}{2}$.
+
+The explicit time integration of the hyperbolic problem~\eqref{eq-final-grid-problem} is characterized by its conditional stability to prevent the accumulation of truncation errors due to the explicit displacement prediction. This is a well-studied topic in the literature for structural dynamics, for instance, in \cite{belytschko_computational_1983} and the currently used stability condition, known as the \textit{Courant-Friedrichs-Lewy} (CFL) condition \cite{courant_partial_1967}, expresses as:
+\begin{equation}
+    \Delta t_g < \min_{i \in \text{mesh cells}} \frac{l_i}{c_i}
+    \label{eq:CFL}
+\end{equation}
+with $l_i$ is the characteristic length of mesh cell $i$ (for instance the smallest edge length, the smallest height or the diameter of the inner circle), $c_i$ is the speed of sound in mesh cell $i$, depending on the material model, the index $g$ is used to distinguish the time-step used for the grid problem from the time-step used for the fluid problem of reference.
+
+If the stable time step for the grid problem is larger than the stable time step of the fluid problem, the grid can be updated with the fluid stable time step. In many cases, however, the stable time step for the grid problem will be smaller than the stable time step for the fluid problem. Classical ratios are discussed, for instance, in~\cite{leprevost_computationally_2023} depending on the fluid regimes of interest, laminar or turbulent in particular. In this case, to avoid penalizing the computational performance by forcing a more frequent resolution of the fluid problem, a subcycling algorithm is implemented for the grid motion. 
+
+The complete algorithm is given in Fig.~\ref{fig:algorithm}. The main loop for the transient solution of the Navier-Stokes equations is on the right, with the superscript $n$ for the time steps. The solution of the grid motion problem is detailed on the left, providing the grid displacement, yielding the Jacobian $J^{n+1}$, and the grid velocity $\mathbb{V}^{n+1}_{h,g}$ necessary for the solution of the ALE discrete Navier-Stokes equations at time $t^{n+1}$. The general case with subcycling of the grid problem is considered, and the intermediate grid states between $t^n$ and $t^{n+1}$ are identified as $\hat{\mathbb{U}}_g$, $\dot{\hat{\mathbb{U}}}_g$ and $\ddot{\hat{\mathbb{U}}}_g$, using the superscript $k$ for the inner subcycling iterations. 
+
+\begin{figure}[H] %[here]
+\centering
+\includegraphics[scale=0.425]{figures/Grid_motion.png}
+\caption{Complete algorithm for ALE Navier-Stokes solution with hyperbolic nonlinear problem for mesh motion.}
+\label{fig:algorithm}
+\end{figure}
+
+\section{Optimized time step control}
+
+Switching to an explicit solution of the hyperbolic grid problem, compared to the mandatory implicit solution of the initial elliptic problem, shifts the stakes for computational performance from the nonlinear system resolution to the control of the stable time step. Too small a time step, with respect to the stable time step of the fluid problem, will lead to an excessive number of subcycling iterations and counterbalance the benefit of the reduced cost of each iteration on the grid problem.
+
+Some results on the highest time step ratio to preserve the computational competitiveness of the hyperbolic approach are available in \cite{leprevost_computationally_2023} for the simple case of the harmonic mesh model. A value below $200$ should be preferred, even though actual comparisons involving the computational cost of fully nonlinear models are challenging to obtain, and the benefit provided by explicit integration could be higher for complex cases. It is also noticeable that a minimum value of $10$ is advisable to obtain a quasi-static response of the grid to the imposed motion on Lagrangian boundaries from the perspective of the fluid solver. Such a ratio allows the waves to propagate in the domain and hides the dynamic nature of the hyperbolic equation.
+
+The first action for time step control is in the choice of the fictitious material parameters, with the following priority order:
+
+\begin{itemize}
+    \item[$-$] first, set the parameters for the material behaviour: for instance, $E_g$ and $\nu_g$ in the case of the geometrically nonlinear Saint Venant-Kirchhof;
+    \item[$-$] second, adjust the initial density $\rho_g$ of the fictitious grid material to set the speed of sound to the desired value, connected to the expected stable time step through the smallest characteristic length of all mesh cells: for the Saint Venant-Kirchhof model again, the speed of sound is uniform in space and easily obtained as $c = \sqrt{\frac{E_g}{\rho_g}}$.
+\end{itemize}
+
+Such a parameter analysis is of primary interest to gain knowledge on the full ALE system for the most robust and accurate simulation possible, involving the fluid solver with its stability conditions and the grid motion problem. However, it is insufficient to provide durable control over the time step ratio between the fluid problem and the grid problem. Two issues indeed remain:
+\begin{enumerate}
+    \item even for the simplest material models where the speed of sound is uniform in space and constant in time, the stable time step for the grid is still proportional to the smallest characteristic length of all mesh cells, which is likely to significantly decrease compared to the initial grid state in the case of large mesh motion ;
+    \item more advanced material models than the Saint Venant-Kirchhof model are needed to handle very large imposed displacements on Lagrangian boundaries, such as nonlinear hyperelasticity, and in this case, the speed of sound is most of the time increasing with the level of stress, becoming non-uniform in space and non-constant in time (see Section \ref{sec-Mfront} for an example).
+\end{enumerate}
+
+The second action is thus the implementation into the explicit grid solver  a \textit{mass scaling} technique. Such methods are common in explicit structural dynamics software (see, for instance, LS-Dyna, Abaqus, or Radioss user manuals available online) to provide some control over the time step of the nonlinear simulations and satisfy the needs of engineering units. However, when implemented directly into a physical solver, they come with the risk of altering the solution of the problem of interest. Significant literature is available regarding the best ways to implement mass scaling safely in many cases. Some groundwork, as well as more recent work, can be found, for example, in~\cite{olovsson_selective_2005, stoter_critical_2023}, and a theoretical review is available in~\cite{voet_theoretical_2024}.
+
+The management of the mesh motion problem in the present work is much easier regarding the usage of mass scaling than in the cases above since it does not directly influence the solution of the physical fluid problem. A straightforward and robust strategy can thus be safely implemented to provide the expected control over the grid stable time step. It expresses as follows, with a prescribed time step $\Delta t_g^p$ for the grid problem and for any mesh cell i where $\frac{l_i}{c_i} < \Delta t_g^p$: 
+\begin{enumerate}
+    \item compute the \textit{tangential} local Young's modulus $E_i^t$ such that $c_i = \sqrt{\frac{E_i^t}{\rho_i}}$, where $\rho_i$ is the local material density in cell $i$:
+    
+    \begin{equation}
+      %\begin{aligned}
+        \rho_i = \frac{\rho_g V_i^0}{V_i}, \quad 
+        E_i^t = c_i^2 \rho_i,
+      %\end{aligned}
+    \end{equation}
+    where $V_i$ is the current volume of cell $i$ and $V_i^0$ its initial value.
+    
+    \item compute the requested density $\rho_i^r$ to match the prescribed time step with the tangential Young's modulus:
+    
+    \begin{equation}
+        \rho_i^r = E_i^t \left ( \frac{\Delta t_g^p}{l_i} \right )^2.
+    \end{equation}
+    
+    \item compute the mass $\delta m_i$ to add to cell $i$ to match density $\rho_i^r$:
+    
+    \begin{equation}
+        \delta m_i = V_i \rho_i^r - V_i \rho_i.
+    \end{equation}
+    
+    \item equally distribute $\delta m_i$ among the nodes of cell $i$ and sum the result for each node and each space direction in the vector $\mathbf{M}_a$ of the same structure as the diagonal mass matrix $\mathbf{M}$.
+\end{enumerate}
+
+
+
+
+\section{Material models managed through MGIS/Mfront}
+\label{sec-Mfront}
+Solving efficiently, accurately, and robustly the behaviour of complex nonlinear material models in large strain formulation is the core thematic of an entire community (see, for instance, \cite{doghri_mechanics_2000, yavari_spatial_2006,blume_compatibility_1989}, among a rich literature, for generalities on nonlinear mechanics and specifics on large strain representation). As stated in the introduction, implementing advanced concepts from this field for the sole purpose of solving the ALE grid motion in a generic purpose CFD software is likely to be counterproductive in terms of skills management and code maintenance.
+
+The \textbf{Mfront} open-source code-generation tool for material mechanics provides a very elegant alternative to this issue. It provides a \textit{Domain Specific Language} (DSL) allowing it to simply express any chosen constitutive relation. It then generates the corresponding source and compiles it into a dynamic library to be called each time the stress needs to be computed in the reference program of interest. The source code necessary for the proper calls to \textbf{Mfront}-built libraries is provided by the \textbf{MGIS} generic interface mentioned in the introduction and is the only building block for material mechanics to be implemented into the CFD software. The functions provided by \textbf{MGIS} very simply take as inputs the path to the material library, the values of the material parameters for the chosen model, including the density $\rho_g$, and the gradient of the transformation $\mathbf{F}$ at the evaluation point (see Section \ref{sec-elliptic-problems} for its expression with respect to the displacement field $\mathbf{u}_g$). They give as outputs, among many possibilities depending on the need, the Cauchy stress tensor $\boldsymbol{\sigma}_g$ and the speed of sound $c$.
+
+Two material models are considered for testing purposes in the proposed work. First, the Saint Venant-Kirchhoff model. For illustration, the \textbf{Mfront} code for this model is given in Fig.~\ref{fig-code-mfront}. 
+\begin{figure}[h]
+\lstset{language=C++,
+        basicstyle=\footnotesize,
+        frame = single, 
+        keywordstyle=\color{blue},
+        stringstyle=\color{myGreen},
+        commentstyle=\color{myGreen}\itshape,
+        morecomment=[l][\color{magenta}]{\#},
+        keywordsprefix=\@,alsoletter=\@
+}
+\begin{lstlisting}
+@DSL DefaultFiniteStrainDSL;
+@Behaviour SaintVenantKirchhoffElasticity;
+@Author Thomas Helfer;
+@Date 19/10/2013;
+@Description{
+  "The Saint Venant - Kirchhoff hyper elastic behaviour"
+}
+
+@ModellingHypotheses {".+"};
+
+@MaterialProperty stress young;
+@MaterialProperty real nu;
+young.setEntryName("YoungModulus");
+nu.setEntryName("PoissonRatio");
+
+@LocalVariable stress lambda;   //<! First  Lame coefficient
+@LocalVariable stress mu;       //<! Second Lame coefficient
+@LocalVariable StrainStensor e; //<! Green-Lagrange strain
+
+@InitLocalVariables{
+  lambda = computeLambda(young,nu);
+  mu     = computeMu(young,nu);
+}
+
+@Integrator{
+  e = computeGreenLagrangeTensor(F1);
+  const auto s = lambda*trace(e)*StrainStensor::Id()+2*mu*e;
+  sig = convertSecondPiolaKirchhoffStressToCauchyStress(s,F1);
+}
+
+@SpeedOfSound{
+  const auto jac = det(F1);
+  v_sound=sqrt(abs(young)/(rho_m0*jac));
+}
+\end{lstlisting}
+\caption{Mfront code for Saint Venant-Kirchhoff model.}
+\label{fig-code-mfront}
+\end{figure}
+
+The second model is the Ogden hyperelastic model, selected for its capability to handle nearly incompressible materials with very large strain. This material model is defined through a decoupled potential $W$ decomposed into a volumetric part $W^v$ and an isochoric part $W^i$, such that:
+
+\begin{equation}
+    W(\mathbf{C}) = W^v(J) + W^i ( \lambda_1, \lambda_2, \lambda_3),
+\end{equation}
+with $\mathbf{C}$ the right Cauchy Green tensor: $\mathbf{C}=\mathbf{F}^T\mathbf{F}$, $J$ is the determinant of the deformation gradient: $J=\sqrt{det(\mathbf{C})}$, $\lambda_1$, $\lambda_2$, $\lambda_3$ are eigenvalues of $\mathbf{C}$. Both potentials are given by: 
+
+\begin{equation}
+  \label{eq-ogden-model}
+  %\begin{aligned}
+     W^v = \frac{1}{2}K (J - 1)^2 \quad \text{and} \quad 
+     W^i = \displaystyle \sum_{p=1}^{N} \frac{\mu_p}{\alpha_p} \left ( \lambda_1^{\frac{\alpha_p}{2}} + \lambda_2^{\frac{\alpha_p}{2}} + \lambda_3^{\frac{\alpha_p}{2}} - 3 \right ),
+  %\end{aligned}
+\end{equation}
+\noindent where $K, \left \{ \alpha_p \right \}_{p=1,N}, \left \{ \mu_p \right \}_{p=1,N}$ are material parameters.
+The second Piola-Kirchhoff stress tensor is finally obtained as:
+
+\begin{equation}
+    \mathbf{S} = 2 \frac{\partial W^v}{\partial \mathbf{C}} + 2 \frac{\partial W^i}{\partial \mathbf{C}} = \mathbf{S}^v + \mathbf{S}^i.
+\end{equation}
+
+An example of user input is given in Fig.~\ref{fig-triocfd-mfront-data}, where the Ogden material model with $N=1$ is solved through the \underline{\textit{libBehaviour.so}} library whose absolute path is passed to the program. The entry names \underline{\textit{Ogden\_alpha}}, \underline{\textit{Ogden\_mu}}, and \underline{\textit{Ogden\_K}} map the material parameters $\alpha_1, \mu_1, K$ in eq.~(\ref{eq-ogden-model}), while \underline{\textit{Density}} and \underline{\textit{Inertial\_Damping}} provide the values for scalars $\rho_g$ and $d_g$ in eq.~(\ref{eq-final-grid-problem}). An implementation of the Ogden model is available in the \textbf{Mfront} gallery at \url{https://thelfer.github.io/tfel/web/ogden.html}.
+
+
+\newcommand{\lstblue}[1]{\textcolor{myGreen}{#1}}
+\newcommand{\lstmagenta}[1]{\textcolor{magenta}{#1}}
+\begin{figure}[H]
+\lstset{language=C++,
+        basicstyle=\footnotesize,
+        frame = single, 
+        keywordstyle=\color{blue}\footnotesize,
+        stringstyle=\color{myGreen},
+        commentstyle=\color{myGreen}\itshape,
+        morecomment=[l][\color{magenta}]{\[},
+        keywordsprefix=Structural,alsoletter=Structural,
+        moredelim={[is][\lstblue]{\\lstblue\{}{\}}},
+        moredelim={[is][\lstmagenta]{\\lstmagenta\{}{\}}}
+}
+\begin{lstlisting}
+Structural_dynamic_mesh_model dom
+{
+  Mfront_library \lstmagenta{[local-absolute-path]}\lstblue{/Ogden/src/libBehaviour.so}
+  Mfront_model_name \lstblue{Ogden}
+  Mfront_material_property { \lstblue{Ogden_alpha}   28.8 }
+  Mfront_material_property { \lstblue{Ogden_mu}   27778.  }
+  Mfront_material_property { \lstblue{Ogden_K} 69444444.  }
+  Grid_dt_min 1.e-7
+  Density 10000.
+  Inertial_Damping 1000.
+}
+\end{lstlisting}
+\caption{Example of input data for usage of \textbf{Mfront} library for grid mesh motion.}
+\label{fig-triocfd-mfront-data}
+\end{figure}
 
 
