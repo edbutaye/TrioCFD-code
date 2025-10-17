@@ -34,44 +34,48 @@ function install_mfront
     exit 1
   fi
     
-  mkdir share/build_mfront_tmp
   current_path=$PWD
-  cd share/build_mfront_tmp
-  tar -xzvf ../Mfront/tfel-TFEL-$mfront_version.tar.gz &> ../Mfront/build-tfel-TFEL-$mfront_version.LOG
+  source_dir=$current_path/share/Mfront
+  build_dir="$current_path/build/build_mfront_"$mfront_version
+  install_dir="$current_path/local/tfel"
+  [[ ! -d $build_dir ]] && mkdir $build_dir
+  [[ ! -d $install_dir ]] && mkdir $install_dir
+  cd $build_dir
+  tar -xzvf $source_dir/tfel-TFEL-$mfront_version.tar.gz &> $source_dir/build-tfel-TFEL-$mfront_version.LOG
   mkdir build
   cd build
-  echo "CC=$TRUST_cc_BASE CXX=$TRUST_CC_base FC=$TRUST_F77_BASE cmake ../tfel-TFEL-$mfront_version -DCMAKE_BUILD_TYPE=Release -Denable-reference-doc=OFF -Denable-website=OFF -DCMAKE_INSTALL_PREFIX=$current_path/share"
-  eval "CC=$TRUST_cc_BASE CXX=$TRUST_CC_base FC=$TRUST_F77_BASE cmake ../tfel-TFEL-$mfront_version -DCMAKE_BUILD_TYPE=Release -Denable-reference-doc=OFF -Denable-website=OFF -DCMAKE_INSTALL_PREFIX=$current_path/share &>> ../../Mfront/build-tfel-TFEL-$mfront_version.LOG"
+  echo "CC=$TRUST_cc_BASE CXX=$TRUST_CC_base FC=$TRUST_F77_BASE cmake ../tfel-TFEL-$mfront_version -DCMAKE_BUILD_TYPE=Release -Denable-reference-doc=OFF -Denable-website=OFF -DCMAKE_INSTALL_PREFIX=$install_dir"
+  eval "CC=$TRUST_cc_BASE CXX=$TRUST_CC_base FC=$TRUST_F77_BASE cmake ../tfel-TFEL-$mfront_version -DCMAKE_BUILD_TYPE=Release -Denable-reference-doc=OFF -Denable-website=OFF -DCMAKE_INSTALL_PREFIX=$install_dir &>> $source_dir/build-tfel-TFEL-$mfront_version.LOG"
   ret=$?
   if ((ret)); then
-     echo "Error in configuring Tfel/MFront, see file $current_path/share/Mfront/build-tfel-TFEL-$mfront_version.LOG"
+     echo "Error in configuring Tfel/MFront, see file $source_dir/build-tfel-TFEL-$mfront_version.LOG"
      exit 1
   fi
 
   np=`nproc 2> /dev/null`
   if [ ! $np ]; then
     echo "make"
-    eval "make &>> ../../Mfront/build-tfel-TFEL-$mfront_version.LOG"
+    eval "make &>> $source_dir/build-tfel-TFEL-$mfront_version.LOG"
   else
     echo "make with $np processes"
-    eval "make -j $np &>> ../../Mfront/build-tfel-TFEL-$mfront_version.LOG"
+    eval "make -j $np &>> $source_dir/build-tfel-TFEL-$mfront_version.LOG"
   fi
   ret=$?
   if ((ret)); then
-     echo "Error in building Tfel/MFront, see file $current_path/share/Mfront/build-tfel-TFEL-$mfront_version.LOG"
+     echo "Error in building Tfel/MFront, see file $source_dir/build-tfel-TFEL-$mfront_version.LOG"
      exit 1
   fi
 
   echo "make install"
-  eval "make install &>> ../../Mfront/build-tfel-TFEL-$mfront_version.LOG"
+  eval "make install &>> $source_dir/build-tfel-TFEL-$mfront_version.LOG"
   ret=$?
   if ((ret)); then
-     echo "Error in installing Tfel/MFront, see file $current_path/share/Mfront/build-tfel-TFEL-$mfront_version.LOG"
+     echo "Error in installing Tfel/MFront, see file $source_dir/build-tfel-TFEL-$mfront_version.LOG"
      exit 1
   fi
 
   cd $current_path
-  rm -rf share/build_mfront_tmp
+  rm -rf $build_dir
   echo " "
 }
 
@@ -80,8 +84,8 @@ function compile_mfront_libraries
   current_path=$PWD
   
   echo "Build libraries for available material models in $current_path/share/Mfront"
-  export PATH=${current_path}/share/bin:$PATH
-  export LD_LIBRARY_PATH=${current_path}/share/lib:$LD_LIBRARY_PATH
+  export PATH=${current_path}/local/tfel/bin:$PATH
+  export LD_LIBRARY_PATH=${current_path}/local/tfel/lib:$LD_LIBRARY_PATH
   echo "Mfront version is:" 
   eval "mfront --version"
   if ((ret)); then
@@ -180,6 +184,9 @@ fi
 # For Tfel/Mfront : 
 # --------------------------------
 if [ $TRIOCFD_USE_MFRONT ]; then
+  export project_directory=$PWD
+
+  [[ -z ${BUILD_MFRONT_LIBRARIES+x} ]] && export BUILD_MFRONT_LIBRARIES=1 
   echo " "
   if [ ! $TRIOCFD_MFRONT_VERSION ]; then 
    # Default version for Tfel/Mfront
@@ -189,11 +196,19 @@ if [ $TRIOCFD_USE_MFRONT ]; then
   echo "Install Tfel/Mfront version $TRIOCFD_MFRONT_VERSION"
   install_mfront $TRIOCFD_MFRONT_VERSION
 fi
-if [ -f share/bin/mfront ]; then
-  echo "export LD_LIBRARY_PATH=\${project_directory}/share/lib:\$LD_LIBRARY_PATH" >> env_TrioCFD.sh
-  echo "export LD_LIBRARY_PATH=\${project_directory}/share/lib:\$LD_LIBRARY_PATH" >> full_env_TrioCFD.sh
+if [ -d ${project_directory}/local/tfel ]; then
+  echo "export TRIOCFD_USE_MFRONT=1" >> env_TrioCFD.sh
+  echo "export LD_LIBRARY_PATH=\${project_directory}/local/tfel/lib:\$LD_LIBRARY_PATH" >> env_TrioCFD.sh
+  echo "export TRIOCFD_USE_MFRONT=1" >> full_env_TrioCFD.sh
+  echo "export LD_LIBRARY_PATH=\${project_directory}/local/tfel/lib:\$LD_LIBRARY_PATH" >> full_env_TrioCFD.sh
 fi
-[[ $BUILD_MFRONT_LIBRARIES ]] && compile_mfront_libraries
+if [ $BUILD_MFRONT_LIBRARIES == "1" ]; then compile_mfront_libraries
+else
+  if [ -d ${project_directory}/share/Mfront_material_libraries ]; then
+    echo "Remove 'Mfront_material_libraries' directory"
+    rm -rf ${project_directory}/share/Mfront_material_libraries
+  fi
+fi
 
 exit 0
 
