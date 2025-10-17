@@ -1,6 +1,7 @@
 --------------------------------------------------------------------------------------------------
 Release notes version 1.9.7_beta : Enhancements, modifications and corrected bugs since version 1.9.6 :
 --------------------------------------------------------------------------------------------------
+24/10/25 (TrioCFD) Syntax      : Turbulence - Standard source term is now available for Pb_thermohydraulique (no anisotherme source yet)
 24/10/25 (TrioCFD) New Doc     : Documentation for Sensibility Analysis - module based on the Polynomial Chaos Method.
 16/10/25 (TrioCFD) New Doc     : New documentation of MGIS/MFront coupled with ALE for large scale grid motion
 15/10/25 (TrioCFD) Bug fix     : RANS k-omega: fix a bug where omega was allowed to go below OMEGA_MIN, and could reach zero, resulting in division by zero.
