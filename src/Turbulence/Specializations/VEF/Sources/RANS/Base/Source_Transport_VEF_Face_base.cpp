@@ -115,9 +115,10 @@ DoubleTab& Source_Transport_VEF_Face_base::ajouter_keps(DoubleTab& resu) const
 DoubleTab& Source_Transport_VEF_Face_base::ajouter_anisotherme(DoubleTab& resu) const
 {
   // on ajoute directement G
-  const Domaine_Cl_VEF& zcl_VEF_th = ref_cast(Domaine_Cl_VEF,eq_thermique->domaine_Cl_dis());
+  const Domaine_Cl_VEF& zcl_VEF_th = ref_cast(Domaine_Cl_VEF, eq_thermique->domaine_Cl_dis());
   const DoubleTab& scalaire = eq_thermique->inconnue().valeurs();
-  const Modele_turbulence_scal_base& le_modele_scalaire = ref_cast(Modele_turbulence_scal_base,eq_thermique->get_modele(TURBULENCE).valeur());
+  const Modele_turbulence_scal_base& le_modele_scalaire = ref_cast(Modele_turbulence_scal_base,
+                                                                   eq_thermique->get_modele(TURBULENCE).valeur());
   DoubleTab alpha_turb(le_modele_scalaire.diffusivite_turbulente().valeurs());
   const DoubleTab& g = gravite->valeurs();
   const Champ_Don_base& ch_beta = beta_t.valeur();
@@ -126,9 +127,10 @@ DoubleTab& Source_Transport_VEF_Face_base::ajouter_anisotherme(DoubleTab& resu) 
   DoubleTrav G(nb_face);
 
   // C'est l'objet de type domaine_Cl_dis de l'equation thermique qui est utilise dans le calcul de G
-  calculer_terme_destruction_K_gen(le_dom_VEF.valeur(),zcl_VEF_th,G,scalaire,alpha_turb,ch_beta,g,0);
+  calculer_terme_destruction_K_gen(le_dom_VEF.valeur(), zcl_VEF_th, G, scalaire,
+                                   alpha_turb, ch_beta, g, 0);
 
-  fill_resu_anisotherme(G,volumes_entrelaces,resu); // voir les classes filles
+  fill_resu_anisotherme(G, volumes_entrelaces, resu); // voir les classes filles
   return resu;
 }
 
@@ -139,16 +141,18 @@ DoubleTab& Source_Transport_VEF_Face_base::ajouter_concen(DoubleTab& resu) const
   const DoubleTab& concen = eq_concentration->inconnue().valeurs();
   const Modele_turbulence_scal_base& le_modele_scalaire = ref_cast(Modele_turbulence_scal_base, eq_concentration->get_modele(TURBULENCE).valeur());
   const DoubleTab& lambda_turb = le_modele_scalaire.conductivite_turbulente().valeurs();
-//  const DoubleTab& alpha_turb = le_modele_scalaire.diffusivite_turbulente().valeurs(); // XXX : realisable utilise ca ???? a voir
+  //  const DoubleTab& alpha_turb = le_modele_scalaire.diffusivite_turbulente().valeurs(); // XXX : realisable utilise ca ???? a voir
   const DoubleVect& g = gravite->valeurs();
   const Champ_Don_base& ch_beta_concen = beta_c.valeur();
   const DoubleVect& volumes_entrelaces = le_dom_VEF->volumes_entrelaces();
-  const int nb_face = le_dom_VEF->nb_faces(), nb_consti = eq_concentration->constituant().nb_constituants();
+  const int nb_face = le_dom_VEF->nb_faces();
+  const int nb_consti = eq_concentration->constituant().nb_constituants();
   DoubleTrav G(nb_face);
 
-  calculer_terme_destruction_K_gen(le_dom_VEF.valeur(), zcl_VEF_co, G, concen, lambda_turb, ch_beta_concen, g, nb_consti);
+  calculer_terme_destruction_K_gen(le_dom_VEF.valeur(), zcl_VEF_co, G, concen,
+                                   lambda_turb, ch_beta_concen, g, nb_consti);
 
-  fill_resu_concen(G,volumes_entrelaces,resu); // voir les classes filles
+  fill_resu_concen(G, volumes_entrelaces, resu); // voir les classes filles
   return resu;
 }
 
@@ -158,19 +162,24 @@ DoubleTab& Source_Transport_VEF_Face_base::ajouter_anisotherme_concen(DoubleTab&
   // on ajoute directement G
   const Domaine_Cl_VEF& zcl_VEF_th = ref_cast(Domaine_Cl_VEF, eq_thermique->domaine_Cl_dis());
   const Domaine_Cl_VEF& zcl_VEF_co = ref_cast(Domaine_Cl_VEF, eq_concentration->domaine_Cl_dis());
-  const DoubleTab& temper = eq_thermique->inconnue().valeurs(), &concen = eq_concentration->inconnue().valeurs();
+  const DoubleTab& temper = eq_thermique->inconnue().valeurs();
+  const DoubleTab& concen = eq_concentration->inconnue().valeurs();
   const Modele_turbulence_scal_base& le_modele_scalaire = ref_cast(Modele_turbulence_scal_base, eq_thermique->get_modele(TURBULENCE).valeur());
 
   // XXX : Elie Saikali : vaut mieux utiliser diffusivite_turbulente au lie de faire ca ....
   // voila dans Source_Transport_K_Eps_Realisable_aniso_therm_concen_VEF_Face
   // const DoubleTab& alpha_turb = le_modele_scalaire.diffusivite_turbulente().valeurs();
   DoubleTab alpha_turb(le_modele_scalaire.conductivite_turbulente().valeurs());
-  double rhocp = eq_thermique->milieu().capacite_calorifique().valeurs()(0, 0) * eq_thermique->milieu().masse_volumique().valeurs()(0, 0);
+  const double rhocp = eq_thermique->milieu().capacite_calorifique().valeurs()(0, 0) * eq_thermique->milieu().masse_volumique().valeurs()(0, 0);
   alpha_turb /= rhocp;
-  const DoubleVect& g = gravite->valeurs(), &volumes_entrelaces = le_dom_VEF->volumes_entrelaces();
-  const Champ_Don_base& ch_beta_temper = beta_t.valeur(), &ch_beta_concen = beta_c.valeur();
-  const int nb_face = le_dom_VEF->nb_faces(), nb_consti = eq_concentration->constituant().nb_constituants();
-  DoubleTrav G_t(nb_face), G_c(nb_face);
+  const DoubleVect& g = gravite->valeurs();
+  const DoubleVect& volumes_entrelaces = le_dom_VEF->volumes_entrelaces();
+  const Champ_Don_base& ch_beta_temper = beta_t.valeur();
+  const Champ_Don_base& ch_beta_concen = beta_c.valeur();
+  const int nb_face = le_dom_VEF->nb_faces();
+  const int nb_consti = eq_concentration->constituant().nb_constituants();
+  DoubleTrav G_t(nb_face);
+  DoubleTrav G_c(nb_face);
 
   calculer_terme_destruction_K_gen(le_dom_VEF.valeur(), zcl_VEF_th, G_t, temper, alpha_turb, ch_beta_temper, g, 0);
   calculer_terme_destruction_K_gen(le_dom_VEF.valeur(), zcl_VEF_co, G_c, concen, alpha_turb, ch_beta_concen, g, nb_consti);

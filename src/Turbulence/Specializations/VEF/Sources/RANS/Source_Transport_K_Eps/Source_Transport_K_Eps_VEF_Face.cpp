@@ -83,7 +83,7 @@ const DoubleTab& Source_Transport_K_Eps_VEF_Face::get_visc_turb() const
 
 const DoubleTab& Source_Transport_K_Eps_VEF_Face::get_cisaillement_paroi() const
 {
-  const Modele_turbulence_hyd_K_Eps& mod  = ref_cast(Modele_turbulence_hyd_K_Eps,mon_eq_transport_K_Eps->modele_turbulence());
+  const Modele_turbulence_hyd_K_Eps& mod  = ref_cast(Modele_turbulence_hyd_K_Eps, mon_eq_transport_K_Eps->modele_turbulence());
   return mod.loi_paroi().Cisaillement_paroi();
 }
 

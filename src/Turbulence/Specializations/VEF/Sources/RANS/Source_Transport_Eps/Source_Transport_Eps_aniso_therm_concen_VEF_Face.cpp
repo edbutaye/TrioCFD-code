@@ -43,13 +43,14 @@ void Source_Transport_Eps_aniso_therm_concen_VEF_Face::associer_pb(const Problem
 void Source_Transport_Eps_aniso_therm_concen_VEF_Face::fill_resu_anisotherme_concen(const DoubleTrav& G_t, const DoubleTrav& G_c, const DoubleVect& volumes_entrelaces, DoubleTab& resu) const
 {
   const DoubleTab& K = mon_eq_transport_K->inconnue().valeurs(), &Eps = mon_eq_transport_Eps->inconnue().valeurs();
-  double C3_loc, G_sum, LeK_MIN = mon_eq_transport_K->modele_turbulence().get_K_MIN();
+  const double LeK_MIN = mon_eq_transport_K->modele_turbulence().get_K_MIN();
+
   for (int face = 0; face < le_dom_VEF->nb_faces(); face++)
     {
-      G_sum = G_t(face) + G_c(face);
       if (K(face) >= LeK_MIN)
         {
-          C3_loc = G_sum > 0. ? 0. : C3;
+          const double G_sum = G_t(face) + G_c(face);
+          const double C3_loc = G_sum > 0. ? 0. : C3;
           resu(face) += C1 * (1 - C3_loc) * G_sum * volumes_entrelaces(face) * Eps(face) / K(face);
         }
     }

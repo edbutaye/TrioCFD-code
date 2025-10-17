@@ -72,10 +72,14 @@ Entree& Source_Transport_proto::readOn_real(Entree& is, const Nom& nom)
   Cerr << "C2_eps = " << C2 << finl;
 
   // Checking of the value given in the data deck for "interpolation_viscosite_turbulente"
-  if ( _interpolation_viscosite_turbulente == 0 ) { Cerr << "Interpolation arithmetique de la viscosite turbulente aux faces (si VEF) = " << finl; }
-  else if ( _interpolation_viscosite_turbulente == 1 ) { Cerr << "Interpolation harmonique de la viscosite turbulente aux faces (si VEF) = " << finl; }
-  else if ( _interpolation_viscosite_turbulente == 2 ) { Cerr << "Interpolation harmonique ponderee par les volumes de maille de la viscosite turbulente aux faces (si VEF) = " << finl; }
-  else if ( _interpolation_viscosite_turbulente == 3 ) { Cerr << "Interpolation harmonique ponderee par les tailles de maille de la viscosite turbulente aux faces (si VEF) = " << finl; }
+  if ( _interpolation_viscosite_turbulente == 0 )
+    Cerr << "Interpolation arithmetique de la viscosite turbulente aux faces (si VEF) = " << finl;
+  else if ( _interpolation_viscosite_turbulente == 1 )
+    Cerr << "Interpolation harmonique de la viscosite turbulente aux faces (si VEF) = " << finl;
+  else if ( _interpolation_viscosite_turbulente == 2 )
+    Cerr << "Interpolation harmonique ponderee par les volumes de maille de la viscosite turbulente aux faces (si VEF) = " << finl;
+  else if ( _interpolation_viscosite_turbulente == 3 )
+    Cerr << "Interpolation harmonique ponderee par les tailles de maille de la viscosite turbulente aux faces (si VEF) = " << finl;
   else
     {
       Cerr << "Error in 'interpolation_viscosite_turbulente' input value :" << _interpolation_viscosite_turbulente << finl;
@@ -97,58 +101,67 @@ Entree& Source_Transport_proto::readOn_anisotherme_real(Entree& is, const Nom& n
 }
 
 Entree& Source_Transport_proto::readOn_concen_real(Entree& is, const Nom& nom) { return readOn_anisotherme_real(is,nom); }
-Entree& Source_Transport_proto::readOn_anisotherme_concen_real(Entree& is, const Nom& nom) { return readOn_anisotherme_real(is,nom); }
+Entree& Source_Transport_proto::readOn_anisotherme_concen_real(Entree& is, const Nom& nom) { return readOn_anisotherme_real(is, nom); }
 
 void Source_Transport_proto::verifier_pb_keps(const Probleme_base& pb, const Nom& nom)
 {
-  if (!sub_type(Pb_Hydraulique_Turbulent,pb) && !sub_type(Pb_Thermohydraulique_Turbulent_QC,pb)) error_keps(nom,pb.que_suis_je());
+  if (!sub_type(Pb_Hydraulique_Turbulent, pb) && !sub_type(Pb_Thermohydraulique_Turbulent_QC, pb))
+    error_model(nom, pb.que_suis_je());
 }
 
 void Source_Transport_proto::verifier_pb_keps_anisotherme(const Probleme_base& pb, const Nom& nom)
 {
-  if (!sub_type(Pb_Thermohydraulique_Turbulent,pb)) error_keps(nom,pb.que_suis_je());
+  if (!sub_type(Pb_Thermohydraulique_Turbulent, pb))
+    error_model(nom, pb.que_suis_je());
 }
 
 void Source_Transport_proto::verifier_pb_keps_concen(const Probleme_base& pb, const Nom& nom)
 {
-  if (!sub_type(Pb_Hydraulique_Concentration_Turbulent,pb)) error_keps(nom,pb.que_suis_je());
+  if (!sub_type(Pb_Hydraulique_Concentration_Turbulent, pb))
+    error_model(nom, pb.que_suis_je());
 }
 
 void Source_Transport_proto::verifier_pb_keps_anisotherme_concen(const Probleme_base& pb, const Nom& nom)
 {
-  if (!sub_type(Pb_Thermohydraulique_Concentration_Turbulent,pb)) error_keps(nom,pb.que_suis_je());
+  if (!sub_type(Pb_Thermohydraulique_Concentration_Turbulent, pb))
+    error_model(nom, pb.que_suis_je());
 }
 
 void Source_Transport_proto::verifier_pb_komega(const Probleme_base& pb, const Nom& nom)
 {
-  if (!sub_type(Pb_Hydraulique_Turbulent, pb) &&
-      !sub_type(Pb_Thermohydraulique_Turbulent_QC, pb))
-    {
-      Cerr << "You should not do this with the K_Omega model, be patient."
-           << finl;
-      Process::exit();
-    }
+  if (sub_type(Pb_Thermohydraulique_Turbulent_QC, pb))
+    Cerr << "You are using the k-omega model in quasi-compressible. It might not be well validated. Use with caution." << finl;
+
 }
 
 void Source_Transport_proto::verifier_milieu_anisotherme(const Probleme_base& pb, const Nom& nom)
 {
   const Milieu_base& milieu = pb.equation(1).milieu(); // eq thermique
-  if (pb.nombre_d_equations()<2) error_keps(nom,pb.que_suis_je());
-  if (sub_type(Fluide_Dilatable_base,ref_cast(Fluide_base,milieu))) error_keps(nom,milieu.que_suis_je());
+  if (pb.nombre_d_equations() < 2)
+    error_model(nom, pb.que_suis_je());
+
+  if (sub_type(Fluide_Dilatable_base, ref_cast(Fluide_base, milieu)))
+    error_model(nom, milieu.que_suis_je());
 }
 
 void Source_Transport_proto::verifier_milieu_concen(const Probleme_base& pb, const Nom& nom)
 {
   const Milieu_base& milieu = pb.equation(0).milieu(); // XXX : Attention pas eq 1 car Constituant derive pas de Fluide_base ! donc eq hydro
-  if (pb.nombre_d_equations()<2) error_keps(nom,pb.que_suis_je());
-  if (sub_type(Fluide_Dilatable_base,ref_cast(Fluide_base,milieu))) error_keps(nom,milieu.que_suis_je());
+  if (pb.nombre_d_equations() < 2)
+    error_model(nom, pb.que_suis_je());
+
+  if (sub_type(Fluide_Dilatable_base, ref_cast(Fluide_base, milieu)))
+    error_model(nom, milieu.que_suis_je());
 }
 
 void Source_Transport_proto::verifier_milieu_anisotherme_concen(const Probleme_base& pb, const Nom& nom)
 {
   const Milieu_base& milieu = pb.equation(1).milieu(); // eq thermique
-  if (pb.nombre_d_equations()<3) error_keps(nom,pb.que_suis_je());
-  if (sub_type(Fluide_Dilatable_base,ref_cast(Fluide_base,milieu))) error_keps(nom,milieu.que_suis_je());
+  if (pb.nombre_d_equations() < 3)
+    error_model(nom, pb.que_suis_je());
+
+  if (sub_type(Fluide_Dilatable_base, ref_cast(Fluide_base, milieu)))
+    error_model(nom, milieu.que_suis_je());
 }
 
 void Source_Transport_proto::verifier_beta_concen(const Fluide_base& fluide)
@@ -168,19 +181,19 @@ void Source_Transport_proto::associer_pb_proto(const Probleme_base& pb)
 
 void Source_Transport_proto::associer_pb_anisotherme(const Probleme_base& pb)
 {
-  const Fluide_base& fluide = ref_cast(Fluide_base,pb.equation(1).milieu());
+  const Fluide_base& fluide = ref_cast(Fluide_base, pb.equation(1).milieu());
   beta_t = fluide.beta_t();
   gravite = fluide.gravite();
-  eq_thermique = ref_cast(Convection_Diffusion_Temperature,pb.equation(1));
+  eq_thermique = ref_cast(Convection_Diffusion_Temperature, pb.equation(1));
 }
 
 void Source_Transport_proto::associer_pb_concen(const Probleme_base& pb)
 {
-  const Fluide_base& fluide = ref_cast(Fluide_base,pb.equation(0).milieu()); // XXX : Attention pas eq 1 car Constituant derive pas de Fluide_base !
+  const Fluide_base& fluide = ref_cast(Fluide_base, pb.equation(0).milieu()); // XXX : Attention pas eq 1 car Constituant derive pas de Fluide_base !
   verifier_beta_concen(fluide);
   beta_c = fluide.beta_c();
   gravite = fluide.gravite();
-  eq_concentration = ref_cast(Convection_Diffusion_Concentration,pb.equation(1));
+  eq_concentration = ref_cast(Convection_Diffusion_Concentration, pb.equation(1));
 }
 
 void Source_Transport_proto::associer_pb_anisotherme_concen(const Probleme_base& pb)
@@ -190,6 +203,6 @@ void Source_Transport_proto::associer_pb_anisotherme_concen(const Probleme_base&
   beta_t = fluide.beta_t();
   beta_c = fluide.beta_c();
   gravite = fluide.gravite();
-  eq_thermique = ref_cast(Convection_Diffusion_Temperature,pb.equation(1));
-  eq_concentration = ref_cast(Convection_Diffusion_Concentration,pb.equation(2));
+  eq_thermique = ref_cast(Convection_Diffusion_Temperature, pb.equation(1));
+  eq_concentration = ref_cast(Convection_Diffusion_Concentration, pb.equation(2));
 }

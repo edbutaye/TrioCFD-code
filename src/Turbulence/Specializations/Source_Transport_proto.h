@@ -82,7 +82,7 @@ protected:
   OBS_PTR(Convection_Diffusion_Concentration) eq_concentration;
 };
 
-inline void error_keps(const Nom& source, const Nom& nom)
+inline void error_model(const Nom& source, const Nom& nom)
 {
   Cerr << "Error ! You can't use the " << source << " source term with a " << nom << " problem/medium !!" << finl;
   Cerr << "Check the reference manual. It is may be another source term which should be used." << finl;

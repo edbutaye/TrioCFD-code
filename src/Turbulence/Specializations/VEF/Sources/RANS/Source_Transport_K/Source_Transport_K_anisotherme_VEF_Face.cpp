@@ -40,9 +40,12 @@ void Source_Transport_K_anisotherme_VEF_Face::associer_pb(const Probleme_base& p
   Source_Transport_K_VEF_Face::associer_pb_anisotherme(pb);
 }
 
-void Source_Transport_K_anisotherme_VEF_Face::fill_resu_anisotherme(const DoubleVect& G, const DoubleVect& volumes_entrelaces, DoubleTab& resu) const
+void Source_Transport_K_anisotherme_VEF_Face::fill_resu_anisotherme(const DoubleVect& G,
+                                                                    const DoubleVect& volumes_entrelaces,
+                                                                    DoubleTab& resu) const
 {
-  for (int face = 0; face < le_dom_VEF->nb_faces(); face++) resu(face) += G(face) * volumes_entrelaces(face);
+  for (int face = 0; face < le_dom_VEF->nb_faces(); face++)
+    resu(face) += G(face) * volumes_entrelaces(face);
 }
 
 DoubleTab& Source_Transport_K_anisotherme_VEF_Face::ajouter(DoubleTab& resu) const

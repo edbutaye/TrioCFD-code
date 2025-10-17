@@ -74,7 +74,8 @@ Entree& Transport_K_Omega::readOn(Entree& s)
       const Probleme_base& pb = probleme();
       Cerr << "Construction and typing for the source term of the Transport_K_Omega equation." << finl;
 
-      if (sub_type(Pb_Hydraulique_Turbulent, pb)
+      if (sub_type(Pb_Thermohydraulique_Turbulent, pb)
+          || sub_type(Pb_Hydraulique_Turbulent, pb)
           || milieu().que_suis_je() == "Fluide_Quasi_Compressible"
           ||  pb.que_suis_je().contient("ALE"))
         {
@@ -89,11 +90,11 @@ Entree& Transport_K_Omega::readOn(Entree& s)
 
 int Transport_K_Omega::lire_motcle_non_standard(const Motcle& mot, Entree& is)
 {
-  if (mot=="diffusion")
+  if (mot == "diffusion")
     {
       Cerr << "Reading and typing of the diffusion operator : " << finl;
 
-      if (with_nu_==0)
+      if (with_nu_ == 0)
         {
           Cerr << "Paramètre with_nu_ nul. Association d'un champ uniforme nul pour la diffusion."
                << finl;
@@ -112,7 +113,7 @@ int Transport_K_Omega::lire_motcle_non_standard(const Motcle& mot, Entree& is)
       lire_op_diff_turbulent(is);
       return 1;
     }
-  else if (mot=="convection")
+  else if (mot == "convection")
     {
       Cerr << "Reading and typing of the convection operator : " << finl;
       const Champ_Inc_base& vitesse_transportante = probleme().equation(0).inconnue();
@@ -244,8 +245,9 @@ const Motcle& Transport_K_Omega::domaine_application() const
 
 DoubleTab& Transport_K_Omega::corriger_derivee_impl(DoubleTab& d)
 {
-  Nom pbb = probleme().que_suis_je();
-  if (pbb.contient("ALE")) corriger_derivee_impl_ALE(d);
+  const Nom pbb = probleme().que_suis_je();
+  if (pbb.contient("ALE"))
+    corriger_derivee_impl_ALE(d);
 
   const Turbulence_paroi_base& loi_paroi = modele_turbulence().loi_paroi();
   loi_paroi.corriger_derivee_impl(d);

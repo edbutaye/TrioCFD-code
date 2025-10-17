@@ -47,9 +47,9 @@ Sortie& Transport_K_Eps::printOn(Sortie& s ) const
 void Transport_K_Eps::set_param(Param& param)
 {
   Transport_K_Eps_base::set_param(param);
-  param.ajouter("with_nu",&with_nu_);
-  param.dictionnaire("no",0);
-  param.dictionnaire("yes",1);
+  param.ajouter("with_nu", &with_nu_);
+  param.dictionnaire("no", 0);
+  param.dictionnaire("yes", 1);
 }
 
 /*! @brief Lit les specifications d'une equation de transport K-epsilon a partir d'un flot d'entree.
@@ -59,9 +59,9 @@ void Transport_K_Eps::set_param(Param& param)
  * @param (Entree& s) un flot d'entree
  * @return (Entree&) le flot d'entree modifie
  */
-Entree& Transport_K_Eps::readOn(Entree& s )
+Entree& Transport_K_Eps::readOn(Entree& s)
 {
-  with_nu_=0;
+  with_nu_ = 0;
   // Lecture des attributs de l'equation
   Transport_K_Eps_base::readOn(s);
 
@@ -72,33 +72,29 @@ Entree& Transport_K_Eps::readOn(Entree& s )
       Source& so=les_sources.add(t);
       const Probleme_base& pb = probleme();
       Cerr << "Construction and typing for the source term of the Transport_K_Eps equation." << finl;
-      Nom pbb = probleme().que_suis_je();
-      if (sub_type(Pb_Hydraulique_Turbulent,pb) || milieu().que_suis_je()=="Fluide_Quasi_Compressible")
+      const Nom pbb = probleme().que_suis_je();
+      if (sub_type(Pb_Hydraulique_Turbulent, pb)
+          || milieu().que_suis_je()=="Fluide_Quasi_Compressible"
+          || pbb.contient("ALE"))
         {
           Nom typ = "Source_Transport_K_Eps";
           Cerr << "TYPAGE DES SOURCES : this " << *this << finl;
-          so.typer(typ,*this);
+          so.typer(typ, *this);
         }
-      else if (pbb.contient("ALE"))
-        {
-          Nom typ = "Source_Transport_K_Eps";
-          Cerr << "TYPAGE DES SOURCES : this " << *this << finl;
-          so.typer(typ,*this);
-        }
-      else if (sub_type(Pb_Thermohydraulique_Turbulent,pb))
+      else if (sub_type(Pb_Thermohydraulique_Turbulent, pb))
         {
           Nom typ = "Source_Transport_K_Eps_anisotherme";
-          so.typer(typ,*this);
+          so.typer(typ, *this);
         }
-      else if (sub_type(Pb_Hydraulique_Concentration_Turbulent,pb))
+      else if (sub_type(Pb_Hydraulique_Concentration_Turbulent, pb))
         {
           Nom typ = "Source_Transport_K_Eps_aniso_concen";
-          so.typer(typ,*this);
+          so.typer(typ, *this);
         }
-      else if ( (sub_type(Pb_Thermohydraulique_Concentration_Turbulent,pb)) ) //|| (sub_type(Probleme_Combustion,pb)) )
+      else if ((sub_type(Pb_Thermohydraulique_Concentration_Turbulent, pb)))
         {
           Nom typ = "Source_Transport_K_Eps_aniso_therm_concen";
-          so.typer(typ,*this);
+          so.typer(typ, *this);
         }
       so->associer_eqn(*this);
     }
@@ -108,11 +104,11 @@ Entree& Transport_K_Eps::readOn(Entree& s )
 
 int Transport_K_Eps::lire_motcle_non_standard(const Motcle& mot, Entree& is)
 {
-  if (mot=="diffusion")
+  if (mot == "diffusion")
     {
       Cerr << "Reading and typing of the diffusion operator : " << finl;
 
-      if (with_nu_==0)
+      if (with_nu_ == 0)
         {
           Cerr << " On associe le champ de diffusion nul afin de faire comme avant !!!!!! " << finl;
           EChaine tt("Champ_Uniforme 1 0");
@@ -121,7 +117,7 @@ int Transport_K_Eps::lire_motcle_non_standard(const Motcle& mot, Entree& is)
         }
       else
         {
-          const Fluide_base& fluide_inc = ref_cast(Fluide_base,le_fluide.valeur());
+          const Fluide_base& fluide_inc = ref_cast(Fluide_base, le_fluide.valeur());
           if (sub_type(Fluide_Quasi_Compressible, fluide_inc))
             terme_diffusif.associer_diffusivite(fluide_inc.viscosite_dynamique());
           else
@@ -130,7 +126,7 @@ int Transport_K_Eps::lire_motcle_non_standard(const Motcle& mot, Entree& is)
       lire_op_diff_turbulent(is);
       return 1;
     }
-  else if (mot=="convection")
+  else if (mot == "convection")
     {
       Cerr << "Reading and typing of the convection operator : " << finl;
       const Champ_Inc_base& vitesse_transportante = probleme().equation(0).inconnue();
@@ -198,7 +194,7 @@ const Operateur& Transport_K_Eps::operateur(int i) const
     case 1:
       return terme_convectif;
     default :
-      Cerr << "Error for Transport_K_Eps::operateur("<<i<<") !! " << finl;
+      Cerr << "Error for Transport_K_Eps::operateur(" << i << ") !! " << finl;
       Cerr << "Transport_K_Eps has " << nombre_d_operateurs() <<" operators "<<finl;
       Cerr << "and you are trying to access the " << i <<" th one."<< finl;
       Process::exit();
@@ -225,7 +221,7 @@ Operateur& Transport_K_Eps::operateur(int i)
     case 1:
       return terme_convectif;
     default :
-      Cerr << "Error for Transport_K_Eps::operateur("<<i<<") !! " << finl;
+      Cerr << "Error for Transport_K_Eps::operateur(" << i << ") !! " << finl;
       Cerr << "Transport_K_Eps has " << nombre_d_operateurs() <<" operators "<<finl;
       Cerr << "and you are trying to access the " << i <<" th one."<< finl;
       Process::exit();
@@ -253,7 +249,7 @@ DoubleTab& Transport_K_Eps::corriger_derivee_impl(DoubleTab& d)
   if (pbb.contient("ALE"))
     corriger_derivee_impl_ALE(d);
 
-  const Turbulence_paroi_base& loi_paroi=modele_turbulence().loi_paroi();
+  const Turbulence_paroi_base& loi_paroi = modele_turbulence().loi_paroi();
   loi_paroi.corriger_derivee_impl(d);
   return Transport_K_Eps_base::corriger_derivee_impl(d);
 }
