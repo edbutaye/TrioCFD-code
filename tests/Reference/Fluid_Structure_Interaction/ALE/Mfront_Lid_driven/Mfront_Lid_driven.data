@@ -1,0 +1,132 @@
+# Classical lid-driven cavity flow. GCL test: fiind exact fluid solution on  a moving  grid #
+# Hydraulique 2D laminar with ALE: large scale grid motion managed through MGIS/Mfront #
+# Saint Venant Kirchhoff Elasticity model used for the grid motion problem  #
+# PARALLEL OK #
+dimension 2    
+Pb_hydraulique_ALE pb
+Domaine_ALE dom
+
+Scheme_euler_implicit  sch
+Read sch
+{
+      # Initial time [s] #
+      tinit 0
+      dt_impr 1.e-6
+	tcpumax 23.5
+ 	# facsec such as dt = facsec * min(dt(CFL),dt_max) ; for explicit scheme facsec <= 1. By default facsec equals to 1 #
+	facsec 2
+       facsec_max 10
+	solveur implicite_ALE
+	{
+           solveur gmres { diag seuil 1.e-12 nb_it_max 5 }
+	}  
+	# Max number of time steps #
+      nb_pas_dt_max 10
+      # Convergence threshold (see .dt_ev file) #
+	seuil_statio 1.e-6
+}
+
+
+# BEGIN MESH #
+Lire_MED { 
+   domain dom 
+   file carre150.med 
+}
+# END MESH #
+
+# BEGIN PARTITION
+Partition dom
+{
+	Partition_tool metis { Nb_parts 2 }
+	Larg_joint 2
+	zones_name DOM
+}
+End
+END PARTITION #
+
+# BEGIN SCATTER
+Scatter DOM.Zones dom
+END SCATTER #
+
+# For the Arbitrary Lagrangian-Eulerian framework: block to indicate the number of mobile
+boundaries of the domain and specify the speed that must be imposed on them. #
+imposer_vit_bords_ale dom
+{
+	3 # number of mobile boundaries #
+	Lower Champ_front_ALE 2 0.01*sin(pi*x)*cos(20*t) 0.
+	Inlet Champ_front_ALE 2 0. 0.01*sin(pi*y)*cos(20*t) 
+	Outlet Champ_front_ALE 2 0. 0.01*sin(pi*y)*cos(20*t) 
+
+}
+
+# Material models managed through MGIS/Mfront #
+Structural_dynamic_mesh_model dom
+{
+        # Mfront_library  $project_directory/share/Mfront_material_libraries/SaintVenantKirchhoffElasticity/src/libBehaviour.so #
+        Mfront_model_name SaintVenantKirchhoffElasticity
+        Mfront_material_property { YoungModulus 1.E8 }
+        Mfront_material_property { PoissonRatio 0.3 }
+        Grid_dt_min 1.e-5
+        Density  1000
+        Inertial_Damping 500.
+}
+
+VEFPreP1B dis
+Associate pb dom
+Associate pb sch
+Discretize pb dis
+
+
+Read pb
+{
+   	fluide_incompressible {
+            mu Champ_Uniforme 1 0.01
+            rho Champ_Uniforme 1 1.
+  	 }
+        Navier_Stokes_standard_ALE
+        {       
+                solveur_pression PETSc Cholesky { }      
+                convection { ALE { amont } }
+                diffusion { }
+                initial_conditions {
+                        vitesse Champ_Uniforme 2 0. 0. 
+                        }
+                boundary_conditions {
+                        Upper paroi_defilante Champ_Front_Uniforme 2 1. 0.
+                        Lower Frontiere_ouverte_vitesse_imposee_ALE Champ_front_ALE 2 0. 0.
+                        Inlet Frontiere_ouverte_vitesse_imposee_ALE Champ_front_ALE 2 0. 0.
+			    Outlet Frontiere_ouverte_vitesse_imposee_ALE Champ_front_ALE 2 0. 0.
+                }
+        }
+	Post_processing
+	{ 
+   	  Probes
+		{
+                
+              U_V vitesse periode 1e-6 segment 100 0.5 0 0.5 1. 
+              P_V pression_pa periode 1e-6 segment 100 0.5 0 0.5 1.                    
+		 U_H  vitesse periode 1e-6 segment 100 0 0.5 1 0.5 
+               P_H pression_pa periode 1e-6 segment 100 0 0.5 1 0.5
+              
+		}
+	# Fields #
+       format lml 
+	fields dt_post 1
+	{
+			pression elem
+			pression som
+			vitesse elem
+		       vitesse som
+                    ALEMeshVelocity som
+			ALEMeshTotalDisplacement som
+                    ALEMeshStructuralPressure elem
+                    ALEMeshStructuralVonMises elem
+                    ALEMeshStructuralForces som
+
+	}
+    }
+    	Sauvegarde pdi Cas.sauv
+}
+
+Solve pb
+End
