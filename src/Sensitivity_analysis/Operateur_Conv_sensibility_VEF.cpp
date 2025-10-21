@@ -2001,62 +2001,6 @@ void Operateur_Conv_sensibility_VEF::remplir_fluent(DoubleVect& tab_fluent) cons
 double Operateur_Conv_sensibility_VEF::calculer_dt_stab() const
 {
   return 1e9; //on resout la sensibilite avec le meme dt que l'etat
-
-  const Domaine_Cl_VEF& domaine_Cl_VEF = la_zcl_vef.valeur();
-  const Domaine_VEF& domaine_VEF = le_dom_vef.valeur();
-  const DoubleVect& volumes_entrelaces = domaine_VEF.volumes_entrelaces();
-  const DoubleVect& volumes_entrelaces_Cl = domaine_Cl_VEF.volumes_entrelaces_Cl();
-  remplir_fluent(fluent);
-  double dt_face,dt_stab =1.e30;
-
-  // On traite les conditions aux limites
-  // Si une face porte une condition de Dirichlet on n'en tient pas compte
-  // dans le calcul de dt_stab
-  for (int n_bord=0; n_bord<domaine_VEF.nb_front_Cl(); n_bord++)
-    {
-      const Cond_lim& la_cl = domaine_Cl_VEF.les_conditions_limites(n_bord);
-      if ( (sub_type(Dirichlet,la_cl.valeur()))
-           ||
-           (sub_type(Dirichlet_homogene,la_cl.valeur()))
-         )
-        ;
-      else
-        {
-          const Front_VF& le_bord = ref_cast(Front_VF,la_cl->frontiere_dis());
-          int ndeb = le_bord.num_premiere_face();
-          int nfin = ndeb + le_bord.nb_faces();
-          for (int num_face=ndeb; num_face<nfin; num_face++)
-            {
-              dt_face = volumes_entrelaces_Cl(num_face)/(fluent[num_face]+1.e-30);
-              dt_stab = (dt_face < dt_stab) ? dt_face : dt_stab;
-            }
-        }
-    }
-
-  // On traite les faces internes non standard
-  int ndeb = domaine_VEF.premiere_face_int();
-  int nfin = domaine_VEF.premiere_face_std();
-
-  for (int num_face=ndeb; num_face<nfin; num_face++)
-    {
-      dt_face = volumes_entrelaces_Cl(num_face)/(fluent[num_face]+DMINFLOAT);
-      dt_stab =(dt_face < dt_stab) ? dt_face : dt_stab;
-    }
-
-  // On traite les faces internes standard
-  ndeb = nfin;
-  nfin = domaine_VEF.nb_faces();
-  for (int num_face=ndeb; num_face<nfin; num_face++)
-    {
-      dt_face = volumes_entrelaces(num_face)/(fluent[num_face]+DMINFLOAT);
-      dt_stab =(dt_face < dt_stab) ? dt_face : dt_stab;
-    }
-
-  dt_stab = Process::mp_min(dt_stab);
-  // astuce pour contourner le type const de la methode
-  Operateur_Conv_sensibility_VEF& op = ref_cast_non_const(Operateur_Conv_sensibility_VEF,*this);
-  op.fixer_dt_stab_conv(dt_stab);
-  return dt_stab;
 }
 
 
