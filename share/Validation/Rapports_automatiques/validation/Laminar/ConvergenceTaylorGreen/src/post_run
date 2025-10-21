@@ -6,7 +6,7 @@ rm -f *.dat
 for file in *.err
 do
    CELLS=`awk '/Total number of elements/ && (NF==6) {gsub(":","",$NF);cells=$NF} END {print cells}' $file`
-   [ -f ${file%.err}.TU ] && awk -v CELLS=$CELLS '/Dont operateurs convection/ {print CELLS" "$4/CELLS}' ${file%.err}.TU
+   [ -f ${file%.err}.TU ] && awk -v CELLS=$CELLS '/Convection operator/ {print CELLS" "$4/CELLS}' ${file%.err}.TU
 done > cpu.dat
 
 # Calcul de l'erreur
