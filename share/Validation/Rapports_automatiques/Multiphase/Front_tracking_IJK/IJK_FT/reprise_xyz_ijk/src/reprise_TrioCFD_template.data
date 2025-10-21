@@ -140,15 +140,7 @@ Lire pb
 		   bas		Paroi_FT_disc symetrie
 	   }
     }
-    postraitement  {
-	   Sondes
-	   {
-		   sonde_pression nodes pression periode 2.e-3 Points 2 0.005 0.005 0.005 0.009 0.009 0.009
-	   }
-	   format xyz champs dt_post 1. {
-		   indicatrice_interf
-	   }
-    }		
+
 	liste_postraitements {
 		postraitement_ft_lata post1 {
 		    format Lata 
