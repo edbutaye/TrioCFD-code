@@ -428,7 +428,6 @@ void Domaine_ALE::initialiser (double temps, Domaine_dis_base& le_domaine_dis,Pr
   Cerr << "Domaine_ALE::initialize " << finl;
   invalide_octree();
   bool  check_NoZero_ALE= true;
-  ALE_mesh_velocity=calculer_vitesse(temps,le_domaine_dis,pb,  check_NoZero_ALE);
 
   //On initialise les vitesses aux faces
   Domaine_VF& le_dom_VF=ref_cast(Domaine_VF,le_domaine_dis);
