@@ -67,15 +67,13 @@ DoubleTab& Calcul_Production_K_VEF::calculer_terme_production_K(const Domaine_VE
   // Compute the velocity gradient
   const int nb_elem_tot = domaine_VEF.nb_elem_tot();
   const int dimension = Objet_U::dimension;
-  DoubleTab gradient_elem(nb_elem_tot, dimension, dimension);
-  gradient_elem = 0.;
+  DoubleTrav gradient_elem(nb_elem_tot, dimension, dimension);
   Champ_P1NC::calcul_gradient(vit, gradient_elem, zcl_VEF);
 
   const IntTab& face_voisins = domaine_VEF.face_voisins();
   const DoubleVect& volumes = domaine_VEF.volumes();
 
   // Boundary conditions
-  ToDo_Kokkos("critical");
   for (int n_bord = 0; n_bord < domaine_VEF.nb_front_Cl(); n_bord++)
     {
       const Cond_lim& la_cl = zcl_VEF.les_conditions_limites(n_bord);
@@ -119,53 +117,58 @@ DoubleTab& Calcul_Production_K_VEF::calculer_terme_production_K(const Domaine_VE
  * @param[in] const double limiteur
  * @return
  */
-void Calcul_Production_K_VEF::loop_for_non_periodic_boundaries(DoubleTab& prodK,
-                                                               const DoubleTab& gradient_elem,
-                                                               const DoubleTab& visco_turb,
+void Calcul_Production_K_VEF::loop_for_non_periodic_boundaries(DoubleTab& tab_prodK,
+                                                               const DoubleTab& tab_gradient_elem,
+                                                               const DoubleTab& tab_visco_turb,
                                                                const DoubleVect& volumes,
-                                                               const IntTab& face_voisins,
+                                                               const IntTab& tab_face_voisins,
                                                                const int nfaceinit,
                                                                const int nfaceend,
                                                                const int interpol_visco,
                                                                const double limiteur,
-                                                               const DoubleTab& K_Omega,
+                                                               const DoubleTab& tab_K_Omega,
                                                                const bool& deactivate_production_limiter,
                                                                const double& cst_production_limiter
                                                               ) const
 {
-  ToDo_Kokkos("critical");
-  for (int fac = nfaceinit; fac < nfaceend; fac++)
-    {
-      const int poly1 = face_voisins(fac, 0);
-      const double visco_face = visco_turb(poly1);
+  int dim = Objet_U::dimension;
+  CDoubleTabView3 gradient_elem = tab_gradient_elem.view_ro<3>();
+  CDoubleTabView K_Omega = tab_K_Omega.view_ro();
+  CDoubleArrView visco_turb = static_cast<const ArrOfDouble&>(tab_visco_turb).view_ro();
+  CIntTabView face_voisins = tab_face_voisins.view_ro();
+  DoubleArrView prodK = static_cast<ArrOfDouble&>(tab_prodK).view_wo();
+  Kokkos::parallel_for(start_gpu_timer(__KERNEL_NAME__), Kokkos::RangePolicy<>(nfaceinit, nfaceend), KOKKOS_LAMBDA(const int fac)
+  {
+    const int poly1 = face_voisins(fac, 0);
+    const double visco_face = visco_turb(poly1);
 
-      const double du_dx = gradient_elem(poly1, 0, 0);
-      const double du_dy = gradient_elem(poly1, 0, 1);
-      const double dv_dx = gradient_elem(poly1, 1, 0);
-      const double dv_dy = gradient_elem(poly1, 1, 1);
+    const double du_dx = gradient_elem(poly1, 0, 0);
+    const double du_dy = gradient_elem(poly1, 0, 1);
+    const double dv_dx = gradient_elem(poly1, 1, 0);
+    const double dv_dy = gradient_elem(poly1, 1, 1);
 
-      // Determination du terme de production
-      prodK(fac) = (2*(du_dx*du_dx + dv_dy*dv_dy)
-                    + ((du_dy + dv_dx)*(du_dy + dv_dx)))*visco_face;
+    // Determination du terme de production
+    prodK(fac) = (2*(du_dx*du_dx + dv_dy*dv_dy)
+                  + ((du_dy + dv_dx)*(du_dy + dv_dx)))*visco_face;
 
-      if (Objet_U::dimension == 3)
-        {
-          const double du_dz = gradient_elem(poly1, 0, 2);
-          const double dv_dz = gradient_elem(poly1, 1, 2);
-          const double dw_dx = gradient_elem(poly1, 2, 0);
-          const double dw_dy = gradient_elem(poly1, 2, 1);
-          const double dw_dz = gradient_elem(poly1, 2, 2);
+    if (dim==3)
+      {
+        const double du_dz = gradient_elem(poly1, 0, 2);
+        const double dv_dz = gradient_elem(poly1, 1, 2);
+        const double dw_dx = gradient_elem(poly1, 2, 0);
+        const double dw_dy = gradient_elem(poly1, 2, 1);
+        const double dw_dz = gradient_elem(poly1, 2, 2);
 
-          // Determination du terme de production
-          prodK(fac) = (2*(du_dx*du_dx + dv_dy*dv_dy + dw_dz*dw_dz)
-                        + ((du_dy + dv_dx) * (du_dy + dv_dx)
-                           + (du_dz + dw_dx) * (du_dz + dw_dx)
-                           + (dw_dy + dv_dz) * (dw_dy + dv_dz)))*visco_face;
-
-        }
-      if (!deactivate_production_limiter)
-        prodK(fac)=std::min(prodK(fac),cst_production_limiter*BETA_K*K_Omega(fac,0)*K_Omega(fac,1));
-    }
+        // Determination du terme de production
+        prodK(fac) = (2*(du_dx*du_dx + dv_dy*dv_dy + dw_dz*dw_dz)
+                      + ((du_dy + dv_dx) * (du_dy + dv_dx)
+                         + (du_dz + dw_dx) * (du_dz + dw_dx)
+                         + (dw_dy + dv_dz) * (dw_dy + dv_dz)))*visco_face;
+      }
+    if (!deactivate_production_limiter)
+      prodK(fac)=std::min(prodK(fac),cst_production_limiter*BETA_K*K_Omega(fac,0)*K_Omega(fac,1));
+  });
+  end_gpu_timer(__KERNEL_NAME__);
 }
 
 /*! @brief Compute production term on internal and periodic boundary faces
@@ -185,61 +188,66 @@ void Calcul_Production_K_VEF::loop_for_non_periodic_boundaries(DoubleTab& prodK,
  * @param[in] const double limiteur
  * @return
  */
-void Calcul_Production_K_VEF::loop_for_internal_or_periodic_faces(DoubleTab& prodK,
-                                                                  const DoubleTab& gradient_elem,
-                                                                  const DoubleTab& visco_turb,
-                                                                  const DoubleVect& volumes,
-                                                                  const IntTab& face_voisins,
+void Calcul_Production_K_VEF::loop_for_internal_or_periodic_faces(DoubleTab& tab_prodK,
+                                                                  const DoubleTab& tab_gradient_elem,
+                                                                  const DoubleTab& tab_visco_turb,
+                                                                  const DoubleVect& tab_volumes,
+                                                                  const IntTab& tab_face_voisins,
                                                                   const int nfaceinit,
                                                                   const int nfaceend,
                                                                   const int interpol_visco,
                                                                   const double limiteur,
-                                                                  const DoubleTab& K_Omega,
+                                                                  const DoubleTab& tab_K_Omega,
                                                                   const bool& deactivate_production_limiter,
                                                                   const double& cst_production_limiter
                                                                  ) const
 {
-  ToDo_Kokkos("critical");
-  for (int fac = nfaceinit; fac < nfaceend; fac++)
-    {
-      const int poly1 = face_voisins(fac, 0);
-      const int poly2 = face_voisins(fac, 1);
-      const double a = volumes(poly1)/(volumes(poly1) + volumes(poly2));
-      const double b = volumes(poly2)/(volumes(poly1) + volumes(poly2));
+  int dim = Objet_U::dimension;
+  CDoubleTabView3 gradient_elem = tab_gradient_elem.view_ro<3>();
+  CDoubleTabView K_Omega = tab_K_Omega.view_ro();
+  CDoubleArrView visco_turb = static_cast<const ArrOfDouble&>(tab_visco_turb).view_ro();
+  CDoubleArrView volumes = tab_volumes.view_ro();
+  CIntTabView face_voisins = tab_face_voisins.view_ro();
+  DoubleArrView prodK = static_cast<ArrOfDouble&>(tab_prodK).view_wo();
+  Kokkos::parallel_for(start_gpu_timer(__KERNEL_NAME__), Kokkos::RangePolicy<>(nfaceinit, nfaceend), KOKKOS_LAMBDA(const int fac)
+  {
+    const int poly1 = face_voisins(fac, 0);
+    const int poly2 = face_voisins(fac, 1);
+    const double a = volumes(poly1)/(volumes(poly1) + volumes(poly2));
+    const double b = volumes(poly2)/(volumes(poly1) + volumes(poly2));
 
-      const double visco_face = get_turbulent_viscosity(visco_turb, volumes,
-                                                        interpol_visco, poly1, poly2,
-                                                        limiteur);
+    const double visco_face = get_turbulent_viscosity(visco_turb, volumes,
+                                                      interpol_visco, poly1, poly2,
+                                                      limiteur);
 
-      const double du_dx = a*gradient_elem(poly1, 0, 0) + b*gradient_elem(poly2, 0, 0);
-      const double du_dy = a*gradient_elem(poly1, 0, 1) + b*gradient_elem(poly2, 0, 1);
-      const double dv_dx = a*gradient_elem(poly1, 1, 0) + b*gradient_elem(poly2, 1, 0);
-      const double dv_dy = a*gradient_elem(poly1, 1, 1) + b*gradient_elem(poly2, 1, 1);
+    const double du_dx = a*gradient_elem(poly1, 0, 0) + b*gradient_elem(poly2, 0, 0);
+    const double du_dy = a*gradient_elem(poly1, 0, 1) + b*gradient_elem(poly2, 0, 1);
+    const double dv_dx = a*gradient_elem(poly1, 1, 0) + b*gradient_elem(poly2, 1, 0);
+    const double dv_dy = a*gradient_elem(poly1, 1, 1) + b*gradient_elem(poly2, 1, 1);
 
-      // Determination du terme de production
+    // Determination du terme de production
 
-      prodK(fac) = (2*(du_dx*du_dx + dv_dy*dv_dy)
-                    + ((du_dy + dv_dx)*(du_dy + dv_dx)))*visco_face;
+    prodK(fac) = (2*(du_dx*du_dx + dv_dy*dv_dy)
+                  + ((du_dy + dv_dx)*(du_dy + dv_dx)))*visco_face;
 
-      if (Objet_U::dimension == 3)
-        {
-          const double du_dz = a*gradient_elem(poly1, 0, 2) + b*gradient_elem(poly2, 0, 2);
-          const double dv_dz = a*gradient_elem(poly1, 1, 2) + b*gradient_elem(poly2, 1, 2);
-          const double dw_dx = a*gradient_elem(poly1, 2, 0) + b*gradient_elem(poly2, 2, 0);
-          const double dw_dy = a*gradient_elem(poly1, 2, 1) + b*gradient_elem(poly2, 2, 1);
-          const double dw_dz = a*gradient_elem(poly1, 2, 2) + b*gradient_elem(poly2, 2, 2);
+    if (dim==3)
+      {
+        const double du_dz = a*gradient_elem(poly1, 0, 2) + b*gradient_elem(poly2, 0, 2);
+        const double dv_dz = a*gradient_elem(poly1, 1, 2) + b*gradient_elem(poly2, 1, 2);
+        const double dw_dx = a*gradient_elem(poly1, 2, 0) + b*gradient_elem(poly2, 2, 0);
+        const double dw_dy = a*gradient_elem(poly1, 2, 1) + b*gradient_elem(poly2, 2, 1);
+        const double dw_dz = a*gradient_elem(poly1, 2, 2) + b*gradient_elem(poly2, 2, 2);
 
-          // Determination du terme de production
-          prodK(fac) = (2*(du_dx*du_dx + dv_dy*dv_dy + dw_dz*dw_dz)
-                        + ((du_dy + dv_dx)*(du_dy + dv_dx)
-                           + (du_dz + dw_dx)*(du_dz + dw_dx)
-                           + (dw_dy + dv_dz)*(dw_dy + dv_dz)))*visco_face;
-
-        }
-      if (!deactivate_production_limiter)
-        prodK(fac)=std::min(prodK(fac),cst_production_limiter*BETA_K*K_Omega(fac,0)*K_Omega(fac,1));
-    }
-
+        // Determination du terme de production
+        prodK(fac) = (2*(du_dx*du_dx + dv_dy*dv_dy + dw_dz*dw_dz)
+                      + ((du_dy + dv_dx)*(du_dy + dv_dx)
+                         + (du_dz + dw_dx)*(du_dz + dw_dx)
+                         + (dw_dy + dv_dz)*(dw_dy + dv_dz)))*visco_face;
+      }
+    if (!deactivate_production_limiter)
+      prodK(fac)=std::min(prodK(fac),cst_production_limiter*BETA_K*K_Omega(fac,0)*K_Omega(fac,1));
+  });
+  end_gpu_timer(__KERNEL_NAME__);
 }
 
 DoubleTab& Calcul_Production_K_VEF::
@@ -507,6 +515,41 @@ void Calcul_Production_K_VEF::compute_production_term_EASM(const int face,
  * @param[out]
  * @return double
  */
+KOKKOS_INLINE_FUNCTION
+double Calcul_Production_K_VEF::get_turbulent_viscosity(CDoubleArrView visco_turb,
+                                                        CDoubleArrView volumes,
+                                                        const int type_interpo,
+                                                        const int poly1,
+                                                        const int poly2,
+                                                        const double limiteur) const
+{
+  switch(type_interpo)
+    {
+    case 0: // cas initial, toutes les interpolation arithmetiques ponderees sont fortement instables
+      return 0.5*(visco_turb(poly1) + visco_turb(poly2));
+
+    case 1: //Moyenne harmonique (uniquement utilisee dans le cas du keps realisable)
+      if (visco_turb(poly1) > 1.e-10 && visco_turb(poly2) > 1.e-10)
+        return limiteur/(1./visco_turb(poly1) + 1./visco_turb(poly2));
+      else
+        return limiteur*0.5*(visco_turb(poly1) + visco_turb(poly2));
+
+    case 2: //Moyenne harmonique ponderee pour garantir la continuite du tenseur des contraintes a la face (uniquement utilisee dans le cas du keps realisable)
+      if (visco_turb(poly1) > 1.e-10 && visco_turb(poly2) > 1.e-10)
+        {
+          const double a = volumes(poly1)/(volumes(poly1) + volumes(poly2));
+          const double b = volumes(poly2)/(volumes(poly1) + volumes(poly2));
+          return limiteur*(visco_turb(poly1)*visco_turb(poly2))/(b*visco_turb(poly1) + a*visco_turb(poly2));
+        }
+      else
+        return limiteur*0.5*(visco_turb(poly1) + visco_turb(poly2));
+
+    default:
+      Process::Kokkos_exit("Interpolation type should be 0, 1 or 2, not " + type_interpo);
+      return 1;
+    }
+}
+// Soon obsolete, once all is ported on Kokkos
 double Calcul_Production_K_VEF::get_turbulent_viscosity(const DoubleTab& visco_turb,
                                                         const DoubleVect& volumes,
                                                         const int type_interpo,
@@ -602,6 +645,7 @@ DoubleTab& Calcul_Production_K_VEF::calculer_terme_destruction_K_gen(
 
       // Calcul de gravite . u_teta
       const int nb_faces_ = domaine_VEF.nb_faces();
+      ToDo_Kokkos("critical");
       for (int fac = 0; fac < nb_faces_; fac++)
         {
           G[fac] = gravite(0)*u_theta(fac, 0) + gravite(1)*u_theta(fac, 1);
@@ -637,6 +681,7 @@ DoubleTab& Calcul_Production_K_VEF::calculer_terme_destruction_K_gen(
 
       // Calcul de gravite . u_teta
       const int nb_faces_ = domaine_VEF.nb_faces();
+      ToDo_Kokkos("critical");
       for (int fac = 0; fac < nb_faces_; fac++)
         for (int k = 0; k < nb_consti; k++)
           {

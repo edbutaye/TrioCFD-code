@@ -23,6 +23,7 @@
 #define Calcul_Production_K_VEF_included
 
 #include <TRUSTTabs_forward.h>
+#include <View_Types.h>
 
 class Champ_Don_base;
 class Domaine_Cl_VEF;
@@ -53,6 +54,8 @@ protected:
   DoubleTab& calcul_tenseur_face(DoubleTab&, const DoubleTab&, const Domaine_VEF&, const Domaine_Cl_VEF&) const;
 
   // Commons
+  KOKKOS_INLINE_FUNCTION
+  double get_turbulent_viscosity(CDoubleArrView visco_turb, CDoubleArrView volumes, const int type_interpo, const int poly1, const int poly2, const double limiteur) const;
   double get_turbulent_viscosity(const DoubleTab& visco_turb, const DoubleVect& volumes, const int type_interpo, const int poly1, const int poly2, const double limiteur) const;
 
   // TKE destruction
