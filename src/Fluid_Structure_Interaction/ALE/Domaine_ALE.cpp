@@ -717,7 +717,6 @@ DoubleTab Domaine_ALE::calculer_vitesse(double temps, Domaine_dis_base& le_domai
                 for (int k=0; k<dimension; k++)
                   str_mesh_model.x(i,k) = coord(i,k) ;
               }
-
             // Solve explicit dynamic problem giving mesh displacement and velocity at time "temps"
             int nbSom = nb_som() ;
             int nbElem = nb_elem() ;
@@ -1797,7 +1796,6 @@ void Domaine_ALE::solveDynamicMeshProblem(const double temps, const DoubleTab& i
               str_mesh_model.v(i,j) = str_mesh_model.vp(i,j) + 0.5 * Dt * str_mesh_model.a(i,j) ;
             }
         }
-
       str_mesh_model.gridNStep += 1 ;
       str_mesh_model.applyDtCoefficient() ;
       str_mesh_model.gridTime = tt ;
@@ -1812,7 +1810,6 @@ void Domaine_ALE::solveDynamicMeshProblem(const double temps, const DoubleTab& i
         }
 
     } // End time loop on grid problem
-
   if (tt > t0)
     {
       for (int i=0; i<nbSom; i++)

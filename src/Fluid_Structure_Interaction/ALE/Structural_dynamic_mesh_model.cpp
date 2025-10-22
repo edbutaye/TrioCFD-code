@@ -533,6 +533,7 @@ void Structural_dynamic_mesh_model::computeInternalForces(double& Vol, double& X
   // Value >= 50: compute speed of sound
 
   double speedOfSound[1] ;
+  Stress_.echange_espace_virtuel();
 
   integrate_behaviour_(&stress[0], voidInternalVars, &evars[0], &K[0], &ft[0], &ftpdt[0], speedOfSound) ;
 
@@ -549,7 +550,6 @@ void Structural_dynamic_mesh_model::computeInternalForces(double& Vol, double& X
   // Update stress and transformation gradient
   for (int i=0; i<symSize_; i++) { Stress_(iel_,i) = stress[i] ; }
   for (int i=0; i<nSymSize_; i++) { Ft_(iel_,i) = ftpdt[i] ; }
-
   //  Compute local forces
   aux = 1./sqrt(2.) ;
   fl_ = 0 ;
