@@ -9010,7 +9010,14 @@ const int& Transport_Interfaces_FT_Disc::get_n_iterations_distance() const
 void Transport_Interfaces_FT_Disc::update_normale_distance_interface() const
 {
   const int tag = maillage_interface().get_mesh_tag();
-  assert(tag != variables_internes_->distance_normale_cache_tag);
+
+  // Check if the call is useful
+  if (tag == variables_internes_->distance_normale_cache_tag)
+    {
+      Cerr << "ERROR : Unneeded call to Transport_Interfaces_FT_Disc::update_normale_distance_interface" << finl;
+      Process::exit();
+    }
+
   DoubleTab& distance = variables_internes_->distance_interface->valeurs();
   DoubleTab& normale  = variables_internes_->normale_interface->valeurs();
   calculer_distance_interface(maillage_interface(),
