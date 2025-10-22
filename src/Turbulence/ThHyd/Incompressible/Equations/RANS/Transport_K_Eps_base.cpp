@@ -141,7 +141,7 @@ int Transport_K_Eps_base::controler_K_Eps()
   // on fixe k ET eps a une valeur moyenne des 2 elements voisins
 
   Debog::verifier("Transport_K_Eps_base::controler_K_Eps K_Eps before", K_Eps);
-
+  ToDo_Kokkos("critical");
   for (int n = 0; n < size; n++)
     {
       double& k   = K_Eps(n, 0);

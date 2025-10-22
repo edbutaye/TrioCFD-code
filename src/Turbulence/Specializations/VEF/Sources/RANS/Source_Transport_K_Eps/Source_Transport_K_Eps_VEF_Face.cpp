@@ -132,40 +132,54 @@ void Source_Transport_K_Eps_VEF_Face::calcul_tenseur_reyn(const DoubleTab& visco
   get_modele_fonc_bas_reyn()->calcul_tenseur_Re(visco_turb, gradient_elem, Re);
 }
 
-void Source_Transport_K_Eps_VEF_Face::fill_resu_bas_rey(const DoubleVect& volumes_entrelaces,
-                                                        const DoubleTrav& prod, const DoubleTab& D,
-                                                        const DoubleTab& E, const DoubleTab& F1,
-                                                        const DoubleTab& F2, DoubleTab& resu) const
+void Source_Transport_K_Eps_VEF_Face::fill_resu_bas_rey(const DoubleVect& tab_volumes_entrelaces,
+                                                        const DoubleTrav& tab_prod, const DoubleTab& tab_D,
+                                                        const DoubleTab& tab_E, const DoubleTab& tab_F1,
+                                                        const DoubleTab& tab_F2, DoubleTab& tab_resu) const
 {
-  const DoubleTab& K_eps = mon_eq_transport_K_Eps->inconnue().valeurs();
   const double LeK_MIN = mon_eq_transport_K_Eps->modele_turbulence().get_K_MIN();
-  ToDo_Kokkos("critical");
-  for (int fac = 0; fac < le_dom_VEF->nb_faces(); fac++)
-    {
-      const double tke = K_eps(fac, 0);
-      const double eps = K_eps(fac, 1);
-      resu(fac, 0) += (prod(fac) - eps - D(fac))*volumes_entrelaces(fac);
-      if (tke >= LeK_MIN)
-        resu(fac, 1) += ((C1*prod(fac)*F1(fac) - C2*eps*F2(fac))*eps/tke + E(fac))*volumes_entrelaces(fac);
-    }
+  const double _C1_ = C1;
+  const double _C2_ = C2;
+  CDoubleTabView K_eps = mon_eq_transport_K_Eps->inconnue().valeurs().view_ro();
+  CDoubleArrView volumes_entrelaces = tab_volumes_entrelaces.view_ro();
+  CDoubleArrView prod = static_cast<const ArrOfDouble&>(tab_prod).view_ro();
+  CDoubleArrView D = static_cast<const ArrOfDouble&>(tab_D).view_ro();
+  CDoubleArrView E = static_cast<const ArrOfDouble&>(tab_E).view_ro();
+  CDoubleArrView F1 = static_cast<const ArrOfDouble&>(tab_F1).view_ro();
+  CDoubleArrView F2 = static_cast<const ArrOfDouble&>(tab_F2).view_ro();
+  DoubleTabView resu = tab_resu.view_rw();
+  Kokkos::parallel_for(start_gpu_timer(__KERNEL_NAME__), le_dom_VEF->nb_faces(), KOKKOS_LAMBDA(const int fac)
+  {
+    const double tke = K_eps(fac, 0);
+    const double eps = K_eps(fac, 1);
+    resu(fac, 0) += (prod(fac) - eps - D(fac))*volumes_entrelaces(fac);
+    if (tke >= LeK_MIN)
+      resu(fac, 1) += ((_C1_*prod(fac)*F1(fac) - _C2_*eps*F2(fac))*eps/tke + E(fac))*volumes_entrelaces(fac);
+  });
+  end_gpu_timer(__KERNEL_NAME__);
 }
 
-void Source_Transport_K_Eps_VEF_Face::fill_resu(const DoubleVect& volumes_entrelaces,
-                                                const DoubleTrav& prod, DoubleTab& resu) const
+void Source_Transport_K_Eps_VEF_Face::fill_resu(const DoubleVect& tab_volumes_entrelaces,
+                                                const DoubleTrav& tab_prod, DoubleTab& tab_resu) const
 {
-  const DoubleTab& K_eps = mon_eq_transport_K_Eps->inconnue().valeurs();
   const double LeK_MIN = mon_eq_transport_K_Eps->modele_turbulence().get_K_MIN();
-  DoubleTab& production_k_face = ref_cast_non_const(DoubleTab,production_k_face_->valeurs());
-  ToDo_Kokkos("critical");
-  for (int fac = 0; fac < le_dom_VEF->nb_faces(); fac++)
-    {
-      const double tke = K_eps(fac, 0);
-      const double eps = K_eps(fac, 1);
-      production_k_face(fac)=prod(fac);
-      resu(fac, 0) += (prod(fac) - eps)*volumes_entrelaces(fac);
-      if (K_eps(fac, 0) >= LeK_MIN)
-        resu(fac, 1) += (C1*prod(fac) - C2*eps)*eps/tke*volumes_entrelaces(fac);
-    }
+  const double _C1_ = C1;
+  const double _C2_ = C2;
+  CDoubleTabView K_eps = mon_eq_transport_K_Eps->inconnue().valeurs().view_ro();
+  CDoubleArrView volumes_entrelaces = tab_volumes_entrelaces.view_ro();
+  CDoubleArrView prod = static_cast<const ArrOfDouble&>(tab_prod).view_ro();
+  DoubleArrView production_k_face = static_cast<ArrOfDouble&>(ref_cast_non_const(DoubleTab,production_k_face_->valeurs())).view_wo();
+  DoubleTabView resu = tab_resu.view_rw();
+  Kokkos::parallel_for(start_gpu_timer(__KERNEL_NAME__), le_dom_VEF->nb_faces(), KOKKOS_LAMBDA(const int fac)
+  {
+    const double tke = K_eps(fac, 0);
+    const double eps = K_eps(fac, 1);
+    production_k_face(fac)=prod(fac);
+    resu(fac, 0) += (prod(fac) - eps)*volumes_entrelaces(fac);
+    if (K_eps(fac, 0) >= LeK_MIN)
+      resu(fac, 1) += (_C1_*prod(fac) - _C2_*eps)*eps/tke*volumes_entrelaces(fac);
+  });
+  end_gpu_timer(__KERNEL_NAME__);
 }
 
 DoubleTab& Source_Transport_K_Eps_VEF_Face::ajouter(DoubleTab& resu) const
@@ -174,26 +188,30 @@ DoubleTab& Source_Transport_K_Eps_VEF_Face::ajouter(DoubleTab& resu) const
 }
 
 void Source_Transport_K_Eps_VEF_Face::contribuer_a_avec(const DoubleTab& a,
-                                                        Matrice_Morse& matrice) const
+                                                        Matrice_Morse& matrice_morse) const
 {
-  const DoubleTab& K_eps = equation().inconnue().valeurs();
   const double LeK_MIN = mon_eq_transport_K_Eps->modele_turbulence().get_K_MIN();
-  const DoubleVect& porosite_face = mon_eq_transport_K_Eps->milieu().porosite_face();
-  const DoubleVect& volumes_entrelaces = le_dom_VEF->volumes_entrelaces();
-
+  const double _C2_ = C2;
+  CDoubleArrView porosite_face = mon_eq_transport_K_Eps->milieu().porosite_face().view_ro();
+  CDoubleArrView volumes_entrelaces = le_dom_VEF->volumes_entrelaces().view_ro();
+  CDoubleTabView K_eps = mon_eq_transport_K_Eps->inconnue().valeurs().view_ro();
+  Matrice_Morse_View matrice;
+  matrice.set(matrice_morse);
   // on implicite le -eps et le -eps^2/k
-  ToDo_Kokkos("critical");
-  for (int face = 0; face < K_eps.dimension(0); face++)
+  Kokkos::parallel_for(start_gpu_timer(__KERNEL_NAME__), K_eps.extent(0), KOKKOS_LAMBDA(const int face)
+  {
     if (K_eps(face, 0) >= LeK_MIN) // -eps*vol  donne +vol dans la bonne case
       {
         const double tke = K_eps(face, 0);
         const double eps = K_eps(face, 1);
         const double volporo = porosite_face(face) * volumes_entrelaces(face);
 
-        const double coef_k = eps/tke*volporo;
-        matrice(face * 2, face * 2) += coef_k;
+        const double coef_k = eps / tke * volporo;
+        matrice.add(face * 2, face * 2, coef_k);
 
-        const double coef_eps = C2 * eps/tke * volporo;
-        matrice(face * 2 + 1, face * 2 + 1) += coef_eps;
+        const double coef_eps = _C2_ * eps / tke * volporo;
+        matrice.add(face * 2 + 1, face * 2 + 1, coef_eps);
       }
+  });
+  end_gpu_timer(__KERNEL_NAME__);
 }
