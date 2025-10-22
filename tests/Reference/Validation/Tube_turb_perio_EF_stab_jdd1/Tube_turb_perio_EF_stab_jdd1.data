@@ -97,6 +97,7 @@ Read pb
         	Modele_turbulence K_Epsilon {
                         Transport_equation transport_k_epsilon
                         {
+                                disable_VEF_mean_value_corrections
                                 convection { EF_stab { } }
                                 diffusion { }
                                 boundary_conditions
