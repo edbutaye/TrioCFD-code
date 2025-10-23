@@ -198,7 +198,7 @@ int Paroi_std_hyd_VEF_diphasique::calculer_hyd(DoubleTab& tab_nu_t,DoubleTab& ta
                   d_plus = 0.;
                 }
 
-              calculer_k_eps(k,eps,d_plus,u_star,d_visco,dist);
+              calculer_k_eps(k,eps,d_plus,u_star,d_visco,dist,Cmu_,Kappa_);
 
               // Calcul de la contrainte tangentielle
               for (int j=0; j<dimension; j++)
@@ -296,7 +296,7 @@ int Paroi_std_hyd_VEF_diphasique::calculer_hyd(DoubleTab& tab_nu_t,DoubleTab& ta
                   d_plus = 0.;
                 }
 
-              calculer_k_eps(k,eps,d_plus,u_star,d_visco,dist);
+              calculer_k_eps(k,eps,d_plus,u_star,d_visco,dist,Cmu_,Kappa_);
 
               // Calcul de la contrainte tangentielle
               for (int j=0; j<dimension; j++)

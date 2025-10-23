@@ -1,3 +1,5 @@
+XX/XX/25 (TrioCFD) Change      : Rewrite slightly the algorithm (to get a correct parallel one) for controling/fixing negative K_Eps values in VEF
+XX/XX/25 (TrioCFD) Change      : Rewrite slightly the algorithm (to get a correct parallel one) for standard law of the wall used in VEF for RANS models
 --------------------------------------------------------------------------------------------------
 Release notes version 1.9.7_beta : Enhancements, modifications and corrected bugs since version 1.9.6 :
 --------------------------------------------------------------------------------------------------

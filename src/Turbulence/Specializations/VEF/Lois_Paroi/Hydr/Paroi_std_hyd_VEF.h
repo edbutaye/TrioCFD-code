@@ -64,18 +64,20 @@ public:
   double calculer_u_plus(const int ,const double ,const  double erugu );
 
   inline void check_turbulence_model();
-  void compute_turbulent_quantities(double&, double&, double d_plus, double u_star, double d_visco, double dist);
-  virtual int calculer_k_eps(double& , double& , double , double , double , double);
-
-  //
-  void compute_k(double& k, const double yp, const double u_star);
-  void compute_epsilon(double& epsilon, const double yp, const double u_star, const double d_visco);
-  void compute_omega(double& omega, const double yp, const double u_star, const double d_visco, const double dist);
-  void compute_k_epsilon(double& k, double& epsilon, const double yplus, const double u_star, const double d_visco, const double dist);
-  void compute_k_omega(double& k, double& omega, const double yplus, const double u_star, const double d_visco, const double dist);
-
-
-
+  KOKKOS_FUNCTION
+  void compute_turbulent_quantities(int, double&, double&, double d_plus, double u_star, double d_visco, double dist, const double Cmu, const double Kappa);
+  KOKKOS_FUNCTION
+  int calculer_k_eps(double& , double& , double , double , double , double, const double, const double);
+  KOKKOS_FUNCTION
+  void compute_k(double& k, const double yp, const double u_star, const double Cmu);
+  KOKKOS_FUNCTION
+  void compute_epsilon(double& epsilon, const double yp, const double u_star, const double d_visco, const double Kappa);
+  KOKKOS_FUNCTION
+  void compute_omega(double& omega, const double yp, const double u_star, const double d_visco, const double dist, const double Kappa);
+  KOKKOS_FUNCTION
+  void compute_k_epsilon(double& k, double& epsilon, const double yplus, const double u_star, const double d_visco, const double dist, const double Cmu, const double kappa);
+  KOKKOS_FUNCTION
+  void compute_k_omega(double& k, double& omega, const double yplus, const double u_star, const double d_visco, const double dist, const double Cmu, const double Kappa);
 
 protected:
 
@@ -90,7 +92,7 @@ protected:
   int is_u_star_impose_;
   virtual int init_lois_paroi_hydraulique();
 
-  int turbulence_model_type {0}; // To redirect the computation of the wall quantities
+  int turbulence_model_type_ {0}; // To redirect the computation of the wall quantities
 
   static constexpr double BETA_OMEGA {0.075};
   static constexpr double BETA_K {0.09};  // equals to Cmu
@@ -104,11 +106,11 @@ double calculer_u_plus(const int ind_face, const double u_plus_d_plus, const dou
  */
 inline void Paroi_std_hyd_VEF::check_turbulence_model()
 {
-  turbulence_model_type = 1;
+  turbulence_model_type_ = 1;
   // if (sub_type(Modele_turbulence_hyd_K_Eps, mon_modele_turb_hyd.valeur()))
   // turbulence_model_type = 1;
   if (sub_type(Modele_turbulence_hyd_K_Omega, mon_modele_turb_hyd.valeur()))
-    turbulence_model_type = 2;
+    turbulence_model_type_ = 2;
   // else
   // Process::exit("The turbulence model should either be K_Eps or K_Omega");
 }
