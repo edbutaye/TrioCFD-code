@@ -11,7 +11,7 @@ Mailler box
     {
         Origine 0. 0. 0.
         Nombre_de_Noeuds 11 3 3
-        /* Nombre_de_Noeuds 101 21 21 */
+        /* Nombre_de_Noeuds 71 15 15 */
         Longueurs 5 1 1
     }
     {
@@ -54,6 +54,7 @@ Read sch
     facsec 5
     facsec_max 500
     seuil_statio 1.E-8
+    dt_sauv -1
     Solveur
     Implicite
     {
@@ -119,7 +120,7 @@ Read pb_box
             velocitypb_box 	nodes 	vitesse 	periode 1e-05 point   1 0.19 0.052 -0.019
             k_eps_box 	        nodes 	k_eps  	periode 1e-05 point   1 0.19 0.052 -0.019
         }
-        Format lml
+        format lml
         fields dt_post 0.05
         {
             pression			elem
