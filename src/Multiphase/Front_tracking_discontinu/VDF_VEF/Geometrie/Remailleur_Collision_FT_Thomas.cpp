@@ -783,12 +783,7 @@ int Remailleur_Collision_FT_Thomas::traite_RuptureCoalescenceInterfaces_Conserva
   //le volume total perdu dans l'operation de remaillage
   //REMARQUE : le maillage a change apres le remaillage
   //           et donc l'indicatrice egalement
-
-  maillage.equation_transport().update_normale_distance_interface();
-  maillage.equation_transport().update_indicatrice();
-  // using following line crashes, maybe a problem with the call to maillage_interface().parcourir_maillage()
-  // since it is the only additional operation
-  // maillage.equation_transport().update_indicatrice_normale_distance();
+  maillage.equation_transport().update_indicatrice_normale_distance();
 
   volume_perdu_ -= maillage.equation_transport().get_indicatrice().valeurs();
   volume_perdu_.echange_espace_virtuel();
