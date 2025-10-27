@@ -434,10 +434,8 @@ public:
   virtual void calculer_ecart_T_ana();
   virtual void compute_interfacial_temperature2(
     ArrOfDouble& interfacial_temperature,
-    ArrOfDouble& flux_normal_interp); //const ;
-#if 0
-  void ecrire_reprise_thermique(SFichier& fichier);
-#endif
+    ArrOfDouble& flux_normal_interp);
+
   virtual void compute_ghost_cell_numbers_for_subproblems(const Domaine_IJK& splitting, int ghost_init) { ghost_cells_ = ghost_init; };
 
   void compute_eulerian_distance();
