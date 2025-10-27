@@ -21,6 +21,7 @@
 #include <IJK_Interfaces.h>
 #include <FixedVector.h>
 #include <Vecteur3.h>
+#include <IJK_subres_constants.h>
 
 #define INVALID_TEMPERATURE 1e10
 #define INVALID_FIELD 1e10
@@ -31,14 +32,6 @@
 #define INVALID_SOURCE_TERM 1e-20
 #define NEIGHBOURS_FIRST_DIR {-1., -1., 1., 1.}
 #define NEIGHBOURS_SECOND_DIR {-1., 1., -1., 1.}
-#define NEIGHBOURS_I {-1, 1, 0, 0, 0, 0}
-#define NEIGHBOURS_J {0, 0, -1, 1, 0, 0}
-#define NEIGHBOURS_K {0, 0, 0, 0, -1, 1}
-#define NEIGHBOURS_FACES_I {0, 1, 0, 0, 0, 0}
-#define NEIGHBOURS_FACES_J {0, 0, 0, 1, 0, 0}
-#define NEIGHBOURS_FACES_K {0, 0, 0, 0, 0, 1}
-#define LIQUID_INDICATOR_TEST 1.-1.e-12
-#define VAPOUR_INDICATOR_TEST 1.e-12
 #define FACES_DIR {0, 0, 1, 1, 2, 2}
 #define FLUX_SIGN_DIFF {-1, -1, -1, -1, -1, -1}
 #define FLUX_SIGN_CONV {1, 1, 1, 1, 1, 1}

@@ -12,12 +12,6 @@
 * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *
 *****************************************************************************/
-/////////////////////////////////////////////////////////////////////////////
-//
-// File      : IJK_Bubble_tools.h
-// Directory : $TRIOCFD_ROOT/src/Multiphase/Front_tracking_IJK/Temperature
-//
-/////////////////////////////////////////////////////////////////////////////
 
 #ifndef IJK_Bubble_tools_included
 #define IJK_Bubble_tools_included
@@ -26,20 +20,9 @@
 #include <IJK_Field_vector.h>
 #include <IJK_Interfaces.h>
 #include <Maillage_FT_IJK.h>
+#include <IJK_subres_constants.h>
 
-#define INVALID_TEST -1.e30
-#define LIQUID_INDICATOR_TEST 1.-1.e-12
-#define VAPOUR_INDICATOR_TEST 1.e-12
-#define NEIGHBOURS_I {-1, 1, 0, 0, 0, 0}
-#define NEIGHBOURS_J {0, 0, -1, 1, 0, 0}
-#define NEIGHBOURS_K {0, 0, 0, 0, -1, 1}
-/////////////////////////////////////////////////////////////////////////////
-//
-// .DESCRIPTION : class IJK_Bubble_tools
-//
-// <Description of class IJK_Bubble_tools>
-//
-/////////////////////////////////////////////////////////////////////////////
+
 
 // Fill compo using a dummy bounding box
 std::vector<int> arg_sort_array(const ArrOfDouble& array_to_sort);

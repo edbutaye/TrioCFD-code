@@ -12,35 +12,16 @@
 * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *
 *****************************************************************************/
-/////////////////////////////////////////////////////////////////////////////
-//
-// File      : IJK_Ghost_Fluid_tools.h
-// Directory : $TRIOCFD_ROOT/src/Multiphase/Front_tracking_IJK/Temperature
-//
-/////////////////////////////////////////////////////////////////////////////
 
 #include <IJK_Field.h>
 #include <IJK_Field_vector.h>
 #include <IJK_Interfaces.h>
 #include <Maillage_FT_IJK.h>
+#include <IJK_subres_constants.h>
 
-#define INVALID_TEST -1.e30
 //Be coherent with LOCAL EPS of Intersection Interface IJK
-#define LIQUID_INDICATOR_TEST 1.-1.e-12
-#define VAPOUR_INDICATOR_TEST 1.e-12
-#define NEIGHBOURS_I {-1, 1, 0, 0, 0, 0}
-#define NEIGHBOURS_J {0, 0, -1, 1, 0, 0}
-#define NEIGHBOURS_K {0, 0, 0, 0, -1, 1}
 #define select_dir(a,x,y,z) ((a==0)?(x):((a==1)?(y):(z)))
 #define selectxy(a,x,y) ((a==0)?(x):(y))
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// .DESCRIPTION : class IJK_Ghost_Fluid_tools
-//
-// <Description of class IJK_Ghost_Fluid_tools>
-//
-/////////////////////////////////////////////////////////////////////////////
 
 void compute_eulerian_normal_distance_facet_barycentre_field(const IJK_Interfaces& interface,
                                                              IJK_Field_double& distance,

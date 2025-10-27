@@ -400,7 +400,6 @@ void Intersection_Interface_ijk_cell::calcul_projection_centre_sur_interface_moy
     for (int j = 0; j < nj; j++)
       for (int k = 0; k < nk; k++)
         {
-          //if (indicatrice(i, j, k) * (1. - indicatrice(i, j, k)) > LOCAL_EPS)
           if (fabs(indicatrice(i, j, k)) > VAPOUR_INDICATOR_TEST && fabs(indicatrice(i, j, k)) < LIQUID_INDICATOR_TEST)
             n_diph_++;
         }
@@ -414,7 +413,6 @@ void Intersection_Interface_ijk_cell::calcul_projection_centre_sur_interface_moy
       for (int k = 0; k < nk; k++)
         {
           // S'il y a une cellule traversée par l'interface
-          // if (indicatrice(i, j, k) * (1. - indicatrice(i, j, k)) > LOCAL_EPS)
           if (fabs(indicatrice(i, j, k)) > VAPOUR_INDICATOR_TEST && fabs(indicatrice(i, j, k)) < LIQUID_INDICATOR_TEST)
             {
               // On renseigne le numéro de cette cellule dans le tableau des
@@ -467,12 +465,7 @@ void Intersection_Interface_ijk_cell::calcul_projection_centre_faces_sur_interfa
   positions.resize(nb_diph, 3, 6);
   indices_voisins.resize(nb_diph, 6);
   distance_centre_faces_interface.resize(nb_diph, 6);
-  int neighbours_i[6] = NEIGHBOURS_I;
-  int neighbours_j[6] = NEIGHBOURS_J;
-  int neighbours_k[6] = NEIGHBOURS_K;
-  int neighbours_faces_i[6] = NEIGHBOURS_FACES_I;
-  int neighbours_faces_j[6] = NEIGHBOURS_FACES_J;
-  int neighbours_faces_k[6] = NEIGHBOURS_FACES_K;
+
   int nb_faces_to_correct = 0.;
   for (int i_diph=0; i_diph<nb_diph ; i_diph++)
     {
@@ -488,17 +481,16 @@ void Intersection_Interface_ijk_cell::calcul_projection_centre_faces_sur_interfa
       get_mean_interface_cell(elem, normale_interf, bary_interf);
       for (int l=0; l<6; l++)
         {
-          const int ii = neighbours_i[l];
-          const int jj = neighbours_j[l];
-          const int kk = neighbours_k[l];
-          const int ii_f = neighbours_faces_i[l];
-          const int jj_f = neighbours_faces_j[l];
-          const int kk_f = neighbours_faces_k[l];
+          const int ii = NEIGHBOURS_I[l];
+          const int jj = NEIGHBOURS_J[l];
+          const int kk = NEIGHBOURS_K[l];
+          const int ii_f = NEIGHBOURS_FACES_I[l];
+          const int jj_f = NEIGHBOURS_FACES_J[l];
+          const int kk_f = NEIGHBOURS_FACES_K[l];
           indices_voisins(i_diph, l) = 0;
           /*
            * Check if the neighbours is a pure liquid cell !
            */
-          // if (fabs(1.-indicatrice(i+ii, j+jj, k+kk)) < LOCAL_EPS)
           if (fabs(indicatrice(i+ii, j+jj, k+kk)) > LIQUID_INDICATOR_TEST)
             {
               indices_voisins(i_diph, l) = l+1;
@@ -530,9 +522,6 @@ void Intersection_Interface_ijk_cell::compute_face_to_correct()
    * FIXME: Can we use an append_array of something ?
    */
   const int nb_diph = n_diph_;
-  int neighbours_faces_i[6] = NEIGHBOURS_FACES_I;
-  int neighbours_faces_j[6] = NEIGHBOURS_FACES_J;
-  int neighbours_faces_k[6] = NEIGHBOURS_FACES_K;
   int nb_faces_to_correct = 0.;
   for (int i_diph=0; i_diph<nb_diph ; i_diph++)
     {
@@ -541,9 +530,9 @@ void Intersection_Interface_ijk_cell::compute_face_to_correct()
       const int k = ijk_interfaces_(i_diph, 2);
       for (int l=0; l<6; l++)
         {
-          const int ii_f = neighbours_faces_i[l];
-          const int jj_f = neighbours_faces_j[l];
-          const int kk_f = neighbours_faces_k[l];
+          const int ii_f = NEIGHBOURS_FACES_I[l];
+          const int jj_f = NEIGHBOURS_FACES_J[l];
+          const int kk_f = NEIGHBOURS_FACES_K[l];
           if (ijk_pure_face_neighbours_(i_diph, l))
             {
               DoubleVect& i_pure_face_to_correct = ijk_pure_face_to_correct_[0];

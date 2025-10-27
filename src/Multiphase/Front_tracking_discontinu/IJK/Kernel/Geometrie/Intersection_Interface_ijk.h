@@ -25,12 +25,6 @@
  *OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  *****************************************************************************/
-/////////////////////////////////////////////////////////////////////////////
-//
-// File      : Intersection_Interface_ijk.h
-// Directory : $IJK_ROOT/src/FT/
-//
-/////////////////////////////////////////////////////////////////////////////
 
 #ifndef Interface_ijk_included
 #define Interface_ijk_included
@@ -40,16 +34,8 @@
 #include <IJK_Field_vector.h>
 #include <Domaine_IJK.h>
 #include <IJK_Field_forward.h>
-#define NEIGHBOURS_I {-1, 1, 0, 0, 0, 0}
-#define NEIGHBOURS_J {0, 0, -1, 1, 0, 0}
-#define NEIGHBOURS_K {0, 0, 0, 0, -1, 1}
-#define NEIGHBOURS_FACES_I {0, 1, 0, 0, 0, 0}
-#define NEIGHBOURS_FACES_J {0, 0, 0, 1, 0, 0}
-#define NEIGHBOURS_FACES_K {0, 0, 0, 0, 0, 1}
-#define LIQUID_INDICATOR_TEST 1.-1.e-12
-#define VAPOUR_INDICATOR_TEST 1.e-12
+#include <IJK_subres_constants.h>
 
-#define LOCAL_EPS 1e-12
 /*! @brief : class Interface_ijk_face
  *
  *  Cette classe regroupe les information concernant les mailles qui sont

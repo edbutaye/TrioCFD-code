@@ -133,9 +133,6 @@ static void extrapolate_with_ijk_indices(const IJK_Field_double& distance,
   // static const Stat_Counter_Id stat_counter = statistiques().new_counter(3, "GFM - Extrapolate gfm temperature values");
   // statistiques().begin_count(stat_counter);
 
-  int neighbours_i[6] = NEIGHBOURS_I;
-  int neighbours_j[6] = NEIGHBOURS_J;
-  int neighbours_k[6] = NEIGHBOURS_K;
   const double invalid_test = INVALID_TEST;
   const double n_iterations = zero_neighbour_value_mean ? smooth_factor * stencil_width : stencil_width;
   const int ni = field.ni();
@@ -163,9 +160,9 @@ static void extrapolate_with_ijk_indices(const IJK_Field_double& distance,
                       double coeff = 0.;
                       for (int l=0; l<6; l++)
                         {
-                          const int ii = neighbours_i[l];
-                          const int jj = neighbours_j[l];
-                          const int kk = neighbours_k[l];
+                          const int ii = NEIGHBOURS_I[l];
+                          const int jj = NEIGHBOURS_J[l];
+                          const int kk = NEIGHBOURS_K[l];
                           const double distance_neighbour = distance(i+ii,j+jj,k+kk);
                           const double field_neighbour = field_old(i+ii,j+jj,k+kk);
                           const int neighbour_condition = zero_neighbour_value_mean ? 1 : (field_neighbour != 0);
@@ -389,9 +386,6 @@ void compute_eulerian_normal_distance_facet_barycentre_field(const IJK_Interface
 
   if (use_ijk)
     {
-      int neighbours_i[6] = NEIGHBOURS_I;
-      int neighbours_j[6] = NEIGHBOURS_J;
-      int neighbours_k[6] = NEIGHBOURS_K;
       const int ni = normal_vect[0].ni();
       const int nj = normal_vect[0].nj();
       const int nk = normal_vect[0].nk();
@@ -424,9 +418,9 @@ void compute_eulerian_normal_distance_facet_barycentre_field(const IJK_Interface
                     n[m] = normal_vect[m](i,j,k);
                   for (int l=0; l<6; l++)
                     {
-                      const int ii = neighbours_i[l];
-                      const int jj = neighbours_j[l];
-                      const int kk = neighbours_k[l];
+                      const int ii = NEIGHBOURS_I[l];
+                      const int jj = NEIGHBOURS_J[l];
+                      const int kk = NEIGHBOURS_K[l];
 
                       const int is_outside_proc = (i + ii < -nghost || j + jj < -nghost || k + kk < -nghost)
                                                   || (i + ii >= ni + nghost || j + jj >= nj + nghost || k + kk >= nk + nghost);
@@ -465,9 +459,9 @@ void compute_eulerian_normal_distance_facet_barycentre_field(const IJK_Interface
                         n[m] = normal_vect[m](i,j,k);
                       for (int l=0; l<6; l++)
                         {
-                          const int ii = neighbours_i[l];
-                          const int jj = neighbours_j[l];
-                          const int kk = neighbours_k[l];
+                          const int ii = NEIGHBOURS_I[l];
+                          const int jj = NEIGHBOURS_J[l];
+                          const int kk = NEIGHBOURS_K[l];
                           for (m = 0; m < dim; m++)
                             n[m] += normal_vect[m](i+ii,j+jj,k+kk);
                         }
@@ -571,9 +565,6 @@ void compute_eulerian_normal_distance_facet_barycentre_field(const IJK_Interface
 
   if (use_ijk)
     {
-      int neighbours_i[6] = NEIGHBOURS_I;
-      int neighbours_j[6] = NEIGHBOURS_J;
-      int neighbours_k[6] = NEIGHBOURS_K;
       const int ni = normal_vect[0].ni();
       const int nj = normal_vect[0].nj();
       const int nk = normal_vect[0].nk();
@@ -605,9 +596,9 @@ void compute_eulerian_normal_distance_facet_barycentre_field(const IJK_Interface
                       for (int l = 0; l < 6; l++)
                         {
                           // Look for a neighbour
-                          const int ii = neighbours_i[l];
-                          const int jj = neighbours_j[l];
-                          const int kk = neighbours_k[l];
+                          const int ii = NEIGHBOURS_I[l];
+                          const int jj = NEIGHBOURS_J[l];
+                          const int kk = NEIGHBOURS_K[l];
 
                           const int is_outside_proc = (i + ii < -nghost || j + jj < -nghost || k + kk < -nghost)
                                                       || (i + ii >= ni + nghost || j + jj >= nj + nghost || k + kk >= nk + nghost);
@@ -673,9 +664,9 @@ void compute_eulerian_normal_distance_facet_barycentre_field(const IJK_Interface
                           for (int l = 0; l < 6; l++)
                             {
                               // Look for a neighbour
-                              const int ii = neighbours_i[l];
-                              const int jj = neighbours_j[l];
-                              const int kk = neighbours_k[l];
+                              const int ii = NEIGHBOURS_I[l];
+                              const int jj = NEIGHBOURS_J[l];
+                              const int kk = NEIGHBOURS_K[l];
                               const double distance_voisin = distance_field(i+ii, j+jj, k+kk);
                               if (distance_voisin > invalid_distance_value)
                                 {
@@ -991,9 +982,6 @@ void compute_eulerian_curvature_field_from_interface(const IJK_Field_vector3_dou
    */
   if (use_ijk)
     {
-      int neighbours_i[6] = NEIGHBOURS_I;
-      int neighbours_j[6] = NEIGHBOURS_J;
-      int neighbours_k[6] = NEIGHBOURS_K;
       const int ni = normal_vect[0].ni();
       const int nj = normal_vect[0].nj();
       const int nk = normal_vect[0].nk();
@@ -1014,9 +1002,9 @@ void compute_eulerian_curvature_field_from_interface(const IJK_Field_vector3_dou
                       for (int l = 0; l < 6; l++)
                         {
                           // Look for a neighbour
-                          const int ii = neighbours_i[l];
-                          const int jj = neighbours_j[l];
-                          const int kk = neighbours_k[l];
+                          const int ii = NEIGHBOURS_I[l];
+                          const int jj = NEIGHBOURS_J[l];
+                          const int kk = NEIGHBOURS_K[l];
                           const double curvature_voisin = curvature(i+ii,j+jj,k+kk);
                           if (curvature_voisin > invalid_curvature_value)
                             {
@@ -1113,9 +1101,7 @@ void compute_eulerian_normal_temperature_gradient_interface(const IJK_Field_doub
   // static const Stat_Counter_Id stat_counter = statistiques().new_counter(3, "GFM - Compute Eulerian normal temperature gradient interface");
   // statistiques().begin_count(stat_counter);
 
-  int neighbours_i[6] = NEIGHBOURS_I;
-  int neighbours_j[6] = NEIGHBOURS_J;
-  int neighbours_k[6] = NEIGHBOURS_K;
+
   static const double invalid_value = INVALID_TEST;
   static const double liquid_indicator = LIQUID_INDICATOR_TEST;
   const int ni = temperature.ni();
@@ -1135,9 +1121,9 @@ void compute_eulerian_normal_temperature_gradient_interface(const IJK_Field_doub
             {
               for (int l=0; l < 6; l++)
                 {
-                  const int ii = neighbours_i[l];
-                  const int jj = neighbours_j[l];
-                  const int kk = neighbours_k[l];
+                  const int ii = NEIGHBOURS_I[l];
+                  const int jj = NEIGHBOURS_J[l];
+                  const int kk = NEIGHBOURS_K[l];
                   const double d = distance(i+ii,j+jj,k+kk);
                   const double indic = indicator(i+ii,j+jj,k+kk);
                   // if ((indic > liquid_indicator) && (d > invalid_value) && grad_T_interface(i+ii,j+jj,k+kk) < invalid_value)
@@ -1310,9 +1296,6 @@ void smooth_eulerian_field(IJK_Field_double& field,
             field_copy.data() = field.data();
           field_copy.echange_espace_virtuel(field_copy.ghost());
         }
-      const int neighbours_i[6] = NEIGHBOURS_I;
-      const int neighbours_j[6] = NEIGHBOURS_J;
-      const int neighbours_k[6] = NEIGHBOURS_K;
 
       double sum_factors = 0;
       double sum_factors_phase = 0;
@@ -1338,9 +1321,9 @@ void smooth_eulerian_field(IJK_Field_double& field,
                   field(i,j,k) = direct_smoothing_factors[6] * field_raw(i,j,k);
                   for (int l=0; l<6; l++)
                     {
-                      const int ii = neighbours_i[l];
-                      const int jj = neighbours_j[l];
-                      const int kk = neighbours_k[l];
+                      const int ii = NEIGHBOURS_I[l];
+                      const int jj = NEIGHBOURS_J[l];
+                      const int kk = NEIGHBOURS_K[l];
                       if (!remove_normal_compo)
                         field(i,j,k) += direct_smoothing_factors[l] * field_raw(i+ii,j+jj,k+kk);
                       else

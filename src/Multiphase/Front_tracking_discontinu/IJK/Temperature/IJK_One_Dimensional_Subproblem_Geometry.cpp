@@ -386,25 +386,19 @@ void IJK_One_Dimensional_Subproblem_Geometry::compute_distance_faces_centres()
       Vecteur3 bary_face {0., 0., .0};
       Vecteur3 vector_relative {0., 0., 0.};
       Vecteur3 bary_vertex {0., 0., 0.};
-      int neighbours_i[6] = NEIGHBOURS_I;
-      int neighbours_j[6] = NEIGHBOURS_J;
-      int neighbours_k[6] = NEIGHBOURS_K;
-      int neighbours_faces_i[6] = NEIGHBOURS_FACES_I;
-      int neighbours_faces_j[6] = NEIGHBOURS_FACES_J;
-      int neighbours_faces_k[6] = NEIGHBOURS_FACES_K;
       int face_dir[6] = FACES_DIR;
       int m;
       for (int l=0; l<6; l++)
         {
-          const int ii = neighbours_i[l];
-          const int jj = neighbours_j[l];
-          const int kk = neighbours_k[l];
+          const int ii = NEIGHBOURS_I[l];
+          const int jj = NEIGHBOURS_J[l];
+          const int kk = NEIGHBOURS_K[l];
           const double indic_neighbour = ref_ijk_ft_->get_interface().I()(index_i_+ii, index_j_+jj, index_k_+kk);
           if (fabs(indic_neighbour) > LIQUID_INDICATOR_TEST)
             {
-              const int ii_f = neighbours_faces_i[l];
-              const int jj_f = neighbours_faces_j[l];
-              const int kk_f = neighbours_faces_k[l];
+              const int ii_f = NEIGHBOURS_FACES_I[l];
+              const int jj_f = NEIGHBOURS_FACES_J[l];
+              const int kk_f = NEIGHBOURS_FACES_K[l];
               pure_liquid_neighbours_[l] = 1;
               if (ii)
                 bary_face = ref_ijk_ft_->get_domaine().get_coords_of_dof(index_i_+ii_f, index_j_+jj_f, index_k_+kk_f, Domaine_IJK::FACES_I);

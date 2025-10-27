@@ -182,9 +182,6 @@ void IJK_Composantes_Connex::compute_compo_connex_from_interface()
       fill_mixed_cell_compo();
 
       const Domaine_IJK& splitting = eulerian_compo_connex_from_interface_int_ns_.get_domaine();
-      int neighours_i[6] = NEIGHBOURS_I;
-      int neighours_j[6] = NEIGHBOURS_J;
-      int neighours_k[6] = NEIGHBOURS_K;
 
       const int nx = eulerian_compo_connex_from_interface_int_ns_.ni();
       const int ny = eulerian_compo_connex_from_interface_int_ns_.nj();
@@ -212,9 +209,9 @@ void IJK_Composantes_Connex::compute_compo_connex_from_interface()
               const int num_compo_ghost = eulerian_compo_connex_from_interface_ghost_int_ns_(i,j,k);
               for (int l = 0; l < 6; l++)
                 {
-                  const int ii = neighours_i[l];
-                  const int jj = neighours_j[l];
-                  const int kk = neighours_k[l];
+                  const int ii = NEIGHBOURS_I[l];
+                  const int jj = NEIGHBOURS_J[l];
+                  const int kk = NEIGHBOURS_K[l];
                   if((i + ii < 0 || j + jj < 0 || k + kk < 0) || (i + ii >= nx || j + jj >= ny || k + kk >= nz))
                     break;
                   const int num = eulerian_compo_connex_from_interface_int_ns_(i + ii,j + jj,k + kk);

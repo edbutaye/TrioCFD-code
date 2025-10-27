@@ -18,13 +18,9 @@
 #include <Corrige_flux_FT_base.h>
 #include <IJK_Field_vector.h>
 #include <IJK_One_Dimensional_Subproblems.h>
+#include <IJK_subres_constants.h>
+
 #define FLUXES_OUT {-1, 1, -1, 1, -1, 1}
-#define NEIGHBOURS_I {-1, 1, 0, 0, 0, 0}
-#define NEIGHBOURS_J {0, 0, -1, 1, 0, 0}
-#define NEIGHBOURS_K {0, 0, 0, 0, -1, 1}
-#define NEIGHBOURS_FACES_I {0, 1, 0, 0, 0, 0}
-#define NEIGHBOURS_FACES_J {0, 0, 0, 1, 0, 0}
-#define NEIGHBOURS_FACES_K {0, 0, 0, 0, 0, 1}
 #define FACES_DIR {0, 0, 1, 1, 2, 2}
 // TODO: Be careful to operators ! (Left - Right) values
 #define FLUX_SIGN_DIFF {-1, -1, -1, -1, -1, -1}

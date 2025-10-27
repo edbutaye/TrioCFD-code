@@ -1280,25 +1280,19 @@ void IJK_One_Dimensional_Subproblem::compute_distance_faces_centres()
       Vecteur3 bary_face {0., 0., .0};
       Vecteur3 vector_relative {0., 0., 0.};
       Vecteur3 bary_vertex {0., 0., 0.};
-      const int neighbours_i[6] = NEIGHBOURS_I;
-      const int neighbours_j[6] = NEIGHBOURS_J;
-      const int neighbours_k[6] = NEIGHBOURS_K;
-      const int neighbours_faces_i[6] = NEIGHBOURS_FACES_I;
-      const int neighbours_faces_j[6] = NEIGHBOURS_FACES_J;
-      const int neighbours_faces_k[6] = NEIGHBOURS_FACES_K;
       const int face_dir[6] = FACES_DIR;
       int m;
       for (int l=0; l<6; l++)
         {
-          const int ii = neighbours_i[l];
-          const int jj = neighbours_j[l];
-          const int kk = neighbours_k[l];
+          const int ii = NEIGHBOURS_I[l];
+          const int jj = NEIGHBOURS_J[l];
+          const int kk = NEIGHBOURS_K[l];
           const double indic_neighbour = ref_ijk_ft_->get_interface().I()(index_i_+ii, index_j_+jj, index_k_+kk);
           if (fabs(indic_neighbour) > LIQUID_INDICATOR_TEST)
             {
-              const int ii_f = neighbours_faces_i[l];
-              const int jj_f = neighbours_faces_j[l];
-              const int kk_f = neighbours_faces_k[l];
+              const int ii_f = NEIGHBOURS_FACES_I[l];
+              const int jj_f = NEIGHBOURS_FACES_J[l];
+              const int kk_f = NEIGHBOURS_FACES_K[l];
               pure_vapour_neighbours_[l] = 0;
               pure_liquid_neighbours_[l] = 1;
               if (ii)
@@ -2210,9 +2204,6 @@ void IJK_One_Dimensional_Subproblem::retrieve_previous_temperature_on_probe()
             }
           else
             {
-              const int neighbours_i[6] = NEIGHBOURS_I;
-              const int neighbours_j[6] = NEIGHBOURS_J;
-              const int neighbours_k[6] = NEIGHBOURS_K;
               int counter_mixed_neighbours = 0;
               //              double indicator_mixed_neighbours = 0;
               //              double colinearity_mixed_neighbours = 0;
@@ -2223,12 +2214,12 @@ void IJK_One_Dimensional_Subproblem::retrieve_previous_temperature_on_probe()
               temperature_previous_options.resize((*points_per_thermal_subproblem_));
               for (int l=0; l<6; l++)
                 {
-                  const int ii = neighbours_i[l];
-                  const int jj = neighbours_j[l];
-                  const int kk = neighbours_k[l];
-                  int index_i_neighbour_prev = index_i_ + neighbours_i[l];
-                  int index_j_neighbour_prev = index_j_ + neighbours_j[l];
-                  int index_k_neighbour_prev = index_k_ + neighbours_k[l];
+                  const int ii = NEIGHBOURS_I[l];
+                  const int jj = NEIGHBOURS_J[l];
+                  const int kk = NEIGHBOURS_K[l];
+                  int index_i_neighbour_prev = index_i_ + NEIGHBOURS_I[l];
+                  int index_j_neighbour_prev = index_j_ + NEIGHBOURS_J[l];
+                  int index_k_neighbour_prev = index_k_ + NEIGHBOURS_K[l];
                   const int count_index_ijk_neighbour = is_in_map_index_ijk((*subproblem_to_ijk_indices_previous_), index_i_neighbour_prev, index_j_neighbour_prev, index_k_neighbour_prev);
                   if (count_index_ijk_neighbour)
                     {
@@ -4533,9 +4524,6 @@ void IJK_One_Dimensional_Subproblem::compute_error_flux_interface()
   const int face_dir[6] = FACES_DIR;
   const int flux_out[6] = FLUXES_OUT;
 
-  const int neighbours_i[6] = NEIGHBOURS_I;
-  const int neighbours_j[6] = NEIGHBOURS_J;
-  const int neighbours_k[6] = NEIGHBOURS_K;
 
   int counter_assert = 0;
   double weight = 0.;
@@ -4546,9 +4534,9 @@ void IJK_One_Dimensional_Subproblem::compute_error_flux_interface()
         double normal_compo = normal_vector_compo_[face_dir[l]];
         if (signbit(flux_out[l]) == signbit(normal_compo))
           {
-            const int ii = neighbours_i[l];
-            const int jj = neighbours_j[l];
-            const int kk = neighbours_k[l];
+            const int ii = NEIGHBOURS_I[l];
+            const int jj = NEIGHBOURS_J[l];
+            const int kk = NEIGHBOURS_K[l];
             const int isolated_mixed_neighbours = (*zero_liquid_neighbours_)(index_i_ + ii, index_j_ + jj, index_k_ + kk);
             if (!isolated_mixed_neighbours)
               {
@@ -4692,10 +4680,6 @@ void IJK_One_Dimensional_Subproblem::dispatch_interfacial_heat_flux_correction(I
   const int nj_tot = geometry.get_nb_elem_tot(1);
   const int nk_tot = geometry.get_nb_elem_tot(2);
 
-  const int neighbours_i[6] = NEIGHBOURS_I;
-  const int neighbours_j[6] = NEIGHBOURS_J;
-  const int neighbours_k[6] = NEIGHBOURS_K;
-
   const int face_dir[6] = FACES_DIR;
   // const int flux_out[6] = FLUXES_OUT;
 
@@ -4707,9 +4691,9 @@ void IJK_One_Dimensional_Subproblem::dispatch_interfacial_heat_flux_correction(I
       const double flux_corr = corrective_flux_to_neighbours_[l];
       if (abs(flux_corr) > 1e-16)
         {
-          const int ii = neighbours_i[l];
-          const int jj = neighbours_j[l];
-          const int kk = neighbours_k[l];
+          const int ii = NEIGHBOURS_I[l];
+          const int jj = NEIGHBOURS_J[l];
+          const int kk = NEIGHBOURS_K[l];
           const int i = index_i_ + ii;
           const int j = index_j_ + jj;
           const int k = index_k_ + kk;
@@ -4748,9 +4732,6 @@ void IJK_One_Dimensional_Subproblem::dispatch_interfacial_heat_flux(IJK_Field_ve
   const int nj = ref_ijk_ft_->get_interface().I().nj();
   const int nk = ref_ijk_ft_->get_interface().I().nk();
 
-  const int neighbours_i[6] = NEIGHBOURS_I;
-  const int neighbours_j[6] = NEIGHBOURS_J;
-  const int neighbours_k[6] = NEIGHBOURS_K;
   bool is_all_mix = true;
   double weight_tot = 0.;
   for (int l=0; l<3; l++)
@@ -4776,9 +4757,9 @@ void IJK_One_Dimensional_Subproblem::dispatch_interfacial_heat_flux(IJK_Field_ve
           {
             const int mixed_neighbour = mixed_neighbours[l];
             const int neighbour_dir = mixed_neighbours[m];
-            const int ii = neighbours_i[mixed_neighbour];
-            const int jj = neighbours_j[mixed_neighbour];
-            const int kk = neighbours_k[mixed_neighbour];
+            const int ii = NEIGHBOURS_I[mixed_neighbour];
+            const int jj = NEIGHBOURS_J[mixed_neighbour];
+            const int kk = NEIGHBOURS_K[mixed_neighbour];
             const int i = index_i_ + ii;
             const int j = index_j_ + jj;
             const int k = index_k_ + kk;
@@ -4886,14 +4867,11 @@ void IJK_One_Dimensional_Subproblem::compute_pure_liquid_neighbours()
 {
   if (!has_computed_liquid_neighbours_)
     {
-      const int neighbours_i[6] = NEIGHBOURS_I;
-      const int neighbours_j[6] = NEIGHBOURS_J;
-      const int neighbours_k[6] = NEIGHBOURS_K;
       for (int l=0; l<6; l++)
         {
-          const int ii = neighbours_i[l];
-          const int jj = neighbours_j[l];
-          const int kk = neighbours_k[l];
+          const int ii = NEIGHBOURS_I[l];
+          const int jj = NEIGHBOURS_J[l];
+          const int kk = NEIGHBOURS_K[l];
           const double indic_neighbour = ref_ijk_ft_->get_interface().I()(index_i_+ii, index_j_+jj, index_k_+kk);
           if (fabs(indic_neighbour) > LIQUID_INDICATOR_TEST)
             {
@@ -4953,10 +4931,6 @@ void IJK_One_Dimensional_Subproblem::compare_fluxes_thermal_subproblems(const IJ
     compute_pure_liquid_neighbours();
 
   const int flux_out[6] = FLUXES_OUT;
-  // const int neighbours_ijk_sign[6] = NEIGHBOURS_SIGN;
-  const int neighbours_faces_i[6] = NEIGHBOURS_FACES_I;
-  const int neighbours_faces_j[6] = NEIGHBOURS_FACES_J;
-  const int neighbours_faces_k[6] = NEIGHBOURS_FACES_K;
   const int face_dir[6] = FACES_DIR;
   for (int l=0; l<6; l++)
     {
@@ -4967,9 +4941,9 @@ void IJK_One_Dimensional_Subproblem::compare_fluxes_thermal_subproblems(const IJ
       convective_diffusive_flux_op_value_leaving[l] = 0.;
       convective_diffusive_flux_op_value_entering[l] = 0.;
 
-      const int ii_f = neighbours_faces_i[l];
-      const int jj_f = neighbours_faces_j[l];
-      const int kk_f = neighbours_faces_k[l];
+      const int ii_f = NEIGHBOURS_FACES_I[l];
+      const int jj_f = NEIGHBOURS_FACES_J[l];
+      const int kk_f = NEIGHBOURS_FACES_K[l];
 
       double flux_val = convective_diffusive_fluxes_raw[face_dir[l]](index_i_ + ii_f,
                                                                      index_j_ + jj_f,

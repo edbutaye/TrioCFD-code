@@ -891,12 +891,6 @@ void Corrige_flux_FT_temperature_subresolution::compute_cell_neighbours_mixed_ce
       IJK_Field_local_int cell_faces_neighbours_corrected_bool_tmp;
       cell_faces_neighbours_corrected_bool_tmp.allocate(ni, nj, nk, 1);
 
-      const int neighbours_i[6] = NEIGHBOURS_I;
-      const int neighbours_j[6] = NEIGHBOURS_J;
-      const int neighbours_k[6] = NEIGHBOURS_K;
-      const int neighbours_faces_i[6] = NEIGHBOURS_FACES_I;
-      const int neighbours_faces_j[6] = NEIGHBOURS_FACES_J;
-      const int neighbours_faces_k[6] = NEIGHBOURS_FACES_K;
 
       for (int c=0; c<3; c++)
         {
@@ -911,12 +905,12 @@ void Corrige_flux_FT_temperature_subresolution::compute_cell_neighbours_mixed_ce
                     {
                       for (int l=index_ini; l<index_ini + 2; l++)
                         {
-                          const int i_neighbour = neighbours_i[l];
-                          const int j_neighbour = neighbours_j[l];
-                          const int k_neighbour = neighbours_k[l];
-                          const int ii = neighbours_faces_i[l];
-                          const int jj = neighbours_faces_j[l];
-                          const int kk = neighbours_faces_k[l];
+                          const int i_neighbour = NEIGHBOURS_I[l];
+                          const int j_neighbour = NEIGHBOURS_J[l];
+                          const int k_neighbour = NEIGHBOURS_K[l];
+                          const int ii = NEIGHBOURS_FACES_I[l];
+                          const int jj = NEIGHBOURS_FACES_J[l];
+                          const int kk = NEIGHBOURS_FACES_K[l];
                           const int cell_faces_neighbours_ijk = cell_faces_neighbours_corrected_bool_mixed_cell[c](i + ii,j + jj, k + kk);
                           const double indic_neighbour = ref_ijk_ft_->get_interface().I()(i+i_neighbour,j+j_neighbour,k+k_neighbour);
                           if (cell_faces_neighbours_ijk && indic_neighbour > LIQUID_INDICATOR_TEST)
@@ -927,12 +921,12 @@ void Corrige_flux_FT_temperature_subresolution::compute_cell_neighbours_mixed_ce
                     {
                       for (int l=index_ini; l<index_ini + 2; l++)
                         {
-                          const int i_neighbour = neighbours_i[l];
-                          const int j_neighbour = neighbours_j[l];
-                          const int k_neighbour = neighbours_k[l];
-                          const int ii = neighbours_faces_i[l];
-                          const int jj = neighbours_faces_j[l];
-                          const int kk = neighbours_faces_k[l];
+                          const int i_neighbour = NEIGHBOURS_I[l];
+                          const int j_neighbour = NEIGHBOURS_J[l];
+                          const int k_neighbour = NEIGHBOURS_K[l];
+                          const int ii = NEIGHBOURS_FACES_I[l];
+                          const int jj = NEIGHBOURS_FACES_J[l];
+                          const int kk = NEIGHBOURS_FACES_K[l];
                           const int cell_faces_neighbours_ijk = cell_faces_neighbours_corrected_bool_mixed_cell[c](i + ii,j + jj, k + kk);
                           const double indic_neighbour = ref_ijk_ft_->get_interface().I()(i+i_neighbour,j+j_neighbour,k+k_neighbour);
                           if (cell_faces_neighbours_ijk && (indic_neighbour < LIQUID_INDICATOR_TEST && indic_neighbour > VAPOUR_INDICATOR_TEST))
@@ -2071,9 +2065,6 @@ void Corrige_flux_FT_temperature_subresolution::smooth_temperature_cell_centre_n
           const int i = num_elem_ijk[DIRECTION_I];
           const int j = num_elem_ijk[DIRECTION_J];
           const int k = num_elem_ijk[DIRECTION_K];
-          const int neighbours_i[6] = NEIGHBOURS_I;
-          const int neighbours_j[6] = NEIGHBOURS_J;
-          const int neighbours_k[6] = NEIGHBOURS_K;
           // const double temperature_old = temperature(i,j,k);
           const double temperature_old_subres = out_of_bounds_values[ielem];
           const double temperature_old = temperature(i,j,k);
@@ -2081,9 +2072,9 @@ void Corrige_flux_FT_temperature_subresolution::smooth_temperature_cell_centre_n
           temperature_neighbour=0;
           for (int l=0; l<6; l++)
             {
-              const int ii = neighbours_i[l];
-              const int jj = neighbours_j[l];
-              const int kk = neighbours_k[l];
+              const int ii = NEIGHBOURS_I[l];
+              const int jj = NEIGHBOURS_J[l];
+              const int kk = NEIGHBOURS_K[l];
               const double indic = ref_ijk_ft_->get_interface().I()(i+ii, j+jj, k+kk);
               // if (indic > VAPOUR_INDICATOR_TEST)
               if (indic > LIQUID_INDICATOR_TEST)
@@ -3052,9 +3043,6 @@ void Corrige_flux_FT_temperature_subresolution::compute_ijk_pure_faces_indices()
    * Be careful, the ijk_intersection class is not sorting the faces the same way
    */
   const int faces_dir[6] = FACES_DIR;
-  const int neighbours_faces_i[6] = NEIGHBOURS_FACES_I;
-  const int neighbours_faces_j[6] = NEIGHBOURS_FACES_J;
-  const int neighbours_faces_k[6] = NEIGHBOURS_FACES_K;
 
   int nb_faces_to_correct = 0;
   const int nb_faces_to_correct_from_ijk = intersection_ijk_cell_->get_nb_faces_to_correct();
@@ -3082,9 +3070,9 @@ void Corrige_flux_FT_temperature_subresolution::compute_ijk_pure_faces_indices()
           const int is_neighbour_pure_liquid = intersection_ijk_cell_->get_ijk_pure_face_neighbours(intersection_ijk_cell_index, l);
           if (is_neighbour_pure_liquid)
             {
-              const int ii_f = neighbours_faces_i[l];
-              const int jj_f = neighbours_faces_j[l];
-              const int kk_f = neighbours_faces_k[l];
+              const int ii_f = NEIGHBOURS_FACES_I[l];
+              const int jj_f = NEIGHBOURS_FACES_J[l];
+              const int kk_f = NEIGHBOURS_FACES_K[l];
               i_pure_face_to_correct[nb_faces_to_correct] = (ijk_indices_i + ii_f);
               j_pure_face_to_correct[nb_faces_to_correct] = (ijk_indices_j + jj_f);
               k_pure_face_to_correct[nb_faces_to_correct] = (ijk_indices_k + kk_f);
