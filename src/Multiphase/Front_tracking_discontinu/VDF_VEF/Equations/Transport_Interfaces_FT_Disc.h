@@ -111,7 +111,8 @@ public:
   int                          preparer_calcul() override;
   int                          preparer_calcul_anticipated();
   virtual void                            preparer_pas_de_temps();
-  const Maillage_FT_Disc&                 maillage_interface() const;
+  const Maillage_FT_Disc& maillage_interface() const;
+
   const Champ_base& get_indicatrice() override;
   void update_indicatrice() override;
   void check_indicatrice_is_up_to_date() override;

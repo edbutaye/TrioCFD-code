@@ -1896,6 +1896,11 @@ double Transport_Interfaces_FT_Disc::calculer_pas_de_temps() const
   return DMAXFLOAT;
 }
 
+/*! @brief Updates normals and distances to interface, then updates indicatrice
+ *
+ * calls Maillage_FT_Disc::parcourir_maillage() first.
+ * calls update_normale_distance_interface then update_indicatrice
+ */
 void Transport_Interfaces_FT_Disc::update_indicatrice_normale_distance()
 {
   // Si le Maillage_FT_Disc::MINIMAL, le parcourir:
@@ -1906,6 +1911,32 @@ void Transport_Interfaces_FT_Disc::update_indicatrice_normale_distance()
   update_normale_distance_interface();
   update_indicatrice();
 }
+
+/*! @brief Calcule la normale et la distance a l'interface,
+ * evaluees sur une epaisseur egale a n_iterations_distance aux elements et discretisee aux elements
+ *
+ */
+void Transport_Interfaces_FT_Disc::update_normale_distance_interface() const
+{
+  const int tag = maillage_interface().get_mesh_tag();
+
+  // Check if the call is useful
+  if (tag == variables_internes_->distance_normale_cache_tag)
+    {
+      Cerr << "ERROR : Unneeded call to Transport_Interfaces_FT_Disc::update_normale_distance_interface" << finl;
+      Cerr << "        mesh tag: " << tag << ", cache tag: "<< variables_internes_->distance_normale_cache_tag << finl;
+      Process::exit();
+    }
+
+  DoubleTab& distance = variables_internes_->distance_interface->valeurs();
+  DoubleTab& normale  = variables_internes_->normale_interface->valeurs();
+  calculer_distance_interface(maillage_interface(),
+                              distance,
+                              normale,
+                              variables_internes_->n_iterations_distance);
+  variables_internes_->distance_normale_cache_tag = tag;
+}
+
 /*! @brief Recalcul du champ variables_internes_->indicatrice_cache a partir de la position des interfaces.
  *
  *   ATTENTION, ce n'est pas l'inconnue du probleme. L'inconnue est mise a jour
@@ -1920,7 +1951,7 @@ void Transport_Interfaces_FT_Disc::update_indicatrice()
   // can be bypassed by changing the tag before calling update_indicatrice (use this knowledge carefully)
   if (tag == variables_internes_->indicatrice_cache_tag)
     {
-      Cerr << "ERROR : Unneeded call to Transport_Interfaces_FT_Disc::update_indicatrice" << finl;
+      Cerr << "ERROR : Unneeded call to Transport_Interfaces_FT_Disc::update_indicatrice. tag = " << tag << finl;
       Cerr << "        indicatrice is already up to date" << finl;
       Process::exit();
     }
@@ -1930,17 +1961,27 @@ void Transport_Interfaces_FT_Disc::update_indicatrice()
     {
       Cerr << "ERROR : in Transport_Interfaces_FT_Disc::update_indicatrice : distance_normale not up to date" << finl;
       Cerr << "        Call update_indicatrice_normale_distance before or update_normale_distance_interface to do both at the same time" << finl;
+      Cerr << "        mesh tag: " << tag << ", cache tag: "<< variables_internes_->distance_normale_cache_tag << finl;
+      Process::exit();
+    }
+
+  // Voir s'il manque un appel a maillage_interface().parcourir_maillage()
+  if (not(maillage_interface().type_statut()>=Maillage_FT_Disc::PARCOURU))
+    {
+      Cerr << "ERROR : in Transport_Interfaces_FT_Disc::update_indicatrice : maillage pas parcouru" << finl;
       Process::exit();
     }
 
   DoubleVect& valeurs_indicatrice = variables_internes_->indicatrice_cache->valeurs();
-  assert(maillage_interface().type_statut()>=2); // Voir s'il manque un appel a maillage_interface().parcourir_maillage();
+
+
   maillage_interface().calcul_indicatrice(valeurs_indicatrice, valeurs_indicatrice);
   variables_internes_->indicatrice_cache_tag = tag;
 
   // TODO : nettoyer ce doublon de champs historique pour ne garder qu'un champ
   indicatrice_->valeurs() = get_indicatrice().valeurs(); // met a jour l'indicatrice a partir de indicatrice_cache qui vient d'etre calculee.
 }
+
 /*! @brief Checks if the indicator is up to date
  *
  * Exits if it is not the case. To be used when we want to be sure that update_indicatrice has been called recently enough.
@@ -9003,29 +9044,6 @@ const int& Transport_Interfaces_FT_Disc::get_n_iterations_distance() const
   return variables_internes_->n_iterations_distance;
 }
 
-/*! @brief Calcule et renvoie la normale et la distance a l'interface,
- * evaluees sur une epaisseur egale a n_iterations_distance aux elements et discretisee aux elements
- *
- */
-void Transport_Interfaces_FT_Disc::update_normale_distance_interface() const
-{
-  const int tag = maillage_interface().get_mesh_tag();
-
-  // Check if the call is useful
-  if (tag == variables_internes_->distance_normale_cache_tag)
-    {
-      Cerr << "ERROR : Unneeded call to Transport_Interfaces_FT_Disc::update_normale_distance_interface" << finl;
-      Process::exit();
-    }
-
-  DoubleTab& distance = variables_internes_->distance_interface->valeurs();
-  DoubleTab& normale  = variables_internes_->normale_interface->valeurs();
-  calculer_distance_interface(maillage_interface(),
-                              distance,
-                              normale,
-                              variables_internes_->n_iterations_distance);
-  variables_internes_->distance_normale_cache_tag = tag;
-}
 
 /*! @brief Renvoi de la distance signee entre l'interface et les sommets du maillage eulerien.
  *

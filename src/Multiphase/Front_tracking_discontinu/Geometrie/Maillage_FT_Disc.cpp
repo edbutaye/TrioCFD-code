@@ -2168,14 +2168,6 @@ double Maillage_FT_Disc::changer_temps(double t)
   return t;
 }
 
-/*! @brief return mesh_state_tag_
- *
- */
-int Maillage_FT_Disc::get_mesh_tag() const
-{
-  return mesh_state_tag_;
-}
-
 /*! @brief return som_init_util_
  *
  */

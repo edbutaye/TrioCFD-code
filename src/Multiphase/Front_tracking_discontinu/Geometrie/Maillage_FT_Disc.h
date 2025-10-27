@@ -68,9 +68,12 @@ public:
   double temps() const;
   double changer_temps(double t);
 
-  void mesh_tag_increase() { mesh_state_tag_++; }
-  // Acces au tag :
-  int get_mesh_tag() const;
+  void mesh_tag_increase() const { mesh_state_tag_++; }
+
+  /*! @brief return mesh_state_tag_
+   *
+  */
+  int get_mesh_tag() const { return mesh_state_tag_; }
 
   // Acces aux elements du maillage
   const DoubleTab& sommets() const;
@@ -360,7 +363,8 @@ protected:
   // (soit les noeuds sont deplaces, soit le nombre de noeuds change, etc...)
   // Cela permet de verifier qu'un tableau de valeurs calculees a partir du maillage
   // est bien a jour (exemple: courbure, ...)
-  int mesh_state_tag_;
+  // on peut avoir besoin de le changer de l'exterieur aussi... donc mutable. mais pas super de faire ça
+  mutable int mesh_state_tag_;
 
   // Le temps physique associe a cette interface
   double temps_physique_;

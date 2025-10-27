@@ -836,6 +836,11 @@ int Remailleur_Collision_FT_Thomas::traite_RuptureCoalescenceInterfaces_Conserva
   variation_volume*=-1.;
   remaillage_FT(maillage).corriger_volume(maillage,variation_volume);
 
+  // sometimes the mesh is changed before this, sometimes not
+  // for that we have to change the mesh tag, but not the one of maillage
+  const Transport_Interfaces_FT_Disc& eq = maillage.equation_transport();
+  const Maillage_FT_Disc& mesh = eq.maillage_interface();
+  mesh.mesh_tag_increase();
   maillage.equation_transport().update_indicatrice_normale_distance();
   indicatrice_finale = maillage.equation_transport().get_indicatrice();
   for (int elem=0; elem<nb_elements_euleriens; elem++)
