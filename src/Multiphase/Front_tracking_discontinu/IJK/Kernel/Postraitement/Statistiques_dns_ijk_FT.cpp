@@ -2537,22 +2537,6 @@ void Statistiques_dns_ijk_FT::update_stat(Probleme_FTD_IJK_base& cas, const doub
       Cout<< "Number of invalid cells for liquid: "  << str_occ << finl;
       Cout<< "Number of invalid cells for vapor: "  << str_occ_vap << finl;
       t_integration_ += dt;
-#if 0
-      ArrOfDouble sumTI(nvalt_);
-      sumTI = 0.;
-      double sumI = 0.;
-      for (int k = 0; k < nktot; k++)
-        {
-          sumI  +=moyenne_spatiale_instantanee_[I_MOY][k];
-          for (int j = 0; j < nb_thermal_fields_; j++)
-            sumTI(j) +=moyenne_spatiale_instantanee_temperature_(TI_MOY, k, j);
-        }
-
-      Cerr<< "Tl_test (bis) " << sumI/nktot << " " ;
-      for (int j = 0; j < nb_thermal_fields_; j++)
-        Cerr << sumTI(j)/nktot << " " ;
-      Cerr << finl;
-#endif
     }
 
 #ifdef STAT_VERBOSE
