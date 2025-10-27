@@ -943,7 +943,6 @@ double Remailleur_Collision_FT_Thomas::transport_volume_perdu_sur_sommet(ArrOfDo
 
   const int nb_elem = domaine.nb_elem();
   const int nb_sommets_interface = maillage.nb_sommets();
-  // int ok = -1; //pour les assert()
 
   //Initialisation de "volume_perdu_sommet"
   if (volume_perdu_sommet.size_array()!=nb_sommets_interface)
@@ -955,10 +954,7 @@ double Remailleur_Collision_FT_Thomas::transport_volume_perdu_sur_sommet(ArrOfDo
   //Appel de la fonction  Remailleur_Collision_FT_Thomas::transport_volume_perdu_sur_sommet(const int&, ArrOfDouble &, const Maillage_FT_Disc&)
   for (int elem=0; elem<nb_elem; elem++)
     {
-#ifndef NDEBUG
-      int ok=
-#endif
-        transport_volume_perdu_sur_sommet(elem,volume_perdu_sommet,maillage);
+      [[maybe_unused]] int ok=transport_volume_perdu_sur_sommet(elem,volume_perdu_sommet,maillage);
       assert(ok==1);
     }
 
