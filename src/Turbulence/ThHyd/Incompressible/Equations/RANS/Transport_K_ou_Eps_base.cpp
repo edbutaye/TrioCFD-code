@@ -134,11 +134,7 @@ int Transport_K_ou_Eps_base::controler_variable()
   int lquiet = modele_turbulence().get_lquiet();
   // On interdit K-Eps negatif pour le K-Eps seulement
   // Les autres modeles (2 couches, Launder, ne sont pas assez valides)
-  /* 1.6.3 : on renonce en debug a stopper le code quand kEps<0
-     #ifndef NDEBUG
-     if (this->que_suis_je()=="Transport_K_Eps") control=0;
-     #endif
-  */
+
   const Domaine_VF& domaine_vf = ref_cast(Domaine_VF,domaine_dis());
 
   double Le_MIN = modele_turbulence().get_EPS_MIN();
@@ -211,30 +207,7 @@ int Transport_K_ou_Eps_base::controler_variable()
                   position+=(Nom)domaine_vf.xp(n,2);
                 }
               nvar = 0;   // var -> var_min
-              /* Error in algorithm ?
-              for (int j=0;j<nb_faces_elem;j++)
-              {
-                 int face = elem_faces(n,j);
-              for (int i=0; i<2; i++)
-              {
-               int elem = face_voisins(face,i);
-               if (elem!=-1 && elem!=n)
-               {
-                  double& k_elem = K_Eps(elem,0);
-                              if (k_elem > LeK_MIN)
-                                {
-                                  k += k_elem;
-                                  nk++;
-                                }
-                              double& e_elem = K_Eps(elem,1);
-                              if (e_elem > LeEPS_MIN)
-                                {
-                                  eps += e_elem;
-                                  neps++;
-                                }
-               }
-              }
-              }*/
+
             }
           if (nvar!=0) var /= nvar;
           else var = Le_MIN;

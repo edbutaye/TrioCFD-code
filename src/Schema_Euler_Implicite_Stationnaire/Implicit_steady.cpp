@@ -87,7 +87,6 @@ void Implicit_steady::iterer_NS(Equation_base& eqn,DoubleTab& current,DoubleTab&
     }
 
 
-  //DoubleTab& passe = eqnNS.inconnue().passe(2);
   DoubleTab present(current);
   DoubleTrav gradP(current);
   DoubleTrav correction_en_pression(pression);
@@ -117,12 +116,7 @@ void Implicit_steady::iterer_NS(Equation_base& eqn,DoubleTab& current,DoubleTab&
   le_solveur_.resoudre_systeme(matrice,resu,current);
   test_impose_bound_cond(eqn,current,"apres resolution ",0);
   Debog::verifier("Implicit_steady::iterer_NS current apres CL",current);
-  /*
-  #ifndef NDEBUG
-    // Check periodic BC on U*
-    test_periodic_solution(eqnNS, current);
-  #endif
-  */
+
   current.echange_espace_virtuel();
 
   //Calcul de secmem = BU*
@@ -290,40 +284,3 @@ void Implicit_steady::calcul_mat_masse_diviser_par_dt_vdf(Navier_Stokes_std& eqn
   m_dt.echange_espace_virtuel();
 
 }
-
-/*//Fonction utile uniquement pour le Debug
-void Implicit_steady::test_periodic_solution(Navier_Stokes_std& eqnNS, DoubleTab& current) const
-{
-
-  const Domaine_VEF& le_dom = ref_cast(Domaine_VEF,eqnNS.domaine_dis());
-  const Domaine_Cl_VEF& le_dom_cl = ref_cast(Domaine_Cl_VEF,eqnNS.domaine_Cl_dis());
-  int nb_comp=current.dimension(1);
-  for (int n_bord=0; n_bord<le_dom.nb_front_Cl(); n_bord++)
-    {
-      const Cond_lim& la_cl = le_dom_cl.les_conditions_limites(n_bord);
-      if (sub_type(Periodique,la_cl.valeur()))
-        {
-          const Periodique& la_cl_perio = ref_cast(Periodique,la_cl.valeur());
-          const Front_VF& le_bord = ref_cast(Front_VF,la_cl->frontiere_dis());
-          int nb_faces_bord=le_bord.nb_faces();
-          for (int ind_face=0; ind_face<nb_faces_bord; ind_face++)
-            {
-              int ind_face_associee = la_cl_perio.face_associee(ind_face);
-              int face = le_bord.num_face(ind_face);
-              int face_associee = le_bord.num_face(ind_face_associee);
-              for (int comp=0; comp<nb_comp; comp++)
-                {
-                  if (!est_egal(current(face, comp),current(face_associee, comp),1.e-4))
-                    {
-                      Cerr << "Periodic boundary condition is not correct in Implicite_steady::test_periodic_solution" << finl;
-                      Cerr << "vit1("<<face<< ","<<comp<<")=" << current(face, comp) << finl;
-                      Cerr << "vit2("<<face_associee<<","<<comp<<")=" << current(face_associee,comp) << finl;
-                      Cerr << "Delta=" << current(face,comp)-current(face_associee,comp) << finl;
-                      Process::exit();
-                    }
-                }
-            }
-        }
-    }
-
-}*/
