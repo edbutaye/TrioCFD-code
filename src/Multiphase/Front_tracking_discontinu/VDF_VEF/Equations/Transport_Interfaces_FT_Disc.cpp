@@ -20,7 +20,6 @@
 #include <EcritureLectureSpecial.h>
 #include <Discret_Thyd.h>
 #include <Schema_Temps_base.h>
-#include <time.h>
 #include <Parser.h>
 #include <Domaine_VF.h>
 #include <Domaine_VDF.h>
@@ -59,10 +58,6 @@
 #include <TRUST_2_PDI.h>
 #include <Avanc.h>
 
-#include <map>
-#include <variant>
-#include <functional>
-#include <vector>
 
 Implemente_instanciable_sans_constructeur_ni_destructeur(Transport_Interfaces_FT_Disc,"Transport_Interfaces_FT_Disc",Transport_Interfaces_base);
 
@@ -130,49 +125,6 @@ static void integrer_vitesse_imposee(
   y += (vy + 2.*vy1 + 2.*vy2 + vy3) / 6. * dt;
   z += (vz + 2.*vz1 + 2.*vz2 + vz3) / 6. * dt;
 }
-
-#if 0
-static void normer_vecteurs(DoubleTab& tab)
-{
-  const int n = tab.dimension(0);
-  int i;
-  switch (tab.dimension(1))
-    {
-    case 2:
-      for (i = 0; i < n; i++)
-        {
-          const double nx = tab(i,0);
-          const double ny = tab(i,1);
-          double n = nx*nx+ny*ny;
-          if (n > 0.)
-            {
-              n = 1. / sqrt(n);
-              tab(i,0) = nx * n;
-              tab(i,1) = ny * n;
-            }
-        }
-      break;
-    case 3:
-      for (i = 0; i < n; i++)
-        {
-          const double nx = tab(i,0);
-          const double ny = tab(i,1);
-          const double nz = tab(i,2);
-          double n = nx*nx+ny*ny+nz*nz;
-          if (n > 0.)
-            {
-              n = 1. / sqrt(n);
-              tab(i,0) = nx * n;
-              tab(i,1) = ny * n;
-              tab(i,2) = nz * n;
-            }
-        }
-      break;
-    default:
-      assert(0);
-    }
-}
-#endif
 
 /*! @brief calcul du vecteur normal a l'interface, aux sommets du maillage d'interface.
  *
@@ -419,20 +371,12 @@ int Transport_Interfaces_FT_Disc_interne::reprendre(Entree& is)
 
 /*! @brief constructeur par defaut
  *
+ * TODO: remove the new Transport_Interfaces_FT_Disc_interne in there. why do that ?
  */
 Transport_Interfaces_FT_Disc::Transport_Interfaces_FT_Disc()
 {
   variables_internes_ = new Transport_Interfaces_FT_Disc_interne;
   temps_debut_=-1.e38;
-  /*
-    Noms& nom=champs_compris_.liste_noms_compris();
-    nom.dimensionner(5);
-    nom[0]="INDICATRICE_";
-    nom[1]="INDICATRICE_CACHE_";
-    nom[2]="VITESSE_FILTREE_";
-    nom[3]="DISTANCE_INTERFACE_ELEM_";
-    nom[4]="NORMALE_INTERFACE";
-  */
   interpolation_repere_local_ = 0;
   force_.resize(dimension);
   moment_.resize((dimension==2?1:dimension));
@@ -501,8 +445,6 @@ void Transport_Interfaces_FT_Disc::set_param(Param& param)
   param.ajouter("temps_debut",&temps_debut_);
   param.ajouter("vitesse_imposee_regularisee", &variables_internes_->vimp_regul) ;
   param.ajouter_flag("explicit_u_NS", &explicit_u_NS_); // XD_ADD_P rien Flag to force a really explicit scheme
-  //param.ajouter("indic_faces_modifiee", &variables_internes_->indic_faces_modif) ;
-  //param.ajouter_non_std("indic_faces_modifiee", (this)) ;
   param.ajouter_non_std("type_indic_faces", (this)) ;
   param.ajouter("collision_model_fpi",&collision_model_); // xd_ADD_P collision model for fluid particle interaction
   param.ajouter_flag("compute_particles_rms",&compute_particles_rms_); // TODO xD_ADD_P compute particles velocity root mean square
@@ -9427,231 +9369,6 @@ void Transport_Interfaces_FT_Disc::calculer_distance_interface(
     }
   statistics().end_count("Calculer_distance_interface");
 }
-
-/*! @brief Calcul de la derivee par rapport au temps du volume de phase 1 aux sommets du maillage lagrangien a partir du champ de vitesse
- *
- *   eulerien. On utilise le fait que le champ eulerien est a divergence
- *   nulle
- *   Cette grandeur permet de corriger le deplacement des sommets pour
- *   conserver le volume des phases (voir these B.M. paragraphe 3.2.10).
- *   On a I = rho_0 + (rho_1-rho_0) * I. Donc:
- *    drho/dt = (rho_1-rho_0) * dI/dt  (d'une part)
- *            = div(rho*u) = div( (rho_0 + (rho_1-rho_0)*I) * u)  (d'autre part)
- *   Donc, si div(u) = 0
- *    dI/dt = div(I * u)
- *   Si non (changement de phase):
- *    dI/dt = div((rho_0/(rho_1-rho_0) + I) * u)
- *  Parametre : vitesse
- *  Signification: le champ de vitesse eulerien aux faces du maillage.
- *                 si vitesse.dimension(1)==1, on suppose que c'est la
- *                 composante normale a la face de la vitesse, sinon
- *                 on suppose que c'est le vecteur vitesse 2d ou 3d.
- *  Parametre : indicatrice
- *  Signification: indicatrice de phase aux elements euleriens.
- *                 doit avoir son espace virtuel a jour et correspondre
- *                 au maillage suivant...
- *  Parametre : maillage
- *  Signification : le maillage de l'interface,
- *                  doit etre parcouru.
- *  Parametre : rho_0_sur_delta_rho_div_u
- *  Signification: resultat de l'operateur div(u) aux elements (integrale de div_u
- *                 sur les elements. Si ce tableau est de taille non nulle, on ajoute
- *                 le terme en div_u
- *  Parametre : var_volume
- *  Signification : Tableau ou on stocke la variation de volume de phase 1
- *                  pour chaque sommet du maillage lagrangien.
- *
- */
-#if 0
-void Transport_Interfaces_FT_Disc::calculer_derivee_volume_phase1(
-  const DoubleTab& vitesse,
-  const DoubleTab& indicatrice,
-  const Maillage_FT_Disc& maillage,
-  const DoubleTab& rho_0_sur_delta_rho_div_u,
-  ArrOfDouble& var_volume) const
-{
-  const int nb_sommets = maillage.nb_sommets();
-  var_volume.resize_array(nb_sommets);
-  // Initialisation a zero car on va ajouter des contributions dans le desordre :
-  var_volume = 0.;
-
-  // Ancien codage (ne supporte pas le changement de phase)
-
-  // Recuperation des tableaux et autres raccourcis pour le calcul :
-  const Domaine_dis_base& domaine_dis_base = domaine_dis();
-  const Domaine_VF&        domaine_vf       = ref_cast(Domaine_VF, domaine_dis_base);
-  const Domaine&           domaine          = domaine_dis_base.domaine();
-  const int nb_faces_element = domaine.nb_faces_elem();
-  const int dim = Objet_U::dimension;
-  // En vef : 2 ou 3 composantes de vitesse,
-  // en vdf : composante normale a la face uniquement.
-  const int   vitesse_n_composantes = (vitesse.line_size() > 1) ? 1 : 0; // 1 si VEF et 0 si VDF
-  const IntTab& elem_faces = domaine_vf.elem_faces();
-  const IntTab& face_voisins = domaine_vf.face_voisins();
-  // Pour le vdf, on a besoin de la surface des faces...
-  const DoubleVect * face_surfaces_ptr = 0;
-  if (sub_type(Domaine_VDF, domaine_vf))
-    {
-      const Domaine_VDF& domaine_vdf = ref_cast(Domaine_VDF, domaine_vf);
-      face_surfaces_ptr = & (domaine_vdf.face_surfaces());
-    }
-  const IntTab& facettes = maillage.facettes();
-  const Intersections_Elem_Facettes& intersections =
-    maillage.intersections_elem_facettes();
-  const ArrOfInt& index_elem = intersections.index_elem();
-  // Verification: soit on est en vdf avec une seule composante,
-  //  soit on n'est pas en vdf, avec "dimension" composantes :
-  assert(vitesse_n_composantes!=0 || face_surfaces_ptr!=0);
-  assert(vitesse_n_composantes==0 || vitesse.line_size()==dim);
-  const ArrOfDouble& surface_facettes = maillage.get_update_surface_facettes();
-
-  // Boucle sur les elements euleriens
-  const int nb_elements = domaine.nb_elem();
-  int element;
-  for (element = 0; element < nb_elements; element++)
-    {
-
-      // Si cet element n'est pas traverse par l'interface, ne pas calculer
-      // la variation de volume.
-      const int index_premiere_intersection = index_elem[element];
-      if (index_premiere_intersection < 0) // Pas de facette dans cet element
-        continue;
-
-      // Calcul du bilan de volume de la phase 1 sur cet element :
-      // integrale sur les faces de vitesse * normale * indicatrice_face.
-      // indicatrice_face est l'indicatrice a la face: 1 si l'element voisin
-      // a une indicatrice = 1, 0 si l'element voisin a une indicatrice 0,
-      // indicatrice moyenne sinon (voir these B.M. paragraphe 3.2.10)
-
-      // Calcul de la derivee par rapport au temps du volume de phase1 dans l'element :
-      double derivee_volume_phase1 = 0.;
-      int face_locale;
-      for (face_locale = 0; face_locale < nb_faces_element; face_locale++)
-        {
-          const int face = elem_faces(element, face_locale);
-          const int elem_voisin_0 = face_voisins(face, 0);
-          const int elem_voisin_1 = face_voisins(face, 1);
-          const int elem_voisin = elem_voisin_0 + elem_voisin_1 - element;
-          double indicatrice_face;
-          if (elem_voisin < 0)
-            {
-              // Face de bord
-              // Si c'est un bord ferme (vitesse normale nulle), alors
-              // la valeur n'a pas d'importance. Si c'est un bord ouvert,
-              // alors je ne connais pas de formulation qui permette de
-              // conserver le volume des phases.
-              // Choix d'une valeur pas debile :
-              indicatrice_face = indicatrice(element);
-            }
-          else
-            {
-              const double indicatrice_voisin = indicatrice(elem_voisin);
-              if (indicatrice_voisin == 0.)
-                indicatrice_face = 0.;
-              else if (indicatrice_voisin == 1.)
-                indicatrice_face = 1.;
-              else
-                {
-                  double indic = indicatrice(element);
-                  indicatrice_face = (indic + indicatrice_voisin) * 0.5;
-                }
-            }
-          // Composante normale de la vitesse a la face :
-          // (la normale pointe de l'elem_voisin_0 vers l'elem_voisin_1,
-          //  sa norme est egale a la surface de la face).
-          double vitesse_normale = 0;
-          if (vitesse_n_composantes)
-            {
-              // c'est le vef en general :
-              // Produit scalaire normale*vitesse
-              int i;
-              for (i = 0; i < dim; i++)
-                {
-                  double n = domaine_vf.face_normales(face, i);
-                  double v = vitesse(face, i);
-                  vitesse_normale += v * n;
-                }
-            }
-          else
-            {
-              // c'est le vdf : facile :
-              double surface = (*face_surfaces_ptr)(face);
-              vitesse_normale = vitesse(face) * surface;
-            }
-          // Calcul du debit volumique de phase 1 entrant dans l'element par cette face
-          // Si la normale est dirigee vers l'exterieur de l'element, on change de signe :
-          double debit_entrant_phase1 =
-            (elem_voisin_0 == element) ? -vitesse_normale : vitesse_normale;
-          debit_entrant_phase1 *= indicatrice_face;
-          // Contribution au bilan de volume de phase 1 dans l'element :
-          derivee_volume_phase1 += debit_entrant_phase1;
-        }
-
-      // Repartition conservative de cette derivee de volume sur les noeuds
-      // du maillage lagrangien :
-
-      // Premier passage : calcul de la surface totale d'intersection entre le
-      // maillage lagrangien et l'element eulerien "element".
-      double surface_totale = 0.;
-      // Boucle sur les faces qui traversent l'element:
-      int index = index_premiere_intersection;
-      while (index >= 0)
-        {
-          const Intersections_Elem_Facettes_Data& data = intersections.data_intersection(index);
-          const int facette = data.numero_facette_;
-          const double surface_facette = surface_facettes[facette];
-#ifdef AVEC_BUG_SURFACES
-          surface_totale += data.surface_intersection_;
-#else
-          surface_totale += data.fraction_surface_intersection_ * surface_facette;
-#endif
-          index = data.index_facette_suivante_;
-        }
-      // Deuxieme passage : repartition de la derivee de volume sur les sommets,
-      // proportionnelle a la surface et a la coordonnee barycentrique du sommet :
-      index = index_premiere_intersection;
-      if (surface_totale > 0.)
-        {
-          const double inv_surface_tot = 1. / surface_totale;
-          while (index >= 0)
-            {
-              const Intersections_Elem_Facettes_Data& data = intersections.data_intersection(index);
-              const int facette = data.numero_facette_;
-              const double surface_facette = surface_facettes[facette];
-              // Fraction de la surface d'intersection de cette facette a la surface totale
-              // d'intersection avec l'element :
-#ifdef AVEC_BUG_SURFACES
-              const double fraction_surface = data.surface_intersection_ * inv_surface_tot;
-#else
-              const double fraction_surface = data.fraction_surface_intersection_ * surface_facette * inv_surface_tot;
-#endif
-              int i;
-              for (i = 0; i < dim; i++)
-                {
-                  const int sommet = facettes(facette, i);
-                  const double coeff  = data.barycentre_[i];
-                  // La somme des "coeff" pour une intersection vaut 1
-                  // et la sommet des fraction_surface pour toutes les intersections
-                  // vaut 1, donc on distribue "derivee_volume_phase1" de facon conservative
-                  // sur les sommets du maillage lagrangien :
-                  const double valeur = coeff * fraction_surface * derivee_volume_phase1;
-                  // Certaines contributions sont ajoutees a des sommets virtuels,
-                  // on collecte le tout a la fin :
-                  var_volume[sommet] += valeur;
-                }
-              index = data.index_facette_suivante_;
-            }
-        }
-    }
-
-  // Collection des donnees des sommets virtuels :
-  maillage.desc_sommets().collecter_espace_virtuel(var_volume, Descripteur_FT::SOMME);
-  // Mise a jour des espaces virtuels :
-  maillage.desc_sommets().echange_espace_virtuel(var_volume);
-}
-
-#endif
-
 
 void Transport_Interfaces_FT_Disc::calculer_vmoy_composantes_connexes(const Maillage_FT_Disc& maillage,
                                                                       const ArrOfInt& compo_connexes_facettes,
