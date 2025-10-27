@@ -92,7 +92,7 @@ Read pb_box
         }
 	# RANS k-epsilon model used #
         modele_turbulence K_Epsilon {
-            Transport_K_Epsilon
+            Transport_equation transport_K_Epsilon
             {
                 convection { amont }
                 diffusion { }

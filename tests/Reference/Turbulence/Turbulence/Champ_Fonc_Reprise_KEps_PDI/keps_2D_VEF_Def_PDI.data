@@ -118,7 +118,7 @@ Read pb
 	}
 	sauvegarde_simple pdi keps_2D_VEF_Def_PDI.sauv
 }
-
+EcritureLectureSpecial 1
 Solve pb
 End
  
