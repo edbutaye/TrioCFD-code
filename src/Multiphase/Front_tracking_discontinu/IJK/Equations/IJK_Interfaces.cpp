@@ -3985,47 +3985,6 @@ static void calculer_deplacement_from_code_compo_connexe_negatif(const Maillage_
     }
 }
 
-// Le code ci-dessous est bugge car il peut y avoir des sommets  reel
-// n'appartenant a aucune facette reelle. Une bulle passe sur un processeur
-// voisin, du processeur 1 au processeur 2. Le premier sommet qui passe le joint
-// est forcement sans facette car les facettes sont affectees au processeur de
-// rang le plus bas qui possede un des sommets.
-#if 0
-// Input :
-//   - m : Le maillage_ft doit contenir dans la compo_connexe les numeros de bulles reeles.
-//   - masque_array[icompo] : Contient le code_deplacement de la ieme bulle.
-static void calculer_deplacement_from_masque_in_array(const Maillage_FT_IJK& m,
-                                                      DoubleTab& deplacement,
-                                                      const ArrOfInt& masque_array,
-                                                      DoubleTab& bounding_box_NS)
-{
-  // Creation du tableau deplacement pour le maillage m :
-  const int nf = m.nb_facettes();
-  const int nbsom = m.nb_sommets();
-  const IntTab& mes_facettes = m.facettes();
-  deplacement.resize(nbsom,3);
-  const ArrOfInt& compo_connexe_tempo = m.compo_connexe_facettes();
-  for (int i_facette = 0; i_facette < nf; i_facette++)
-    {
-      const int icompo = compo_connexe_tempo[i_facette];
-      // On relit le code pour le deplacement :
-      const int code = masque_array[icompo];
-      // On remplit le deplacement des sommets de la facette:
-      for (int dir = 0; dir < 3; dir++)
-        {
-          // decodage du deplacement :
-          int unused_variable = 0 ;
-          int decode = decoder_deplacement(code, dir, unused_variable);
-          double depl = decode * (bounding_box_NS(dir,1) - bounding_box_NS(dir,0));
-          for (int isom = 0; isom < 3; isom++)
-            {
-              const int idx_global_som = mes_facettes(i_facette, isom);
-              deplacement(idx_global_som, dir) = depl;
-            }
-        }
-    }
-}
-#else
 // Input :
 //   - m : Le maillage_ft doit contenir dans la compo_connexe les numeros de
 //   bulles reeles.
@@ -4101,7 +4060,7 @@ static void calculer_deplacement_from_masque_in_array(const Maillage_FT_IJK& m,
         }
     }
 }
-#endif
+
 
 // Duplique les bulles a partir du masque_duplicata_pour_compo.
 // Ce masque contient pour chaque bulle reelle un encodage du deplacement
@@ -6263,10 +6222,7 @@ void IJK_Interfaces::ajouter_terme_source_interfaces(
                                       const double repul_voisin = repuls_par_compo_[old()][icol2](elem2[0], elem2[1],
                                                                                                   elem2[2]); // la compo dans le voisin c'est icol2
                                       indic_voisin = indicatrice_par_compo_[old()][icol2](elem2[0], elem2[1], elem2[2]);
-#if 0
-                                      // Seulement pour debug :
-                                      field_indicatrice(elem2[0], elem2[1], elem2[2]) = indic_voisin;
-#endif
+
                                       const double surface_voisin = surface_par_compo_[old()][icol2](
                                                                       elem2[0], elem2[1], elem2[2]
                                                                     ); // la compo dans le voisin c'est icol2
@@ -7622,29 +7578,6 @@ void IJK_Interfaces::compute_external_forces_color_function(IJK_Field_vector3_do
   // To put every process with the correct information for de-cryption
   mp_max_for_each_item(decodeur_num_compo);
 
-  // Si j'ai bien tout saisi, il en manque une qui n'est pas dans le decodeur, c'est le numero de la phase continue:
-  // Recherche de l'indice invalid dans la liste :
-  // decodeur_num_compo["num compo de la phase continue"]  vaut NUM_COMPO_INVALID et donc il suffirait d'une simple boucle pour le trouver
-#if 0
-  int phase_continue=-1000;
-  {
-    int i=0;
-    for (i=0; i<nb_compo_in_num_compo_; i++)
-      {
-        if (decodeur_num_compo[i] == NUM_COMPO_INVALID)
-          {
-            phase_continue = i;
-
-            break; // on a trouve le liquid.
-          }
-      }
-    if (i==nb_compo_in_num_compo_)
-      {
-        Cerr << "Continuous phase has not been found in num_compo_ " <<finl;
-        Process::exit();
-      }
-  }
-#endif
   ArrOfInt list_continuous_phase;
   list_continuous_phase.resize_array(0);
   int phase_continue1=-1000;
@@ -7683,11 +7616,6 @@ void IJK_Interfaces::compute_external_forces_color_function(IJK_Field_vector3_do
               {
                 phase_continue6 = i;
               }
-            /*            else
-                          {
-                            Cerr << "Too many portions of continuous phase : " << list_continuous_phase.size_array() << ". Contact TRUST support." << finl;
-                            Process::exit();
-                          } */
           }
       }
   }
@@ -7699,11 +7627,8 @@ void IJK_Interfaces::compute_external_forces_color_function(IJK_Field_vector3_do
        << nb_compo_in_num_compo_<< " - "  << nb_parts_continuous << " - " << nb_bulles_reelles_+nb_bulles_ghost_
        << " = " << nb_compo_in_num_compo_ - (nb_parts_continuous +nb_bulles_reelles_+nb_bulles_ghost_)<< finl;
   assert(nb_compo_in_num_compo_ - (nb_parts_continuous +nb_bulles_reelles_+nb_bulles_ghost_)==0);
-  /*if (list_continuous_phase.size_array() >6)
-  {
-   Cerr << "Too many portions of continuous phase : " << list_continuous_phase.size_array() << ". Contact TRUST support." << finl;
-   Process::exit();
-  } else */if (nb_parts_continuous == 0)
+
+  if (nb_parts_continuous == 0)
     {
       Cerr << "No continuous phase found. " << finl;
       Process::exit();
@@ -7803,10 +7728,7 @@ void IJK_Interfaces::compute_external_forces_color_function(IJK_Field_vector3_do
     }
   mp_sum_for_each_item(integrated_forces);
   mp_sum_for_each_item(integration_cells_per_bubble);
-  // Individual_forces has been used. It can be updated with the true value (weighted by the true volume where the force is applied).
-// individual_forces=integrated_forces;
-//  individual_forces.copy(integrated_forces, RESIZE_OPTIONS::COPY_INIT); // Return the integrated value in individual_forces.
-//
+
   for (int idir=0; idir < 3; idir++)
     for (int ib = 0; ib < nb_bulles_reelles_; ib++)
       {
@@ -7859,7 +7781,6 @@ void IJK_Interfaces::compute_external_forces_parser(IJK_Field_vector3_double& ra
         {
           const int ighost = ghost_compo_converter(ibg);
           const int ibulle_reelle = decoder_numero_bulle(-ighost);
-          //Cerr << ighost << " " << ibulle_reelle << finl;
 
           double xir = position(nb_bulles_reelles_+ibg,0);
           double yir = position(nb_bulles_reelles_+ibg,1);
@@ -7876,8 +7797,6 @@ void IJK_Interfaces::compute_external_forces_parser(IJK_Field_vector3_double& ra
           noms_forces[idir] += Nom(individual_forces(ibulle_reelle,idir), "%g");
           noms_forces[idir] += ")" ;
         }
-      // Cerr << "Setting force [dir=" << idir << "] : " << noms_forces[idir] << finl;
-      // Cette methode parcours ni(), nj() et nk() et donc pas les ghost...
       set_field_data(rappel[idir], noms_forces[idir], indic, 0. /* could be time... */ );
     }
 }
@@ -7912,14 +7831,10 @@ void IJK_Interfaces::compute_indicatrice_non_perturbe(IJK_Field_double& indic_np
       nom_indicatrices_np += ")_LT_0.)*(1.0)" ;
     }
   // Pour les bulles ghosts
-  //Cerr << "Ghost_compo_converter : " << ghost_compo_converter_ << finl;
 
   assert(ghost_compo_converter_.size_array() == nb_bulles_ghost_);
   for (int ibg=0; ibg < nb_bulles_ghost_; ibg++)
     {
-      //const int ighost = ghost_compo_converter(ibg);
-      //const int ibulle_reelle = decoder_numero_bulle(-ighost);
-      //Cerr << ighost << " " << ibulle_reelle << finl;
 
       double xir = position(nb_bulles_reelles_+ibg,0);
       double yir = position(nb_bulles_reelles_+ibg,1);
@@ -8080,72 +7995,6 @@ void IJK_Interfaces::calculer_indicatrice_next(
       barycentre_vapeur_par_face_[next()][c],
       barycentre_vapeur_par_face_ns_[next()][c]);
 
-  // Overwriting the MedCoupling computation of the face surfaces.
-  //
-  //{
-  //  const Domaine_IJK& s = indicatrice_ns_[next()].get_domaine();
-  //
-  //  double dx = s.get_constant_delta(DIRECTION_I);
-  //  double dy = s.get_constant_delta(DIRECTION_J);
-  //  double dz = s.get_constant_delta(DIRECTION_K);
-  //
-  //  const Domaine_IJK& geom = s.get_grid_geometry();
-  //  double origin_x = geom.get_origin(DIRECTION_I);
-  //  double origin_y = geom.get_origin(DIRECTION_J);
-  //  double origin_z = geom.get_origin(DIRECTION_K);
-  //
-  //  int offset_x = s.get_offset_local(DIRECTION_I);
-  //  int offset_y = s.get_offset_local(DIRECTION_J);
-  //  int offset_z = s.get_offset_local(DIRECTION_K);
-  //
-  //  const int ni = indicatrice_ns_[next()].ni();
-  //  const int nj = indicatrice_ns_[next()].nj();
-  //  const int nk = indicatrice_ns_[next()].nk();
-  //  for (int k = 0; k < nk; k++)
-  //    {
-  //      for (int j = 0; j < nj; j++)
-  //        {
-  //          for (int i = 0; i < ni; i++)
-  //            {
-  //              int phase = 0;
-  //
-  //              for (int dir = 0; dir < 3; dir++)
-  //                {
-  //                  double face_bary_x = origin_x + dx*(i + offset_x + (get_barycentre_face(1, dir, 0, phase, i,j,k)));
-  //                  double face_bary_y = origin_y + dy*(j + offset_y + (get_barycentre_face(1, dir, 1, phase, i,j,k)));
-  //                  double face_bary_z = origin_z + dz*(k + offset_z + (get_barycentre_face(1, dir, 2, phase, i,j,k)));
-  //
-  //
-  //                  double f_dir = select_dir(dir, dy*dz, dx*dz, dx*dy);
-  //                  surface_vapeur_par_face_ns_[next()][dir](i,j,k) = (1 - next_indicatrice_surfacique)*f_dir;
-  //
-  //                  barycentre_vapeur_par_face_ns_[next()][dir][0](i,j,k) = face_bary_x;
-  //                  barycentre_vapeur_par_face_ns_[next()][dir][1](i,j,k) = face_bary_y;
-  //                  barycentre_vapeur_par_face_ns_[next()][dir][2](i,j,k) = face_bary_z;
-  //                }
-  //            }
-  //        }
-  //    }
-  //}
-  //
-  //surface_vapeur_par_face_ns_[old()].echange_espace_virtuel();
-  //for (int c = 0; c < 3; c++)
-  //  {
-  //    barycentre_vapeur_par_face_ns_[old()][c].echange_espace_virtuel();
-  //  }
-  //
-  //// Passage au domaine FT
-  //ref_ijk_ft_->redistrib_to_ft_elem().redistribute(surface_vapeur_par_face_ns_[next()], surface_vapeur_par_face_[next()]);
-  //for (int c=0; c<3; c++)
-  //  {
-  //    ref_ijk_ft_->redistrib_to_ft_elem().redistribute(barycentre_vapeur_par_face_ns_[next()][c], barycentre_vapeur_par_face_[next()][c]);
-  //  }
-  //
-  //surface_vapeur_par_face_[old()].echange_espace_virtuel();
-  //for (int c = 0; c < 3; c++)
-  //  {
-  //    barycentre_vapeur_par_face_[old()][c].echange_espace_virtuel();
-  //  }
 
   // Calcul de la surface interfaciale
   calculer_surface_interface(surface_interface_ft_[next()], indicatrice_ft_[next()]);
