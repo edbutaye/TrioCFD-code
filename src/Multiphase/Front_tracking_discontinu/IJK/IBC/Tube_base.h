@@ -92,11 +92,6 @@ protected:
   double rho_cylindre_, amortissement_, raideur_;
 
 };
-#if 0
-class Tube_couple : public Tube_base
-{
-};
-#endif
 
 class Faisceau_Tubes : public VECT(OWN_PTR(Tube_base))
 {
