@@ -332,12 +332,7 @@ void Maillage_FT_IJK::deplacer_sommets(const ArrOfInt& liste_sommets,
           assert(!( (my_slice[direction] == my_new_slice[direction]) &&
                     (nbmailles_euler_in_new_slice[direction] != ref_domaine_->get_nb_elem_local(direction))));
         }
-#if 0
-      assert((ijk_pos[0] < 0 && ijk_pos[1] < 0 && ijk_pos[2] < 0)
-             || (ijk_pos[0] >= 0 && ijk_pos[0] < nbmailles_euler_i_
-                 && ijk_pos[1] >= 0 && ijk_pos[1] < nbmailles_euler_j_
-                 && ijk_pos[2] >= 0 && ijk_pos[2] < nbmailles_euler_k_));
-#else
+
       // Dans le cas ou le sommet a change de tranche, et que celle-ci n'a pas le meme nombre de mailles (plus de mailles)
       // et que le sommet est dans la derniere maille, il ne faut pas se comparer a nbmailles_euler_ijk_
       // mais plutot a nbmailles_euler_in_new_slice[direction] :
@@ -346,7 +341,6 @@ void Maillage_FT_IJK::deplacer_sommets(const ArrOfInt& liste_sommets,
                  && ijk_pos[1] >= 0 && ijk_pos[1] < nbmailles_euler_in_new_slice[1]
                  && ijk_pos[2] >= 0 && ijk_pos[2] < nbmailles_euler_in_new_slice[2]));
 
-#endif
       // Traitement des changements de processeurs :
       int new_processor = ref_domaine_->get_processor_by_ijk(my_new_slice[0],my_new_slice[1],my_new_slice[2]);
       if (new_processor != my_processor)
@@ -368,9 +362,7 @@ void Maillage_FT_IJK::deplacer_sommets(const ArrOfInt& liste_sommets,
       // (la structure de donnee est donc pour l'instant invalide car ce n'est pas
       //  l'indice local sur mon processeur mais sur le processeur ou le sommet sera reel
       //  apres avoir cree les sommets virtuels et echange les proprietaires des sommets)
-#if 0
-      set_ijk_cell_index(num_sommet, ijk_pos);
-#else
+
       // Si on change de proc et que le nouveau n'a pas le meme nombre d'elem dans ses slices
       if ((new_processor != my_processor)
           && ( nbmailles_euler_i_ != nbmailles_euler_in_new_slice[0]
@@ -394,7 +386,7 @@ void Maillage_FT_IJK::deplacer_sommets(const ArrOfInt& liste_sommets,
         {
           set_ijk_cell_index(num_sommet, ijk_pos);
         }
-#endif
+
     }
   max_voisinage = Process::mp_max(max_voisinage);
   ArrOfInt recv_pe_list; // Liste des processeurs qui recoivent des sommets
