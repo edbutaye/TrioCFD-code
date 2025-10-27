@@ -2100,15 +2100,6 @@ CutCell_Properties Parcours_interface::volume_barycentre_hexaedre(const Domaine_
       assert(barycentre[2] != 1);
     }
 
-  // On force la valeur entre 0 et 1 strictement.
-#if 0
-  // B.Math 10/09/2004: il faut corriger le calcul pour que les
-  // contributions soient entre 0 et 1, ensuite on pourra faire ca:
-  if (volume < Erreur_relative_maxi_)
-    volume = Erreur_relative_maxi_;
-  else if (volume > 1. - Erreur_relative_maxi_)
-    volume = 1. - Erreur_relative_maxi_;
-#endif
 
   return {volume, {barycentre[0], barycentre[1], barycentre[2]}};
 }
@@ -2319,14 +2310,6 @@ CutFace_Properties Parcours_interface::coupe_face_rectangulaire(const Domaine_VF
       barycentre[0] /= abs(aire);
       barycentre[1] /= abs(aire);
     }
-
-  // On force la valeur entre 0 et 1 strictement.
-#if 0
-  if (aire < Erreur_relative_maxi_)
-    aire = Erreur_relative_maxi_;
-  else if (aire > 1. - Erreur_relative_maxi_)
-    aire = 1. - Erreur_relative_maxi_;
-#endif
 
   return {aire, {barycentre[0], barycentre[1]}};
 }
