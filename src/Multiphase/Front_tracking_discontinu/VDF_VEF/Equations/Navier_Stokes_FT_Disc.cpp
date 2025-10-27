@@ -1196,71 +1196,7 @@ void Navier_Stokes_FT_Disc::calculer_champ_forces_superficielles(const Maillage_
           }
       }
   }
-#if 0
-  // Calcul du "potentiel aux faces" : interpolation sur les faces des elements
-  // traverses par l'interface.
-  {
-    // Tableau des facettes du maillage interfaces
-    const IntTab& facettes = maillage.facettes();
-    // Tableau des faces des elements :
-    const IntTab& elem_faces = domaine_vf.elem_faces();
-    const int nb_faces_par_element = elem_faces.line_size();
-    // Le tableau "potentiel aux faces" a remplir :
-    DoubleTab& valeurs_potentiel_faces = potentiel_faces.valeurs();
-    valeurs_potentiel_faces = 0.;
-    // Somme des poids des contributions ajoutees aux faces
-    ArrOfDouble poids(nb_faces);
-    poids = 0.;
 
-    // Boucle sur les faces de l'interface
-    const Intersections_Elem_Facettes& intersections = maillage.intersections_elem_facettes();
-    const ArrOfInt& index_facette_elem = intersections.index_facette();
-    double pot[3] = {0., 0., 0.};
-
-    int fa7;
-    const int nb_facettes = maillage.nb_facettes();
-    for (fa7 = 0; fa7 < nb_facettes; fa7++)
-      {
-        // Potentiel aux sommets de la facette:
-        pot[0] = potentiel_sommets[facettes(fa7,0)];
-        pot[1] = potentiel_sommets[facettes(fa7,1)];
-        if (dim == 3)
-          pot[2] = potentiel_sommets[facettes(fa7,2)];
-        // Boucle sur les elements traverses par la facette
-        int index = index_facette_elem[fa7];
-        while (index >= 0)
-          {
-            const Intersections_Elem_Facettes_Data& data = intersections.data_intersection(index);
-            // Calcul du potentiel au centre de l'intersection
-            double p = 0.;
-            int i;
-            for (i = 0; i < 3; i++)
-              p += data.barycentre_[i] * pot[i];
-            // La contribution aux faces est ponderee par la surface d'intersection
-            p *= data.surface_intersection_;
-
-            // Ajout de la contribution aux faces de l'element
-            const int element = data.numero_element_;
-            for (i = 0; i < nb_faces_par_element; i++)
-              {
-                const int face = elem_faces(element, i);
-                poids[face] += data.surface_intersection_;
-                valeurs_potentiel_faces(face) += p;
-              }
-            index = data.index_element_suivant_;
-          }
-      }
-
-    // Il reste a diviser les valeurs aux face par la somme des poids
-    for (int face = 0; face < nb_faces; face++)
-      {
-        double p = poids[face];
-        if (p > 0.)
-          valeurs_potentiel_faces(face) /= p;
-      }
-    valeurs_potentiel_faces.echange_espace_virtuel();
-  }
-#else
   // Calcul du "potentiel aux elements" :
   DoubleTab poids(potentiel_elements.valeurs());
   {
@@ -1404,7 +1340,7 @@ void Navier_Stokes_FT_Disc::calculer_champ_forces_superficielles(const Maillage_
     valeurs_potentiel_faces.echange_espace_virtuel();
     Debog::verifier("Navier_Stokes_FT_Disc::calculer_champ_forces_superficielles valeurs_potentiel_faces:", valeurs_potentiel_faces);
   }
-#endif
+
   // Derniere operation : calcul du champ
   //   champ = potentiel_faces * gradient_indicatrice
   {
@@ -1523,106 +1459,7 @@ void Navier_Stokes_FT_Disc::calculer_gradient_indicatrice(const Champ_base& indi
         {
           indic_p1b(i) = indicatrice.valeurs()(i);
         }
-#if 0
-      // Premiere version : pas terrible parce que le stencil est tres large
-      //  et il faut calculer la "courbure de l'interface" sur une grande largeur
-      //  autour de l'interface.
 
-      // Valeurs aux sommets = moyenne des valeurs des elements adjacents
-      //  ponderee par le volume des elements.
-      // Il y a la un choix a faire qui peut etre important...
-      // (autre idee : projection L2 du champ discontinu sur l'espace
-      // P1bulle)
-      const DoubleVect& volume = domaine_vf.volumes();
-
-      // Somme des poids aux sommets:
-      ArrOfDouble poids(nb_sommets);
-      poids = 0.;
-      // Boucle sur les elements reels et virtuels :
-      for (i = 0; i < nb_elem_tot; i++)
-        {
-          // Ajout d'une contribution a chaque sommet reel de l'element
-          double p = volume(i);
-          double x = indicatrice(i);
-          int j;
-          for (j = 0; j < nb_sommets_par_element; j++)
-            {
-              const int sommet = les_elems(i, j);
-              if (sommet < nb_sommets)   // sommet reel ?
-                {
-                  // Le tableau des ddl contient nb_elem_tot valeurs aux elements
-                  // suivies de nb_sommets_tot valeurs aux sommets.
-                  // L'inconnue associee au "sommet" se trouve a l'indice
-                  // nb_elem_tot + sommet.
-                  indic_p1b(nb_elem_tot + sommet) += p * x;
-                  poids[sommet] += p;
-                }
-            }
-        }
-      // Division par le poids
-      for (i = 0; i < nb_sommets; i++)
-        {
-          const double p = poids[i];
-          indic_p1b(nb_elem_tot + i) /= p;
-        }
-#else
-#if 0
-      // Calcul de l'indicatrice aux sommets. Deuxieme version, pour
-      // limiter le stencil de gradient_indicatrice :
-      // l'indicatrice vaut 1 si le sommet est adjacent a un element
-      // de phase 1, 0 si le sommet est adjacent a un element de phase 0
-
-      // 1) on met une valeur invalide dans les inconnues:
-      for (i = 0; i < nb_sommets; i++)
-        indic_p1b(nb_elem_tot + i) = -1;
-      // 2) On met 1. ou 0. pour les sommets adjacents a un element
-      //    dont l'indicatrice vaut 1. ou 0.
-      for (i = 0; i < nb_elem_tot; i++)
-        {
-          const double indic_element = indic_p1b(i);
-          if (indic_element == 0. || indic_element == 1.)
-            {
-              int j;
-              for (j = 0; j < nb_sommets_par_element; j++)
-                {
-                  const int sommet = les_elems(i,j);
-                  indic_p1b(nb_elem_tot + sommet) = indic_element;
-                }
-            }
-        }
-      // 3) Pour les sommets indecis, on prend 0 ou 1 selon le signe
-      //    de la fonction distance pour ce sommet.
-      static const double valeur_distance_invalide = -1e30;
-      int error_count = 0;
-      for (i = 0; i < nb_sommets; i++)
-        {
-          const double valeur = indic_p1b(nb_elem_tot + i);
-          if (valeur < 0.)
-            {
-              double newval;
-              const double d = distance_interface_sommets(i);
-              if (d < valeur_distance_invalide)
-                {
-                  error_count++;
-                  newval = 0.;
-                }
-              else
-                {
-                  newval = (d >= 0.) ? 1. : 0.;
-                }
-              indic_p1b(nb_elem_tot + i) = newval;
-            }
-        }
-      if (error_count > 0)
-        {
-          Process::Journal()
-              << "Navier_Stokes_FT_Disc::calculer_gradient_indicatrice\n"
-              << error_count << " sommets ont une valeur indeterminee" << finl;
-        }
-#else
-      // On met l'indicatrice sur P0 et 0 sur P1
-#endif
-#endif
       indic_p1b.echange_espace_virtuel();
 
       gradient.calculer(indic_p1b, gradient_i.valeurs());
