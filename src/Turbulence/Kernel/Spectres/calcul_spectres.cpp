@@ -70,27 +70,16 @@ void ecrit_spectre_operateur(DoubleVect& E,int n, double temps, int nb_op,int a,
   return;
 }
 
-#if 0
-void calc_sp_nouveau(DoubleTab& vit_som ,int n, double temps,double& Ec)
-{
-  /* Permet de calculer le spectre d energie a partir d un champ de vitesse
-     exprime au sommet, sans correction pour la periodicite */
-  DoubleVect E(n),EX(n),EY(n),EZ(n);
-  DoubleTab fft_u(n,n,n+2),fft_v(n,n,n+2),fft_w(n,n,n+2);
-  DoubleTab u(n+1,n+1,n+1),v(n+1,n+1,n+1),w(n+1,n+1,n+1);
-  DoubleTab uu(n+1,n+1,n+1),vv(n+1,n+1,n+1),ww(n+1,n+1,n+1);
-  DoubleVect nE(n);
-  DoubleVect fx(n),fy(n),fz(n);
-  F77NAME(CALCUL0SPECTRE0AP0CHP0VERIF)(vit_som.addr(),E.addr(),EX.addr(),EY.addr(),EZ.addr(),&n,fft_u.addr(),fft_v.addr(),fft_w.addr(),u.addr(),v.addr(),w.addr(),uu.addr(),vv.addr(),ww.addr(),nE.addr(),fx.addr(),fy.addr(),fz.addr());
-  ecrit_spectre(E,n,temps,3);
 
-  return;
-}
-#endif
+/*! \brief Permet de calculer le spectre d energie a partir d un champ de vitesse
+ *   exprime au sommet, sans correction pour la periodicite
+ *
+ *  named xxx_2 because there used to be a function calc_sp_nouveau, which was inside a #if 0 block.
+ *  Remove during a cleanup of the code. Look at git history for informations
+ */
 void calc_sp_nouveau_2(DoubleTab& vit_som ,int n, double temps,double& Ec,double& Df)
 {
-  /* Permet de calculer le spectre d energie a partir d un champ de vitesse
-     exprime au sommet, sans correction pour la periodicite */
+  /*  */
   DoubleVect E(n);
   DoubleTab fft_u(n,n,n+2),fft_v(n,n,n+2),fft_w(n,n,n+2);
   DoubleVect EX(n),EY(n),EZ(n);
@@ -131,33 +120,6 @@ void calc_sp_nouveau_2_operateur(DoubleTab& vit_som ,int n, double temps,int nb_
 
   return;
 }
-#if 0
-void calc_sp_nouveau_3_vit(DoubleTab& vit_u, DoubleTab& vit_v, DoubleTab& vit_w, int n, double temps,double& Ec,double& Df)
-{
-  //   Permet de calculer le spectre d energie a partir d un champ de vitesse
-  //     exprime au sommet, sans correction pour la periodicite
-  /*   Cerr << "COUCOU dans calc_sp_nouveau_3_vit" << flush; */
-  /*   Cerr << "N = " << n << flush; */
-  DoubleVect E(n);
-  DoubleTab fft_u(n,n,n+2),fft_v(n,n,n+2),fft_w(n,n,n+2);
-  DoubleVect EX(n),EY(n),EZ(n);
-  DoubleTab u(n+1,n+1,n+1),v(n+1,n+1,n+1),w(n+1,n+1,n+1);
-  DoubleTab uu(n+1,n+1,n+1),vv(n+1,n+1,n+1),ww(n+1,n+1,n+1);
-  DoubleVect nE(n);
-  DoubleVect fx(n),fy(n),fz(n);
-
-  F77NAME(CALCUL0SPECTRE0AVEC030VIT)(vit_u.addr(),vit_v.addr(),vit_w.addr(),E.addr(),&n,fft_u.addr(),fft_v.addr(),fft_w.addr(),u.addr(),v.addr(),w.addr(),uu.addr(),vv.addr(),ww.addr(),nE.addr(),EX.addr(),EY.addr(),EZ.addr(),fx.addr(),fy.addr(),fz.addr());
-  ecrit_spectre(E,n,temps,3);
-  calc_Ec(E,n/2,Ec);
-  int i;
-  DoubleVect D(n);
-  for (i=0; i<n/2-1; i++)
-    D(i) = (i+1)*(i+1)*E(i);
-  calc_Ec(D,n/2,Df);
-
-
-}
-#endif
 
 void calc_sp_operateur(DoubleTab& vit_u, DoubleTab& vit_v, DoubleTab& vit_w, int n, double temps,int nb_op, double dt, DoubleVect& E)
 {
