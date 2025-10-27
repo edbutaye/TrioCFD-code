@@ -56,8 +56,6 @@ Entree& Paroi_ODVM_scal_VDF::readOn(Entree& is)
 {
 
   Motcle mot_lu;
-  //Motcle accolade_ouverte("{");
-  //Motcle accolade_fermee("}");
 
   // Valeurs par defaut
   N= 10;
@@ -78,13 +76,11 @@ Entree& Paroi_ODVM_scal_VDF::readOn(Entree& is)
     les_mots[3]="STATS";
     les_mots[4]="CHECK_FILES";
   }
-  //Motcle acc_ouverte("{");
-  Motcle acc_fermee("}");
 
   is >> mot_lu;
   assert(mot_lu=="{");
   is >> mot_lu;
-  while(mot_lu != acc_fermee)
+  while(mot_lu != "}")
     {
       int rang=les_mots.search(mot_lu);
       switch(rang)
@@ -339,32 +335,7 @@ int Paroi_ODVM_scal_VDF::calculer_scal(Champ_Fonc_base& diffusivite_turb)
   // TEMP
   const DoubleTab& xv = domaine_VDF.xv();
   // TEMP
-  //  GF ne marche pas en // et les tests avec num_face==2402  bof..
-#ifdef bidon
-  //////////////////////////////////////////////////////////////////////////////
-  //Sondes calculs Re_tau =395
-  //////////////////////////////////////////////////////////////////////////////
-  SFichier fic_sonde_temp_31("sonde_ODVM_yp_3_1.dat",ios::app); // impression sonde 3
-  SFichier fic_sonde_temp_61("sonde_ODVM_yp_6_1.dat",ios::app); // impression sonde 6
-  SFichier fic_sonde_temp_91("sonde_ODVM_yp_9_1.dat",ios::app); // impression sonde 9
 
-  SFichier fic_sonde_temp_32("sonde_ODVM_yp_3_2.dat",ios::app); // impression sonde 3
-  SFichier fic_sonde_temp_62("sonde_ODVM_yp_6_2.dat",ios::app); // impression sonde 6
-  SFichier fic_sonde_temp_92("sonde_ODVM_yp_9_2.dat",ios::app); // impression sonde 9
-
-  SFichier fic_sonde_temp_33("sonde_ODVM_yp_3_3.dat",ios::app); // impression sonde 3
-  SFichier fic_sonde_temp_63("sonde_ODVM_yp_6_3.dat",ios::app); // impression sonde 6
-  SFichier fic_sonde_temp_93("sonde_ODVM_yp_9_3.dat",ios::app); // impression sonde 9
-
-  SFichier fic_sonde_temp_34("sonde_ODVM_yp_3_4.dat",ios::app); // impression sonde 3
-  SFichier fic_sonde_temp_64("sonde_ODVM_yp_6_4.dat",ios::app); // impression sonde 6
-  SFichier fic_sonde_temp_94("sonde_ODVM_yp_9_4.dat",ios::app); // impression sonde 9
-
-  SFichier fic_sonde_temp_35("sonde_ODVM_yp_3_5.dat",ios::app); // impression sonde 3
-  SFichier fic_sonde_temp_65("sonde_ODVM_yp_6_5.dat",ios::app); // impression sonde 6
-  SFichier fic_sonde_temp_95("sonde_ODVM_yp_9_5.dat",ios::app); // impression sonde 9
-  ////////////////////////////////////////////////////////////////////////////////
-#endif
   const DoubleTab& tab_visco = ch_visco_cin.valeurs();
   int l_unif;
   double visco=-1;
@@ -382,7 +353,6 @@ int Paroi_ODVM_scal_VDF::calculer_scal(Champ_Fonc_base& diffusivite_turb)
       Cerr<<" visco <=0 ?"<<finl;
       Process::exit();
     }
-  // tab_visco+=DMINFLOAT;
 
   int ndeb=0,nfin=0;
   int elem;
@@ -458,38 +428,6 @@ int Paroi_ODVM_scal_VDF::calculer_scal(Champ_Fonc_base& diffusivite_turb)
                   double periode = 1e-2, tn=0.;
                   if((tps-tn) > periode)
                     {
-#ifdef bidon
-                      if(num_face==2048)
-                        {
-                          fic_sonde_temp_31 << tps << " " << eq_odvm[num_face].get_Tm(3) << finl;
-                          fic_sonde_temp_61 << tps << " " << eq_odvm[num_face].get_Tm(6) << finl;
-                          fic_sonde_temp_91 << tps << " " << eq_odvm[num_face].get_Tm(9) << finl;
-                        }
-                      if(num_face==2049)
-                        {
-                          fic_sonde_temp_32 << tps << " " << eq_odvm[num_face].get_Tm(3) << finl;
-                          fic_sonde_temp_62 << tps << " " << eq_odvm[num_face].get_Tm(6) << finl;
-                          fic_sonde_temp_92 << tps << " " << eq_odvm[num_face].get_Tm(9) << finl;
-                        }
-                      if(num_face==2050)
-                        {
-                          fic_sonde_temp_33 << tps << " " << eq_odvm[num_face].get_Tm(3) << finl;
-                          fic_sonde_temp_63 << tps << " " << eq_odvm[num_face].get_Tm(6) << finl;
-                          fic_sonde_temp_93 << tps << " " << eq_odvm[num_face].get_Tm(9) << finl;
-                        }
-                      if(num_face==2051)
-                        {
-                          fic_sonde_temp_34 << tps << " " << eq_odvm[num_face].get_Tm(3) << finl;
-                          fic_sonde_temp_64 << tps << " " << eq_odvm[num_face].get_Tm(6) << finl;
-                          fic_sonde_temp_94 << tps << " " << eq_odvm[num_face].get_Tm(9) << finl;
-                        }
-                      if(num_face==2052)
-                        {
-                          fic_sonde_temp_35 << tps << " " << eq_odvm[num_face].get_Tm(3) << finl;
-                          fic_sonde_temp_65 << tps << " " << eq_odvm[num_face].get_Tm(6) << finl;
-                          fic_sonde_temp_95 << tps << " " << eq_odvm[num_face].get_Tm(9) << finl;
-                        }
-#endif
                       tn = tps;
                     }
                   //////////////////////////////////////////////////////////////////////////////
@@ -535,17 +473,6 @@ int Paroi_ODVM_scal_VDF::calculer_scal(Champ_Fonc_base& diffusivite_turb)
 
                   const double Temp_solid = t_autre(num_face-ndeb,0);
 
-                  /*        double Pr = visco_cin/diff;
-                            double Beta = pow(3.85*pow(Pr,1./3.)-1.3,2.)+2.12*log(Pr);
-                            double y_plus = eq_odvm[num_face].get_Y(N-1)*tab_u_star(num_face)/visco_cin;
-                            double Gamma = (0.01*pow(Pr*y_plus,4.))/(1.+5.*pow(Pr,3.)*y_plus);
-                            double T_plus = Pr*y_plus*exp(-Gamma);
-                            T_plus += (2.12*log(1.+y_plus) + Beta)*exp(-1./(Gamma+1e-20));
-                            double d_equiv = diff*T_plus/tab_u_star(num_face);
-
-                            T0 = (Temp(elem)-Temp_solid)/(d_equiv/lambda_f(0,0) + 1./h_autre_pb(num_face-ndeb,0));
-                            T0 = T0*diff/lambda_f(0,0);
-                  */
                   T0 = (Tf0(num_face-ndeb)-Temp_solid)*h_autre_pb(num_face-ndeb,0);
                   T0 = T0*diff/lambda_f(0,0);
 
@@ -563,8 +490,6 @@ int Paroi_ODVM_scal_VDF::calculer_scal(Champ_Fonc_base& diffusivite_turb)
                   double Ttot0  = eq_odvm[num_face].get_Tm(0) + eq_odvm[num_face].get_Tp(0);
                   if(compt!=1) Tf0(num_face-ndeb) = 0.5*Ttot0+0.5*Tf0(num_face-ndeb);
                   else Tf0(num_face-ndeb)=Temp_solid;
-
-                  //        if(compt!=1) tab_d_equiv_[num_face] = lambda_f(0,0)*(Temp(elem)-Ttot0)/(Ttot0-Temp_solid+DMINFLOAT)/h_autre_pb(num_face-ndeb,0);
 
                   if(check)
                     {
