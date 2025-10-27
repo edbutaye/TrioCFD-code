@@ -2472,48 +2472,7 @@ void Couplage_Tubes_IBC::force_ibc_velocity_symetrie_plane(IJK_Field_double& vx,
                               tangente[0] = - normale[2];
                               tangente[1] = 0.;
                               tangente[2] = normale[0];
-#if 0
-                              coords.resize(2,3);
-                              coords(0,0) = position_cylindre[0] + delta_x_P - tangente_x * h_maillage;
-                              coords(0,1) = y_coord;
-                              coords(0,2) = position_cylindre[2] + delta_z_P - tangente_z * h_maillage;
-                              coords(1,0) = position_cylindre[0] + delta_x_P + tangente_x * h_maillage;
-                              coords(1,1) = y_coord;
-                              coords(1,2) = position_cylindre[2] + delta_z_P + tangente_z * h_maillage;
-                              Vecteur3 vitesse_interpolee;
-                              Vecteur3 grad_v_theta;
-                              ijk_interpolate(vx, coords, result); // la fonction remplit le tableau result
-                              result[0] -=  vitesse_cylindre[0];
-                              result[1] -=  vitesse_cylindre[0];
-                              vitesse_interpolee[0]=(result[0]+result[1]) * 0.5;
-                              grad_v_theta[0] = (result[1]-result[0])  / (2.*h_maillage);
-                              /* ijk_interpolate(vy, coords, result); */
-                              vitesse_interpolee[1]=0.;
-                              grad_v_theta[1] = 0.;
-                              ijk_interpolate(vz, coords, result);
-                              result[0] -=  vitesse_cylindre[2];
-                              result[1] -=  vitesse_cylindre[2];
-                              vitesse_interpolee[2]=(result[0]+result[1]) * 0.5;
-                              grad_v_theta[2] = (result[1]-result[0])  / (2.*h_maillage);
-                              Vecteur3 vitesse_forcee;
-                              // Gradient selon theta de la composante theta de vitesse:
-                              const double grad_v_theta_theta =
-                                grad_v_theta[0]*tangente_x + grad_v_theta[2]*tangente_z;
-                              Vecteur3 normale;
-                              normale[0] = delta_x / d;
-                              normale[1] = 0.;
-                              normale[2] = delta_z / d;
-                              double v_scalaire_n =
-                                vitesse_interpolee[0] *  normale[0]
-                                /* + vitesse_interpolee[1] *  normale[1] */
-                                + vitesse_interpolee[2] *  normale[2];
-                              // Symetrique
-                              for (int l=0; l<3; l++)
-                                vitesse_forcee[l] = vitesse_cylindre[l] // referentiel cylindre->ref. fixe
-                                                    + vitesse_interpolee[l] - normale[l] * v_scalaire_n // composante tangentielle
-                                                    + 0.*normale[l] * grad_v_theta_theta * (tube_r/d-1); // composante normale
-                              velocity(i, j, k) = vitesse_forcee[direction];
-#else
+
                               coords.resize(3,3);
                               const double rr = tube_r * tube_r / d;
                               coords(0,0) = position_cylindre[0] + normale[0] * rr;
@@ -2551,7 +2510,6 @@ void Couplage_Tubes_IBC::force_ibc_velocity_symetrie_plane(IJK_Field_double& vx,
 
                               velocity(i, j, k) += (compo_normale * normale[direction] + compo_tan * tangente[direction]) * facteur;
 
-#endif
                             }
                         }
                       else
@@ -2866,40 +2824,7 @@ void Couplage_Tubes_IBC::calcul_F_pression(const IJK_Field_double& pressure, con
               k_min = int(floor(z_P_Delta_z));
               k_max = k_min +1;
             }
-# if 0
-          int i_min_local, i_max_local, k_min_local, k_max_local;
-          i_min_local = i_min - 128;
-          i_max_local = i_max - 128;
-          k_min_local = k_min - 128;
-          k_max_local = k_max - 128;
 
-
-          // Test si on est bien a l'interieur de la zone locale sur ce processeur:
-          {
-            const int gh = pressure.ghost();
-            const int ni = pressure.ni();
-            const int nk = pressure.nk();
-            Cout << " gh " << gh << " ni " <<  ni << " nk " << nk << endl;
-            Cout << " l : " << l << " offset_i " << offset_i << " offset_k " << offset_k << endl;
-            Cout << " i_min_l : " << i_min_local << " i_max_l : "<< i_max_local << " k_min_l : " << k_min_local << " k_max_l : " << k_max_local << " Pos_P(itube, l, 0) " <<  Pos_P(itube, l, 0) << " Pos_P(itube, l, 1) " << Pos_P(itube, l, 1) << endl;
-            if (i_min_local < -gh || k_min_local < -gh || i_max_local >= ni + gh || k_max_local >= nk + gh)
-              {
-                Cerr << "Erreur, l'epaisseur ghost est insuffisante pour le calcul du champ mirroir ibc" << finl;
-                Process::exit();
-              }
-          }
-
-          //# endif
-          const double z_11 = elem_pos[DIRECTION_K][k_min];
-          const double x_11 = elem_pos[DIRECTION_I][i_min];
-
-
-          const double x_12 = elem_pos[DIRECTION_I][i_min];
-
-          const double z_22 = elem_pos[DIRECTION_K][k_max];
-          const double x_22 = elem_pos[DIRECTION_I][i_max];
-          const double z_21 = elem_pos[DIRECTION_K][k_min];
-# endif
           const double x_21 = elem_pos[DIRECTION_I][i_max];
           const double z_12 = elem_pos[DIRECTION_K][k_max];
 
@@ -2922,13 +2847,7 @@ void Couplage_Tubes_IBC::calcul_F_pression(const IJK_Field_double& pressure, con
               p_surface_cylindre_x += P_l_j(itube, l, j) * cos(teta_l);
               p_surface_cylindre_z += P_l_j(itube, l, j) * sin(teta_l);
               P_teta(itube, l) += P_l_j(itube, l, j);
-#if 0
-              Cout << " l : " << l << " j : "<< j << endl;
-              Cout << " i_min : " << i_min << " i_max : "<< i_max << " k_min : " << k_min << " k_max : " << k_max << " Pos_P(itube, l, 0) " <<  Pos_P(itube, l, 0) << " Pos_P(itube, l, 1) " << Pos_P(itube, l, 1) << endl;
-              Cout << " alpha : " << alpha << " gamma : " << gamma << " x_11 " << x_11 << " z_11 " << z_11 << " x_21 " << x_21 ;
-              Cout << " z_21 " << z_21 << " x_22 " << x_22 << " z_22 " << z_22 <<  " x_12 " << x_12 << " z_12 " << z_12 <<endl;
-              Cout << " P_l_j(itube, l, j) : " << P_l_j(itube, l, j) << " p_11 " << p_11 <<  " p_21 " << p_21 <<  " p_22 " << p_22 <<  " p_12 " << p_12 << endl;
-#endif
+
 
             }
           pression_teta(itube, l) = P_teta(itube, l) / jmax; // moy de la pression en l selon z
@@ -3027,16 +2946,7 @@ void Couplage_Tubes_IBC::calcul_F_pression2(const IJK_Field_double& pressure, co
           const double z_M = elem_pos[DIRECTION_K][k_M];
           const double d_OM2 = (x_M - position_cylindre[0]) * (x_M - position_cylindre[0]) + (z_M - position_cylindre[2]) * (z_M - position_cylindre[2]);
           const double R2 = tube_r * tube_r ;
-          /*
-          #if 0
-            Cout << " offset_i : " << offset_i << " offset_k : " << offset_k << endl;
-            Cout << " l : " << l << " x_l :" << Pos_P(itube, l, 0) << " z_L : " << Pos_P(itube, l, 1) << " x_M : " << x_M;
-            Cout << " z_M : " << z_M << " i_M : "<< i_M << " k_M : "<< k_M << " d_OM2 : "<< d_OM2 << " R2 : " << R2 << endl;
-            Cerr << " offset_i : " << offset_i << " offset_k : " << offset_k << endl;
-            Cerr << " l : " << l << " x_l :" << Pos_P(itube, l, 0) << " z_L : " << Pos_P(itube, l, 1) << " x_M : " << x_M << " z_M : " << z_M ;
-            Cerr << " i_M : "<< i_M << " k_M : "<< k_M << " d_OM2 : "<< d_OM2 << " R2 : " << R2 << endl;
-            #endif
-          */
+
           if ( d_OM2 < R2)
             {
               const double f = (tube_r + sqrt( delta_x * delta_x + delta_z * delta_z ))/tube_r; // on va chercher la valeur de la pression dans une maille situee en dehros du tube a une distance d= f*tube_r
@@ -3075,13 +2985,7 @@ void Couplage_Tubes_IBC::calcul_F_pression2(const IJK_Field_double& pressure, co
                   p_surface_cylindre_x += P_l_j(itube, l, j) * cos(teta_l);
                   p_surface_cylindre_z += P_l_j(itube, l, j) * sin(teta_l);
                   P_teta(itube, l) += P_l_j(itube, l, j);
-#if 0
-                  Cout << " l : " << l << " j : "<< j << " P_l_j(itube, l, j) : " << P_l_j(itube, l, j) << " pressure(i_M, j, k_M) : " ;
-                  Cout << " p_surface_cylindre_x : " <<  p_surface_cylindre_x << " p_surface_cylindre_z : " << p_surface_cylindre_z << endl;
-                  Cerr << " l : " << l << " j : "<< j << " P_l_j(itube, l, j) : " << P_l_j(itube, l, j) << " pressure(i_M, j, k_M) : " ;
-                  Cerr<< " p_surface_cylindre_x : " <<  p_surface_cylindre_x << " p_surface_cylindre_z : " << p_surface_cylindre_z << endl;
 
-#endif
 
                 }
             }
@@ -3192,260 +3096,3 @@ void Couplage_Tubes_IBC::update(double current_time,
 
     }
 }
-
-#if 0
-void Couplage_Tubes_IBC::update(int tstep,
-                                double timestep,
-                                const double vitesse_entree)
-{
-  if (tstep <= t_lache_ - 1)
-    return;
-
-  switch(mouvement_)
-    {
-    case MOUVEMENT_LIBRE:
-      newmark_implicit_update(Vz_,
-                              az_,
-                              donnees_tubes_,
-                              tstep,
-                              position_initiale_cylindres_(Num_cylindre_mobile_,1),
-                              timestep,
-                              vitesse_entree);
-      break;
-    case MOUVEMENT_IMPOSE:
-      {
-        double pos = oscillation_cylindre(az_,
-                                          Vz_,
-                                          tstep,
-                                          position_initiale_cylindres_(Num_cylindre_mobile_,1),
-                                          timestep,
-                                          masse_fluide_cylindres_(Num_cylindre_mobile_,2),
-                                          vitesse_entree);
-        donnees_tubes_(Num_cylindre_mobile_, 1) = pos;
-        break;
-      }
-    default:
-      Cerr << "Erreur dans Couplage_Tubes_IBC::update: mouvement " << mouvement_ << " non code" << finl;
-      Process::exit();
-    }
-}
-
-// renvoie la position du cylindre
-double Couplage_Tubes_IBC::oscillation_cylindre(double& az,
-                                                double& vz,
-                                                int tstep,
-                                                double position_initiale_cylindre_oscillant,
-                                                const double timestep,
-                                                const double masse_fluide_dans_cylindre,
-                                                const double vitesse_entree) const
-{
-  const int Num_cylindre = Num_cylindre_mobile_;
-  double position_cylindre_oscillant;
-  int t = tstep;
-  double retard = t_lache_;
-  double z_cylindre;
-  const double A = A_;
-  const double pulsation = pulsation_;
-  const double pulsation_2 = pulsation_*pulsation_;
-  const DoubleTab integrale_force = integrale_force_;
-  double Fz;
-  double Fie;
-  Fie = - masse_fluide_dans_cylindre * az;
-  z_cylindre = A*sin(pulsation * (t-retard)*timestep);
-  double Az;
-  Az = z_cylindre /  (2 * tube_r_);
-  vz =  pulsation *A* cos(pulsation * (t-retard)*timestep);
-  az = - pulsation_2 * z_cylindre;//- pulsation2 *A* sin(pulsation * (t-retard)*timestep);
-  Fz = - (integrale_force(Num_cylindre,2) + Fie);
-  position_cylindre_oscillant = position_initiale_cylindre_oscillant + z_cylindre;
-  double Coeff_adim, Cx, Cz;
-  Coeff_adim = 0.5 * rho_fluide_pour_adim_ * vitesse_entree * vitesse_entree * tube_r_ * 2 * h_cylindre_ ;
-  Cx = - integrale_force(Num_cylindre,0) / Coeff_adim;
-  Cz = Fz / Coeff_adim;
-  Cout << "z_cylindre " << position_cylindre_oscillant << " v_cylindre " << vz << " a_cylindre " << az << " z_absolue " << z_cylindre << " Az " << Az<<finl;
-  Cout << "F_inertie " <<- Fie << " F_IBC " << - integrale_force(Num_cylindre,2)  << " F_f_s " << Fz  << finl;
-  Cout << "Cx " << Cx << " Cz " << Cz << finl;
-  return position_cylindre_oscillant;
-}
-
-void Couplage_Tubes_IBC::newmark_implicit_update(double& vz,
-                                                 double& az,
-                                                 DoubleTab& donnees_tubes_,
-                                                 int tstep,
-                                                 double position_initiale_cylindre_oscillant,
-                                                 const double timestep,
-                                                 const double vitesse_entree) const
-{
-  const double beta = 0.25;
-  const double gamma = 0.5;
-  const int Num_cylindre = Num_cylindre_mobile_;
-  const DoubleTab integrale_force = integrale_force_;
-  const DoubleTab integrale_force_N_moins_1 = integrale_force_N_moins_1_;
-  int t = tstep;
-  const double A = A_;
-  const double B= B_;
-  const double  pulsation = pulsation_;
-  const double pulsation2 = pulsation2_;
-  double F_imposee;
-  double retard = t_lache_;
-  F_imposee = A*sin(pulsation * (t-retard)*timestep) + B*sin(pulsation2 * (t-retard)*timestep);
-  Cout << "F_imposee  " << F_imposee  << finl;
-  double z_N;
-  ArrOfDouble a(8);
-  a[0] = 1/( beta * timestep * timestep);
-  a[1] = gamma /( beta * timestep);
-  a[2] =  1 /( beta * timestep);
-  a[3] = 1/(2 *beta)-1;
-  a[4] = gamma/ beta -1;
-  a[5] = 0.5* timestep * (gamma/ beta -2);
-  a[6] = timestep * (1- gamma);
-  a[7] = gamma * timestep;
-
-  double m_s = rho_cylindre_* volume_cylindres_(0,2);
-  double m_F = rho_fluide_pour_adim_ * volume_cylindres_(0,2);
-  Cout << "Volume du cylindre " << volume_cylindres_(0,2)  << finl;
-  double m_T = m_s - m_F;
-  double m_R = m_s / m_F;
-  Cout << "m_s " <<  m_s  << " m_F " <<  m_F  << " m_T " <<  m_T  << " m_R " <<  m_R  << finl;
-  double c= c_;
-  double k= k_;
-  DoubleTab donnees_tubes = donnees_tubes_;
-  Cout << "Coefficients newmark: " << a;
-  z_N = (donnees_tubes(Num_cylindre,1) - position_initiale_cylindre_oscillant); // z du cylindre au temps n
-  double Az_n;
-  Az_n = z_N / (2 * tube_r_);
-  Cout << "z_cylindre_n " << z_N  << " v_cylindre_n " << vz <<" a_cylindre_n " << az_ <<" Az_n " << Az_n <<finl;
-  // calcul de la force du fluide sur le solide au temps n+1
-  double F_IBC_extrapol, F_IBC_precedent, F_IBC_n;
-  F_IBC_precedent = integrale_force_N_moins_1_(Num_cylindre,2);
-  F_IBC_n = integrale_force(Num_cylindre,2);
-  F_IBC_extrapol = 2 * integrale_force(Num_cylindre,2) - integrale_force_N_moins_1_(Num_cylindre,2); //Calcul d'ordre 1 de la force IBC au temps n+1
-  Cout << "F_IBC_precedent " << F_IBC_precedent << " F_IBC_n " << F_IBC_n << " F_IBC_extrapol " << F_IBC_extrapol << finl;
-  // F_IBC_extrapol =  integrale_force(Num_cylindre,2) // Calcul d'ordre 0
-  double Fie, F_f_s;
-  Fie = - rho_fluide_pour_adim_ * volume_cylindres_(0,2)*az; // au temps n
-  F_f_s = - (F_IBC_n + Fie); // au temps n
-  Cout << "F_inertie " << Fie <<" F_IBC_n_bis " << F_IBC_n << " F_f_s " << F_f_s  << finl; // au temps n
-  double Coeff_adim, Cx, Cz;
-  Coeff_adim = 0.5 * rho_fluide_pour_adim_ * vitesse_entree * vitesse_entree * tube_r_ * 2 * h_cylindre_ ;
-  Cx = - integrale_force(Num_cylindre,0) / Coeff_adim;
-  Cz = F_f_s / Coeff_adim;
-  Cout << "Cx " << Cx <<" Cz " << Cz  << finl; // au temps n
-  //
-  double K_tilde, F_tilde, K_droite;
-  K_tilde = a[0] * m_T + a[1] * c + k;
-  K_droite = m_T * (a[0] * z_N + a[2] * vz + a[3] * az) + c * (a[1] * z_N + a[4] * vz + a[5] * az);
-  const double para_libre = para_libre_;
-  F_tilde =  K_droite - F_IBC_extrapol * para_libre  + F_imposee;
-  Cout <<"K_tilde " << K_tilde << " K_droite " << K_droite  << " Ftilde " << F_tilde  << finl;
-  // calcul de z(n+1), vz(n+1) et az(n+1)
-  double z_N_plus_1;
-  z_N_plus_1 = F_tilde / K_tilde ;
-  // Calcul de l'energie macanique au temps n
-  double Ec_n, Ep_n, Em_n, Ef;
-  Ec_n = 0.5 * m_T * vz * vz;
-  Ep_n = 0.5 * k * z_N*z_N;
-  Em_n = Ec_n + Ep_n;
-  Ef = -F_IBC_extrapol * vz * timestep;
-  Cout << "Ec_n " <<  Ec_n  << " Ep_n " <<  Ep_n << " Em_n " <<  Em_n << " Ef " <<  Ef  << finl;
-  double az_N;
-  az_N = az; // on stocke l'accalaration au temps n ds az_N
-  az = a[0] * (z_N_plus_1 - z_N) - a[2] *vz - a[3] *az; // az (n+1) = a_0 * (z_N_plus_1 - z_N) - a_2 vz(n) - a_3 az(n)
-  vz = vz + a[6] * az_N + a[7] * az; // vz(n+1) = vz(n) + a_6 * az(n) + a_7 * az (n+1)
-  // actualisation de la position du cylindre ds le tableau contenant les coordonnees
-  donnees_tubes_(Num_cylindre,1) = z_N_plus_1 + position_initiale_cylindre_oscillant;
-  Cout << "z_cylindre_n_1 " <<  donnees_tubes_(Num_cylindre,1) << " z_absolue " << z_N_plus_1  << " v_cylindre_n_1 " << vz <<" a_cylindre_n_1 " << az_ << finl;
-  double Ec_n_1, Ep_n_1, Em_n_1, DeltaEm, eta;
-  Ec_n_1 = 0.5 * m_T * vz * vz;
-  Ep_n_1 = 0.5 * k * z_N_plus_1 * z_N_plus_1;
-  Em_n_1 = Ec_n_1 + Ep_n_1;
-  DeltaEm = Em_n_1 - Em_n;
-  eta = (DeltaEm/Ef-1) *100;
-  Cout << "Em " << Em_n  << " Em_(n+1) " << Em_n_1 << " DeltaEm " << DeltaEm << " Eta " <<eta << finl;
-}
-#endif
-#if 0
-void print()
-{
-  Cout << "Integrale des forces sur tous les cylindres\n" << finl;
-  for (int i = 0; i < integrale_force_.dimension(0); i++)
-    {
-      Cout << "F_cylindre " << i << " position " << i%n_tubes_x << " " << i/n_tubes_z << " ";
-      for (int j = 0; j < integrale_force_.dimension(1); j++)
-        {
-          Cout << -integrale_force_(i,j) << " ";
-        }
-      Cout << finl;
-    }
-  Cout << "\n" << finl;
-  Cout << "Volume cylindres\n" << finl;
-  for (int i = 0; i < integrale_force_.dimension(0); i++)
-    {
-      Cout << "V_tube " << i << " position " << i%n_tubes_x << " " << i/n_tubes_z << " ";
-      for (int j = 0; j < integrale_force_.dimension(1); j++)
-        {
-          Cout << Volume_cylindre_(i,j) << " ";
-        }
-      Cout << finl;
-    }
-
-}
-#endif
-
-
-#if 0
-// Premier essai: symetrique de la vitesse tangentielle, vitesse normale nulle
-double g_etalement;
-if (d2 > r_tube_min_carre )   // champ mirroir si d*d > (R-epsilon)*(R-epsilon)
-  {
-    if (d > tube_r)
-      {
-        g_etalement = 1.-(d - tube_r)/(h_maillage*2);
-
-      }
-    else if (d > tube_r - h_maillage)
-      g_etalement = 1.;
-    else
-      g_etalement = (tube_r - h_maillage - d) / (tube_r - h_maillage - r_tube_min);
-
-    // on calcule les coordonnees de P qui est le sym de M par rapport a l'interface : OP=beta*OM en notation vectorielle
-    double beta;
-    if (d > tube_r)
-      beta = 1.;
-    else
-      beta = (2.*tube_r-d) / d;
-    const double delta_x_P = beta * delta_x; // x_P - x_0
-    const double delta_z_P = beta * delta_z; // z_P _ z_0
-
-    coords(0,0) = position_cylindre[0] + delta_x_P;
-    coords(0,1) = y_coord;
-    coords(0,2) = position_cylindre[2] + delta_z_P;
-    Vecteur3 vitesse_interpolee;
-    ijk_interpolate(vx, coords, result); // la fonction remplit le tableau result
-    vitesse_interpolee[0]=result[0];
-    /* ijk_interpolate(vy, coords, result); */
-    vitesse_interpolee[1]=0.;
-    ijk_interpolate(vz, coords, result);
-    vitesse_interpolee[2]=result[0];
-
-    // Calcul du symetrique de la vitesse par rapport a la direction normale:
-    Vecteur3 vitesse_forcee;
-    // Retranche la vitesse du cylindre pour se placer dans le referentiel du cylindre
-    for (int l=0; l<3; l++)
-      vitesse_interpolee[l] -= vitesse_cylindre[l];
-    // Produit scalaire vitesse.normale_au_cylindre  (la composante y de la normale est nulle
-    Vecteur3 normale;
-    normale[0] = delta_x / d;
-    normale[1] = 0.;
-    normale[2] = delta_z / d;
-    double v_scalaire_n =
-      vitesse_interpolee[0] *  normale[0]
-      /* + vitesse_interpolee[1] *  normale[1] */
-      + vitesse_interpolee[2] *  normale[2];
-    // Symetrique
-
-    for (int l=0; l<3; l++)
-      vitesse_forcee[l] = vitesse_cylindre[l] + vitesse_interpolee[l] - normale[l] * v_scalaire_n;
-
-    velocity(i, j, k) = g_etalement * vitesse_forcee[direction];
-#endif

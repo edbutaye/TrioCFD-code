@@ -142,23 +142,7 @@ public:
   void sauvegarder_probleme(SFichier& f);
   void sauvegarder_pression(SFichier& f);
 
-protected:
-#if 0
-  double oscillation_cylindre(double& az,
-                              double& vz,
-                              int tstep,
-                              double position_initiale_cylindre_oscillant,
-                              const double timestep,
-                              const double masse_fluide_dans_cylindre,
-                              const double vitesse_entree) const;
-  void newmark_implicit_update(double& vz,
-                               double& az,
-                               DoubleTab& donnees_tubes_,
-                               int tstep,
-                               double position_initiale_cylindre_oscillant,
-                               const double timestep,
-                               const double vitesse_entree) const;
-#endif
+
 protected:
   OBS_PTR(Domaine_IJK) ref_domaine_; // cette variable est initialisee dans la methode initialize()
 
