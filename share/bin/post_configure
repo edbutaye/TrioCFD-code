@@ -202,7 +202,7 @@ if [ -d ${project_directory}/local/tfel ]; then
   echo "export TRIOCFD_USE_MFRONT=1" >> full_env_TrioCFD.sh
   echo "export LD_LIBRARY_PATH=\${project_directory}/local/tfel/lib:\$LD_LIBRARY_PATH" >> full_env_TrioCFD.sh
 fi
-if [ $BUILD_MFRONT_LIBRARIES == "1" ]; then compile_mfront_libraries
+if [ "$BUILD_MFRONT_LIBRARIES" == "1" ]; then compile_mfront_libraries
 else
   if [ -d ${project_directory}/share/Mfront_material_libraries ]; then
     echo "Remove 'Mfront_material_libraries' directory"
