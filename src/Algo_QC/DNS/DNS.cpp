@@ -10412,7 +10412,7 @@ void DNS_QC_double::run()
               if (postraiter_sous_pas_de_temps_ && (tstep % dt_sauvegarde_ == dt_sauvegarde_-1))
                 {
                   statistics().begin_count(STD_COUNTERS::postreatment,statistics().get_last_opened_counter_level()+1);
-                  posttraiter_champs_instantanes(lata_name, current_time_ + timestep_ * rk_step / 3);
+                  posttraiter_champs_instantanes(lata_name, current_time_ + timestep_ * rk_step / 3.0);
                   statistics().end_count(STD_COUNTERS::postreatment);
                 }
             }

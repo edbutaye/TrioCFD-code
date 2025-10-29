@@ -971,8 +971,7 @@ void Modele_turbulence_hyd_LES_SMAGO_DYN_VDF::stabilise_moyenne_euler_lagrange(c
           double eps;
           if (a >= 0.)
             {
-              double T = 1.5 * l_elem * pow(a, -1 / 8);
-              // T=1.5*l(elem)*exp(-1/8*log(a));
+              double T = 1.5 * l_elem * pow(a, -0);// should be -0.125 but was 1/8 = 0 in c++ and changing that causes big problems
               double dt_T = dt / T;
               eps = dt_T / (1. + dt / T);
             }

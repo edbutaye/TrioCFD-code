@@ -710,7 +710,7 @@ void Modele_turbulence_scal_LES_dyn_VDF::stabilise_moyenne_euler(const DoubleTab
 
           if (a >= 0.)
             {
-              T = 1.5 * l(element_number) * pow(a, -1 / 8);
+              T = 1.5 * l(element_number) * pow(a, -0);// should be -0.125 but was 1/8 = 0 in c++ and changing that causes big problems
               // T=1.5*l(element_number)*exp(-1/8*log(a));
               eps = dt / T / (1 + dt / T);
             }
@@ -786,8 +786,7 @@ void Modele_turbulence_scal_LES_dyn_VDF::stabilise_moyenne_lagrange(const Double
 
           if (a >= 0.)
             {
-              T = 1.5 * l(element_number) * pow(a, -1 / 8);
-              // T=1.5*l(element_number)*exp(-1/8*log(a));
+              T = 1.5 * l(element_number) * pow(a, -0);// should be -0.125 but was 1/8 = 0 in c++ and changing that causes big problems
               eps = dt / T / (1 + dt / T);
             }
           else

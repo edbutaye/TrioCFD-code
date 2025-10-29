@@ -1139,7 +1139,7 @@ void compute_eulerian_normal_temperature_gradient_interface(const IJK_Field_doub
                       else
                         {
                           const double kappa_non_zero = kappa + 1.e-16;
-                          grad_T_modified = pow((d / 2 - 2 / kappa_non_zero),2) * second_order_gradient / (pow((0. - 2 / kappa_non_zero),2) + 1e-16);
+                          grad_T_modified = pow((d / 2. - 2. / kappa_non_zero),2) * second_order_gradient / (pow((0. - 2. / kappa_non_zero),2) + 1e-16);
                         }
                       grad_T_interface(i+ii,j+jj,k+kk) = grad_T_modified;
                     }

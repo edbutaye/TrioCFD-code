@@ -364,7 +364,7 @@ void Source_Transport_K_Omega_VEF_Face::contribuer_a_avec(const DoubleTab& a,
 
         const double cSIGMA = turbulence_model->is_SST_or_BSL()
                               ? 2*(1 - turbulence_model->get_tabF1()(face)*SIGMA_OMEGA2)
-                              : (gradKgradOmega(face) > 0)*1/8;
+                              : (gradKgradOmega(face) > 0)*0.125;
 
         const double coef_omega = (-cALPHA*production_TKE(face)/tke
                                    + cBETA*omega

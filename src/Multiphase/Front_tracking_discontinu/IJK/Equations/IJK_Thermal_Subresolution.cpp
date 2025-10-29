@@ -1125,7 +1125,7 @@ double IJK_Thermal_Subresolution::find_time_dichotomy_integral(const double& tem
   const double rho_l = ref_ijk_ft_->milieu_ijk().get_rho_liquid();
   const double Delta_R = R1 - R0;
   const double alpha_liq = lambda_liquid_ / (rho_l * cp_liquid_);
-  double time_tmp = time_integral / 2;
+  double time_tmp = time_integral / 2.;
   double left_time = 0.;
   double right_time = time_integral;
   double temperature_integral_eval = 1.e20;

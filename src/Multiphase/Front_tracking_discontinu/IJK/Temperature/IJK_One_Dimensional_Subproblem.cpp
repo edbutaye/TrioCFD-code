@@ -1173,7 +1173,7 @@ void IJK_One_Dimensional_Subproblem::compute_modified_probe_length_vertex_condit
   //  facet_to_vertex += tangential_distance;
 
   modified_probe_length_from_vertices_ = vertices_centres_distance_[lmax][mmax];
-  modified_probe_length_from_vertices_ += (*cell_diagonal_) / 2;
+  modified_probe_length_from_vertices_ += (*cell_diagonal_) / 2.;
   probe_variations_enabled_ = 1;
   if (debug_)
     Cerr << "Maximum vertex distance:" << max_distance_pure_vertex_centre << finl;
