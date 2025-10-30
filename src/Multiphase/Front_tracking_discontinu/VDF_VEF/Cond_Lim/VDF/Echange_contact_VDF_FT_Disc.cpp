@@ -57,6 +57,7 @@ Entree& Echange_contact_VDF_FT_Disc::readOn( Entree& s )
   param.ajouter("autre_bord",&nom_bord,Param::REQUIRED); // XD_ADD_P chaine name of other boundary
   param.ajouter("autre_champ_temperature",&nom_champ,Param::REQUIRED); // XD_ADD_P chaine name of other field
   param.ajouter("nom_mon_indicatrice",&nom_champ_indicatrice_,Param::REQUIRED);  // XD_ADD_P chaine name of indicatrice
+  param.ajouter("Ri_liq",&Ri_); // XD_ADD_P float interficial thermal resitence of liquid
   int phase;
   param.ajouter("phase",&phase,Param::REQUIRED); // XD_ADD_P int phase
   param.lire_avec_accolades(s);
@@ -98,7 +99,7 @@ void Echange_contact_VDF_FT_Disc::mettre_a_jour(double temps)
   int opt=0;
   calculer_h_autre_pb( autre_h, 0., opt);
   // Here, compute h_diff in the fluid side
-  calculer_h_mon_pb(mon_h,0.,opt);
+  calculer_h_mon_pb(mon_h,Ri_,opt);
 
   // juste acceder la valeur..., et les remplir
   // pas forcement des chose dedans et valable.

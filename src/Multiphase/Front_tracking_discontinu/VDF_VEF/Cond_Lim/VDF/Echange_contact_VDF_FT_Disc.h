@@ -53,6 +53,7 @@ protected :
   OWN_PTR(Champ_front_base) Ti_wall_;
   double indicatrice_ref_;
   Nom nom_champ_indicatrice_, nom_bord_oppose_;
+  double Ri_ = 0.;  // interitical thermal resistance at LIQUID SIDE (ATTENTION NOT in solid side)
 };
 
 #endif /* Echange_contact_VDF_FT_Disc_included */
