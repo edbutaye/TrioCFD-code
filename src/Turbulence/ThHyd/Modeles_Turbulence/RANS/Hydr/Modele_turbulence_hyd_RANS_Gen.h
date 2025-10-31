@@ -196,12 +196,12 @@ void Modele_turbulence_hyd_RANS_Gen<MODELE>::print_evolution(const Champ_Inc_bas
 
   if (sch.nb_pas_dt() == 0 || sch.limpr())
     {
-      const DoubleTab& K_Eps_ou_Omega = le_champ_K_Eps_ou_Omega.valeurs();
+      const DoubleTab& tab_K_Eps_ou_Omega = le_champ_K_Eps_ou_Omega.valeurs();
       double k_min = DMAXFLOAT, eps_ou_omega_min = DMAXFLOAT, nut_min = DMAXFLOAT;
       double k_max = 0, eps_ou_omega_max = 0, nut_max = 0;
       int loc_k_min = -1, loc_eps_ou_omega_min = -1, loc_nut_min = -1;
       int loc_k_max = -1, loc_eps_ou_omega_max = -1, loc_nut_max = -1;
-      int size = K_Eps_ou_Omega.dimension(0);
+      int size = tab_K_Eps_ou_Omega.dimension(0);
 
       if (size < 0)
         {
@@ -223,51 +223,109 @@ void Modele_turbulence_hyd_RANS_Gen<MODELE>::print_evolution(const Champ_Inc_bas
               assert (size == (*le_champ_Eps).equation().domaine_dis().domaine().nb_elem());
             }
         }
+      // Structure to hold min/max values and their locations for reduction
+      struct MinMaxResult
+      {
+        double k_min, k_max;
+        double eps_ou_omega_min, eps_ou_omega_max;
+        double nut_min, nut_max;
+        int loc_k_min, loc_k_max;
+        int loc_eps_ou_omega_min, loc_eps_ou_omega_max;
+        int loc_nut_min, loc_nut_max;
 
-      for (int n = 0; n < size; n++)
+        KOKKOS_INLINE_FUNCTION
+        MinMaxResult() : k_min(DMAXFLOAT), k_max(-DMAXFLOAT), eps_ou_omega_min(DMAXFLOAT), eps_ou_omega_max(-DMAXFLOAT),
+          nut_min(DMAXFLOAT), nut_max(-DMAXFLOAT), loc_k_min(-1), loc_k_max(-1),
+          loc_eps_ou_omega_min(-1), loc_eps_ou_omega_max(-1), loc_nut_min(-1), loc_nut_max(-1) {}
+
+        KOKKOS_INLINE_FUNCTION
+        MinMaxResult(const MinMaxResult& rhs) : k_min(rhs.k_min), k_max(rhs.k_max),
+          eps_ou_omega_min(rhs.eps_ou_omega_min), eps_ou_omega_max(rhs.eps_ou_omega_max),
+          nut_min(rhs.nut_min), nut_max(rhs.nut_max),
+          loc_k_min(rhs.loc_k_min), loc_k_max(rhs.loc_k_max),
+          loc_eps_ou_omega_min(rhs.loc_eps_ou_omega_min), loc_eps_ou_omega_max(rhs.loc_eps_ou_omega_max),
+          loc_nut_min(rhs.loc_nut_min), loc_nut_max(rhs.loc_nut_max) {}
+
+        KOKKOS_INLINE_FUNCTION
+        void operator += (const MinMaxResult& rhs)
         {
-          const double k = IS_K_EPS_BICEPHALE ? K_Eps_ou_Omega(n) : K_Eps_ou_Omega(n, 0);
-          const double epsOuomega = IS_K_EPS_BICEPHALE ? (*le_champ_Eps).valeurs()(n) : K_Eps_ou_Omega(n, 1);
-          double nut = 0;
-
-          const double num = IS_K_OMEGA ? k : LeCmu * k * k;
-
-          if (epsOuomega > 0)
-            nut = num / epsOuomega;
-
-          if (k < k_min)
-            {
-              k_min = k;
-              loc_k_min = n;
-            }
-          else if (k > k_max)
-            {
-              k_max = k;
-              loc_k_max = n;
-            }
-
-          if (epsOuomega < eps_ou_omega_min)
-            {
-              eps_ou_omega_min = epsOuomega;
-              loc_eps_ou_omega_min = n;
-            }
-          else if (epsOuomega > eps_ou_omega_max)
-            {
-              eps_ou_omega_max = epsOuomega;
-              loc_eps_ou_omega_max = n;
-            }
-
-          if (nut < nut_min)
-            {
-              nut_min = nut;
-              loc_nut_min = n;
-            }
-          else if (nut > nut_max)
-            {
-              nut_max = nut;
-              loc_nut_max = n;
-            }
+          if (rhs.k_min < k_min) { k_min = rhs.k_min; loc_k_min = rhs.loc_k_min; }
+          if (rhs.k_max > k_max) { k_max = rhs.k_max; loc_k_max = rhs.loc_k_max; }
+          if (rhs.eps_ou_omega_min < eps_ou_omega_min) { eps_ou_omega_min = rhs.eps_ou_omega_min; loc_eps_ou_omega_min = rhs.loc_eps_ou_omega_min; }
+          if (rhs.eps_ou_omega_max > eps_ou_omega_max) { eps_ou_omega_max = rhs.eps_ou_omega_max; loc_eps_ou_omega_max = rhs.loc_eps_ou_omega_max; }
+          if (rhs.nut_min < nut_min) { nut_min = rhs.nut_min; loc_nut_min = rhs.loc_nut_min; }
+          if (rhs.nut_max > nut_max) { nut_max = rhs.nut_max; loc_nut_max = rhs.loc_nut_max; }
         }
+      };
+
+      const double le_cmu = LeCmu;
+      MinMaxResult result;
+      CDoubleTabView K_Eps_ou_Omega = tab_K_Eps_ou_Omega.view_ro();
+      CDoubleArrView Eps;
+      if (IS_K_EPS_BICEPHALE) Eps = static_cast<const ArrOfDouble&>((*le_champ_Eps).valeurs()).view_ro();
+      Kokkos::parallel_reduce(start_gpu_timer(__KERNEL_NAME__), size,
+                              KOKKOS_LAMBDA(const int n, MinMaxResult& local_result)
+      {
+        const double k = IS_K_EPS_BICEPHALE ? K_Eps_ou_Omega(n, 0) : K_Eps_ou_Omega(n, 0);
+        const double epsOuomega = IS_K_EPS_BICEPHALE ? Eps(n) : K_Eps_ou_Omega(n, 1);
+        double nut = 0;
+
+        const double num = IS_K_OMEGA ? k : le_cmu * k * k;
+
+        if (epsOuomega > 0)
+          nut = num / epsOuomega;
+
+        // Always update k min/max (k is always computed)
+        if (local_result.loc_k_min == -1 || k < local_result.k_min)
+          {
+            local_result.k_min = k;
+            local_result.loc_k_min = n;
+          }
+        if (local_result.loc_k_max == -1 || k > local_result.k_max)
+          {
+            local_result.k_max = k;
+            local_result.loc_k_max = n;
+          }
+
+        // Always update eps/omega min/max (epsOuomega is always computed)
+        if (local_result.loc_eps_ou_omega_min == -1 || epsOuomega < local_result.eps_ou_omega_min)
+          {
+            local_result.eps_ou_omega_min = epsOuomega;
+            local_result.loc_eps_ou_omega_min = n;
+          }
+        if (local_result.loc_eps_ou_omega_max == -1 || epsOuomega > local_result.eps_ou_omega_max)
+          {
+            local_result.eps_ou_omega_max = epsOuomega;
+            local_result.loc_eps_ou_omega_max = n;
+          }
+
+        // Always update nut min/max (nut is always computed, even if 0)
+        if (local_result.loc_nut_min == -1 || nut < local_result.nut_min)
+          {
+            local_result.nut_min = nut;
+            local_result.loc_nut_min = n;
+          }
+        if (local_result.loc_nut_max == -1 || nut > local_result.nut_max)
+          {
+            local_result.nut_max = nut;
+            local_result.loc_nut_max = n;
+          }
+      }, result);
+      end_gpu_timer(__KERNEL_NAME__);
+
+      // Extract results
+      k_min = result.k_min;
+      k_max = result.k_max;
+      eps_ou_omega_min = result.eps_ou_omega_min;
+      eps_ou_omega_max = result.eps_ou_omega_max;
+      nut_min = result.nut_min;
+      nut_max = result.nut_max;
+      loc_k_min = result.loc_k_min;
+      loc_k_max = result.loc_k_max;
+      loc_eps_ou_omega_min = result.loc_eps_ou_omega_min;
+      loc_eps_ou_omega_max = result.loc_eps_ou_omega_max;
+      loc_nut_min = result.loc_nut_min;
+      loc_nut_max = result.loc_nut_max;
 
       ArrOfDouble values(3);
 
