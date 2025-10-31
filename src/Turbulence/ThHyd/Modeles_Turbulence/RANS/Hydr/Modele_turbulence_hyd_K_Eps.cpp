@@ -84,8 +84,6 @@ Champ_Fonc_base& Modele_turbulence_hyd_K_Eps::calculer_viscosite_turbulente(doub
   const DoubleTab& tab_K_Eps = chK_Eps.valeurs();
   DoubleTab& visco_turb = la_viscosite_turbulente_->valeurs();
 
-  DoubleTab Cmu(tab_K_Eps.dimension(0));
-
   // K_Eps(i,0) = K au noeud i
   // K_Eps(i,1) = Epsilon au noeud i
   // int n = tab_K_Eps.dimension(0);
@@ -101,8 +99,7 @@ Champ_Fonc_base& Modele_turbulence_hyd_K_Eps::calculer_viscosite_turbulente(doub
         }
     }
 
-  DoubleTrav Fmu, D(tab_K_Eps.dimension(0));
-  D = 0;
+  DoubleTrav Fmu, D(tab_K_Eps.dimension(0)), Cmu(tab_K_Eps.dimension(0));
   if (mon_modele_fonc_.non_nul())
     {
       // pour avoir nu en incompressible et mu en QC
@@ -110,10 +107,8 @@ Champ_Fonc_base& Modele_turbulence_hyd_K_Eps::calculer_viscosite_turbulente(doub
       // on veut toujours nu
       const OWN_PTR(Champ_Don_base) ch_visco = ref_cast(Fluide_base,get_eq_transport().milieu()).viscosite_cinematique();
       const Champ_Don_base& ch_visco_cin = ref_cast(Fluide_base,get_eq_transport().milieu()).viscosite_cinematique();
-      // const Champ_Don_base& ch_visco_cin_ou_dyn =((const Op_Diff_K_Eps&) eqn_transp_K_Eps().operateur(0)).diffusivite();
 
       const DoubleTab& tab_visco = ch_visco_cin.valeurs();
-      //      const DoubleTab& tab_visco = ch_visco.valeurs();
       Fmu.resize(tab_K_Eps.dimension(0));
       const Domaine_dis_base& le_dom_dis = get_eq_transport().domaine_dis();
 
@@ -174,26 +169,26 @@ Champ_Fonc_base& Modele_turbulence_hyd_K_Eps::calculer_viscosite_turbulente(doub
   return la_viscosite_turbulente_;
 }
 
-void Modele_turbulence_hyd_K_Eps::fill_turbulent_viscosity_tab(const int n, const DoubleTab& tab_K_Eps, const DoubleTab& Cmu, const DoubleTab& Fmu, const DoubleTab& D, DoubleTab& turbulent_viscosity)
+void Modele_turbulence_hyd_K_Eps::fill_turbulent_viscosity_tab(const int n, const DoubleTab& tab_K_Eps, const DoubleTab& tab_Cmu, const DoubleTab& tab_Fmu, const DoubleTab& tab_D, DoubleTab& tab_turbulent_viscosity)
 {
-  for (int i = 0; i < n; i++)
-    {
-      if (tab_K_Eps(i, 1) <= EPS_MIN_)
-        turbulent_viscosity[i] = 0.;
-      else
-        {
-          if (mon_modele_fonc_.non_nul())
-            {
-              int is_Cmu_constant = mon_modele_fonc_->Calcul_is_Cmu_constant();
-              if (is_Cmu_constant)
-                turbulent_viscosity[i] = Fmu(i) * LeCmu_ * tab_K_Eps(i, 0) * tab_K_Eps(i, 0) / (tab_K_Eps(i, 1) + D(i));
-              else
-                turbulent_viscosity[i] = Fmu(i) * Cmu(i) * tab_K_Eps(i, 0) * tab_K_Eps(i, 0) / (tab_K_Eps(i, 1) + D(i));
-            }
-          else
-            turbulent_viscosity[i] = LeCmu_ * tab_K_Eps(i, 0) * tab_K_Eps(i, 0) / (tab_K_Eps(i, 1) + D(i));
-        }
-    }
+  const double EPS_MIN = EPS_MIN_;
+  const double le_cmu = LeCmu_;
+  const bool has_low_re_model = mon_modele_fonc_.non_nul();
+  const int is_cmu_constant = has_low_re_model ? mon_modele_fonc_->Calcul_is_Cmu_constant() : 0;
+
+  CDoubleTabView K_Eps = tab_K_Eps.view_ro();
+  CDoubleArrView Cmu = static_cast<const ArrOfDouble&>(tab_Cmu).view_ro();
+  CDoubleArrView Fmu = static_cast<const ArrOfDouble&>(tab_Fmu).view_ro();
+  CDoubleArrView D = static_cast<const ArrOfDouble&>(tab_D).view_ro();
+  DoubleArrView turbulent_viscosity = static_cast<ArrOfDouble&>(tab_turbulent_viscosity).view_wo();
+  Kokkos::parallel_for(start_gpu_timer(__KERNEL_NAME__), n, KOKKOS_LAMBDA(const int i)
+  {
+    double eps = K_Eps(i, 1);
+    double k = K_Eps(i, 0);
+    double value = eps <= EPS_MIN ? 0 : k * k / (eps + D(i));
+    turbulent_viscosity[i] = has_low_re_model ? (Fmu(i) * (is_cmu_constant ? le_cmu : Cmu(i)) * value) : le_cmu * value;
+  });
+  end_gpu_timer(__KERNEL_NAME__);
 }
 
 int Modele_turbulence_hyd_K_Eps::preparer_calcul()
