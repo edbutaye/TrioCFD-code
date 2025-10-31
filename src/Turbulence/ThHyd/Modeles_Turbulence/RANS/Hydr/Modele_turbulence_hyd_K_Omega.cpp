@@ -180,34 +180,22 @@ Champ_Fonc_base& Modele_turbulence_hyd_K_Omega::calculer_viscosite_turbulente(do
  * @param[in] (turbulent_viscosity&) the turbulent viscosity table
  */
 void Modele_turbulence_hyd_K_Omega::fill_turbulent_viscosity_tab(const DoubleTab& tab_K_Omega,
-                                                                 DoubleTab& turbulent_viscosity)
+                                                                 DoubleTab& tab_turbulent_viscosity)
 {
-  const DoubleTab& val = get_expert_mode().get_menter_version()==Menter_version::ORIGINAL_1994 ?
-                         enstrophy_->valeurs() : strain_invariant_ ->valeurs();
-
-  if (is_SST())
-    {
-      for (int i = 0; i < tab_K_Omega.dimension(0); ++i)
-        {
-          const double omega = tab_K_Omega(i, 1);
-          if (omega <= OMEGA_MIN_)
-            turbulent_viscosity[i] = 0;
-          else
-            turbulent_viscosity[i]=tab_K_Omega(i, 0)*CST_A1/std::max(CST_A1*omega, val[i]*tabF2_->valeurs()[i]);
-        }
-    }
-  else
-    {
-      for (int i = 0; i < tab_K_Omega.dimension(0); ++i)
-        {
-          const double omega = tab_K_Omega(i, 1);
-          if (omega <= OMEGA_MIN_)
-            turbulent_viscosity[i] = 0;
-          else
-            turbulent_viscosity[i] = tab_K_Omega(i, 0)/omega;
-
-        }
-    }
+  const double OMEGA_MIN = OMEGA_MIN_;
+  bool is_sst = is_SST();
+  CDoubleArrView val = static_cast<const ArrOfDouble&>(get_expert_mode().get_menter_version()==Menter_version::ORIGINAL_1994 ?
+                                                       enstrophy_->valeurs() : strain_invariant_ ->valeurs()).view_ro();
+  CDoubleArrView F2 = static_cast<const ArrOfDouble&>(tabF2_->valeurs()).view_ro();
+  CDoubleTabView K_Omega = tab_K_Omega.view_ro();
+  DoubleArrView turbulent_viscosity = static_cast<ArrOfDouble&>(tab_turbulent_viscosity).view_wo();
+  Kokkos::parallel_for(start_gpu_timer(__KERNEL_NAME__), tab_K_Omega.dimension(0), KOKKOS_LAMBDA(const int i)
+  {
+    const double k = K_Omega(i, 0);
+    const double omega = K_Omega(i, 1);
+    turbulent_viscosity[i] = omega <= OMEGA_MIN ? 0 : (is_sst ? k * CST_A1 / Kokkos::max(CST_A1*omega, val[i]*F2[i]) : k/omega);
+  });
+  end_gpu_timer(__KERNEL_NAME__);
 }
 
 
