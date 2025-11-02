@@ -1,3 +1,4 @@
+XX/XX/25 (TrioCFD) GPU         : K_Eps standard model and K_Omega models (standard, SST, BSL) are fully ported thanks to Kokkos rewrite
 XX/XX/25 (TrioCFD) Change      : Rewrite slightly the algorithm (to get a correct parallel one) for controling/fixing negative K_Eps values in VEF
 XX/XX/25 (TrioCFD) Change      : Rewrite slightly the algorithm (to get a correct parallel one) for standard law of the wall used in VEF for RANS models
 --------------------------------------------------------------------------------------------------

@@ -42,34 +42,50 @@ Entree& Op_Diff_K_Omega_VEF_Face::readOn(Entree& s )
   return s ;
 }
 
+void Op_Diff_K_Omega_VEF_Face::compute(DoubleTab& tab_nu_turb_m) const
+{
+  const Domaine_VEF& domaine_VEF = le_dom_vef.valeur();
+  const int is_SST_or_BSL = is_SST_or_BSL_;
+  const double Sigma_K = Sigma_K_;
+  const double Sigma_Omega = Sigma_Omega_;
+  const double Sigma_K1 = Sigma_K1_;
+  const double Sigma_K2 = Sigma_K2_;
+  const double Sigma_OMEGA1 = Sigma_OMEGA1_;
+  const double Sigma_OMEGA2 = Sigma_OMEGA2_;
+  if (turbulence_model->is_SST_or_BSL() != is_SST_or_BSL) Process::exit("Error in Op_Diff_K_Omega_VEF_Face::ajouter");
+  DoubleTrav tab_F1elem(domaine_VEF.nb_elem_tot(), 1);
+  CDoubleArrView F1elem;
+  if (is_SST_or_BSL)
+    {
+      Discretisation_tools::faces_to_cells(domaine_VEF, tab_F1_face_, tab_F1elem);
+      F1elem = static_cast<const ArrOfDouble&>(tab_F1elem).view_ro();
+    }
+  const int nb_elem = domaine_VEF.nb_elem();
+  CDoubleArrView nu_turb = static_cast<const ArrOfDouble&>(diffusivite_turbulente().valeurs()).view_ro();
+  DoubleTabView nu_turb_m = tab_nu_turb_m.view_wo();
+  Kokkos::parallel_for(start_gpu_timer(__KERNEL_NAME__), Kokkos::RangePolicy<>(0, nb_elem), KOKKOS_LAMBDA(const int elem)
+  {
+    double F1 = is_SST_or_BSL ? F1elem(elem) : 0;
+    nu_turb_m(elem,0) = nu_turb(elem) * (is_SST_or_BSL*(F1*Sigma_K1 + (1 - F1)*Sigma_K2) + (1 - is_SST_or_BSL)*Sigma_K);
+    nu_turb_m(elem,1) = nu_turb(elem) * (is_SST_or_BSL*(F1*Sigma_OMEGA1 + (1 - F1)*Sigma_OMEGA2)+ (1 - is_SST_or_BSL)*Sigma_Omega);
+  });
+  end_gpu_timer(__KERNEL_NAME__);
+  tab_nu_turb_m.echange_espace_virtuel();
+}
 
 DoubleTab& Op_Diff_K_Omega_VEF_Face::ajouter(const DoubleTab& inconnue_org, DoubleTab& resu) const
 {
   remplir_nu(nu_); // On remplit le tableau nu car ajouter peut se faire avant le premier pas de temps
 
-  const DoubleTab& nu_turb = diffusivite_turbulente().valeurs();
   const int nb_comp = resu.line_size();
 
-  // On dimensionne et initialise le tableau des bilans de flux:
-  flux_bords_.resize(le_dom_vef->nb_faces_bord(), nb_comp);
-  flux_bords_ = 0.;
-
-  const Domaine_VEF& domaine_VEF = le_dom_vef.valeur();
-
-  const bool is_SST_or_BSL = turbulence_model->is_SST_or_BSL();
-  DoubleTab F1elem(domaine_VEF.nb_elem_tot(), 1);
-
-  if (is_SST_or_BSL)
-    Discretisation_tools::faces_to_cells(domaine_VEF, tab_F1_face_, F1elem);
-
-  const int nb_elem = domaine_VEF.nb_elem();
   DoubleTab& nu_turb_m = ref_cast_non_const(DoubleTab, nu_turb_m_);
-  for (int elem=0; elem<nb_elem; elem++)
-    {
-      nu_turb_m(elem,0) = nu_turb(elem) * ( is_SST_or_BSL_*(F1elem(elem)*Sigma_K1_ + (1 - F1elem(elem))*Sigma_K2_) + (1 - is_SST_or_BSL_)*Sigma_K_ );
-      nu_turb_m(elem,1) = nu_turb(elem) * (is_SST_or_BSL_*(F1elem(elem)*Sigma_OMEGA1_ + (1 - F1elem(elem))*Sigma_OMEGA2_)+ (1 - is_SST_or_BSL_)*Sigma_Omega_ );
-    }
-  nu_turb_m.echange_espace_virtuel();
+  compute(nu_turb_m);
+
+  // On dimensionne et initialise le tableau des bilans de flux:
+  if (flux_bords_.dimension_tot(0)!=le_dom_vef->nb_faces_bord())
+    flux_bords_.resize(le_dom_vef->nb_faces_bord(), nb_comp);
+  flux_bords_ = 0.;
 
   ajouter_bord_gen<Type_Champ::SCALAIRE, true>(inconnue_org, resu, flux_bords_, nu_, nu_turb_m);
   ajouter_interne_gen<Type_Champ::SCALAIRE, true>(inconnue_org, resu, flux_bords_, nu_, nu_turb_m);
@@ -92,27 +108,12 @@ void Op_Diff_K_Omega_VEF_Face::contribuer_a_avec(const DoubleTab& inco,
   modifier_matrice_pour_periodique_avant_contribuer(matrice, equation());
   remplir_nu(nu_); // On remplit le tableau nu car l'assemblage d'une matrice avec ajouter_contribution peut se faire avant le premier pas de temps
 
-  const DoubleTab& nu_turb = diffusivite_turbulente().valeurs();
-
-  const Domaine_VEF& domaine_VEF = le_dom_vef.valeur();
-
-  const bool is_SST_or_BSL = turbulence_model->is_SST_or_BSL();
-  DoubleTab F1elem(domaine_VEF.nb_elem_tot(), 1);
-  if (is_SST_or_BSL)
-    Discretisation_tools::faces_to_cells(domaine_VEF, tab_F1_face_, F1elem);
-
-  const int nb_elem = domaine_VEF.nb_elem();
   DoubleTab& nu_turb_m = ref_cast_non_const(DoubleTab, nu_turb_m_);
-  for (int elem=0; elem<nb_elem; elem++)
-    {
-      nu_turb_m(elem,0) = nu_turb(elem) * ( is_SST_or_BSL_*(F1elem(elem)*Sigma_K1_ + (1 - F1elem(elem))*Sigma_K2_) + (1 - is_SST_or_BSL_)*Sigma_K_ );
-      nu_turb_m(elem,1) = nu_turb(elem) * (is_SST_or_BSL_*(F1elem(elem)*Sigma_OMEGA1_ + (1 - F1elem(elem))*Sigma_OMEGA2_)+ (1 - is_SST_or_BSL_)*Sigma_Omega_ );
-    }
-  nu_turb_m.echange_espace_virtuel();
+  compute(nu_turb_m);
 
   int marq = phi_psi_diffuse(equation());
 
-  DoubleVect porosite_eventuelle(equation().milieu().porosite_face());
+  DoubleTrav porosite_eventuelle(equation().milieu().porosite_face());
   if (!marq) porosite_eventuelle = 1;
 
   ajouter_contribution_bord_gen<Type_Champ::SCALAIRE, false, true>(inco, matrice, nu_, nu_turb_m, porosite_eventuelle);
@@ -125,42 +126,45 @@ void Op_Diff_K_Omega_VEF_Face::contribuer_a_avec(const DoubleTab& inco,
 /*! @brief On modifie le second membre et la matrice dans le cas des conditions de dirichlet.
  *
  */
-void Op_Diff_K_Omega_VEF_Face::modifier_pour_Cl(Matrice_Morse& matrice, DoubleTab& secmem) const
+void Op_Diff_K_Omega_VEF_Face::modifier_pour_Cl(Matrice_Morse& matrice, DoubleTab& tab_secmem) const
 {
-  Op_Dift_VEF_base::modifier_pour_Cl(matrice, secmem);
+  Op_Dift_VEF_base::modifier_pour_Cl(matrice, tab_secmem);
 
   // on recupere le tableau
   const Turbulence_paroi_base& mod=le_modele_turbulence->loi_paroi();
   const Paroi_hyd_base_VEF& paroi = ref_cast(Paroi_hyd_base_VEF, mod);
-  const ArrOfInt& face_komega_imposee = paroi.face_keps_imposee();
+  const ArrOfInt& tab_face_komega_imposee = paroi.face_keps_imposee();
 
-  if (face_komega_imposee.size_array() > 0)
+  if (tab_face_komega_imposee.size_array() > 0)
     {
-      const DoubleTab& val = equation().inconnue().valeurs();
-      const int size = secmem.dimension(0);
-      const IntVect& tab1 = matrice.get_tab1();
-      DoubleVect& coeff = matrice.get_set_coeff();
+      const int size = tab_secmem.dimension(0);
       const int nb_comp = equation().inconnue().valeurs().line_size();
-
       // en plus des dirichlets ????
       // on change la matrice et le resu sur toutes les lignes ou k_omega_ est imposee....
-      for (int face = 0; face < size; face++)
-        {
-          if (face_komega_imposee[face] != -2)
-            {
-              for (int comp = 0; comp < nb_comp; comp++)
-                {
-                  // on doit remettre la ligne a l'identite et le secmem a l'inconnue
-                  const int idiag = tab1[face*nb_comp + comp]-1;
-                  coeff[idiag] = 1;
+      CDoubleTabView val = equation().inconnue().valeurs().view_ro();
+      CIntArrView face_komega_imposee = static_cast<const ArrOfInt&>(tab_face_komega_imposee).view_ro();
+      CIntArrView tab1 = static_cast<const ArrOfInt&>(matrice.get_tab1()).view_ro();
+      DoubleArrView coeff = static_cast<ArrOfDouble&>(matrice.get_set_coeff()).view_rw();
+      DoubleTabView secmem = tab_secmem.view_rw();
+      Kokkos::parallel_for(start_gpu_timer(__KERNEL_NAME__), Kokkos::RangePolicy<>(0, size), KOKKOS_LAMBDA(const int face)
+      {
+        if (face_komega_imposee[face] != -2)
+          {
+            for (int comp = 0; comp < nb_comp; comp++)
+              {
+                // on doit remettre la ligne a l'identite et le secmem a l'inconnue
+                int j = face * nb_comp + comp;
+                const int idiag = tab1[j] - 1;
+                coeff[idiag] = 1;
 
-                  // pour les voisins
-                  const int nbvois = tab1[face*nb_comp + 1 + comp] - tab1[face*nb_comp + comp];
-                  for (int k = 1; k < nbvois; k++)
-                    coeff[idiag + k] = 0;
-                  secmem(face, comp) = val(face, comp);
-                }
-            }
-        }
+                // pour les voisins
+                const int nbvois = tab1[j+1] - tab1[j];
+                for (int k = 1; k < nbvois; k++)
+                  coeff[idiag + k] = 0;
+                secmem(face, comp) = val(face, comp);
+              }
+          }
+      });
+      end_gpu_timer(__KERNEL_NAME__);
     }
 }

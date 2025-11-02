@@ -48,6 +48,8 @@ public:
 
   void modifier_pour_Cl(Matrice_Morse& matrice, DoubleTab& secmem) const override;
 
+private:
+  void compute(DoubleTab&) const;
 };
 
 #endif

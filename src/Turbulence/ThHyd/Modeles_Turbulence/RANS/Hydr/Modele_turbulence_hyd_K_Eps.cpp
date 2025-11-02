@@ -229,7 +229,11 @@ void Modele_turbulence_hyd_K_Eps::mettre_a_jour(double temps)
   Schema_Temps_base& sch = get_set_eq_transport().schema_temps();
   get_set_eq_transport().domaine_Cl_dis().mettre_a_jour(temps);
   if (!get_eq_transport().equation_non_resolue())
-    sch.faire_un_pas_de_temps_eqn_base(get_set_eq_transport());
+    {
+      statistics().end_count(STD_COUNTERS::update_variables);
+      sch.faire_un_pas_de_temps_eqn_base(get_set_eq_transport());
+      statistics().begin_count(STD_COUNTERS::update_variables, statistics().get_last_opened_counter_level()+1);
+    }
   get_set_eq_transport().mettre_a_jour(temps);
 
   statistics().begin_count(STD_COUNTERS::turbulent_viscosity, statistics().get_last_opened_counter_level()+1);

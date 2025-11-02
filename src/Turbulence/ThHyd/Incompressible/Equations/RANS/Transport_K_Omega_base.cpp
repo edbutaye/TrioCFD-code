@@ -119,6 +119,7 @@ int Transport_K_Omega_base::controler_K_Omega()
 
 
   Debog::verifier("Transport_K_Omega_base::controler_K_Omega K_Omega before", K_Omega);
+  ToDo_Kokkos("critical");
 
   for (int n = 0; n < size; n++)
     {
