@@ -9,14 +9,19 @@ full_env_TrioCFD.sh
 TrioCFD
 TrioCFD_opt
 TrioCFD_semi_opt
+TrioCFD_opt_gcov
 README.BALTIK
 index.html
 build/
 local/
 __pycache__
 
+# from make check_xxx when tests fail
+liste_pb
+
 # why is this generated ? always empty
 liste_cas
+
 
 ################################
 # Jupyter validation reports
