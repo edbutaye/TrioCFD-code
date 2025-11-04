@@ -114,87 +114,122 @@ int Transport_K_Omega_base::controler_K_Omega()
   const double OMEGA_MIN = modele_turbulence().get_OMEGA_MIN();
   const double OMEGA_MAX = modele_turbulence().get_OMEGA_MAX();
   const double K_MIN = modele_turbulence().get_K_MIN();
-  const IntTab& face_voisins = domaine_vf.face_voisins();
-  const IntTab& elem_faces = domaine_vf.elem_faces();
 
 
   Debog::verifier("Transport_K_Omega_base::controler_K_Omega K_Omega before", K_Omega);
-  ToDo_Kokkos("critical");
 
-  for (int n = 0; n < size; n++)
+  // Two-phase parallel algorithm following Transport_K_Eps_base pattern
+
+  // Phase 1: Parallel detection and simple corrections
+  struct CountValues
+  {
+    int count_negative_k;
+    int count_omega_under_threshold;
+    int count_omega_too_big;
+
+    KOKKOS_INLINE_FUNCTION CountValues() : count_negative_k(0), count_omega_under_threshold(0), count_omega_too_big(0) {}
+    KOKKOS_INLINE_FUNCTION CountValues(const CountValues& rhs) : count_negative_k(rhs.count_negative_k), count_omega_under_threshold(rhs.count_omega_under_threshold), count_omega_too_big(rhs.count_omega_too_big) {}
+    KOKKOS_INLINE_FUNCTION void operator+=(const CountValues& rhs)
     {
-      double& enerK = K_Omega(n, 0);
-      double& omega = K_Omega(n, 1);
+      count_negative_k += rhs.count_negative_k;
+      count_omega_under_threshold += rhs.count_omega_under_threshold;
+      count_omega_too_big += rhs.count_omega_too_big;
+    }
+  };
 
-      // correct big omega
-      if (omega > OMEGA_MAX)
-        {
-          count_omega_too_big++;
-          omega = OMEGA_MAX;
-        }
-      // correct small omega
-      // for k-omega, contrary to k-eps, it is important that omega does not become too small
-      // thus, we always correct small values
-      if (omega < OMEGA_MIN)
-        {
-          count_omega_under_threshold++;
-          omega = OMEGA_MIN;
-        }
+  DoubleTabView tab_K_Omega = K_Omega.view_rw();
+  CountValues result;
+  Kokkos::parallel_reduce(start_gpu_timer(__KERNEL_NAME__), size,
+                          KOKKOS_LAMBDA(const int n, CountValues& local_count)
+  {
+    double& enerK = tab_K_Omega(n, 0);
+    double& omega = tab_K_Omega(n, 1);
 
-      // correct negative k
-      if (enerK < 0)
-        {
-          count_negative_k++;
+    // Count and correct big omega (simple correction, no dependencies)
+    if (omega > OMEGA_MAX)
+      {
+        local_count.count_omega_too_big++;
+        omega = OMEGA_MAX;
+      }
+    // Count and correct small omega (simple correction, no dependencies)
+    if (omega < OMEGA_MIN)
+      {
+        local_count.count_omega_under_threshold++;
+        omega = OMEGA_MIN;
+      }
 
-          enerK = 0;
-          omega = 0;
-          int nenerK = 0;
-          int nomega = 0;
-          const int nb_faces_elem = elem_faces.line_size();
+    // Count negative k (correction will be done in phase 2)
+    if (enerK < 0) local_count.count_negative_k++;
 
-          // in VEF disc, we compute the mean value of neighbours
-          // TODO: maybe omega should use another type of mean (harmonic maybe)
-          // otherwise (VDF disc), simply set to min values
-          if (sub_type(Domaine_VEF, domaine_vf) and not(disable_VEF_mean_value_corrections_))
-            {
-              // cAlan : faire une fonction dans Transport_RANS_2eq qui fait la meme chose ?
-              for (int i = 0; i < 2; i++)
-                {
-                  int elem = face_voisins(n, i);
-                  if (elem != -1)
-                    for (int j = 0; j < nb_faces_elem; j++)
-                      if (j != n)
+  }, result);
+  end_gpu_timer(__KERNEL_NAME__);
+
+  count_negative_k = result.count_negative_k;
+  count_omega_under_threshold = result.count_omega_under_threshold;
+  count_omega_too_big = result.count_omega_too_big;
+
+  // Phase 2: Parallel correction of negative k with neighbor averaging
+  // Create a snapshot of original values to ensure consistent neighbor averaging
+  DoubleTrav tab_K_Omega_original(K_Omega);
+  CDoubleTabView K_Omega_orig = tab_K_Omega_original.view_ro();
+  const bool vef_algo = sub_type(Domaine_VEF, domaine_vf) && !disable_VEF_mean_value_corrections_;
+  const int nb_faces_elem = domaine_vf.elem_faces().line_size();
+  CIntTabView face_voisins = domaine_vf.face_voisins().view_ro();
+  CIntTabView elem_faces = domaine_vf.elem_faces().view_ro();
+  Kokkos::parallel_for(start_gpu_timer(__KERNEL_NAME__), size, KOKKOS_LAMBDA(const int n)
+  {
+    double& enerK = tab_K_Omega(n, 0);
+    double& omega = tab_K_Omega(n, 1);
+
+    // correct negative k
+    if (K_Omega_orig(n, 0) < 0)
+      {
+        enerK = 0;
+        omega = 0;
+        int nenerK = 0;
+        int nomega = 0;
+
+        // in VEF disc, we compute the mean value of neighbours
+        if (vef_algo)
+          {
+            for (int i = 0; i < 2; i++)
+              {
+                int elem = face_voisins(n, i);
+                if (elem != -1)
+                  for (int j = 0; j < nb_faces_elem; j++)
+                    {
+                      int face_j = elem_faces(elem, j);
+                      if (face_j != n)
                         {
-                          double k_face = K_Omega(elem_faces(elem, j), 0);
+                          double k_face = K_Omega_orig(face_j, 0);
                           if (k_face >= K_MIN)
                             {
                               enerK += k_face;
                               nenerK++;
                             }
-                          double o_face = K_Omega(elem_faces(elem, j), 1);
-                          if (o_face >= OMEGA_MIN) // case == OMEGA_MIN should be taken into account
+                          double o_face = K_Omega_orig(face_j, 1);
+                          if (o_face >= OMEGA_MIN)
                             {
                               omega += o_face;
                               nomega++;
                             }
                         }
-                }
+                    }
+              }
+          }
 
-            }
+        if (nenerK != 0)
+          enerK /= nenerK;
+        else
+          enerK = K_MIN;
 
-          if (nenerK != 0)
-            {enerK /= nenerK;}
-          else
-            {  enerK = K_MIN;}
-
-          if (nomega != 0)
-            { omega /= nomega;}
-          else
-            {omega = OMEGA_MIN;}
-
-
-        }
-    }
+        if (nomega != 0)
+          omega /= nomega;
+        else
+          omega = OMEGA_MIN;
+      }
+  });
+  end_gpu_timer(__KERNEL_NAME__);
   Debog::verifier("Transport_K_Omega_base::controler_K_Omega K_Omega middle", K_Omega);
   K_Omega.echange_espace_virtuel();
   Debog::verifier("Transport_K_Omega_base::controler_K_Omega K_Omega after", K_Omega);
@@ -204,8 +239,6 @@ int Transport_K_Omega_base::controler_K_Omega()
     {
       if (count_negative_k || count_omega_under_threshold)
         {
-
-
           const double time = le_champ_K_Omega->temps();
           Journal() << "Values forced for k and omega because:" << finl;
           if (count_negative_k)
@@ -220,7 +253,6 @@ int Transport_K_Omega_base::controler_K_Omega()
                         << count_omega_under_threshold << "/" << size << " nodes at time "
                         << time << finl;
             }
-
           // Warning if more than 0.01% of nodes are values fixed
           // cAlan : mettre une variable "experte" dans le jdd pour ajuster ce seuil ?
           const double ratio_k = 100. * count_negative_k / size;

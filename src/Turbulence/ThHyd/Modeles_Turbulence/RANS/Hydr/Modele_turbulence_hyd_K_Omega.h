@@ -69,7 +69,7 @@ protected:
   OWN_PTR(Champ_Fonc_base) tabF2_; // for the turbulent viscosity in the SST model
   OWN_PTR(Champ_Fonc_base) enstrophy_; // for the turbulent viscosity in the SST model
   OWN_PTR(Champ_Fonc_base) strain_invariant_; // for the turbulent viscosity in the SST model
-
+  OWN_PTR(Champ_Inc_base) visco_turb_au_format_K_Omega_;
   bool is_SST_ = false; // check if model variant is SST
   bool is_BSL_ = false; // check if model variant is BSL
 };

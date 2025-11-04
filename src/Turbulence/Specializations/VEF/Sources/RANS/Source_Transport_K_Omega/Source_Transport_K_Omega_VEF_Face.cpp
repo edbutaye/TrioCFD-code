@@ -377,7 +377,7 @@ void Source_Transport_K_Omega_VEF_Face::contribuer_a_avec(const DoubleTab& a,
   CDoubleArrView F1 = is_SST_or_BSL ? static_cast<const ArrOfDouble&>(turbulence_model->get_tabF1()).view_ro() : CDoubleArrView();
   Matrice_Morse_View matrice;
   matrice.set(tab_matrice);
-  Kokkos::parallel_for(start_gpu_timer(__KERNEL_NAME__), K_Omega.extent(0), KOKKOS_LAMBDA(const int face)
+  Kokkos::parallel_for(start_gpu_timer(__KERNEL_NAME__), tab_K_Omega.dimension(0), KOKKOS_LAMBDA(const int face)
   {
     if (K_Omega(face, 0) >= LeK_MIN)
       {

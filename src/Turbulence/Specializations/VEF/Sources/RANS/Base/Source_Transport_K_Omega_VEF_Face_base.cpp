@@ -95,7 +95,7 @@ DoubleTab& Source_Transport_K_Omega_VEF_Face_base::ajouter_komega(DoubleTab& res
   // const DoubleTab& tab = get_cisaillement_paroi(); // voir les classes filles
   DoubleTrav production_TKE {le_dom_VEF->nb_faces()};
 
-  DoubleTab gradKgradOmega(le_dom_VEF->nb_faces_tot());
+  DoubleTrav gradKgradOmega(le_dom_VEF->nb_faces_tot());
   compute_cross_diffusion(gradKgradOmega);
 
   if (turbulence_model->is_SST_or_BSL())
