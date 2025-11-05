@@ -21,6 +21,7 @@ Mailler box
         {
         Origine 0. 0. 0.
         Nombre_de_Noeuds 11 2 2
+        /* Nombre_de_Noeuds 161 17 17 */
         Longueurs 10 1 1
         }
         {
@@ -95,7 +96,6 @@ Lire sch
     nb_pas_dt_max 10
     tinit 0.
     dt_start dt_calc
-    tmax 0.019
     dt_min 1.e-9
     dt_max 6.e-3
     # dt_impr 1.e-5 #
@@ -136,26 +136,7 @@ Read pb_box
 									preconditionnement_diag 1
 									seuil_diffusion_implicite 1e-6
 									}
-        # Direct method to solve pressure linear system #
-	solveur_pression Petsc_GPU GCP { precond boomeramg { } seuil 1.e-6 impr } 
-	/*
-        solveur_pression Petsc GCP {  precond block_jacobi_icc { level 1 }  seuil 1.e-6 } */
-	/* solveur_pression petsc cli { -pc_type hypre
-        			     -pc_hypre_type boomeramg
-         			     -pc_hypre_boomeramg_strong_threshold 0.8
-                                     -pc_hypre_boomeramg_agg_nl 4
-                                     -pc_hypre_boomeramg_agg_num_paths 5
-         			     -pc_hypre_boomeramg_max_levels 25
-         			     -pc_hypre_boomeramg_coarsen_type PMIS
-         			     -pc_hypre_boomeramg_interp_type ext+i
-       				     -pc_hypre_boomeramg_P_max 2
-          			     -pc_hypre_boomeramg_truncfactor 0.5
-				     # -pc_hypre_boomeramg_print_statistics #
-       				     -ksp_type cg
-         	                     -ksp_rtol 1e-6
-          			     -ksp_max_it 5000
-        				} */
-
+	solveur_pression AMG GCP { atol 1.e-6 impr } 
         convection { muscl3 { alpha 0.8 }  }
         diffusion { }
         # Initial conditions for velocity read from the .xyz file of the previous box calculation #
@@ -188,7 +169,7 @@ Read pb_box
 		sonde_V_seg_horiz_box vitesse periode 1e-6 segment 10 0.001 0.001 0. 0.001 0.001 0.018 
 	} */
         # 3D fields post processing with LATA format for VisIt #
-        Format lml
+        format lml
         fields dt_post 0.05
         {
 		  vitesse		elem
@@ -232,27 +213,7 @@ Read pb_dom
 
 	 								}
 	
-	solveur_pression Petsc_GPU GCP {  precond boomeramg { } seuil 1.e-6 impr }
-	/*
-	solveur_pression petsc cli { -pc_type hypre
-        			     -pc_hypre_type boomeramg
-         			     -pc_hypre_boomeramg_strong_threshold 0.8
-                                     -pc_hypre_boomeramg_agg_nl 4
-                                     -pc_hypre_boomeramg_agg_num_paths 5
-         			     -pc_hypre_boomeramg_max_levels 25
-         			     -pc_hypre_boomeramg_coarsen_type PMIS
-         			     -pc_hypre_boomeramg_interp_type ext+i
-       				     -pc_hypre_boomeramg_P_max 2
-          			     -pc_hypre_boomeramg_truncfactor 0.5
-				     # -pc_hypre_boomeramg_print_statistics #
-       				     -ksp_type cg
-         	                     -ksp_rtol 1e-6
-          			     -ksp_max_it 5000
-        				} */
-
-        # Method to solve pressure linear system #
-        # solveur_pression Petsc GCP { precond SSOR { omega 1.5 }  seuil 1.e-8 impr   } #
-	# solveur_pression Petsc GCP {  precond block_jacobi_icc { level 1 }  seuil 1.e-9 } #
+	solveur_pression AMG GCP { atol 1.e-6 impr }
         convection { muscl3 { alpha 0.8 }  }
         diffusion { }
         # Initial conditions for velocity #
@@ -319,7 +280,7 @@ Read pb_dom
         		# 1D probes to monitor #
        			 Probes
 	      			  {
-					sonde_V_seg_vertic_box vitesse periode 1e-7 segment 100 0.018 0. 0.0 0.018 0.001 0.0
+					sonde_V_seg_vertic_box vitesse periode 1e-2 segment 100 0.018 0. 0.0 0.018 0.001 0.0
 					
 					}
       			  # 3D fields post processing with LATA format for VisIt #
@@ -347,7 +308,6 @@ Read pb_dom
   # Resume_last_time pdi DomainFlowLES_pb_dom.sauv #
 }
 
-EcritureLectureSpecial 0
 # Solve the problem #
 Solve pb
 
