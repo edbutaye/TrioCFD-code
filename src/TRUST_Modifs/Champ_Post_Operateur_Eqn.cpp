@@ -41,10 +41,6 @@ Sortie& Champ_Post_Operateur_Eqn::printOn(Sortie& s ) const
 }
 Champ_Post_Operateur_Eqn::Champ_Post_Operateur_Eqn()
 {
-  numero_op_=-1;
-  numero_source_=-1;
-  numero_masse_ = -1;
-  compo_=-1;
 }
 
 void Champ_Post_Operateur_Eqn::set_param(Param& param)
