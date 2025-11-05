@@ -53,8 +53,8 @@ Entree& Transport_K_Eps_base::readOn(Entree& is)
 }
 void Transport_K_Eps_base::set_param(Param& param)
 {
-  param.ajouter_flag("exit_on_negative_k_eps", &exit_on_negative_k_eps_); // XD_ADD_P flag Flag to exit (with postprocessing of fields) if a negative value is found for k or epsilon
-  param.ajouter_flag("exit_on_big_eps", &exit_on_big_eps_); // XD_ADD_P flag Flag to exit (with postprocessing of fields) if an excessively big values of epsilon is found
+  param.ajouter_flag("exit_on_negative_k_eps", &exit_on_negative_k_eps_); // X_D_ADD_P flag Flag to exit (with postprocessing of fields) if a negative value is found for k or epsilon
+  param.ajouter_flag("exit_on_big_eps", &exit_on_big_eps_); // X_D_ADD_P flag Flag to exit (with postprocessing of fields) if an excessively big values of epsilon is found
   Transport_2eq_base::set_param(param);
 }
 

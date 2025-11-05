@@ -41,10 +41,10 @@ Entree& Expert_mode_K_Omega::readOn(Entree& is)
 
 void Expert_mode_K_Omega::set_param(Param& param)
 {
-  param.ajouter_flag("deactivate_production_limiter",	&deactivate_production_limiter_); // XD_ADD_P bool Deactivate the production limiter in the k equation (default value false).
-  param.ajouter("menter_version", (int*)&menter_version_); // XD_ADD_P chaine(into=["ORIGINAL_1994","MODIFIED_2003"]) Version of Menter SST model: "ORIGINAL_1994" or "MODIFIED_2003" (default value "MODIFIED_2003").)
-  param.dictionnaire("ORIGINAL_1994", (int)Menter_version::ORIGINAL_1994); // XD_ADD_P motcle Version of Menter SST model
-  param.dictionnaire("MODIFIED_2003", (int)Menter_version::MODIFIED_2003); // XD_ADD_P motcle Version of Menter SST model
+  param.ajouter_flag("deactivate_production_limiter",	&deactivate_production_limiter_); // X_D_ADD_P bool Deactivate the production limiter in the k equation (default value false).
+  param.ajouter("menter_version", (int*)&menter_version_); // X_D_ADD_P chaine(into=["ORIGINAL_1994","MODIFIED_2003"]) Version of Menter SST model: "ORIGINAL_1994" or "MODIFIED_2003" (default value "MODIFIED_2003").)
+  param.dictionnaire("ORIGINAL_1994", (int)Menter_version::ORIGINAL_1994); // X_D_ADD_P motcle Version of Menter SST model
+  param.dictionnaire("MODIFIED_2003", (int)Menter_version::MODIFIED_2003); // X_D_ADD_P motcle Version of Menter SST model
 }
 
 

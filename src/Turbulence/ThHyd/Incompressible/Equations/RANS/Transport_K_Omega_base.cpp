@@ -49,8 +49,8 @@ Entree& Transport_K_Omega_base::readOn(Entree& is)
 void Transport_K_Omega_base::set_param(Param& param)
 {
   Transport_2eq_base::set_param(param);
-  param.ajouter_flag("exit_on_negative_k_omega", &exit_on_negative_k_omega_); // XD_ADD_P flag Flag to exit (with postprocessing of fields) if a negative value is found for k or omega
-  param.ajouter_flag("exit_on_big_omega", &exit_on_big_omega_); // XD_ADD_P flag Flag to exit (with postprocessing of fields) if an excessively big values of omega are found
+  param.ajouter_flag("exit_on_negative_k_omega", &exit_on_negative_k_omega_); // X_D_ADD_P flag Flag to exit (with postprocessing of fields) if a negative value is found for k or omega
+  param.ajouter_flag("exit_on_big_omega", &exit_on_big_omega_); // X_D_ADD_P flag Flag to exit (with postprocessing of fields) if an excessively big values of omega are found
 }
 
 void Transport_K_Omega_base::discretiser()

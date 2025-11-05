@@ -444,11 +444,11 @@ void Transport_Interfaces_FT_Disc::set_param(Param& param)
   param.ajouter_non_std("distance_projete_faces",(this));
   param.ajouter("temps_debut",&temps_debut_);
   param.ajouter("vitesse_imposee_regularisee", &variables_internes_->vimp_regul) ;
-  param.ajouter_flag("explicit_u_NS", &explicit_u_NS_); // XD_ADD_P rien Flag to force a really explicit scheme
+  param.ajouter_flag("explicit_u_NS", &explicit_u_NS_); // X_D_ADD_P rien Flag to force a really explicit scheme
   param.ajouter_non_std("type_indic_faces", (this)) ;
-  param.ajouter("collision_model_fpi",&collision_model_); // xd_ADD_P collision model for fluid particle interaction
-  param.ajouter_flag("compute_particles_rms",&compute_particles_rms_); // TODO xD_ADD_P compute particles velocity root mean square
-  param.ajouter("post_process_hydrodynamic_forces", &post_process_hydro_forces_); // TODO xD_ADD_P post process hydrodynamic forces (pressure + friction) for each particle
+  param.ajouter("collision_model_fpi",&collision_model_); // x_d_ADD_P collision model for fluid particle interaction
+  param.ajouter_flag("compute_particles_rms",&compute_particles_rms_); // TODO x_D_ADD_P compute particles velocity root mean square
+  param.ajouter("post_process_hydrodynamic_forces", &post_process_hydro_forces_); // TODO x_D_ADD_P post process hydrodynamic forces (pressure + friction) for each particle
 }
 
 int Transport_Interfaces_FT_Disc::lire_motcle_non_standard(const Motcle& un_mot, Entree& is)

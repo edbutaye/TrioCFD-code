@@ -33,7 +33,7 @@ Entree& Modele_turbulence_hyd_RANS_K_Eps_base::readOn(Entree& is) { return Model
 void Modele_turbulence_hyd_RANS_K_Eps_base::set_param(Param& param)
 {
   Modele_turbulence_hyd_2_eq_base::set_param(param);
-  param.ajouter("eps_min", &EPS_MIN_); // XD_ADD_P double Lower limitation of epsilon (default value 1.e-10).
+  param.ajouter("eps_min", &EPS_MIN_); // XD_ADD_P double Lower limitation of epsilon (default value 1.e-20).
   param.ajouter("eps_max", &EPS_MAX_); // XD_ADD_P double Upper limitation of epsilon (default value 1.e+10).
 }
 

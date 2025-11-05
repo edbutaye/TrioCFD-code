@@ -50,6 +50,9 @@ transport_k_epsilon transport_equation_deriv transport_k_epsilon -1 The (k-eps) 
   attr equation_non_resolue chaine equation_non_resolue 1 The equation will not be solved while condition(t) is verified if equation_non_resolue keyword is used. Exemple: The Navier-Stokes equations are not solved between time t0 and t1. NL2 Navier_Sokes_Standard NL2 { equation_non_resolue (t>t0)*(t<t1) }
   attr renommer_equation chaine rename_equation 1 Rename the equation with a specific name.
   attr with_nu chaine(into=["yes","no"]) with_nu 1 yes/no
+  attr exit_on_negative_k_eps rien exit_on_negative_k_eps 1 Flag to exit (with postprocessing of fields) if a negative value is found for k or epsilon
+  attr exit_on_big_eps rien exit_on_big_eps 1 Flag to exit (with postprocessing of fields) if an excessively big values of epsilon is found
+
 transport_k eqn_base transport_k -1 The k transport equation in bicephale (standard or realisable) k-eps model.
 transport_epsilon eqn_base transport_epsilon -1 The eps transport equation in bicephale (standard or realisable) k-eps model. 
 mod_turb_hyd_rans modele_turbulence_hyd_deriv mod_turb_hyd_rans -1 Class for RANS turbulence model for Navier-Stokes equations.

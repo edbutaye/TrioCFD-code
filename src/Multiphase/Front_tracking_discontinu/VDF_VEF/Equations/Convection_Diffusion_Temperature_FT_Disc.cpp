@@ -117,7 +117,7 @@ void Convection_Diffusion_Temperature_FT_Disc::set_param(Param& param)
   param.ajouter_non_std("prescribed_mpoint", (this));
   param.ajouter("correction_mpoint_diff_conv_energy", &correction_mpoint_diff_conv_energy_);
   param.ajouter_flag("divergence_free_velocity_extension", &divergence_free_velocity_extension_, Param::OPTIONAL);
-  param.ajouter_flag("explicit_u_NS", &explicit_u_NS_, Param::OPTIONAL); // XD_ADD_P rien Flag to force a really explicit scheme
+  param.ajouter_flag("explicit_u_NS", &explicit_u_NS_, Param::OPTIONAL); // X_D_ADD_P rien Flag to force a really explicit scheme
   param.ajouter_non_std("solveur_pression_fictive",(this),Param::OPTIONAL);
   param.ajouter("bc_opening_pressure",&name_bc_opening_pressure_,Param::OPTIONAL);
   param.ajouter_flag("reinjection_tcl", &reinjection_);
