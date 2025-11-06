@@ -370,11 +370,9 @@ void Navier_Stokes_std_ALE::renewing_jacobians( DoubleTab& derivee )
 
   DoubleTab New_ALEjacobian_Old=dom_ale.getNewJacobian(); //New  value for ALEjacobian_old
   DoubleTab New_ALEjacobian_New(New_ALEjacobian_Old);
-
   Op_Conv_ALE_VEF& opALEforJacob=ref_cast(Op_Conv_ALE_VEF, terme_convectif.valeur());
   opALEforJacob.calculateALEjacobian(New_ALEjacobian_New); //New  value for ALEjacobian_new
   dom_ale.update_ALEjacobians(New_ALEjacobian_Old, New_ALEjacobian_New, TimeStepNr); // Update new values of ALEjacobian_old and ALEjacobian_new saved in Domaine_ALE
-
   //End of renewing ALE Jacobians
 
   Nom discr=discretisation().que_suis_je();
@@ -394,8 +392,7 @@ void Navier_Stokes_std_ALE::renewing_jacobians( DoubleTab& derivee )
   ALE.echange_espace_virtuel();
   derivee+=ALE; // M-1(F + ALEconvectiveTerm - BtP(n))=derivee_withALEconvectiveTerm
   derivee.echange_espace_virtuel();
-  //Cerr << "ALE => norme(derivee) = " << mp_norme_vect(derivee) << finl;
-  Debog::verifier("derivee_pression Navier_Stokes_std::corriger_derivee_impl",derivee);
+  Debog::verifier("derivee Navier_Stokes_std_ALE::renewing_jacobians -derivee",derivee);
 }
 
 void Navier_Stokes_std_ALE::div_ale_derivative( DoubleTrav& deriveeALE, double timestep, DoubleTab& derivee, DoubleTrav& secmemP )
@@ -405,7 +402,6 @@ void Navier_Stokes_std_ALE::div_ale_derivative( DoubleTrav& deriveeALE, double t
   DoubleTab ALEjacobian_New=dom_ale.getNewJacobian();
   DoubleTab& vitesse_faces_ALE= dom_ale.vitesse_faces();
   DoubleTab term_Jacobian_ratio_U_n(la_vitesse->valeurs());               // For (Jacobian n/Jacobian n+1) * Un / timestep , initialized every iteration with with new la_vitesse values.
-
   for (int num_face=0; num_face<(vitesse_faces_ALE.size()/dimension); num_face++)
     {
       for (int dim=0; dim<dimension; dim++)
@@ -419,12 +415,11 @@ void Navier_Stokes_std_ALE::div_ale_derivative( DoubleTrav& deriveeALE, double t
   divergence.calculer(deriveeALE, secmemP); //Div((J_{n}/J_{n+1})*(U_{n}/timestep)+derivee_out)
   secmemP *= -1; // car div =-B
   secmemP.echange_espace_virtuel();
-  //Debog::verifier("secmemP  modifier Navier_Stokes_std::corriger_derivee_impl",secmemP);
   // Correction du second membre d'apres les conditions aux limites :
   assembleur_pression_->modifier_secmem(secmemP);
   secmemP.echange_espace_virtuel();
 
-  Debog::verifier("secmemP Navier_Stokes_std::corriger_derivee_impl",secmemP);
+  Debog::verifier("secmemP Navier_Stokes_std_ALE::div_ale_derivative",secmemP);
 }
 
 void Navier_Stokes_std_ALE::update_pressure_matrix()
@@ -501,7 +496,6 @@ void Navier_Stokes_std_ALE::mettre_a_jour(double temps)
           const DoubleTab& meshPbForceFace = dom_ale.getMeshPbForceFace(); //we access the internal forces in the fictitious structure problem for the mesh
           ALEMeshStructuralForces_->valeurs() = meshPbForceFace ;
         }
-
     }
 
 }
