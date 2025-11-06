@@ -85,6 +85,7 @@ void Domaine_ALE::clear()
   extrait_surf_dom_deformable_ = false;
   str_mesh_model = Structural_dynamic_mesh_model() ;
   UpdateTheGrid = 1 ;
+  updateJacobian_Old_=true;
 }
 
 Sortie& Domaine_ALE::printOn(Sortie& os) const

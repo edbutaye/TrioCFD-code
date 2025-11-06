@@ -166,7 +166,7 @@ protected:
   // unused DoubleTab coord_ini;
   // unused DoubleTab displacement_lag;
 
-  bool updateJacobian_Old_=true;
+  bool updateJacobian_Old_;
 };
 
 
