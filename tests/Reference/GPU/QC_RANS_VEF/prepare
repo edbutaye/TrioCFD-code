@@ -1,0 +1,3 @@
+#!/bin/bash
+cp $TRUST_ROOT/tests/GPU/DomainFlowLES/check_perf.sh .
+gunzip -c mesh.geom.gz > mesh.geom
