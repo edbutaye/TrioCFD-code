@@ -1653,7 +1653,7 @@ void Domaine_ALE::solveDynamicMeshProblem(const double temps, const DoubleTab& i
 
   if (str_mesh_model.maxAddedMassRatio > 0)
     {
-      // from looking at the code, this parameter is never set to true, hence this if branch is not reachable. whatever...
+      // from looking at the code, this parameter is never set to true
       if (str_mesh_model.AddedMassRatioExceeded) str_mesh_model.doConfigurationReset=true ;
       str_mesh_model.AddedMassRatioExceeded=false ;
     }

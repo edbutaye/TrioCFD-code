@@ -3,7 +3,7 @@
 #include <Domaine_ALE.h>
 #include <stdexcept>
 
-Implemente_instanciable_sans_constructeur_ni_destructeur(Structural_dynamic_mesh_model,"Structural_dynamic_mesh_model",Interprete_geometrique_base);
+Implemente_instanciable_sans_constructeur(Structural_dynamic_mesh_model,"Structural_dynamic_mesh_model",Interprete_geometrique_base);
 
 // Syntaxe:
 //Structural_dynamic_mesh_model NOMDOMAINE
@@ -39,39 +39,35 @@ Structural_dynamic_mesh_model::Structural_dynamic_mesh_model()
   f_ = "unset string" ;
   h_ = "unset string" ;
 
-  density_ = 0. ;
-  inertialDamping_ = 0. ;
-
-  iel_=0;
   nSymSize_ = (dimension == 2) ? 5 : 9;
   symSize_  = (dimension == 2) ? 4 : 6;
   nbn_ = (dimension == 2) ? 3 : 4;
   dimB0_ =nbn_*dimension;
-  gridNStep = 0 ;
-  gridTime = 0. ;
-  gridDt = 0. ;
-  isMassBuilt = false ;
-  totalMass=0.;
-  configurationResetDt = 0 ;
-  gridResetTime = 0 ;
-  nbIvars_=0;
-  nbEvars_=0;
-  maxAddedMassRatio = 0 ;
-  AddedMassRatioExceeded=false;
-  doConfigurationReset = false ;
-  KSize_=0;
-  matpSize_=0;
-  sizeEvars_=0;
-  resumption = 0;
-  gridDtMin_ =0.;
-  resumption=0;
 
-
+  x.reset();
+  u.reset();
+  v.reset();
+  vp.reset();
+  a.reset();
+  ff.reset();
+  mass.reset() ;
+  nodalScaleMass.reset() ;
+  Eta_.reset() ;
+  xl_.reset() ;
+  ul_.reset() ;
+  fl_.reset() ;
+  B0l_ .reset() ;
+  invertNum_.reset() ;
+  B0_.reset() ;
+  Ft_.reset() ;
+  Stress_.reset() ;
+  massElem_ .reset();
+  meshPbPressure_.reset() ;
+  meshPbVonMises_.reset() ;
+  meshPbForceFace_.reset() ;
+  mfrontEvars_.reset() ;
 }
-Structural_dynamic_mesh_model::~Structural_dynamic_mesh_model()
-{
 
-}
 
 Sortie& Structural_dynamic_mesh_model::printOn(Sortie& os) const
 {

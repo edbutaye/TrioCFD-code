@@ -35,12 +35,11 @@ enum class TangentOperatorKind { none, dCauchydF, dPk2dE, dPk1dF };
 
 class Structural_dynamic_mesh_model : public Interprete_geometrique_base
 {
-  Declare_instanciable_sans_constructeur_ni_destructeur(Structural_dynamic_mesh_model);
+  Declare_instanciable_sans_constructeur(Structural_dynamic_mesh_model);
 
 
 public:
   Structural_dynamic_mesh_model();
-  ~Structural_dynamic_mesh_model();
   Entree& interpreter_(Entree&) override;
 
   // Mfront behaviour
@@ -104,25 +103,24 @@ public:
 
   DoubleVect mass ;
   DoubleVect nodalScaleMass ;
-  double totalMass ;
+  double totalMass = 0.;
 
   // Public variables
   // ----------------
 
-  int gridNStep ;
-  double gridTime ;
-  double gridDt ;
+  int gridNStep = 0.;
+  double gridTime = 0.;
+  double gridDt = 0.;
   bool isMassBuilt = false;
 
-  double configurationResetDt ;
-  double gridResetTime ;
+  double configurationResetDt = 0. ;
+  double gridResetTime = 0.;
 
-  double maxAddedMassRatio ;
+  double maxAddedMassRatio =0.;
   bool AddedMassRatioExceeded = false; // looking at the code, this is never set to true.
-
   bool doConfigurationReset=false ;
 
-  int resumption; //1 if resumption of calculation else 0
+  int resumption =0; //1 if resumption of calculation else 0
 
 
 protected:
@@ -178,21 +176,21 @@ protected:
   // Parameters and global variables
   // -------------------------------
 
-  double inertialDamping_ ;
-  double density_  ;
+  double inertialDamping_=0. ;
+  double density_ =0. ;
   double dtSafetyCoefficient_ = 0.5 ;
   double gridDtMin_ = 0 ;
 
-  int nSymSize_ ; // length of non-symetric tensor in Voigt notation
-  int symSize_ ; // length of symetric tensor in Voigt notation
-  int dimB0_ ; // lenght of reference configuration array
+  int nSymSize_ =0; // length of non-symetric tensor in Voigt notation
+  int symSize_ =0; // length of symetric tensor in Voigt notation
+  int dimB0_ =0; // lenght of reference configuration array
   DoubleTab Eta_ ; // Shape function derivatives
 
   // Local variables for internal forces computation
   // -----------------------------------------------
 
-  int iel_ ; // id of current element
-  int nbn_ ; // number of vertex nodes
+  int iel_ =0; // id of current element
+  int nbn_ =0; // number of vertex nodes
   DoubleTab xl_ ; // local current coordinates
   DoubleTab ul_ ; // local nodal displacements
   DoubleTab fl_ ; // local nodal forces
@@ -227,11 +225,11 @@ private:
   // Mfront behaviour
   // ----------------
 
-  int nbIvars_;
-  int nbEvars_;
-  int sizeEvars_ ;
-  int matpSize_;
-  int KSize_;
+  int nbIvars_=0;
+  int nbEvars_ =0;
+  int sizeEvars_ =0;
+  int matpSize_ =0;
+  int KSize_ =0;
   mgis::behaviour::Hypothesis hypothesis_;
 
   bool loaded_ = false;
