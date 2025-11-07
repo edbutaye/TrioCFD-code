@@ -46,18 +46,22 @@ Entree& Op_Diff_K_Eps_QC_VEF_Face::readOn(Entree& s )
   return s ;
 }
 
-
-DoubleTab& Op_Diff_K_Eps_QC_VEF_Face::ajouter(const DoubleTab& inconnue, DoubleTab& resu) const
+DoubleTab& Op_Diff_K_Eps_QC_VEF_Face::ajouter(const DoubleTab& tab_inconnue, DoubleTab& resu) const
 {
-  DoubleTrav KEps_divided_by_rho(inconnue);
+  DoubleTrav tab_KEps_divided_by_rho(tab_inconnue);
   const Transport_K_Eps& eqn_transport = ref_cast(Transport_K_Eps,mon_equation.valeur());
   const Fluide_Quasi_Compressible& mil = ref_cast(Fluide_Quasi_Compressible,eqn_transport.milieu());
-  const DoubleTab& rho=mil.masse_volumique().valeurs();
-  int size = inconnue.dimension_tot(0);
-  for (int i=0; i<size; i++)
-    {
-      KEps_divided_by_rho(i,0) = inconnue(i,0) / rho(i); // k/rho
-      KEps_divided_by_rho(i,1) = inconnue(i,1) / rho(i); // eps/rho
-    }
-  return Op_Diff_K_Eps_VEF_Face::ajouter(KEps_divided_by_rho, resu);
+  const DoubleTab& tab_rho=mil.masse_volumique().valeurs();
+  const int size = tab_inconnue.dimension_tot(0);
+  CDoubleTabView inconnue = tab_inconnue.view_ro();
+  CDoubleArrView rho = static_cast<const ArrOfDouble&>(tab_rho).view_ro();
+  DoubleTabView KEps_divided_by_rho = tab_KEps_divided_by_rho.view_wo();
+  Kokkos::parallel_for(start_gpu_timer(__KERNEL_NAME__), size, KOKKOS_LAMBDA(const int i)
+  {
+    KEps_divided_by_rho(i,0) = inconnue(i,0) / rho(i); // k/rho
+    KEps_divided_by_rho(i,1) = inconnue(i,1) / rho(i); // eps/rho
+  });
+  end_gpu_timer(__KERNEL_NAME__);
+
+  return Op_Diff_K_Eps_VEF_Face::ajouter(tab_KEps_divided_by_rho, resu);
 }
