@@ -68,7 +68,6 @@ Structural_dynamic_mesh_model::Structural_dynamic_mesh_model()
   mfrontEvars_.reset() ;
 }
 
-
 Sortie& Structural_dynamic_mesh_model::printOn(Sortie& os) const
 {
   return os;
@@ -141,9 +140,6 @@ void Structural_dynamic_mesh_model::initMfrontBehaviour()
   mgisBehaviourData_.dt  = 0.;
   mgisBehaviourData_.rdt = &rdt_;
 
-  mgisBehaviourData_.s0.material_properties = nullptr;
-  mgisBehaviourData_.s1.material_properties = nullptr;
-
   load_behaviour_(StressMeasureKind::cauchy, TangentOperatorKind::none) ;
   if ( nbIvars_ > 0)
     {
@@ -176,10 +172,10 @@ void Structural_dynamic_mesh_model::initMfrontBehaviour()
 
   // Check and fill material properties for Mfront behaviour
   matpSize_                                 = static_cast<int> (mgis::behaviour::getArraySize(mgisBehaviour_.mps, hypothesis_));
-  double *s0MaterialProperties              = new double[matpSize_];
-  double *s1MaterialProperties              = new double[matpSize_];
-  mgisBehaviourData_.s0.material_properties = s0MaterialProperties;
-  mgisBehaviourData_.s1.material_properties = s1MaterialProperties;
+  s0MaterialProperties_.resize(matpSize_);
+  s1MaterialProperties_.resize(matpSize_);
+  mgisBehaviourData_.s0.material_properties = s0MaterialProperties_.data();
+  mgisBehaviourData_.s1.material_properties = s1MaterialProperties_.data();
   for (auto mps : mgisBehaviour_.mps)
     {
       size_t vOffset = mgis::behaviour::getVariableOffset(mgisBehaviour_.mps, mps.name, hypothesis_);
@@ -195,8 +191,8 @@ void Structural_dynamic_mesh_model::initMfrontBehaviour()
             }
           for (size_t i = 0; i < vSize; ++i)
             {
-              s0MaterialProperties[vOffset + i] = it->second[i];
-              s1MaterialProperties[vOffset + i] = it->second[i];
+              s0MaterialProperties_[vOffset + i] = it->second[i];
+              s1MaterialProperties_[vOffset + i] = it->second[i];
             }
         }
       else // missing property: set its value(s) to zero with a warning
@@ -205,15 +201,13 @@ void Structural_dynamic_mesh_model::initMfrontBehaviour()
           Cerr << "Missing data for for property " << mps.name << ", default value(s) set to zero" << finl ;
           for (size_t i = 0; i < vSize; ++i)
             {
-              s0MaterialProperties[vOffset + i] = 0;
-              s1MaterialProperties[vOffset + i] = 0;
+              s0MaterialProperties_[vOffset + i] = 0;
+              s1MaterialProperties_[vOffset + i] = 0;
             }
         }
     }
-  double *rho = new double[1];
-  mgisBehaviourData_.s0.mass_density = rho;
-  mgisBehaviourData_.s1.mass_density = rho;
-  rho[0] = density_ ;
+  mgisBehaviourData_.s0.mass_density = &density_;
+  mgisBehaviourData_.s1.mass_density = &density_;
 
 }
 

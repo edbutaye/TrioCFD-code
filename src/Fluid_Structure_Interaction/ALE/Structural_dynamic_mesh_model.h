@@ -130,6 +130,8 @@ protected:
 
   mgis::behaviour::Behaviour mgisBehaviour_;
   mgis::behaviour::BehaviourDataView mgisBehaviourData_;
+  std::vector<double> s0MaterialProperties_;
+  std::vector<double> s1MaterialProperties_;
 
   static constexpr int stiffnessMatrixMinSize_ = 1 + mgis::behaviour::Behaviour::nopts;
 
