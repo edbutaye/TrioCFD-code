@@ -93,21 +93,17 @@ int Paroi_std_scal_hyd_VEF::calculer_scal(Champ_Fonc_base& diffusivite_turb)
 {
   const Domaine_VEF& domaine_VEF = ref_cast(Domaine_VEF, le_dom_dis_.valeur());
 
-  const IntTab& face_voisins = domaine_VEF.face_voisins();
-  DoubleTab& alpha_t = diffusivite_turb.valeurs();
   Equation_base& eqn_hydr = mon_modele_turb_scal->equation().probleme().equation(0);
   const Fluide_base& le_fluide = ref_cast(Fluide_base,eqn_hydr.milieu());
   const Champ_Don_base& ch_visco_cin = le_fluide.viscosite_cinematique();
   const DoubleTab& tab_visco = ch_visco_cin.valeurs();
-  const DoubleVect& volumes_maille = domaine_VEF.volumes();
-  const DoubleVect& surfaces_face = domaine_VEF.face_surfaces();
   int l_unif;
 
-  double visco=-1;
+  double visco0=-1;
   if (sub_type(Champ_Uniforme,ch_visco_cin))
     {
       l_unif = 1;
-      visco = std::max(tab_visco(0,0),DMINFLOAT);
+      visco0 = std::max(tab_visco(0,0),DMINFLOAT);
     }
   else
     l_unif = 0;
@@ -120,7 +116,6 @@ int Paroi_std_scal_hyd_VEF::calculer_scal(Champ_Fonc_base& diffusivite_turb)
     }
   //    tab_visco+=DMINFLOAT;
 
-  double dist=-1;
   const RefObjU& modele_turbulence_hydr = eqn_hydr.get_modele(TURBULENCE);
   const Modele_turbulence_hyd_base& le_modele = ref_cast(Modele_turbulence_hyd_base,modele_turbulence_hydr.valeur());
   const Turbulence_paroi_base& loi = le_modele.loi_paroi();
@@ -128,19 +123,20 @@ int Paroi_std_scal_hyd_VEF::calculer_scal(Champ_Fonc_base& diffusivite_turb)
   const Equation_base& eqn = mon_modele_turb_scal->equation();
   // Recuperation de la diffusivite en fonction du type d'equation:
   int schmidt = (sub_type(Convection_Diffusion_Concentration,eqn) ? 1 : 0);
-  const Champ_Don_base& alpha = (schmidt==1?ref_cast(Convection_Diffusion_Concentration,eqn).constituant().diffusivite_constituant():le_fluide.diffusivite());
-  int alpha_uniforme = (sub_type(Champ_Uniforme,alpha) ? 1 : 0);
+  const Champ_Don_base& champ_alpha = (schmidt==1?ref_cast(Convection_Diffusion_Concentration,eqn).constituant().diffusivite_constituant():le_fluide.diffusivite());
+  int alpha_uniforme = (sub_type(Champ_Uniforme,champ_alpha) ? 1 : 0);
+  const DoubleTab& tab_alpha = champ_alpha.valeurs();
 
   // Verifications (l'algorithme n'est valable que si d_alpha est le meme pour chaque constituant)
   if (schmidt)
     {
       if (alpha_uniforme)
         {
-          double d_alpha = alpha.valeurs()(0,0);
-          assert(ref_cast(Convection_Diffusion_Concentration,eqn).constituant().nb_constituants()==alpha.valeurs().line_size());
-          for (int nc=0; nc<alpha.valeurs().line_size(); nc++)
+          double d_alpha = tab_alpha(0,0);
+          assert(ref_cast(Convection_Diffusion_Concentration,eqn).constituant().nb_constituants()==tab_alpha.line_size());
+          for (int nc=0; nc<tab_alpha.line_size(); nc++)
             {
-              if (d_alpha!=alpha.valeurs()(0,nc))
+              if (d_alpha!=tab_alpha(0,nc))
                 {
                   Cerr << "Error!" << finl;
                   Cerr << "Law of the wall are not implemented yet for constituants with different diffusion coefficients." << finl;
@@ -150,19 +146,17 @@ int Paroi_std_scal_hyd_VEF::calculer_scal(Champ_Fonc_base& diffusivite_turb)
         }
       else
         {
-          for (int elem=0; elem<alpha.valeurs().dimension(0); elem++)
-            {
-              double d_alpha = alpha.valeurs()(elem,0);
-              for (int nc=0; nc<alpha.valeurs().line_size(); nc++)
-                {
-                  if (d_alpha!=alpha.valeurs()(elem,nc))
-                    {
-                      Cerr << "Error!" << finl;
-                      Cerr << "Law of the wall are not implemented yet for constituants with different diffusion coefficients." << finl;
-                      Process::exit();
-                    }
-                }
-            }
+          const int size = tab_alpha.dimension(0);
+          const int nb_comp = tab_alpha.line_size();
+          CDoubleTabView alpha = tab_alpha.view_ro();
+          Kokkos::parallel_for(start_gpu_timer(__KERNEL_NAME__), size, KOKKOS_LAMBDA(const int elem)
+          {
+            double d_alpha = alpha(elem,0);
+            for (int nc=0; nc<nb_comp; nc++)
+              if (d_alpha!=alpha(elem,nc))
+                Process::Kokkos_exit("Error, Law of the wall are not implemented yet for constituants with different diffusion coefficients.");
+          });
+          end_gpu_timer(__KERNEL_NAME__);
         }
     }
 
@@ -178,55 +172,50 @@ int Paroi_std_scal_hyd_VEF::calculer_scal(Champ_Fonc_base& diffusivite_turb)
            || (sub_type(Symetrie,la_cl.valeur()))
            || (sub_type(Paroi_decalee_Robin,la_cl.valeur())) )
         {
+          if (axi) Process::exit("Error: the axisymmetric VEF case is not yet implemented in the scalar wall-function.");
           const Front_VF& le_bord = ref_cast(Front_VF,la_cl->frontiere_dis());
           int size=le_bord.nb_faces();
-          DoubleVect& dist_equiv = equivalent_distance_[n_bord];
+          DoubleVect& tab_dist_equiv = equivalent_distance_[n_bord];
+          const double delta = sub_type(Paroi_decalee_Robin,la_cl.valeur()) ? ref_cast(Paroi_decalee_Robin,la_cl.valeur()).get_delta() : -1;
+          DoubleTab& tab_alpha_t = diffusivite_turb.valeurs();
+          const double Prdt_sur_kappa = Prdt_sur_kappa_;
+          CIntTabView face_voisins = domaine_VEF.face_voisins().view_ro();
+          CDoubleArrView volumes_maille = static_cast<const ArrOfDouble&>(domaine_VEF.volumes()).view_ro();
+          CDoubleArrView surfaces_face = static_cast<const ArrOfDouble&>(domaine_VEF.face_surfaces()).view_ro();
+          CDoubleArrView u_star = static_cast<const ArrOfDouble&>(tab_u_star).view_ro();
+          CDoubleTabView alpha = tab_alpha.view_ro();
+          CDoubleTabView visco = tab_visco.view_ro();
+          CIntArrView le_bord_num_face = le_bord.num_face().view_ro();
+          CDoubleArrView alpha_t = static_cast<const ArrOfDouble&>(tab_alpha_t).view_ro();
+          DoubleArrView dist_equiv = static_cast<ArrOfDouble&>(tab_dist_equiv).view_rw();
+          Kokkos::parallel_for(start_gpu_timer(__KERNEL_NAME__), size, KOKKOS_LAMBDA(const int ind_face)
+          {
+            const int num_face = le_bord_num_face(ind_face);
+            // We search the element touching the wall on the face "num_face".
+            int elem = face_voisins(num_face,0);
+            if (elem == -1)
+              elem = face_voisins(num_face,1);
 
-          for (int ind_face=0; ind_face<size; ind_face++)
-            {
-              int num_face = le_bord.num_face(ind_face);
-              // We search the element touching the wall on the face "num_face".
-              int elem = face_voisins(num_face,0);
-              if (elem == -1)
-                elem = face_voisins(num_face,1);
+            // We calculate the distance to the wall of the center of gravity of the element.
+            // Expression de dist en fonction  du volume de l element et de l aire de la face
+            const double dist = delta>0 ? delta : volumes_maille(elem)/surfaces_face(num_face);
 
-              // Calcul de la distance normale de la premiere maille
-              if (axi)
-                {
-                  Cerr<<"Error: the axisymmetric VEF case is not yet implemented"<<finl;
-                  Cerr<<"in the scalar wall-function."<<finl;
-                  Process::exit();
-                }
-              else if (sub_type(Paroi_decalee_Robin,la_cl.valeur()))
-                {
-                  const Paroi_decalee_Robin& Paroi = ref_cast(Paroi_decalee_Robin,la_cl.valeur());
-                  double delta = Paroi.get_delta();
-                  dist = delta;
-                }
-              else
-                {
-                  // We calculate the distance to the wall of the center of gravity of the element.
-                  // Expression de dist en fonction  du volume de l element et de l aire de la face
-                  dist = volumes_maille(elem)/surfaces_face(num_face);
-                }
-
-              // Alex. C. : 11/04/2003
-              double u_star = tab_u_star(num_face);
-              double d_alpha = (alpha_uniforme ? alpha.valeurs()(0,0) : alpha.valeurs()(elem,0) );
-              if (u_star == 0 || d_alpha==0)
-                {
-                  dist_equiv[ind_face] = dist;
-                }
-              else
-                {
-                  // calcul de la viscosite en y+
-                  double d_visco = (l_unif ? visco : tab_visco(elem,0));
-                  double Pr = d_visco/d_alpha;
-                  double y_plus = dist*u_star/d_visco;
-                  dist_equiv[ind_face] = (d_alpha + alpha_t(elem)) * T_plus(y_plus,Pr) / u_star;
-                }
-            }
-          dist_equiv.echange_espace_virtuel();
+            // Alex. C. : 11/04/2003
+            const double u_star_val = u_star(num_face);
+            const double d_alpha = alpha_uniforme ? alpha(0,0) : alpha(elem,0);
+            if (u_star_val == 0 || d_alpha==0)
+              dist_equiv(ind_face) = dist;
+            else
+              {
+                // calcul de la viscosite en y+
+                const double d_visco = l_unif ? visco0 : visco(elem,0);
+                const double Pr = d_visco/d_alpha;
+                const double y_plus = dist*u_star_val/d_visco;
+                dist_equiv(ind_face) = (d_alpha + alpha_t(elem)) * T_plus(y_plus,Pr,Prdt_sur_kappa) / u_star_val;
+              }
+          });
+          end_gpu_timer(__KERNEL_NAME__);
+          tab_dist_equiv.echange_espace_virtuel();
         }
     }
   return 1;

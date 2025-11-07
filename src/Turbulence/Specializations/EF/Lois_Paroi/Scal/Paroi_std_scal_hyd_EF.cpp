@@ -221,7 +221,7 @@ int Paroi_std_scal_hyd_EF::calculer_scal(Champ_Fonc_base& diffusivite_turb)
                   double d_visco = (l_unif ? visco : tab_visco(elem,0));
                   double Pr = d_visco/d_alpha;
                   double y_plus = dist*u_star/d_visco;
-                  dist_equiv[ind_face] = (d_alpha + alpha_t(elem)) * T_plus(y_plus,Pr) / u_star;
+                  dist_equiv[ind_face] = (d_alpha + alpha_t(elem)) * T_plus(y_plus,Pr, Prdt_sur_kappa_) / u_star;
                 }
             }
           dist_equiv.echange_espace_virtuel();

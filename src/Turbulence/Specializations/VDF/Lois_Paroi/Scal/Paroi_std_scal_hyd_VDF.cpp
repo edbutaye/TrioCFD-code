@@ -226,7 +226,7 @@ int  Paroi_std_scal_hyd_VDF::calculer_scal(Champ_Fonc_base& diffusivite_turb)
                   // turbulence est prise en compte.
                   // Ne pas uniformiser l'ecriture avec le VEF, car on tombe sur des problemes
                   // au niveau des parois contacts entre plusieurs problemes (alpha_t pas recuperable !).
-                  equivalent_distance_[boundary_index](local_face)=d_alpha * T_plus(y_plus,Pr) / u_star;
+                  equivalent_distance_[boundary_index](local_face)=d_alpha * T_plus(y_plus,Pr,Prdt_sur_kappa_) / u_star;
 
                   // Alex. C. : 19/02/2003
                   // We modify the value of the eddy diffusivity in the first off-wall element
@@ -239,7 +239,7 @@ int  Paroi_std_scal_hyd_VDF::calculer_scal(Champ_Fonc_base& diffusivite_turb)
                     {
                       double y0m=y0-0.5;
                       double y0p=y0+0.5;
-                      alpha_t(elem)=d_visco/(T_plus(y0p,Pr)-T_plus(y0m,Pr))-d_alpha;
+                      alpha_t(elem)=d_visco/(T_plus(y0p,Pr,Prdt_sur_kappa_)-T_plus(y0m,Pr,Prdt_sur_kappa_))-d_alpha;
                     }
                 }
             }
