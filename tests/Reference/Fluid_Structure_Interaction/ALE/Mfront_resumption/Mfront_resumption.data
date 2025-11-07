@@ -1,0 +1,138 @@
+# Hydraulique 2D laminar with ALE: large scale grid motion managed through MGIS/Mfront  #
+# Ogden model used for the grid motion problem  #
+# Check resumption #
+
+dimension 2
+
+Pb_hydraulique_ALE pb
+Domaine_ALE dom
+
+# BEGIN MESH #
+Lire_MED { 
+   domain dom 
+   file bench.med 
+}
+# END MESH #
+
+# BEGIN PARTITION
+Partition dom
+{
+	Partition_tool metis { Nb_parts 2 }
+	Larg_joint 2
+	zones_name DOM
+}
+End
+END PARTITION #
+
+# BEGIN SCATTER
+Scatter DOM.Zones dom
+END SCATTER #
+
+# For the Arbitrary Lagrangian-Eulerian framework: block to indicate the number of mobile
+boundaries of the domain and specify the speed that must be imposed on them. #
+Imposer_vit_bords_ALE dom
+{
+	1 # number of mobile boundaries #
+	FSI Champ_front_ALE 2 -y*0.20/(3*0.35^4)*x*(4*x^2-12*0.35*x+12*0.35^2)*2*pi*10*cos(2*pi*10*t) 0.20*x^2/(3*0.35^4)*(x^2-4*0.35*x+6*0.35^2)*2*pi*10*cos(2*pi*10*t)
+}
+# Material models managed through MGIS/Mfront #
+Structural_dynamic_mesh_model dom
+{
+        # Mfront_library $project_directory/share/Mfront_material_libraries/Ogden/src/libBehaviour.so #
+        Mfront_model_name Ogden
+        Mfront_material_property { Ogden_alpha_1 28.8 }
+        Mfront_material_property { Ogden_mu_1 5000.  }
+        Mfront_material_property { Ogden_K 3576000.  }
+        Grid_dt_min 5.e-7
+        # Max_Added_Mass_Ratio 0.05 #
+        Density 10000.
+        Inertial_Damping 1000.
+}
+
+
+# I select a discretization #
+VEFPreP1B ma_discretisation
+
+
+# Time scheme, choice between: Euler explicit or implicit, and Adams Bashforth order 2  or order 3 #
+Scheme_euler_implicit  mon_schema
+Read mon_schema
+{
+      # Initial time [s] #
+      tinit 0
+      dt_impr 1.e-6
+	tcpumax 23.5
+ 	# facsec such as dt = facsec * min(dt(CFL),dt_max) ; for explicit scheme facsec <= 1. By default facsec equals to 1 #
+	facsec 2
+       facsec_max 10
+	solveur implicite_ALE
+	{
+           solveur gmres { diag seuil 1.e-12 nb_it_max 5 }
+	}  
+	# Max number of time steps #
+      nb_pas_dt_max 5
+      # Convergence threshold (see .dt_ev file) #
+	seuil_statio 1.e-6
+}
+
+
+# Association between the different objects #
+Associate pb dom
+Associate pb mon_schema
+Discretize pb ma_discretisation
+
+Read pb
+{
+   
+   fluide_incompressible {
+    	mu Champ_Uniforme 1 0.02
+   	rho Champ_Uniforme 1 1
+   }
+   
+   	Navier_Stokes_standard_ALE
+	{
+		# Pressure matrix solved with #
+ 		solveur_pression PETSC GCP { precond ssor { omega 1.5 } seuil 1e-9  }
+		# Two operators are defined #
+		convection {  ALE { muscl } } # A convective scheme for ALE framework : choice between: amont and muscl #
+		diffusion { }
+		# Uniform initial condition for velocity #
+		initial_conditions {
+			vitesse Champ_Uniforme 2 0. 0.
+			}
+		# Boundary conditions #
+		boundary_conditions {
+			FSI     frontiere_ouverte_vitesse_imposee_ALE Champ_front_ALE 2 -y*0.20/(3*0.35^4)*x*(4*x^2-12*0.35*x+12*0.35^2)*2*pi*10*cos(2*pi*10*t) 0.20*x^2/(3*0.35^4)*(x^2-4*0.35*x+6*0.35^2)*2*pi*10*cos(2*pi*10*t)
+			INLET   frontiere_ouverte_pression_imposee champ_front_uniforme 1 0.
+			OUTLET  frontiere_ouverte_pression_imposee champ_front_uniforme 1 0. 
+		      WALL  	paroi_fixe
+		}
+	}
+	Post_processing
+	{
+		# Fields #
+		format lml
+		fields dt_post 0.5e-2
+		{
+			pression elem
+			pression som
+			vitesse elem
+		       vitesse som
+                    ALEMeshVelocity som
+			ALEMeshTotalDisplacement som
+                    ALEMeshStructuralPressure elem
+                    ALEMeshStructuralVonMises elem
+                    ALEMeshStructuralForces som
+		}
+
+
+	}
+	  resume_last_time pdi Cas.sauv
+    	  Sauvegarde pdi Cas.sauv
+}
+EcritureLectureSpecial 0
+# The problem is solved with #
+Solve pb
+
+# Not necessary keyword to finish #
+End

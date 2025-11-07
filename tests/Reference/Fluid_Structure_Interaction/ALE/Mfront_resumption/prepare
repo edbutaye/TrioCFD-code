@@ -1,0 +1,2 @@
+sed "s/resume_last_time pdi Cas.sauv/# resume_last_time pdi Cas.sauv #/" Mfront_resumption.data > Mfront_resumption_debut.data
+trust Mfront_resumption_debut.data
