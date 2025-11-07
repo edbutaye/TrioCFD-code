@@ -117,7 +117,6 @@ public:
   double gridResetTime = 0.;
 
   double maxAddedMassRatio =0.;
-  bool AddedMassRatioExceeded = false; // looking at the code, this is never set to true.
   bool doConfigurationReset=false ;
 
   int resumption =0; //1 if resumption of calculation else 0

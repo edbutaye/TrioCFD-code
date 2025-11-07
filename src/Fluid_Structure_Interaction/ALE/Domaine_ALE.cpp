@@ -1650,14 +1650,6 @@ void Domaine_ALE::solveDynamicMeshProblem(const double temps, const DoubleTab& i
           str_mesh_model.gridResetTime += str_mesh_model.configurationResetDt ;
         }
     }
-
-  if (str_mesh_model.maxAddedMassRatio > 0)
-    {
-      // from looking at the code, this parameter is never set to true
-      if (str_mesh_model.AddedMassRatioExceeded) str_mesh_model.doConfigurationReset=true ;
-      str_mesh_model.AddedMassRatioExceeded=false ;
-    }
-
   while (loopOnGridProblem)
     {
       // Adjust the grid time step for smooth arrival at time = temps
