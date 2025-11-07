@@ -80,8 +80,8 @@ void Op_Diff_K_Eps_VEF_Face::contribuer_a_avec(const DoubleTab& inco, Matrice_Mo
 
   int marq = phi_psi_diffuse(equation());
 
-  // ToDo Kokkos: avoid this DoubleVect re-allocation
-  DoubleVect porosite_eventuelle(equation().milieu().porosite_face());
+  DoubleTrav porosite_eventuelle(equation().milieu().porosite_face());
+  porosite_eventuelle = equation().milieu().porosite_face();
   if (!marq) porosite_eventuelle = 1;
 
   ajouter_contribution_bord_gen<Type_Champ::SCALAIRE, false, true>(inco, matrice, nu_, nu_turb_m, porosite_eventuelle);

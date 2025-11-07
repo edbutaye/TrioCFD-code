@@ -114,6 +114,7 @@ void Op_Diff_K_Omega_VEF_Face::contribuer_a_avec(const DoubleTab& inco,
   int marq = phi_psi_diffuse(equation());
 
   DoubleTrav porosite_eventuelle(equation().milieu().porosite_face());
+  porosite_eventuelle = equation().milieu().porosite_face();
   if (!marq) porosite_eventuelle = 1;
 
   ajouter_contribution_bord_gen<Type_Champ::SCALAIRE, false, true>(inco, matrice, nu_, nu_turb_m, porosite_eventuelle);
