@@ -52,6 +52,7 @@ public:
   virtual Champ_Fonc_base& calculer_viscosite_turbulente(double temps);
 protected:
   void fill_turbulent_viscosity_tab(const int , const DoubleTab&, const DoubleTab& , const DoubleTab& , const DoubleTab&  , DoubleTab& );
+  OWN_PTR(Champ_Inc_base) visco_turb_au_format_K_eps_;
 };
 
 #endif /* Modele_turbulence_hyd_K_Eps_included */

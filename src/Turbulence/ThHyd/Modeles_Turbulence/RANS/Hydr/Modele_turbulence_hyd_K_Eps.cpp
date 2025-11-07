@@ -143,10 +143,13 @@ Champ_Fonc_base& Modele_turbulence_hyd_K_Eps::calculer_viscosite_turbulente(doub
 
   if (non_prepare == 1)
     {
-      OWN_PTR(Champ_Inc_base) visco_turb_au_format_K_eps;
-      visco_turb_au_format_K_eps.typer(type);
-      DoubleTab& visco_turb_K_eps = complete_viscosity_field(n, get_eq_transport().domaine_dis(), visco_turb_au_format_K_eps);
-
+      if (visco_turb_au_format_K_eps_.est_nul())
+        {
+          // Create field visco_turb_au_format_K_eps_
+          visco_turb_au_format_K_eps_.typer(type);
+          complete_viscosity_field(n, get_eq_transport().domaine_dis(), visco_turb_au_format_K_eps_);
+        }
+      DoubleTab& visco_turb_K_eps = visco_turb_au_format_K_eps_->valeurs();
       if (visco_turb_K_eps.size() != n)
         {
           Cerr << "visco_turb_K_eps size is " << visco_turb_K_eps.size() << " instead of " << n << finl;
@@ -158,8 +161,8 @@ Champ_Fonc_base& Modele_turbulence_hyd_K_Eps::calculer_viscosite_turbulente(doub
 
       // On connait donc la viscosite turbulente au centre des faces de chaque element
       // On cherche maintenant a interpoler cette viscosite turbulente au centre des elements.
-      la_viscosite_turbulente_->affecter(visco_turb_au_format_K_eps.valeur());
-      Debog::verifier("Modele_turbulence_hyd_K_Eps::calculer_viscosite_turbulente visco_turb_au_format_K_eps", visco_turb_au_format_K_eps.valeur());
+      la_viscosite_turbulente_->affecter(visco_turb_au_format_K_eps_.valeur());
+      Debog::verifier("Modele_turbulence_hyd_K_Eps::calculer_viscosite_turbulente visco_turb_au_format_K_eps", visco_turb_au_format_K_eps_.valeur());
     }
   else
     fill_turbulent_viscosity_tab(n, tab_K_Eps, Cmu, Fmu, D, visco_turb);
