@@ -129,6 +129,7 @@ int Transport_K_Omega_base::controler_K_Omega()
 
     KOKKOS_INLINE_FUNCTION CountValues() : count_negative_k(0), count_omega_under_threshold(0), count_omega_too_big(0) {}
     KOKKOS_INLINE_FUNCTION CountValues(const CountValues& rhs) : count_negative_k(rhs.count_negative_k), count_omega_under_threshold(rhs.count_omega_under_threshold), count_omega_too_big(rhs.count_omega_too_big) {}
+    KOKKOS_INLINE_FUNCTION CountValues& operator=(const CountValues&) = default;
     KOKKOS_INLINE_FUNCTION void operator+=(const CountValues& rhs)
     {
       count_negative_k += rhs.count_negative_k;

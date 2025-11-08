@@ -247,6 +247,9 @@ void Modele_turbulence_hyd_RANS_Gen<MODELE>::print_evolution(const Champ_Inc_bas
           loc_nut_min(rhs.loc_nut_min), loc_nut_max(rhs.loc_nut_max) {}
 
         KOKKOS_INLINE_FUNCTION
+        MinMaxResult& operator=(const MinMaxResult&) = default;
+
+        KOKKOS_INLINE_FUNCTION
         void operator += (const MinMaxResult& rhs)
         {
           if (rhs.k_min < k_min) { k_min = rhs.k_min; loc_k_min = rhs.loc_k_min; }

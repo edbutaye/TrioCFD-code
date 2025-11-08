@@ -545,7 +545,8 @@ double Calcul_Production_K_VEF::get_turbulent_viscosity(CDoubleArrView visco_tur
         return limiteur*0.5*(visco_turb(poly1) + visco_turb(poly2));
 
     default:
-      Process::Kokkos_exit("Interpolation type should be 0, 1 or 2, not " + type_interpo);
+      printf("Interpolation type: %d\n",type_interpo);
+      Process::Kokkos_exit("It should be 0, 1 or 2");
       return 1;
     }
 }

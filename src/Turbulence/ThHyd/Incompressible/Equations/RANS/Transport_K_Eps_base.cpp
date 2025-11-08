@@ -158,6 +158,8 @@ int Transport_K_Eps_base::controler_K_Eps()
     KOKKOS_INLINE_FUNCTION
     CountValues(const CountValues& rhs) : count_k(rhs.count_k), count_eps(rhs.count_eps), count_big(rhs.count_big) {}
 
+    KOKKOS_INLINE_FUNCTION CountValues& operator=(const CountValues&) = default;
+
     KOKKOS_INLINE_FUNCTION
     void operator+=(const CountValues& rhs)
     {
