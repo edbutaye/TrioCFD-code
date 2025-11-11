@@ -218,6 +218,7 @@ Lire pb
 # Resume_last_time xyz ../../../Theta85_120/@fold@/SEQ/equil_hysteresis_fin_pb.xyz #
 }
 
+EcritureLectureSpecial 1
 Solve pb
 FIN
 

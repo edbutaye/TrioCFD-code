@@ -135,5 +135,7 @@ Read pb
         }
     }
 }
+# To write the .xyz #
+EcritureLectureSpecial 1
 # Solve the problem #
 Solve pb
