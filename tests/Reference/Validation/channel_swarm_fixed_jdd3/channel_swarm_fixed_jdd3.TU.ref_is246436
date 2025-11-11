@@ -1,60 +1,105 @@
-Statistiques d'initialisation du calcul
+                                             # Global performance file #
 
-Temps total                       2.33086
+This is the global file for tracking performance in TRUST. It stores aggregated quantities.
+More detailed statistics can be found in the channel_swarm_fixed_jdd3_csv.TU file
+For time loop, only standard counters of level 1 are printed alongside your custom counters
+Time is given in seconds
 
-Statistiques de resolution du probleme
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                                              Context of the computation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Date:     11-11-2025 -- 05:04:11
+OS:       is246436.intra.cea.fr__Linux__x86_64__5.14.0-570.55.1.el9_6.x86_64__#1 SMP PREEMPT_DYNAMIC Tue Oct 14 01:03:55 EDT 202
+CPU:      Model name:  Intel(R) Xeon(R) W-2265 CPU @ 3.50GHz ; Thread(s) per core:  2
+GPU:      No GPU was used for the computation
+Nb procs: 4
+TRUST version: 1.9.7_beta
 
-Temps total                       8.75767
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                                           Computation start-up statistics
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Total time of the start-up:                                                2.89298        
+Percent of untracked time during computation start-up:                     9.74772e-08    
+Number of virtual exchanges:                                               536            
+Maximum number of MPI allreduce per time step                              254            
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                                                 Time loop statistics
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Total time of the time loop:                                               9.91576        
+Number of time steps:                                                      3              
+Skipped time steps:                                                        0              
+Average time per time step:                                                3.30525        
+Standard deviation between time steps:                                     0.136034       
+Time elapsed in the skipped time steps:                                    0              
 
+Percent of total time spend in communication:                              39.547         
 
-Timesteps                         3
-Secondes / pas de temps           2.91922
-Dont solveurs Ax=B                0.326056 11% (3 appels/pas de temps)
-Dont operateurs convection        0.001198  0% (3 appels/pas de temps)
-Dont operateurs diffusion         0.002608  0% (3 appels/pas de temps)
-Dont operateurs source            0.016960  0% (6 appels/pas de temps)
-Dont operations postraitement     0.015708  0% (3.66667 appels/pas de temps)
-Dont calcul dt                    0.000217  0% (1 appel/pas de temps)
-Dont operations sauvegarde        0.015187  0% (0.333333 appels/pas de temps)
-Dont calcul divers                0.851938 29% (0 appels/pas de temps)
-Nb echange_espace_virtuel / pas de temps 5156.67
-Nb MPI_allreduce / pas de temps 2486.67
------------------------------------------------------------------------------------------------------------------------------------------
-Warning: The number of MPI_allreduce calls per time step is high. Contact TRUST support if you plan to run massive parallel calculation.
------------------------------------------------------------------------------------------------------------------------------------------
-Nb solveur / pas de temps         3
-Secondes / solveur                0.108685
-Iterations / solveur              137.111
-Nb sauvegardes         : 1
-Data / sauvegarde [Mo] : 0.00
-I/O:
-Debit write seq [Mo/s] : 1855
-Communications avg        25.8 % of total time
-Communications max        46.3 % of total time
-Communications min        3.3 % of total time
-Network latency benchmark 8.70228e-07 s
-Network bandwidth max     5770.75 MB/s
-Total network traffic     1401.28 MB / timestep
-Average message size      13.5957 kB
-Min waiting time          1.1 % of total time
-Max waiting time          43.9 % of total time
-Avg waiting time          23.625 % of total time
+Standard counter description             | Time/step       | % loop time | Call(s)/step   
+------------------------------------------------------------------------------------------
+Convection operator                      | 0.00215783      |  0.1        | 3              
+Diffusion operator                       | 0.003003894     |  0.1        | 3              
+Source terms                             | 0.03893446      |  1.2        | 6              
+Computation of the time step dt          | 0.000352813     |  0.0        | 1              
+Post-treatment operations                | 6.772e-06       |  0.8        | 1              
 
-Timesteps = number of time steps
-Nb solveur = number of linear system resolutions
-Nb assemblage implicite = number of matrix assemblies for the implicit scheme
-Iterations = average number of iterations of the solver
-Communications = fraction of the time spent
-                 in communications between processors (excluding io files)
-Network latency = time of one mpsum measured by an internal bench over 0.1s
-Network bandwidth = maximum on all processors
-                    of the average bandwidth of send_recv operations
-Waiting time = estimation of the waiting time of the different processors
+Custom counter description               | Time/step       | % loop time | Call(s)/step    | Level
+--------------------------------------------------------------------------------------------------
+Custom_counter::Calcul Indicatrice Next  | 0.7759697       | 23.5        | 3               | 1    
+Custom_counter::Calcul de l'indicatrice : recherche compo connexes | 0.02726935      | 0.825       | 3               | 3    
+Custom_counter::Calcul de l'indicatrice: calculs des drapeaux | 0.1860644       | 5.63        | 3               | 3    
+Custom_counter::Calcul rho mu indicatrice: calcul de l'indicatrice | 0.2233128       | 6.76        | 3               | 2    
+Custom_counter::Calcul rho mu indicatrice: calcul de l'indicatrice surface face | 0.02128818      | 0.644       | 3               | 2    
+Custom_counter::Calcul rho mu indicatrice: calcul de la surface interfaciale | 0.007997054     | 0.242       | 3               | 2    
+Custom_counter::Calcul rho mu indicatrice: calcul du barycentre | 0.01127335      | 0.341       | 3               | 2    
+Custom_counter::Mise a jour de la vitesse | 0.5288113       | 16          | 3               | 1    
+Custom_counter::Parcours de l'interface  | 0.2916101       | 8.82        | 4               | 2    
+Custom_counter::Redistribute             | 0.03474937      | 1.05        | 154             | 1    
+Custom_counter::Remaillage interf: bary/lissage systematiques | 0.1090929       | 3.3         | 1               | 1    
+Custom_counter::Remaillage interf: remaillage local | 1.621071        | 49          | 1               | 1    
+Custom_counter::Remaillage local: bary/lissage apres remaillage | 0.7823264       | 23.7        | 8               | 2    
+Custom_counter::Remaillage local: suppressions / divisions aretes | 0.08391758      | 2.54        | 6               | 2    
+Custom_counter::Supprimer_petites_aretes | 0.7424701       | 22.5        | 6               | 2    
+Custom_counter::Transporter_maillage     | 0.1441609       | 4.36        | 144             | 1    
+Custom_counter::Velocity update: projection | 0.4294951       | 13          | 3               | 2    
+Custom_counter::multigrid: jacobi residual | 0.000805823     | 0.0244      | 3               | 4    
+Custom_counter::projection: multigrid    | 0.3439821       | 10.4        | 3               | 3    
+Other operations                         | -0.0474178      | -1.4        | 
 
-Max_waiting_time big    => probably due to a bad partitioning
+Untracked time                           | 1.69e-05        | 0.000171    | 
+
+Total number of virtual exchanges:                                         16014          
+Maximum number of MPI allreduce per time step                              2.5e+03        
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ Warning: number of MPI allreduce calls per time step is high. Contact TRUST team to run massive parallel calculations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                                               Time loop statistics: IO
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Output write sequential:                                                   1124           MB/s
+Total number of back-up:                                                   1              
+Total amount of data per back-up:                                          0              MB
+Average of the fraction of the time spent in communications between processors:      24.9           %
+Max of the fraction of the time spent in communications between processors:          44.2           %
+Min of the fraction of the time spent in communications between processors:          3.9            %
+Time of one mpsum measured by an internal bench over 0.1s (network latency):         8.9088e-07     
+Network maximum bandwidth on all processors:                                          5.5 GB/s      
+Total network traffic:                                                               1817.25        MB/time step
+Average message size:                                                                15.5741        kB
+Min waiting time:                                                                    3.9            % of total time
+Max waiting time:                                                                    44.2           % of total time
+Avg waiting time:                                                                    24.925         % of total time
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                                              Post-resolution statistics
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Time of the post-resolution:                                               9.7773e-05     
+Maximum number of MPI allreduce per time step                              2              
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Max waiting time big    => probably due to a bad partitioning
 Communications > 30%    => too many processors or network too slow
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Statistiques de post resolution
-
-Temps total                       0.001773
+Total time for the whole computation                                       12.8088        
 
