@@ -1,6 +1,4 @@
 # SIMULATION D UN CANAL PLAN #
-# lance_test 1 ecart #
-# lance_test 1 ecart #
 dimension 3
 Pb_Hydraulique_Turbulent pb
 Domaine dom

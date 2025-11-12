@@ -7,7 +7,6 @@
 # Length L1 : 5. #
 # Length L2 : 10. #
 # PARALLEL ONLY 12 #
-# lance_test 6 ecarts #
 PrecisionGeom 1.e-4
 
 Dimension 3

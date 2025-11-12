@@ -1,4 +1,3 @@
-# lance_test 1 ecart #
 dimension 3
 Pb_Hydraulique_Turbulent pb
 PrecisionGeom 1e-7

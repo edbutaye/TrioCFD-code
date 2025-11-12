@@ -1,5 +1,6 @@
 # PARALLEL NOT #
 # GPU NOT #
+# lance_test 8 ecarts #
 
 Dimension $dimension
 $bidim_axi

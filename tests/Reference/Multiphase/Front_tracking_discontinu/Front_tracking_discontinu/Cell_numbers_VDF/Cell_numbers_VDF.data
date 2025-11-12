@@ -1,6 +1,7 @@
 # Reacteur a bain de verre fondu avec agitateur #
 # PARALLEL RUNS #
 # GPU NOT #
+# lance_test 1 ecart #
 
 dimension 3
 Probleme_FT_Disc_gen pb

@@ -1,5 +1,6 @@
 # PARALLEL NOT #
 # PARALLEL NOT ADDED TO SKIP TEST CASE IN PARALLEL MODE #
+# lance_test 10 ecarts #
 
 Dimension 3
 Domaine dom

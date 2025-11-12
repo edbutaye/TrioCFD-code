@@ -1,6 +1,5 @@
 # Hydraulique 3D laminaire : schema upwind #
 # PARALLEL ONLY 8 #
-# lance_test 2 ecarts #
 dimension 3
 Probleme_FT_Disc_gen pb1
 Domaine dom_pb1

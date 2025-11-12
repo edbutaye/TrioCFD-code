@@ -20,7 +20,6 @@ ne sont pas strictement equivalents entre sequentiel et parallele.
 Il y a donc des ecarts entre le sequentiel et le parallele.
 PARALLEL RUNS
 #
-# lance_test 4 ecarts #
 dimension 3
 Probleme_FT_Disc_gen pb
 export domaine dom_pb1

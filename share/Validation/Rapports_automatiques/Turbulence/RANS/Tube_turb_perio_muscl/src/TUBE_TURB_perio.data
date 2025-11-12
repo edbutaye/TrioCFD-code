@@ -1,5 +1,4 @@
 # PARALLEL ONLY 4 #
-# lance_test 22 ecarts #
 dimension 3
 
 PrecisionGeom 1.e-6

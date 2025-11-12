@@ -1,6 +1,5 @@
 # 2D or 3D Keps Backward Facing Step #
 # PARALLEL OK #
-# lance_test 2 ecarts en parallele #
 dimension 3
 Pb_Hydraulique_Turbulent pb
 Domaine dom

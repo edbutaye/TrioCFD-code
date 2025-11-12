@@ -1,6 +1,5 @@
 # Jet impactant sur plaque plane chaude #
 # PARALLEL OK #
-# lance_test En parallele plantage #
 dimension 3
 Pb_Thermohydraulique_turbulent pb
 Domaine dom

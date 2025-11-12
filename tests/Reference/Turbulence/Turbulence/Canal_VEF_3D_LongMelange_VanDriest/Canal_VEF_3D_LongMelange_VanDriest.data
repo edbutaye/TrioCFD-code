@@ -1,7 +1,6 @@
 # SIMULATION D UN CANAL PLAN 2D avec modele Longueur de melange #
 # PARALLEL RUNS #
 # Tests du modele Longueur de Melange et de la procedure de calcul du frottement parietal (ParoiVEFHyd.cpp) #
-# lance_test 1 ecarts en parallele #
 dimension 3
 Pb_Hydraulique_Turbulent pb
 Domaine dom

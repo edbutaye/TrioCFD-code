@@ -3,7 +3,6 @@
 # dans la sous zone zone_transfo1 ou dont le diametre #
 # est inferieur a diametre_min sont supprimees #
 # PARALLEL OK #
-# lance_test 14 ecarts #
 dimension 3
 
 Probleme_FT_Disc_gen pb

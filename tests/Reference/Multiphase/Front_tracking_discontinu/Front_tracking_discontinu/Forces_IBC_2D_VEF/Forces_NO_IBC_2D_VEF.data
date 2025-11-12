@@ -1,6 +1,5 @@
 # Hydraulique 2D : Paroi defilante #
 # PARALLEL RUNS #
-# lance_test 1 ecart #
 dimension 2
 Pb_Hydraulique pb
 Domaine dom

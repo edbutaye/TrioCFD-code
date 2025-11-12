@@ -1,5 +1,4 @@
 # Hydraulique 3D : Transport d'une tache 3D en translation #
-# lance_test 2 ecarts #
 dimension 3
 Domaine dom
 Mailler dom

@@ -7,7 +7,6 @@ Test de la reprise xyz
 Essai de reprise du fichier, puis trois pas de temps
 PARALLEL OK 4
 #
-# lance_test 1 ecart #
 dimension 3
 Probleme_FT_Disc_gen pb
 Domaine DOM

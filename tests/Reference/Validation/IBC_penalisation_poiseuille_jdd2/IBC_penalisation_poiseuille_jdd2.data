@@ -1,6 +1,5 @@
 # Ecoulement de Poiseuille entre 2 plaques - frontieres  immergees Profil parabolique entre les frontieres immergees #
 # PARALLEL OK #
-# lance_test 1 ecarts #
 
 dimension 2
 

@@ -1,5 +1,6 @@
 # Hydraulique 2D laminar with ALE : Cylinder configuration #
 # PARALLEL ONLY 4 #
+# lance_test 2 ecarts #
 
 dimension 2
 

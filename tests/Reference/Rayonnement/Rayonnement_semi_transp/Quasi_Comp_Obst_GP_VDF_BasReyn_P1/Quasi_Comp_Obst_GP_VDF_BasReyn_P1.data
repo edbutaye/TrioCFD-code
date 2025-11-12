@@ -1,6 +1,5 @@
 # ThermoHydraulique 2D : obstacle quasi compressible gaz parfait VDF turbulent bas Reynolds #
 # PARALLEL NOT #
-# lance_test 1 ecarts #
 dimension 2
 Pb_Rayo_Thermohydraulique_Turbulent_QC pb
 Domaine dom

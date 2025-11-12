@@ -1,6 +1,5 @@
 # fiche  Turbulent_Simple_water_jet #
 # PARALLEL ONLY 4 #
-# lance_test 1 ecarts #
 dimension 3
 
 Pb_Hydraulique_Concentration_Turbulent pb

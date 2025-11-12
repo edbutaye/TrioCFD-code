@@ -1,6 +1,5 @@
 # SIMULATION D UN CANAL PLAN 3D EN LES #
 # EN THERMOHYDRAULIQUE : Hypothese de Boussinesq et schema quick #
-# lance_test 1 ecarts #
 dimension 3
 Domaine dom
 

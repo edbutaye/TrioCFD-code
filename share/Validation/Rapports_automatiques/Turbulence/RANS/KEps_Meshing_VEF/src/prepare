@@ -118,8 +118,8 @@ rm 3D_21_keps.data
 cd ../3D_21_keps_f300g300
 cp ../3D_21_keps.data .
 cp ../post_run .
-$TRUST_Awk '/dimension 3/ {print "# lance_test 1 ecart #";print $0;getline} 
-             /Transformer dom x y z/ {print "Transformer dom 300*x y 300*z";getline} 
+#$TRUST_Awk '/dimension 3/ {print "# lance_test 1 ecart #";print $0;getline} 
+$TRUST_Awk '/Transformer dom x y z/ {print "Transformer dom 300*x y 300*z";getline} 
 	     // {print $0}' 3D_21_keps.data > 3D_keps.data
 rm 3D_21_keps.data
 

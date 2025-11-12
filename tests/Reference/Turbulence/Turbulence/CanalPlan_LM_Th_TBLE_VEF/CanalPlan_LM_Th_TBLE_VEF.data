@@ -1,6 +1,5 @@
 # Thermohydraulique 3D couplage solide-fluide GCFR- concept plaque avec troncon de sortie Taille maille paroi n°4 (0.4 mm) #
 # PARALLEL OK #
-# lance_test plantage possible sur certaines machines #
 
 dimension 3
 Domaine dom_pb1

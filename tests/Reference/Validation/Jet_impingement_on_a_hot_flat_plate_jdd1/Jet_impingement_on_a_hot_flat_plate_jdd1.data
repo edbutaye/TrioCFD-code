@@ -1,6 +1,5 @@
 # Jet impactant sur plaque plane chaude #
 # PARALLEL ONLY 10 #
-# lance_test 2 ecarts #
 dimension 3
 Pb_Thermohydraulique_turbulent pb
 Domaine dom
