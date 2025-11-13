@@ -1,6 +1,7 @@
 --------------------------------------------------------------------------------------------------
 Release notes version 1.9.7_beta : Enhancements, modifications and corrected bugs since version 1.9.6 :
 --------------------------------------------------------------------------------------------------
+13/11/25 (TrioCFD) Validation  : Add validation sheet for ALE interface with MFront/MGIS for large scale grid motion
 12/11/25 (TrioCFD) GPU         : K_Eps standard model and K_Omega models (standard, SST, BSL) are fully ported thanks to Kokkos rewrite
 12/11/25 (TrioCFD) Change      : Rewrite slightly the algorithm (to get a correct parallel one) for controling/fixing negative K_Eps values in VEF
 12/11/25 (TrioCFD) Change      : Rewrite slightly the algorithm (to get a correct parallel one) for standard law of the wall used in VEF for RANS models
