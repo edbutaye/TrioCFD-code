@@ -3,6 +3,8 @@ ALE_K_Eps_Wall
 ALE_K_Omega_Wall
 ALE_with_Periodic_BC_3D
 ALE_with_Periodic_BC
+Mfront_Lid_driven
+Mfront_resumption
 Neumann_BC_for_grid_problem
 SquareObstacle_ALE_Resumption
 Align_Multiple_CF_ALE_RANS
@@ -18,6 +20,7 @@ ALE_Placzek_jdd2
 DivaALE_jdd1
 DivaALE_jdd2
 DivaALE_jdd3
+Mfront_Large_Grid_Motion_Shamanskiy_Benchmark_jdd1
 RotationALE_jdd1
 SquareObstacleALE_jdd1
 SquareObstacleALE_jdd2

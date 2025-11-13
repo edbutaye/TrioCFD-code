@@ -18,6 +18,12 @@ CoolProp_Single_phase_Debora_jdd2
 CoolProp_Single_phase_Debora_jdd3
 decroissance_ktau_jdd1
 decroissance_ktau_jdd2
+EOS_JSI_wall_heat_flux_jdd1
+EOS_JSI_wall_heat_flux_jdd2
+EOS_JSI_wall_heat_flux_jdd3
+EOS_JSI_wall_heat_flux_jdd4
+EOS_JSI_wall_heat_flux_jdd5
+EOS_JSI_wall_heat_flux_jdd6
 expansion_NO_MASS_jdd1
 Gabillet_jdd1
 Gabillet_jdd2

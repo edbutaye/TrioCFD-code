@@ -2,6 +2,7 @@
 ./share/Validation/Rapports_automatiques/Fluid_Structure_Interaction/ALE/ALE_GCL
 ./share/Validation/Rapports_automatiques/Fluid_Structure_Interaction/ALE/ALE_Placzek
 ./share/Validation/Rapports_automatiques/Fluid_Structure_Interaction/ALE/DivaALE
+./share/Validation/Rapports_automatiques/Fluid_Structure_Interaction/ALE/Mfront_Large_Grid_Motion_Shamanskiy_Benchmark
 ./share/Validation/Rapports_automatiques/Fluid_Structure_Interaction/ALE/RotationALE
 ./share/Validation/Rapports_automatiques/Fluid_Structure_Interaction/ALE/SquareObstacleALE
 ./share/Validation/Rapports_automatiques/Fluid_Structure_Interaction/ALE/TranslatingSquare_ALE_CoarseMesh

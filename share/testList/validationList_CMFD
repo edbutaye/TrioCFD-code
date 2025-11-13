@@ -2,6 +2,7 @@
 ./share/Validation/Rapports_automatiques/Multiphase/CMFD/Canal_turbulent_with_2groupsiate_Sun
 ./share/Validation/Rapports_automatiques/Multiphase/CMFD/Colin2012
 ./share/Validation/Rapports_automatiques/Multiphase/CMFD/decroissance_ktau
+./share/Validation/Rapports_automatiques/Multiphase/CMFD/EOS_JSI_wall_heat_flux
 ./share/Validation/Rapports_automatiques/Multiphase/CMFD/expansion_NO_MASS
 ./share/Validation/Rapports_automatiques/Multiphase/CMFD/Gabillet
 ./share/Validation/Rapports_automatiques/Multiphase/CMFD/Ishii_Hibiki
