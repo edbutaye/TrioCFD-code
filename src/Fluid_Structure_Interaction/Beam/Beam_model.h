@@ -55,6 +55,8 @@ public :
   inline void setNbModes(const int&) ;
   inline const int& getDirection() const;
   inline void setDirection(const int&) ;
+  inline const int& getBendingDirection() const;
+  inline void setBendingDirection(const int&) ;
   inline const double& getYoung() const;
   inline void setYoung(const double&);
   inline const double& getRhoBeam() const;
@@ -63,7 +65,6 @@ public :
   inline void setBeamName(const Nom&) ;
   inline const Nom& getFileName() const;
   inline void setFileName(const Nom&) ;
-  inline const Nom& getTimeScheme() const;
   inline void setTimeScheme(const Nom&, double&) ;
   inline void setOutputPosition1D(const DoubleVect&) ;
   inline void setOutputPosition3D(const DoubleTab&) ;
@@ -76,11 +77,9 @@ public :
   DoubleVect interpolationOnThe3DSurface(const double& x, const double& y, const double& z, const DoubleTab& u, const DoubleTab& R) const;
   void initialization(double displacement);
   void initialization();
-  DoubleVect& NewmarkSchemeFD (const double& dt);
-  DoubleVect& NewmarkSchemeMA (const double& dt);
-  DoubleVect& TimeSchemeHHT (const double& dt);
+  DoubleVect& NewmarkScheme(const double& dt);
   DoubleVect& getVelocity(const double& tps, const double& dt);
-  inline double soundSpeed();
+  inline double getSoundSpeed();
   inline  double getMass(int i);
   inline  double getStiffness(int i);
   inline  const DoubleTab& getDisplacement(int i) const;
@@ -90,12 +89,14 @@ public :
   void printOutputBeam3D(bool first_writing=false) const;
   void printOutputFluidForceOnBeam(bool first_writing=false) const;
   inline void setFluidForceOnBeam(const DoubleVect&);
+  inline DoubleVect getFluidForceOnBeam();
   inline void setTempsComputeForceOnBeam(const double&);
   inline const double& getTempsComputeForceOnBeam() const;
   void setCenterCoordinates(const double&,const double&, const double&);
 protected :
-  int nbModes_;
+  int nbModes_; // Number of modes
   int direction_; //x=0, y=1, z=2
+  int bending_dir_; // dir of  bending x=0, y=1, z=2
   double young_; // Young module
   double rho_; // solid density
   DoubleVect mass_; //diagonal modal mass matrix
@@ -105,16 +106,19 @@ protected :
   LIST(DoubleTab) u_;  // Beam modal displacement constituting the modal shape
   LIST(DoubleTab) R_; // Beam modal rotation constituting the modal shape
   DoubleVect qSpeed_; // Beam 1d speed
-  DoubleVect qHalfSpeed_; // Beam 1d speed at dt/2
   DoubleVect qAcceleration_; //Beam 1d acceleration
   DoubleVect qDisplacement_; //Beam 1d displacement
-  Nom timeScheme_; // Time discretization scheme
   //DoubleTab phi3D_;
   double temps_;
-  DoubleVect output_position_1D_; //post-processing of the 1d position of the points (points on the Beam)
-  DoubleTab output_position_3D_; // post-processing of the 3d position of the points (points on the 3d surface)
-  Nom beamName_;
-  double alpha_;
+  DoubleVect output_position_1D_; //post-treatment of the 1d position of the points (points on the Beam)
+  DoubleTab output_position_3D_; // post-treatment of the 3d position of the points (points on the 3d surface)
+  Nom beamName_;  // Name of the beam (the name must match with the name of the edge in the fluid domain)
+  double alpha_;  // time discretization parameter
+  double beta_;   // time discretization parameter
+  double gamma_;  // time discretization parameter
+  double dt_stab_; //critical time step, only for the explicit Newmark finite differences time discretisation
+
+
   DoubleVect fluidForceOnBeam_; //Fluid force acting on the IFS boundary
   double tempsComputeForceOnBeam_;
   double x0_; //x-coordinate of the center of the Beam base
@@ -139,6 +143,14 @@ inline double Beam_model::getTime() const
 inline void Beam_model::setNbModes(const int& modes)
 {
   nbModes_=modes;
+}
+inline const int& Beam_model::getBendingDirection() const
+{
+  return bending_dir_;
+}
+inline void Beam_model::setBendingDirection(const int& direction)
+{
+  bending_dir_=direction;
 }
 inline const int& Beam_model::getDirection() const
 {
@@ -165,16 +177,39 @@ inline void Beam_model::setRhoBeam(const double& rho)
   rho_=rho;
 }
 
-inline const Nom& Beam_model::getTimeScheme() const
-{
-  return timeScheme_;
-}
 inline void Beam_model::setTimeScheme(const Nom& timeScheme, double& alpha)
 {
-  timeScheme_=timeScheme;
   alpha_=alpha;
+  if(timeScheme=="FD")
+    {
+      beta_=0.;
+      gamma_=0.5;
+      alpha_=0.;
+      Cerr << "Warning: You selected the Newmark finite difference scheme.\n"
+                << "This scheme is conditionally stable. Use a sufficiently small time step "
+                << "to ensure stability.\n"
+                << "Alternatively, choose the Newmark Mean Acceleration (MA) or "
+                << "Hilber–Hughes–Taylor (HHT) scheme for unconditional stability."<<finl;
+    }
+  else if(timeScheme=="MA")
+    {
+      beta_=0.25;
+      gamma_=0.5;
+      alpha_=0.;
+    }
+  else if (timeScheme=="HHT")
+    {
+      beta_= 0.25*(1.-alpha_)*(1.-alpha_);
+      gamma_=0.5 -alpha_;
+    }
+  else
+    {
+      Cout<<"The discretization of the beam time discretisation is unknown. Choose between Newmark FD, MA, and HHT and restart!"<<finl;
+      exit();
+    }
+
 }
-inline double Beam_model::soundSpeed()
+inline double Beam_model::getSoundSpeed()
 {
   return sqrt(young_/rho_);
 }
@@ -223,9 +258,24 @@ inline void Beam_model::setBeamName(const Nom& value)
 }
 inline void Beam_model::setFluidForceOnBeam(const DoubleVect& force)
 {
+  if (mp_norme_vect(fluidForceOnBeam_)>0. && alpha_!=0.)
+    {
+      for (int i=0; i< nbModes_; i++)
+        fluidForceOnBeam_[i]=(1.+ alpha_)*force[i] - alpha_*fluidForceOnBeam_[i];
+    }
+  else
+    {
 
-  fluidForceOnBeam_=force;
+      fluidForceOnBeam_ = force;
+    }
+
 }
+inline DoubleVect  Beam_model::getFluidForceOnBeam()
+{
+
+  return fluidForceOnBeam_;
+}
+
 
 inline void Beam_model::setTempsComputeForceOnBeam(const double& tps)
 {

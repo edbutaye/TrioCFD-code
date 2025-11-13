@@ -98,11 +98,13 @@ public :
   const DoubleTab& getBeamDisplacement(const int&, const int&) const;
   const DoubleTab& getBeamRotation(const int&, const int&) const;
   inline const int& getBeamDirection(const int&) const;
+  inline const int& getBeamBendingDirection(const int&) const;
   DoubleVect& getBeamVelocity(const int&,const double& tps, const double& dt);
   const int& getBeamNbModes(const int&) const;
   const Nom& getBeamName(const int&) const;
   const int& getBeamNbBeam() const;
   void computeFluidForceOnBeam(const int&);
+  double computeDtBeam(Domaine_dis_base&, const int&);
   Equation_base& getEquation() ;
   inline void associer_equation(const Equation_base& une_eq);
   void update_coord_dom_extrait_surface();

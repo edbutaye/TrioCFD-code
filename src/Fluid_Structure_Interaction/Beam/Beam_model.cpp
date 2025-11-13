@@ -49,6 +49,7 @@ Implemente_instanciable_sans_constructeur_ni_destructeur(Beam_model, "Beam_model
 //    Name
 //     nb_modes number of modes
 //     direction 0|1|2
+//     bendingDirection 0|1|2
 //     NewmarkTimeScheme MA|FD|HHT
 //     Mass_and_stiffness_file_name
 //     Absc_file_name
@@ -79,14 +80,15 @@ Implemente_instanciable_sans_constructeur_ni_destructeur(Beam_model, "Beam_model
 // XD  attr acof chaine(into=["}"]) acof 0 Closing curly bracket.
 
 // XD NewmarkTimeScheme_deriv objet_lecture NewmarkTimeScheme_deriv -1 Solve the beam dynamics. Selection of time integration scheme.
-// XD NewmarkTimeScheme_HHR NewmarkTimeScheme_deriv HHT 0 HHT alpha (Hilber-Hughes-Taylor, alpha usually -0.1 ) time integration scheme.
+// XD NewmarkTimeScheme_HHT NewmarkTimeScheme_deriv HHT 0 HHT alpha (Hilber-Hughes-Taylor, alpha usually -0.1 ) time integration scheme.
 // XD  attr alpha floattant alpha 1 usually, alpha is set to -0.1
 // XD NewmarkTimeScheme_MA NewmarkTimeScheme_deriv MA 0  MA (Newmark mean acceleration) time integration scheme.
-// XD NewmarkTimeScheme_FD NewmarkTimeScheme_deriv FD 0 FD (Newmark finite differences) time integration scheme.
+// XD NewmarkTimeScheme_FD NewmarkTimeScheme_deriv FD 0 FD (Newmark finite differences) time integration scheme. Warning: this scheme is conditionally stable. The time step should satisfy the corresponding stability constraint, but this implementation does not automatically enforce it.The Newmark finite difference scheme is retained primarily foradvanced users and benchmarking purposes.
 
 // XD bloc_poutre objet_lecture nul 1 Read poutre bloc
 // XD  attr nb_modes entier n 0 Number of modes
 // XD  attr direction entier dir 0 x=0, y=1, z=2
+// XD  attr bendingDirection entier dir 0 x=0, y=1, z=2
 // XD  attr NewmarkTimeScheme NewmarkTimeScheme_deriv NewmarkTimeScheme 0 Solve the beam dynamics. Time integration scheme: choice between MA (Newmark mean acceleration),  FD (Newmark finite differences), and HHT alpha (Hilber-Hughes-Taylor, alpha usually -0.1 )
 // XD  attr Mass_and_stiffness_file_name chaine  Mass_and_stiffness_file_name 0 Name of the file containing the diagonal modal mass, stiffness, and damping matrices.
 // XD  attr Absc_file_name chaine Absc_file_name 0 Name of the file containing the coordinates of the Beam
@@ -104,21 +106,34 @@ Beam_model::Beam_model()
 
   nbModes_=0;;
   direction_=0;
+  bending_dir_=1;
   young_=200.e+9;
   rho_ = 8100.;
-  timeScheme_="MA";
+  alpha_= 0.;
+  beta_= 0.25;
+  gamma_=0.5;
   temps_ =0.;
+  dt_stab_ = 1.e+8;
   output_position_1D_.resize(0);
   output_position_1D_=0.;
   output_position_3D_.resize(0);
   output_position_3D_=0.;
-  alpha_=0.;
   fluidForceOnBeam_.resize(0);
   fluidForceOnBeam_=0.;
   tempsComputeForceOnBeam_=0.;
   x0_=0.;
   y0_=0.;
   z0_=0.;
+  mass_.reset();
+  stiffness_.reset();
+  damping_.reset();
+  abscissa_.reset();
+  qSpeed_.reset();
+  qAcceleration_.reset();
+  qDisplacement_.reset();
+  output_position_1D_.reset();
+  output_position_3D_.reset();
+  beamName_= Nom();
 }
 Beam_model::~Beam_model()
 {
@@ -217,10 +232,8 @@ void Beam_model::readInputCIFile(Nom& CI_file_name)
   qSpeed_.resize(nbModes_);
   qAcceleration_.resize(nbModes_);
   qDisplacement_.resize(nbModes_);
-  qHalfSpeed_.resize(nbModes_);
   fluidForceOnBeam_.resize(nbModes_);
   qSpeed_=0.;
-  qHalfSpeed_=0.;
   qAcceleration_=0.;
   qDisplacement_=0.;
   fluidForceOnBeam_=0.;
@@ -236,6 +249,8 @@ void Beam_model::readInputCIFile(Nom& CI_file_name)
         {
           monFlux >> displacement;
           qDisplacement_[i]=displacement;
+          //qAcceleration_[i] =fluidForceOnBeam_[i] -(stiffness_[i]/mass_[i])*qDisplacement_[i] - (damping_[i]/mass_[i])*qSpeed_[i];
+          qAcceleration_[i] =fluidForceOnBeam_[i] -(stiffness_[i]/mass_[i])*qDisplacement_[i] ;
         }
 
       monFlux.close();
@@ -326,10 +341,8 @@ void Beam_model::initialization(double displacement)
   qSpeed_.resize(nbModes_);
   qAcceleration_.resize(nbModes_);
   qDisplacement_.resize(nbModes_);
-  qHalfSpeed_.resize(nbModes_);
   fluidForceOnBeam_.resize(nbModes_);
   qSpeed_=0.;
-  qHalfSpeed_=0.;
   qAcceleration_=0.;
   qDisplacement_=displacement;
   fluidForceOnBeam_=0.;
@@ -340,111 +353,11 @@ void Beam_model::initialization()
   qSpeed_.resize(nbModes_);
   qAcceleration_.resize(nbModes_);
   qDisplacement_.resize(nbModes_);
-  qHalfSpeed_.resize(nbModes_);
   fluidForceOnBeam_.resize(nbModes_);
   qSpeed_=0.;
-  qHalfSpeed_=0.;
   qAcceleration_=0.;
   qDisplacement_=0.;
   fluidForceOnBeam_=0.;
-
-}
-//Solve the beam dynamics. Time integration scheme: Newmark finite differences
-DoubleVect& Beam_model::NewmarkSchemeFD (const double& dt)
-{
-  double halfDt=dt/2.;
-  for(int j=0; j < nbModes_; j++)
-    {
-      qHalfSpeed_[j] = qSpeed_[j] + halfDt*qAcceleration_[j];
-      qDisplacement_[j] += dt*qHalfSpeed_[j];
-      double coeff1 = mass_[j] + halfDt*damping_[j];
-      double coeff2 =	damping_[j]*qHalfSpeed_[j] + stiffness_[j]*qDisplacement_[j];
-      qAcceleration_[j]= (fluidForceOnBeam_[j] - coeff2)/coeff1;
-      qSpeed_[j] = qHalfSpeed_[j] + halfDt*qAcceleration_[j];
-      //qHalfSpeed_[j] = qSpeed_[j] + halfDt*qAcceleration_[j];
-    }
-
-
-  saveBeamForRestart();
-  if(output_position_1D_.size()>0) printOutputBeam1D();
-  if(output_position_3D_.size()>0) printOutputBeam3D();
-
-  return qSpeed_;
-}
-//Solve the beam dynamics. Time integration scheme: Newmark mean acceleration
-DoubleVect& Beam_model::NewmarkSchemeMA (const double& dt)
-{
-  double halfDt=dt/2;
-  double squareHalfDt= halfDt*halfDt;
-  for(int j=0; j < nbModes_; j++)
-    {
-      double PreviousqAcceleration= qAcceleration_[j];
-      double coeff1 = mass_[j] + halfDt*damping_[j] + squareHalfDt*stiffness_[j];
-      double coeff2 = damping_[j]*(qSpeed_[j] + halfDt*qAcceleration_[j]) + stiffness_[j]*(qDisplacement_[j] + dt*qSpeed_[j] + squareHalfDt*qAcceleration_[j]);
-      qAcceleration_[j]=(fluidForceOnBeam_[j] - coeff2)/coeff1;
-      qDisplacement_[j] += dt*qSpeed_[j] + squareHalfDt*(PreviousqAcceleration + qAcceleration_[j]);
-      qSpeed_[j] += halfDt*(PreviousqAcceleration + qAcceleration_[j]);
-    }
-
-  saveBeamForRestart();
-  if(output_position_1D_.size()>0) printOutputBeam1D();
-  if(output_position_3D_.size()>0) printOutputBeam3D();
-
-  return qSpeed_;
-}
-
-//Solve the beam dynamics. Time integration scheme: HHT
-DoubleVect& Beam_model::TimeSchemeHHT (const double& dt)
-{
-  //Cerr<<" dt = "<<dt<<" temps_ = "<<temps_<<" tempsComputeForceOnBeam_= "<<tempsComputeForceOnBeam_<<finl;
-  //Cerr<<" force = "<<fluidForceOnBeam_<<finl;
-  double beta = (1-alpha_)*(1-alpha_)/4;
-  double gamma= (1- 2*alpha_)/2;
-  double squareDt=dt*dt;
-
-  for(int j=0; j < nbModes_; j++)
-    {
-      double PreviousqAcceleration= qAcceleration_[j];
-      double coeff1 = mass_[j] + dt*(1.+ alpha_)*gamma*damping_[j] + squareDt*(1.+ alpha_)*beta*stiffness_[j];
-      double coeff2 = (1.+ alpha_)*damping_[j]*(qSpeed_[j] + dt*(1.-gamma)*PreviousqAcceleration);
-      double coeff3 = (1.+ alpha_)*stiffness_[j]*(qDisplacement_[j] + dt*qSpeed_[j] + squareDt*(0.5-beta)*PreviousqAcceleration);
-      double coeff4 = alpha_*stiffness_[j]*qDisplacement_[j];
-      double coeff5 = alpha_*damping_[j]*qSpeed_[j];
-      qAcceleration_[j]=(fluidForceOnBeam_[j] - coeff2 - coeff3 + coeff4 + coeff5)/coeff1;
-      qDisplacement_[j] += dt*qSpeed_[j] + squareDt*((0.5-beta)*PreviousqAcceleration + beta*qAcceleration_[j]);
-      qSpeed_[j] += dt*((1.-gamma)*PreviousqAcceleration + gamma*qAcceleration_[j]);
-    }
-
-  saveBeamForRestart();
-  if(output_position_1D_.size()>0) printOutputBeam1D();
-  if(output_position_3D_.size()>0) printOutputBeam3D();
-
-  return qSpeed_;
-}
-
-
-DoubleVect& Beam_model::getVelocity(const double& tps, const double& dt)
-{
-  Cerr<<" Beam name : "<<beamName_<<", Time discretization scheme : "<<timeScheme_<<", Nb Modes : "<<nbModes_<<finl;
-
-  if(dt == 0.)
-    {
-      return qSpeed_;
-    }
-  else if(temps_!=tps) // update qSpeed_ only once per time step!
-    {
-      temps_=tps;
-      if(timeScheme_=="HHT")
-        return TimeSchemeHHT(dt);
-      else if(timeScheme_=="FD")
-        return NewmarkSchemeFD(dt);
-      else
-        return NewmarkSchemeMA(dt);
-    }
-  else
-    {
-      return qSpeed_;
-    }
 }
 
 DoubleVect Beam_model::interpolationOnThe3DSurface(const double& x, const double& y, const double& z, const DoubleTab& u, const DoubleTab& R) const
@@ -535,79 +448,6 @@ DoubleVect Beam_model::interpolationOnThe3DSurface(const double& x, const double
 
   return phi;
 }
-/*void Beam_model::interpolationOnThe3DSurface(const Bords& les_bords_ALE)
-{
-  Cerr<<"Interpolation of the 1d modal deformation to the 3d surface"<<finl;
-
-  if(les_bords_ALE.size()!= 1)
-    {
-      Cerr<<"Too many beams. For the moment one can treat only a beam with the Beam module!"<<finl;
-      Process::exit();
-    }
-  if(dimension != 3)
-    {
-      Cerr<<"The dimension of the problem is different from 3"<<finl;
-      Process::exit();
-    }
-
-  Cerr<<" Interpolation on the "<<les_bords_ALE(0).le_nom()<<" boundary"<<finl;
-
-  const Faces& faces = les_bords_ALE(0).faces();
-  int size=faces.nb_faces_tot();
-  phi3D_.resize(size, dimension);
-  phi3D_ = 0.;
-  DoubleTab coord_cg(size, dimension);
-  faces.calculer_centres_gravite(coord_cg);
-  double h = abscissa_[1] -abscissa_[0]; //1d mesh pitch
-  int abscissa_size = abscissa_.size();
-  for(int face= 0; face<size; face++)
-    {
-      if(abs(phi3D_(face, direction_)) <1.e-16) //this node has not yet been treated
-        {
-          double s = coord_cg(face,direction_);
-          double xs= coord_cg(face,0);
-          double ys= coord_cg(face,1);
-          double zs= coord_cg(face,2);
-          if (direction_==0)
-            xs=0.;
-          else if (direction_==1)
-            ys=0.;
-          else
-            zs=0.;
-          //double test = 0.22*sin(PI*s/0.7);
-          int i, j ;
-          i = s/h;
-          if((i+1) < abscissa_size)
-            {
-              j= i+1;
-            }
-          else
-            {
-              j=i;
-            }
-          double ux, uy, uz, Rx, Ry, Rz;
-
-          //linear interpolation between points i and j
-          double	alpha = (abscissa_[j] - s)/h;
-          double	betha = (s - abscissa_[i])/h;
-
-          ux=alpha*u_(i, 0) + betha*u_(j, 0);
-          uy=alpha*u_(i, 1) + betha*u_(j, 1);
-          uz=alpha*u_(i, 2) + betha*u_(j, 2);
-          Rx=alpha*R_(i, 0) + betha*R_(j, 0);
-          Ry=alpha*R_(i, 1) + betha*R_(j, 1);
-          Rz=alpha*R_(i, 2) + betha*R_(j, 2);
-
-          //Cerr<<" test apres interpolation = "<<uy - test<<finl;
-          phi3D_(face, 0) =ux + Ry*zs -Rz*ys;
-          phi3D_(face, 1) =uy + Rz*xs -Rx*zs;
-          phi3D_(face, 2) =uz + Rx*ys -Ry*xs;
-
-        }
-
-    }
-}*/
-
 
 void Beam_model::saveBeamForRestart() const
 {
@@ -625,7 +465,6 @@ void Beam_model::saveBeamForRestart() const
     }
 
 }
-
 
 void Beam_model::printOutputBeam1D(bool first_writing) const
 {
@@ -833,6 +672,54 @@ void Beam_model::setCenterCoordinates(const double& x0,const double& y0, const d
   z0_=z0;
 }
 
+DoubleVect& Beam_model::getVelocity(const double& tps, const double& dt)
+{
+  if(dt == 0.)
+    {
+      return qSpeed_;
+    }
+  else if(temps_!=tps) //   update qSpeed_ only once per time step!
+    {
+      temps_=tps;
+      return NewmarkScheme(dt);
+
+    }
+  else
+    return qSpeed_;
+}
+
+
+//Solve the beam dynamics. Time integration scheme
+DoubleVect& Beam_model::NewmarkScheme (const double& dt)
+{
+
+  double squareDt=dt*dt;
+  for(int j=0; j < nbModes_; j++)
+    {
+      double qDispl_pred= qDisplacement_[j] + dt*qSpeed_[j] + squareDt*(0.5-beta_)*qAcceleration_[j];
+      double qSpeed_pred= qSpeed_[j] + dt*(1-gamma_)*qAcceleration_[j];
+
+      double coeff1 = mass_[j] + dt*gamma_*(1.+ alpha_)*damping_[j] + squareDt*beta_*(1.+ alpha_)*stiffness_[j];
+      double coeff2 = (1. + alpha_)*damping_[j]*qSpeed_pred;
+      double coeff3 = (1. + alpha_)*stiffness_[j]*qDispl_pred;
+      double coeff4 = alpha_*stiffness_[j]*qDisplacement_[j];
+      double coeff5 = alpha_*damping_[j]*qSpeed_[j];
+
+
+      qAcceleration_[j]=(fluidForceOnBeam_[j] - coeff2 - coeff3 + coeff4 + coeff5)/coeff1;
+      qDisplacement_[j] = qDispl_pred + squareDt*beta_*qAcceleration_[j];
+      qSpeed_[j] = qSpeed_pred + dt*gamma_*qAcceleration_[j];
+    }
+
+
+
+  saveBeamForRestart();
+  if(output_position_1D_.size()>0) printOutputBeam1D();
+  if(output_position_3D_.size()>0) printOutputBeam3D();
+
+  return qSpeed_;
+}
+
 /*void Beam_model::printOutputPosition1D() const
 {
 
@@ -900,3 +787,77 @@ void Beam_model::setCenterCoordinates(const double& x0,const double& y0, const d
     }
 
 }*/
+/*void Beam_model::interpolationOnThe3DSurface(const Bords& les_bords_ALE)
+{
+  Cerr<<"Interpolation of the 1d modal deformation to the 3d surface"<<finl;
+
+  if(les_bords_ALE.size()!= 1)
+    {
+      Cerr<<"Too many beams. For the moment one can treat only a beam with the Beam module!"<<finl;
+      Process::exit();
+    }
+  if(dimension != 3)
+    {
+      Cerr<<"The dimension of the problem is different from 3"<<finl;
+      Process::exit();
+    }
+
+  Cerr<<" Interpolation on the "<<les_bords_ALE(0).le_nom()<<" boundary"<<finl;
+
+  const Faces& faces = les_bords_ALE(0).faces();
+  int size=faces.nb_faces_tot();
+  phi3D_.resize(size, dimension);
+  phi3D_ = 0.;
+  DoubleTab coord_cg(size, dimension);
+  faces.calculer_centres_gravite(coord_cg);
+  double h = abscissa_[1] -abscissa_[0]; //1d mesh pitch
+  int abscissa_size = abscissa_.size();
+  for(int face= 0; face<size; face++)
+    {
+      if(abs(phi3D_(face, direction_)) <1.e-16) //this node has not yet been treated
+        {
+          double s = coord_cg(face,direction_);
+          double xs= coord_cg(face,0);
+          double ys= coord_cg(face,1);
+          double zs= coord_cg(face,2);
+          if (direction_==0)
+            xs=0.;
+          else if (direction_==1)
+            ys=0.;
+          else
+            zs=0.;
+          //double test = 0.22*sin(PI*s/0.7);
+          int i, j ;
+          i = s/h;
+          if((i+1) < abscissa_size)
+            {
+              j= i+1;
+            }
+          else
+            {
+              j=i;
+            }
+          double ux, uy, uz, Rx, Ry, Rz;
+
+          //linear interpolation between points i and j
+          double	alpha = (abscissa_[j] - s)/h;
+          double	betha = (s - abscissa_[i])/h;
+
+          ux=alpha*u_(i, 0) + betha*u_(j, 0);
+          uy=alpha*u_(i, 1) + betha*u_(j, 1);
+          uz=alpha*u_(i, 2) + betha*u_(j, 2);
+          Rx=alpha*R_(i, 0) + betha*R_(j, 0);
+          Ry=alpha*R_(i, 1) + betha*R_(j, 1);
+          Rz=alpha*R_(i, 2) + betha*R_(j, 2);
+
+          //Cerr<<" test apres interpolation = "<<uy - test<<finl;
+          phi3D_(face, 0) =ux + Ry*zs -Rz*ys;
+          phi3D_(face, 1) =uy + Rz*xs -Rx*zs;
+          phi3D_(face, 2) =uz + Rx*ys -Ry*xs;
+
+        }
+
+    }
+}*/
+
+

@@ -1157,6 +1157,12 @@ void Domaine_ALE::read_beam(Entree& is, int& count)
           beam[count].setDirection(var_int);
           Cerr << "Direction : " <<  beam[count].getDirection() << finl;
         }
+      if(motlu=="bendingDirection")
+        {
+          is >> var_int;
+          beam[count].setBendingDirection(var_int);
+          Cerr << "Direction : " <<  beam[count].getBendingDirection() << finl;
+        }
       if(motlu=="BaseCenterCoordinates")
         {
           is >> var_double;
@@ -1213,8 +1219,11 @@ void Domaine_ALE::read_beam(Entree& is, int& count)
           is >> nomlu;
           double alpha=-0.1; //default value
           if(nomlu =="HHT")
-            is>>alpha;
-          beam[count].setTimeScheme(nomlu,alpha);
+            {
+              is>>alpha;
+            }
+          beam[count].setTimeScheme(nomlu, alpha);
+
         }
       if(motlu=="Output_position_1D")
         {
@@ -1368,26 +1377,32 @@ void Domaine_ALE::reading_beam_model(Entree& is)
     }
 
 }
+// Beam time discretization:
+// The Newmark finite difference scheme is conditionally stable.
+// The time step should satisfy the corresponding stability constraint,
+// but this implementation does not automatically enforce it.
+// Users are advised to use the HHT (Hilber–Hughes–Taylor) or
+// Newmark Mean Acceleration (MA) time discretization schemes instead,
+// which are unconditionally stable.
+// The Newmark finite difference scheme is retained primarily for
+// advanced users and benchmarking purposes.
+double Domaine_ALE::computeDtBeam(Domaine_dis_base& le_domaine_dis, const int& i)
+{
 
+  double dt = 0.;
+  const Domaine_VEF& domaine_VEF=ref_cast(Domaine_VEF,le_domaine_dis);
+  const DoubleVect& surfaces = domaine_VEF.face_surfaces();
+  double minSurf = mp_min_vect(surfaces);
+  minSurf = Process::mp_min(minSurf);
+  double soundSpeed=beam[i].getSoundSpeed();
+  dt = 0.5*(minSurf/soundSpeed);
+  return dt;
+}
 DoubleVect Domaine_ALE::interpolationOnThe3DSurface(const int& i, const double& x, const double& y, const double& z, const DoubleTab& u, const DoubleTab& R) const
 {
   return beam[i].interpolationOnThe3DSurface(x,y,z, u, R);
 }
 
-/*double Domaine_ALE::computeDtBeam(Domaine_dis_base& le_domaine_dis)
-{
-
-double dt = 0.;
-const Domaine_VEF& domaine_VEF=ref_cast(Domaine_VEF,le_domaine_dis);
-const DoubleVect& surfaces = domaine_VEF.face_surfaces();
-double minSurf = mp_min_vect(surfaces);
-minSurf = Process::mp_min(minSurf);
-//Cerr << " Surface min: "<< minSurf << endl;
-double soundSpeed=beam->soundSpeed();
-//Cerr << "soundSpeed: "<< soundSpeed << endl;
-dt = 0.5*(minSurf/soundSpeed);
-return dt;
-}*/
 
 const Nom& Domaine_ALE::getBeamName(const int& i) const
 {
@@ -1416,6 +1431,12 @@ inline const int& Domaine_ALE::getBeamDirection(const int& i) const
 {
   return beam[i].getDirection();
 }
+
+inline const int& Domaine_ALE::getBeamBendingDirection(const int& i) const
+{
+  return beam[i].getBendingDirection();
+}
+
 DoubleVect& Domaine_ALE::getBeamVelocity(const int& i, const double& tps, const double& dt)
 {
   //if tps=tempsComputeForceOnBeam then the dynamics of the beam has already been solved. We only solve once per time step.
@@ -1487,10 +1508,8 @@ void  Domaine_ALE::computeFluidForceOnBeam(const int& i)
                       const DoubleTab& u=getBeamDisplacement(i,nbmodes);
                       const DoubleTab& R=getBeamRotation(i,nbmodes);
                       phi=interpolationOnThe3DSurface(i,xv(face,0),xv(face,1),xv(face,2), u, R); //compute the 3D modal deformation
-                      for(int comp=0; comp<3; comp++)
-                        {
-                          fluidForceOnBeam[nbmodes] += (flux_bords_grad(face, comp)+ flux_bords_diff(face, comp))*phi[comp];
-                        }
+                      int comp= getBeamBendingDirection(i);
+                      fluidForceOnBeam[nbmodes] += (flux_bords_grad(face, comp)+ flux_bords_diff(face, comp))*phi[comp];
                     }
                 }
             }
