@@ -23,7 +23,7 @@ Implemente_instanciable_sans_constructeur_ni_destructeur(Structural_dynamic_mesh
 
 // XD bloc_lecture_Structural_dynamic_mesh_model objet_lecture nul 0 bloc
 // XD  attr aco chaine(into=["{"]) aco 0 Opening curly bracket.
-// XD  attr Mfront_library chaine(into=["Mfront_library"]) Mfront_library 0 Keyword to specify the path_to_libBehaviour.so
+// XD  attr Mfront_library chaine(into=["Mfront_library"]) Mfront_library 0 Keyword to specify the path_to_libBehaviour.so If the user does not define the MFront library path, we use the default one instead: path = $project_directory/share/MFront_material_libraries/<MFront_library_keyword>/src/libBehaviour.so
 // XD  attr Mfront_model_name chaine(into=["Mfront_model_name"]) Mfront_model 0 keyword to specify the Mfront model. Choice between Ogden and SaintVenantKirchhoffElasticity.
 // XD  attr Mfront_material_property chaine(into=["Mfront_material_property"]) Mfront_material_property 0 keyword to specify the material property. Eg. Ogden_alpha_, Ogden_mu_, Ogden_K
 // XD  attr YoungModulus floattant young 1 Young Module
@@ -98,8 +98,24 @@ void Structural_dynamic_mesh_model::initMfrontBehaviour()
 
   if ( l_ == "unset string")
     {
-      Cerr << "Error: Mfront library path undefined (Mfront_library keyword)" << finl ;
-      Process::exit() ;
+      std::string path;
+      if(f_ != "unset string")
+        {
+          // If the user does not define the MFront library path,
+          // use the default one instead:
+          // path = $project_directory/share/MFront_material_libraries/<MFront_library_keyword>/src/libBehaviour.so
+          path = std::string(getenv("TrioCFD_project_directory")) + "/share/Mfront_material_libraries/" + f_+ "/src/libBehaviour.so";
+          l_=path;
+        }
+      else
+        {
+          Cerr << "MFront model name is undefined (keyword: Mfront_model_name)." << finl;
+          Cerr << "Cannot set the default MFront library path: "
+               << "$project_directory/share/MFront_material_libraries/<Mfront_library_keyword>/src/libBehaviour.so" << finl;
+          Cerr << "Please define either the MFront library path (keyword: Mfront_library) "
+               << "or the MFront model name (keyword: Mfront_model_name)." << finl;
+          Process::exit() ;
+        }
     }
 
   if ( f_ == "unset string")
