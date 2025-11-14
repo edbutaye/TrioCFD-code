@@ -160,181 +160,463 @@ Entree&  Beam_model::interpreter_(Entree& is)
 
 void Beam_model::readInputMassStiffnessFiles(Nom& masse_and_stiffness_file_name)
 {
-  Cerr << "Read beam model coefficients from "<< masse_and_stiffness_file_name <<" files " << finl;
-  mass_.resize(nbModes_);
-  stiffness_.resize(nbModes_);
-  damping_.resize(nbModes_);
-  string const nomFichier(masse_and_stiffness_file_name);
+    Cerr << "Reading beam model coefficients from file: " << masse_and_stiffness_file_name << finl;
 
-  ifstream monFlux(nomFichier.c_str());
+    mass_.resize(nbModes_);
+    stiffness_.resize(nbModes_);
+    damping_.resize(nbModes_);
 
-  if(monFlux)
+    const std::string filename(masse_and_stiffness_file_name);
+    std::ifstream monFlux(filename.c_str());
+
+    if (!monFlux)
     {
-      double mass, stiffness, damping;
-      for(int i=0; i<nbModes_; i++)
+        Cerr << "ERROR: Unable to open file '" << filename << "'." << finl;
+        Process::exit();
+    }
+
+    std::string line;
+    int i = 0;
+    int lineNumber = 0;
+
+    while (std::getline(monFlux, line))
+    {
+        ++lineNumber;
+
+        // Skip empty or whitespace-only lines
+        bool empty = true;
+        for (char c : line)
         {
-          monFlux >> mass >> stiffness >> damping;
-          if(abs(mass) > 1.e-16 && abs(stiffness)> 1.e-16)
-            {
-              mass_[i]=mass;
-              stiffness_[i]=stiffness;
-              damping_[i]=damping;
-            }
-          else
-            {
-              Cerr<<" Beam_model::read_input_files values of mass and stiffness are wrong in the file "<<masse_and_stiffness_file_name<<finl;
-              Cerr<<" Value of mass = "<< mass<< " and value of stiffness = "<<stiffness<<finl;
-              Process::exit();
-            }
+            if (!std::isspace(static_cast<unsigned char>(c))) { empty = false; break; }
+        }
+        if (empty) continue;
+
+        // Skip comment lines starting with '#' or header lines (first line non-numeric)
+         std::istringstream issCheck(line);
+         double dummy;
+         if (!(issCheck >> dummy)) continue;
+
+        if (i >= nbModes_)
+        {
+            Cerr << "ERROR: File '" << filename << "' contains more data lines than nb_modes = "
+                 << nbModes_ << " (at line " << lineNumber << ")." << finl;
+            Process::exit();
         }
 
-      monFlux.close();
-    }
-  else
-    {
-      Cerr<< "ERROR: Unable to open the file." <<masse_and_stiffness_file_name<<finl;
-      Process::exit();
-    }
-  //Cerr<<"mass = "<<mass_<<" stiffnes "<<stiffness_<<" damp = "<<damping_<<finl;
-}
-void Beam_model::readInputAbscFiles(Nom& absc_file_name)
-{
-  Cerr << "Read beam coordinates from "<< absc_file_name <<" files " << finl;
+        // Parse exactly three values
+        std::istringstream iss(line);
+        double mass, stiffness, damping;
 
-  string const nomFichier(absc_file_name);
-  ifstream monFlux(nomFichier.c_str());
-  if(monFlux)
-    {
-      double abscissa;
-      int i=0;
-      while(monFlux)
+        if (!(iss >> mass >> stiffness >> damping))
         {
-          monFlux >> abscissa;
-          abscissa_.resize(i+1);
-          abscissa_[i]=abscissa;
-          i++;
+            Cerr << "ERROR: In file '" << filename << "', line " << lineNumber
+                 << " does not contain exactly three numerical values." << finl;
+            Cerr << "Line content: [" << line << "]" << finl;
+            Process::exit();
         }
 
-      monFlux.close();
+        // Check if a fourth value exists
+        double extra;
+        if (iss >> extra)
+        {
+            Cerr << "ERROR: In file '" << filename << "', line " << lineNumber
+                 << " contains more than three values." << finl;
+            Cerr << "Line content: [" << line << "]" << finl;
+            Process::exit();
+        }
+
+        if (std::abs(mass) <= 1.e-16 || std::abs(stiffness) <= 1.e-16)
+        {
+            Cerr << "ERROR: Invalid mass or stiffness in file '" << filename
+                 << "' at line " << lineNumber << "." << finl;
+            Cerr << "mass = " << mass << ", stiffness = " << stiffness
+                 << ", damping = " << damping << finl;
+            Process::exit();
+        }
+        // Store values
+        mass_[i] = mass;
+        stiffness_[i] = stiffness;
+        damping_[i] = damping;
+        ++i;
     }
-  else
+
+    if (i < nbModes_)
     {
-      Cerr<< "ERROR: Unable to open the file." <<absc_file_name<<finl;
-      Process::exit();
+        Cerr << "ERROR: File '" << filename << "' contains too few data lines. "
+             << "Expected nb_modes = " << nbModes_ << ", but only " << i << " valid lines were read." << finl;
+        Process::exit();
     }
+
+    Cerr << "Beam coefficients successfully read from '" << filename
+         << "' (" << i << " modes)." << finl;
 }
+
 
 void Beam_model::readInputCIFile(Nom& CI_file_name)
 {
+    Cerr << "Reading initial condition beam from file: " << CI_file_name << finl;
 
-  Cerr << "Read initial condition beam from "<< CI_file_name <<" file " << finl;
+    qSpeed_.resize(nbModes_);
+    qAcceleration_.resize(nbModes_);
+    qDisplacement_.resize(nbModes_);
+    fluidForceOnBeam_.resize(nbModes_);
 
-  qSpeed_.resize(nbModes_);
-  qAcceleration_.resize(nbModes_);
-  qDisplacement_.resize(nbModes_);
-  fluidForceOnBeam_.resize(nbModes_);
-  qSpeed_=0.;
-  qAcceleration_=0.;
-  qDisplacement_=0.;
-  fluidForceOnBeam_=0.;
+    qSpeed_ = 0.;
+    qAcceleration_ = 0.;
+    qDisplacement_ = 0.;
+    fluidForceOnBeam_ = 0.;
 
-  string const nomFichier(CI_file_name);
+    const std::string filename(CI_file_name);
+    std::ifstream monFlux(filename.c_str());
 
-  ifstream monFlux(nomFichier.c_str());
-
-  if(monFlux)
+    if (!monFlux)
     {
-      double displacement;
-      for(int i=0; i<nbModes_; i++)
+        Cerr << "ERROR: Unable to open file '" << filename << "'." << finl;
+        Process::exit();
+    }
+
+    std::string line;
+    int i = 0;
+    int lineNumber = 0;
+
+    while (std::getline(monFlux, line))
+    {
+        ++lineNumber;
+
+        // Skip empty lines
+        bool empty = true;
+        for (char c : line) { if (!std::isspace(static_cast<unsigned char>(c))) { empty = false; break; } }
+        if (empty) continue;
+
+        // Skip comment lines starting with '#'
+        if (line[0] == '#') continue;
+
+        // Skip non-numeric header lines
+        std::istringstream issCheck(line);
+        double dummy;
+        if (!(issCheck >> dummy)) continue;
+
+        if (i >= nbModes_)
         {
-          monFlux >> displacement;
-          qDisplacement_[i]=displacement;
-          //qAcceleration_[i] =fluidForceOnBeam_[i] -(stiffness_[i]/mass_[i])*qDisplacement_[i] - (damping_[i]/mass_[i])*qSpeed_[i];
-          qAcceleration_[i] =fluidForceOnBeam_[i] -(stiffness_[i]/mass_[i])*qDisplacement_[i] ;
+            Cerr << "ERROR: File '" << filename << "' contains more data lines than nb_modes = "
+                 << nbModes_ << " (at line " << lineNumber << ")." << finl;
+            Process::exit();
         }
 
-      monFlux.close();
-    }
-  else
-    {
-      Cerr<< "ERROR: Unable to open the file." <<CI_file_name<<finl;
-      Process::exit();
+        std::istringstream iss(line);
+        double displacement;
+        if (!(iss >> displacement))
+        {
+            Cerr << "ERROR: Unable to read displacement value in file '" << filename
+                 << "' at line " << lineNumber << "." << finl;
+            Cerr << "Line content: [" << line << "]" << finl;
+            Process::exit();
+        }
+
+        // Check if a second value exists (should be only one per line)
+        double extra;
+        if (iss >> extra)
+        {
+            Cerr << "ERROR: In file '" << filename << "', line " << lineNumber
+                 << " contains more than one value." << finl;
+            Cerr << "Line content: [" << line << "]" << finl;
+            Process::exit();
+        }
+
+        qDisplacement_[i] = displacement;
+        // Initialize acceleration from fluid force and stiffness
+        qAcceleration_[i] = fluidForceOnBeam_[i] - (stiffness_[i] / mass_[i]) * qDisplacement_[i];
+
+        ++i;
     }
 
+    // Check that the file contains exactly nbModes_ values
+    if (i < nbModes_)
+    {
+        Cerr << "ERROR: File '" << filename << "' contains too few valid data lines. "
+             << "Expected nb_modes = " << nbModes_ << ", but only " << i << " were read." << finl;
+        Process::exit();
+    }
+
+    Cerr << "Initial condition successfully read from '" << filename
+         << "' (" << i << " modes)." << finl;
 }
 
 void Beam_model::readRestartFile(Nom& Restart_file_name)
 {
+    Cerr << "Reading restart file: " << Restart_file_name << finl;
+    const std::string filename(Restart_file_name);
+    std::ifstream monFlux(filename.c_str());
 
-  Cerr << "Read restart "<< Restart_file_name <<" file " << finl;
-  string const nomFichier(Restart_file_name);
-
-  ifstream monFlux(nomFichier.c_str());
-
-  if(monFlux)
+    if (!monFlux)
     {
-      double temps, displacement, speed, acceleration;
-      for(int i=0; i<nbModes_; i++)
+        Cerr << "Beam_model::readRestartFile" << finl;
+        Cerr << "ERROR: Unable to open the restart file '" << filename << "'." << finl;
+        Process::exit();
+    }
+
+    std::string line;
+    int i = 0;
+    int lineNumber = 0;
+
+    while (std::getline(monFlux, line))
+    {
+        ++lineNumber;
+
+        // Skip empty lines
+        bool empty = true;
+        for (char c : line) { if (!std::isspace(static_cast<unsigned char>(c))) { empty = false; break; } }
+        if (empty) continue;
+
+        // Skip comment lines starting with '#'
+        if (line[0] == '#') continue;
+
+        // Skip non-numeric header lines
+        std::istringstream issCheck(line);
+        double dummy;
+        if (!(issCheck >> dummy)) continue;
+
+        if (i >= nbModes_)
         {
-          monFlux >> temps >> displacement >> speed >>acceleration;
-          temps_= temps;
-          qDisplacement_[i]=displacement;
-          qSpeed_[i] = speed;
-          qAcceleration_[i] = acceleration;
+            Cerr << "ERROR: File '" << filename << "' contains more data lines than nb_modes = "
+                 << nbModes_ << " (at line " << lineNumber << ")." << finl;
+            Process::exit();
         }
 
-      monFlux.close();
-      tempsComputeForceOnBeam_=temps_;
+        std::istringstream iss(line);
+        double temps, displacement, speed, acceleration;
+
+        if (!(iss >> temps >> displacement >> speed >> acceleration))
+        {
+            Cerr << "ERROR: In file '" << filename << "', line " << lineNumber
+                 << " does not contain exactly 4 numerical values." << finl;
+            Cerr << "Line content: [" << line << "]" << finl;
+            Process::exit();
+        }
+
+        // Check for extra values
+        double extra;
+        if (iss >> extra)
+        {
+            Cerr << "ERROR: In file '" << filename << "', line " << lineNumber
+                 << " contains more than 4 values." << finl;
+            Cerr << "Line content: [" << line << "]" << finl;
+            Process::exit();
+        }
+
+        // Store values
+        temps_ = temps;
+        qDisplacement_[i] = displacement;
+        qSpeed_[i] = speed;
+        qAcceleration_[i] = acceleration;
+
+        ++i;
     }
-  else
+
+    // Check count
+    if (i < nbModes_)
     {
-      Cerr<< "Beam_model::readRestartFile "<<finl;
-      Cerr<< "ERROR: Unable to open the restart file " <<Restart_file_name<<finl;
-      Process::exit();
+        Cerr << "ERROR: File '" << filename << "' contains too few valid data lines. "
+             << "Expected nb_modes = " << nbModes_ << ", but only " << i << " were read." << finl;
+        Process::exit();
     }
+
+    tempsComputeForceOnBeam_ = temps_;
+    Cerr << "Restart file successfully read from '" << filename
+         << "' (" << i << " modes)." << finl;
 }
 
+void Beam_model::readInputAbscFiles(Nom& absc_file_name)
+{
+    Cerr << "Reading beam coordinates from file: " << absc_file_name << finl;
+
+    const std::string filename(absc_file_name);
+    std::ifstream monFlux(filename.c_str());
+    if (!monFlux)
+    {
+        Cerr << "ERROR: Unable to open file '" << filename << "'." << finl;
+        Process::exit();
+    }
+
+    // ===== First pass: validate lines and count valid numeric values =====
+    std::string line;
+    int lineNumber = 0;
+    int nValues = 0;
+
+    while (std::getline(monFlux, line))
+    {
+        ++lineNumber;
+
+        // Skip empty lines
+        if (line.find_first_not_of(" \t\n\r") == std::string::npos) continue;
+
+        // Skip comment lines
+        if (line[0] == '#') continue;
+
+        // Skip non-numeric headers
+        std::istringstream iss(line);
+        double absc;
+        if (!(iss >> absc)) continue;
+
+        // Check that there’s exactly one value
+        double extra;
+        if (iss >> extra)
+        {
+            Cerr << "ERROR: In file '" << filename << "', line " << lineNumber
+                 << " contains more than one value." << finl;
+            Cerr << "Line content: [" << line << "]" << finl;
+            Process::exit();
+        }
+
+        ++nValues; // count valid numeric lines
+    }
+
+    if (nValues == 0)
+    {
+        Cerr << "ERROR: No valid numeric values found in file '" << filename << "'." << finl;
+        Process::exit();
+    }
+
+    // ===== Resize the DoubleVect to hold all values =====
+    abscissa_.resize(nValues);
+
+    // ===== Second pass: read and store values =====
+    monFlux.clear();
+    monFlux.seekg(0);
+
+    lineNumber = 0;
+    int i = 0;
+    while (std::getline(monFlux, line))
+    {
+        ++lineNumber;
+
+        // Skip empty lines
+        if (line.find_first_not_of(" \t\n\r") == std::string::npos) continue;
+
+        // Skip comment lines
+        if (line[0] == '#') continue;
+
+        // Skip non-numeric headers
+        std::istringstream issCheck(line);
+        double absc;
+        if (!(issCheck >> absc)) continue;
+
+        // Read the value
+        std::istringstream iss(line);
+        if (!(iss >> absc))
+        {
+            Cerr << "ERROR: Unable to read numeric value in file '" << filename
+                 << "' at line " << lineNumber << "." << finl;
+            Cerr << "Line content: [" << line << "]" << finl;
+            Process::exit();
+        }
+
+        abscissa_[i] = absc;
+        ++i;
+    }
+
+    Cerr << "Beam coordinates successfully read from '" << filename
+         << "' (" << abscissa_.size() << " points)." << finl;
+}
 
 void Beam_model::readInputModalDeformation(Noms& modal_deformation_file_name)
 {
-
-  Cerr << "Read beam modal deformation coefficients from "<< modal_deformation_file_name <<" files " << finl;
-
-  for(int count=0; count<nbModes_; count++)
+    if (nbModes_ == 0)
     {
-      string const nomFichier(modal_deformation_file_name[count]);
-
-      ifstream monFlux(nomFichier.c_str());
-      int size = abscissa_.size();
-      DoubleTab u(size, 3);
-      DoubleTab R(size, 3);
-
-      if(monFlux)
-        {
-          double  ux, uy, uz, rx, ry, rz;
-          for(int i=0; i<size; i++)
-            {
-              monFlux >> ux>> uy>> uz>> rx>> ry>> rz;
-              u(i, 0)=ux;
-              u(i, 1)=uy;
-              u(i, 2)=uz;
-              R(i, 0)=rx;
-              R(i, 1)=ry;
-              R(i, 2)=rz;
-
-            }
-          monFlux.close();
-          u_.add(u);
-          R_.add(R);
-        }
-
-      else
-        {
-          Cerr<< "ERROR: Unable to open the file." <<modal_deformation_file_name[count]<<finl;
-          Process::exit();
-        }
+        Cerr << "Error: no deformation modes defined. At least one deformation mode is required.\n";
+        Cerr << "Use the 'nb_modes' keyword to specify the number of modes.\n";
+        Process::exit();
     }
+
+    if (nbModes_ != modal_deformation_file_name.size())
+    {
+        Cerr << "Error: mismatch between the number of modal deformation files and nb_modes.\n"
+             << "Expected " << nbModes_ << " files, but found " << modal_deformation_file_name.size() << ".\n"
+             << "Adjust the inputs and restart the program.\n";
+        Process::exit();
+    }
+
+    Cerr << "Reading beam modal deformation coefficients from files: " << modal_deformation_file_name << finl;
+
+    for (int count = 0; count < nbModes_; ++count)
+    {
+        const std::string filename(modal_deformation_file_name[count]);
+        std::ifstream monFlux(filename.c_str());
+        if (!monFlux)
+        {
+            Cerr << "ERROR: Unable to open the file '" << filename << "'." << finl;
+            Process::exit();
+        }
+
+        int nPoints = abscissa_.size();
+        DoubleTab u(nPoints, 3);
+        DoubleTab R(nPoints, 3);
+
+        std::string lineContent;
+        int lineNumber = 0;
+        int line = 0;
+
+        while (std::getline(monFlux, lineContent))
+        {
+            ++lineNumber;
+
+            // Skip empty lines
+            if (lineContent.find_first_not_of(" \t\n\r") == std::string::npos) continue;
+
+            // Skip comment lines
+            if (lineContent[0] == '#') continue;
+
+            // Skip non-numeric headers
+            std::istringstream issCheck(lineContent);
+            double dummy;
+            if (!(issCheck >> dummy)) continue;
+
+            // Parse exactly 6 values
+            std::istringstream iss(lineContent);
+            double ux, uy, uz, rx, ry, rz;
+            if (!(iss >> ux >> uy >> uz >> rx >> ry >> rz))
+            {
+                Cerr << "ERROR: Unable to read 6 numeric values in file '" << filename
+                     << "' at line " << lineNumber << "." << finl;
+                Cerr << "Line content: [" << lineContent << "]" << finl;
+                Process::exit();
+            }
+
+            // Check for extra values
+            double extra;
+            if (iss >> extra)
+            {
+                Cerr << "ERROR: Line " << lineNumber << " in file '" << filename
+                     << "' contains more than 6 values." << finl;
+                Cerr << "Line content: [" << lineContent << "]" << finl;
+                Process::exit();
+            }
+
+            // Store data
+            u(line, 0) = ux; u(line, 1) = uy; u(line, 2) = uz;
+            R(line, 0) = rx; R(line, 1) = ry; R(line, 2) = rz;
+
+            ++line;
+        }
+
+        monFlux.close();
+
+        //  Check that we read exactly nPoints lines
+        if (line != nPoints)
+        {
+            Cerr << "ERROR: File '" << filename << "' contains " << line
+                 << " valid data lines, but " << nPoints << " lines were expected." << finl;
+            Process::exit();
+        }
+
+        // Add to modal arrays
+        u_.add(u);
+        R_.add(R);
+    }
+
+    Cerr << "All modal deformation files successfully read." << finl;
 }
+
 
 void Beam_model::initialization(double displacement)
 {

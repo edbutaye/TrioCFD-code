@@ -53,8 +53,8 @@ public :
   inline const int& getNbModes() const;
   inline double getTime() const;
   inline void setNbModes(const int&) ;
-  inline const int& getDirection() const;
-  inline void setDirection(const int&) ;
+  inline const int& getLongitudinalAxis() const;
+  inline void setLongitudinalAxis(const int&) ;
   inline const int& getBendingDirection() const;
   inline void setBendingDirection(const int&) ;
   inline const double& getYoung() const;
@@ -152,11 +152,11 @@ inline void Beam_model::setBendingDirection(const int& direction)
 {
   bending_dir_=direction;
 }
-inline const int& Beam_model::getDirection() const
+inline const int& Beam_model::getLongitudinalAxis() const
 {
   return direction_;
 }
-inline void Beam_model::setDirection(const int& direction)
+inline void Beam_model::setLongitudinalAxis(const int& direction)
 {
   direction_=direction;
 }
