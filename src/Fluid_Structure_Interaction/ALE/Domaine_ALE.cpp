@@ -1151,6 +1151,20 @@ void Domaine_ALE::read_beam(Entree& is, int& count)
           beam[count].setNbModes(nb_modes);
           Cerr << "Number of modes : " <<  beam[count].getNbModes() << finl;
         }
+      if(motlu=="nb_planes")
+        {
+          is >> var_int;
+
+          // Validate that number of planes is either 1 or 2
+          if (var_int != 1 && var_int != 2)
+          {
+              Cerr << "ERROR: invalid number of beam planes: " << var_int << finl;
+              Cerr << "Valid values are: 1 or 2." << finl;
+              Process::exit();
+          }
+          beam[count].setNbplanes(var_int);
+          Cerr << "Number of planes : " <<  beam[count].getNbplanes() << finl;
+        }
       if(motlu=="longitudinal_axis")
         {
           is >> nomlu;

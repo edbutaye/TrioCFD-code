@@ -55,6 +55,8 @@ public :
   inline void setNbModes(const int&) ;
   inline const int& getLongitudinalAxis() const;
   inline void setLongitudinalAxis(const int&) ;
+  inline const int& getNbplanes() const;
+  inline void setNbplanes(const int&) ;
   inline const int& getBendingDirection() const;
   inline void setBendingDirection(const int&) ;
   inline const double& getYoung() const;
@@ -96,7 +98,8 @@ public :
 protected :
   int nbModes_; // Number of modes
   int longitudinal_axis_; //x=0, y=1, z=2 Axis along the length of the beam
-  int bending_dir_; //  x=0, y=1, z=2 direction of  bending
+  int bending_dir_; //  x=0, y=1, z=2 Direction of  bending
+  int nb_planes_;   // 1 or 2 Number of planes used in the beam dynamic model
   double young_; // Young module
   double rho_; // solid density
   DoubleVect mass_; //diagonal modal mass matrix
@@ -159,6 +162,14 @@ inline const int& Beam_model::getLongitudinalAxis() const
 inline void Beam_model::setLongitudinalAxis(const int& direction)
 {
 	longitudinal_axis_=direction;
+}
+inline const int& Beam_model::getNbplanes() const
+{
+  return nb_planes_;
+}
+inline void Beam_model::setNbplanes(const int& nb_planes)
+{
+	nb_planes_=nb_planes;
 }
 inline const double& Beam_model::getYoung() const
 {

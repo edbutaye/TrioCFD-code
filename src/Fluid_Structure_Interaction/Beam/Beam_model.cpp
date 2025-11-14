@@ -50,6 +50,7 @@ Implemente_instanciable_sans_constructeur_ni_destructeur(Beam_model, "Beam_model
 //     nb_modes number of modes
 //     longitudinal_axis x|y|z
 //     bendingDirection x|y|z
+//     nb_planes 1|2
 //     NewmarkTimeScheme MA|FD|HHT
 //     Mass_and_stiffness_file_name
 //     Absc_file_name
@@ -83,12 +84,13 @@ Implemente_instanciable_sans_constructeur_ni_destructeur(Beam_model, "Beam_model
 // XD NewmarkTimeScheme_HHT NewmarkTimeScheme_deriv HHT 0 HHT alpha (Hilber-Hughes-Taylor, alpha usually -0.1 ) time integration scheme.
 // XD  attr alpha floattant alpha 1 usually, alpha is set to -0.1
 // XD NewmarkTimeScheme_MA NewmarkTimeScheme_deriv MA 0  MA (Newmark mean acceleration) time integration scheme.
-// XD NewmarkTimeScheme_FD NewmarkTimeScheme_deriv FD 0 FD (Newmark finite differences) time integration scheme. Warning: this scheme is conditionally stable. The time step should satisfy the corresponding stability constraint, but this implementation does not automatically enforce it.The Newmark finite difference scheme is retained primarily foradvanced users and benchmarking purposes.
+// XD NewmarkTimeScheme_FD NewmarkTimeScheme_deriv FD 0 FD (Newmark finite differences) time integration scheme. Warning: this scheme is conditionally stable. The time step should satisfy the corresponding stability constraint, but this implementation does not automatically enforce it.The Newmark finite difference scheme is retained primarily for advanced users and benchmarking purposes.
 
 // XD bloc_poutre objet_lecture nul 1 Read poutre bloc
 // XD  attr nb_modes entier n 0 Number of modes
 // XD  attr longitudinal_axis chaine dir 0 x, y, z. Axis along the length of the beam
-// XD  attr bendingDirection chaine dir 0 x, y, z . Direction of  bending
+// XD  attr bendingDirection chaine dir_bending 0 x, y, z . Direction of  bending
+// XD  attr nb_planes entier nplanes 0 Number of planes used in the beam dynamic model
 // XD  attr NewmarkTimeScheme NewmarkTimeScheme_deriv NewmarkTimeScheme 0 Solve the beam dynamics. Time integration scheme: choice between MA (Newmark mean acceleration),  FD (Newmark finite differences), and HHT alpha (Hilber-Hughes-Taylor, alpha usually -0.1 )
 // XD  attr Mass_and_stiffness_file_name chaine  Mass_and_stiffness_file_name 0 Name of the file containing the diagonal modal mass, stiffness, and damping matrices.
 // XD  attr Absc_file_name chaine Absc_file_name 0 Name of the file containing the coordinates of the Beam
@@ -107,6 +109,7 @@ Beam_model::Beam_model()
   nbModes_=0;;
   longitudinal_axis_=0;
   bending_dir_=1;
+  nb_planes_=1;
   young_=200.e+9;
   rho_ = 8100.;
   alpha_= 0.;
