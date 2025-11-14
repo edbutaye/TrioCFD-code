@@ -1005,144 +1005,221 @@ DoubleVect& Beam_model::NewmarkScheme (const double& dt)
   return qSpeed_;
 }
 
-/*void Beam_model::printOutputPosition1D() const
-{
 
-  if (je_suis_maitre())
+void Beam_model::read_beam(Entree& is)
+{
+  Motcle open_brace("{");
+  Motcle close_brace("}");
+  Motcle motlu;
+  Nom nomlu;
+  Nom masse_and_stiffness_file_name;
+  Noms phi_file_name;
+  Nom absc_file_name;
+  Nom CI_file_name="none";
+  Nom Restart_file_name="none";
+  int var_int=0;
+  int nb_modes=0;
+  int nb_output_points_1D=0;
+  DoubleVect output_position_1D(nb_output_points_1D);
+  int nb_output_points_3D=0;
+  DoubleTab output_position_3D(nb_output_points_3D,0);
+  double var_double;
+  is >> motlu;
+  if (motlu != open_brace)
     {
-      int nb_output_points= output_position_1D_.size();
-      DoubleTab displacement(nb_output_points,3);
-      DoubleTab velocity(nb_output_points,3);
-      DoubleTab acceleration(nb_output_points,3);
-      displacement=0.;
-      velocity=0.;
-      acceleration=0.;
-      for(int j=0; j < nbModes_; j++)
+	  Cerr << "Error while reading Beam\n";
+	  Cerr << "Expected a { but found: "<< motlu;
+      Process::exit();
+    }
+  while(1)
+    {
+      // reading a boundary name or }
+      is >> nomlu;
+      motlu=nomlu;
+      if(motlu=="nb_modes")
         {
-          const DoubleTab& u=u_(j);
-          for(int k=0; k<nb_output_points; k++)
+          is >> nb_modes;
+          nbModes_=nb_modes;
+          Cerr << "Number of modes : " <<  nbModes_ << finl;
+        }
+      if(motlu=="nb_planes")
+        {
+          is >> var_int;
+
+          // Validate that number of planes is either 1 or 2
+          if (var_int != 1 && var_int != 2)
+          {
+              Cerr << "ERROR: invalid number of beam planes: " << var_int << finl;
+              Cerr << "Valid values are: 1 or 2." << finl;
+              Process::exit();
+          }
+          nb_planes_=var_int;
+          Cerr << "Number of planes : " <<  nb_planes_ << finl;
+        }
+      if(motlu=="longitudinal_axis")
+        {
+          is >> nomlu;
+          if (nomlu == "x" || nomlu == "X")
+        	  var_int = 0;
+          else if (nomlu == "y" || nomlu == "Y")
+        	  var_int = 1;
+          else if (nomlu == "z" || nomlu == "Z")
+        	  var_int = 2;
+          else
+          {
+              Cerr << "ERROR: invalid main axis: " << nomlu
+	               << "'. Valid options are: x, y, or z." << finl;
+              Process::exit();
+          }
+          longitudinal_axis_=var_int;
+          Cerr << "Longitudinal axis : " <<  longitudinal_axis_ << finl;
+        }
+      if(motlu=="bendingDirection")
+        {
+    	  is >> nomlu;
+    	            if (nomlu == "x" || nomlu == "X")
+    	          	  var_int = 0;
+    	            else if (nomlu == "y" || nomlu == "Y")
+    	          	  var_int = 1;
+    	            else if (nomlu == "z" || nomlu == "Z")
+    	          	  var_int = 2;
+    	            else
+    	            {
+    	                Cerr << "ERROR: invalid direction of bending: '" << nomlu
+    	                     << "'. Valid options are: x, y, or z." << finl;
+    	                Process::exit();
+    	            }
+    	            bending_dir_=var_int;
+          Cerr << "Bending direction : " <<  bending_dir_ << finl;
+        }
+      if(motlu=="BaseCenterCoordinates")
+        {
+          is >> var_double;
+          double x=var_double;
+          is >> var_double;
+          double y=var_double;
+          is >> var_double;
+          double z=var_double;
+          setCenterCoordinates(x,y,z);
+
+        }
+      if(motlu=="Young_Module")
+        {
+          is >> var_double;
+          young_=var_double;
+          Cerr << "Young module : " <<  young_ << finl;
+        }
+      if(motlu=="Rho_beam")
+        {
+          is >> var_double;
+          rho_=var_double;
+          Cerr << "Rho beam : " <<  rho_ << finl;
+        }
+      if(motlu=="Mass_and_stiffness_file_name")
+        {
+          is >> nomlu;
+          masse_and_stiffness_file_name=nomlu;
+
+        }
+      if(motlu=="Absc_file_name")
+        {
+          is >> nomlu;
+          absc_file_name=nomlu;
+
+        }
+      if(motlu=="CI_file_name")
+        {
+          is >> nomlu;
+          CI_file_name=nomlu;
+
+        }
+
+      if(motlu=="Modal_deformation_file_name")
+        {
+          is >> var_int;
+          for (int i=0; i< var_int; i ++)
             {
-              for(int i=0; i<3; i++)
+              is >>nomlu;
+              phi_file_name.add(nomlu);
+            }
+        }
+      if(motlu=="NewmarkTimeScheme")
+        {
+          is >> nomlu;
+          double alpha=-0.1; //default value
+          if(nomlu =="HHT")
+            {
+              is>>alpha;
+            }
+         setTimeScheme(nomlu, alpha);
+
+        }
+      if(motlu=="Output_position_1D")
+        {
+          Cerr << "Beam Output_position_1D "<< finl;
+          is>>nb_output_points_1D;
+          output_position_1D.resize(nb_output_points_1D);
+          double poz;
+          for (int i=0; i< nb_output_points_1D; i ++)
+            {
+              is >>poz;
+              output_position_1D[i]=poz;
+            }
+
+          setOutputPosition1D(output_position_1D);
+        }
+      if(motlu=="Output_position_3D")
+        {
+          Cerr << "Beam Output_position_3D "<< finl;
+          is>>nb_output_points_3D;
+          output_position_3D.resize(nb_output_points_3D, 3);
+          double poz=0.;
+          for (int i=0; i< nb_output_points_3D; i ++)
+            {
+              for (int j=0; j< 3; j ++)
                 {
-                  displacement(k, i) += qDisplacement_[j]*u(int(output_position_1D_[k]),i);
-                  velocity(k, i) += qSpeed_[j]*u(int(output_position_1D_[k]),i);
-                  acceleration(k, i) += qAcceleration_[j]*u(int(output_position_1D_[k]),i);
+                  is >>poz;
+                  output_position_3D(i,j)=poz;
                 }
             }
+          setOutputPosition3D(output_position_3D);
         }
-      std::ofstream ofs_1;
-      ofs_1.open (beamName_+"Displacement1D.txt", std::ofstream::out | std::ofstream::app);
-      std::ofstream ofs_2;
-      ofs_2.open (beamName_+"Velocity1D.txt", std::ofstream::out | std::ofstream::app);
-      std::ofstream ofs_3;
-      ofs_3.open (beamName_+"Acceleration1D.txt", std::ofstream::out | std::ofstream::app);
-
-      ofs_1<<temps_<<" ";
-      for(int k=0; k<nb_output_points; k++)
+      if (motlu=="Restart_file_name")
         {
-          for(int i=0; i<3; i++)
-            {
-              ofs_1<< displacement(k, i)<<" ";
-            }
+          is >> nomlu;
+          Restart_file_name=nomlu;
         }
-      ofs_1<<endl;
-      ofs_1.close();
 
-      ofs_2<<temps_<<" ";
-      for(int k=0; k<nb_output_points; k++)
-        {
-          for(int i=0; i<3; i++)
-            {
-              ofs_2<< velocity(k, i)<<" ";
-            }
-        }
-      ofs_2<<endl;
-      ofs_2.close();
-
-      ofs_3<<temps_<<" ";
-      for(int k=0; k<nb_output_points; k++)
-        {
-          for(int i=0; i<3; i++)
-            {
-              ofs_3<< acceleration(k, i)<<" ";
-            }
-        }
-      ofs_3<<endl;
-      ofs_3.close();
+      if (motlu == close_brace)
+        break;
     }
-
-}*/
-/*void Beam_model::interpolationOnThe3DSurface(const Bords& les_bords_ALE)
-{
-  Cerr<<"Interpolation of the 1d modal deformation to the 3d surface"<<finl;
-
-  if(les_bords_ALE.size()!= 1)
+  // Warning: Do NOT change the order of these function calls. The correct execution of the code depends on this sequence.
+  readInputAbscFiles(absc_file_name);
+  readInputMassStiffnessFiles(masse_and_stiffness_file_name);
+  readInputModalDeformation(phi_file_name);
+  if(CI_file_name!="none")
     {
-      Cerr<<"Too many beams. For the moment one can treat only a beam with the Beam module!"<<finl;
-      Process::exit();
+      readInputCIFile(CI_file_name);
     }
-  if(dimension != 3)
+  else
     {
-      Cerr<<"The dimension of the problem is different from 3"<<finl;
-      Process::exit();
+      initialization();
     }
-
-  Cerr<<" Interpolation on the "<<les_bords_ALE(0).le_nom()<<" boundary"<<finl;
-
-  const Faces& faces = les_bords_ALE(0).faces();
-  int size=faces.nb_faces_tot();
-  phi3D_.resize(size, dimension);
-  phi3D_ = 0.;
-  DoubleTab coord_cg(size, dimension);
-  faces.calculer_centres_gravite(coord_cg);
-  double h = abscissa_[1] -abscissa_[0]; //1d mesh pitch
-  int abscissa_size = abscissa_.size();
-  for(int face= 0; face<size; face++)
+  if(Restart_file_name!="none")
     {
-      if(abs(phi3D_(face, longitudinal_axis_)) <1.e-16) //this node has not yet been treated
+      readRestartFile(Restart_file_name);
+    }
+  else
+    {
+      if(je_suis_maitre())
         {
-          double s = coord_cg(face,longitudinal_axis_);
-          double xs= coord_cg(face,0);
-          double ys= coord_cg(face,1);
-          double zs= coord_cg(face,2);
-          if (longitudinal_axis_==0)
-            xs=0.;
-          else if (longitudinal_axis_==1)
-            ys=0.;
-          else
-            zs=0.;
-          //double test = 0.22*sin(PI*s/0.7);
-          int i, j ;
-          i = s/h;
-          if((i+1) < abscissa_size)
-            {
-              j= i+1;
-            }
-          else
-            {
-              j=i;
-            }
-          double ux, uy, uz, Rx, Ry, Rz;
-
-          //linear interpolation between points i and j
-          double	alpha = (abscissa_[j] - s)/h;
-          double	betha = (s - abscissa_[i])/h;
-
-          ux=alpha*u_(i, 0) + betha*u_(j, 0);
-          uy=alpha*u_(i, 1) + betha*u_(j, 1);
-          uz=alpha*u_(i, 2) + betha*u_(j, 2);
-          Rx=alpha*R_(i, 0) + betha*R_(j, 0);
-          Ry=alpha*R_(i, 1) + betha*R_(j, 1);
-          Rz=alpha*R_(i, 2) + betha*R_(j, 2);
-
-          //Cerr<<" test apres interpolation = "<<uy - test<<finl;
-          phi3D_(face, 0) =ux + Ry*zs -Rz*ys;
-          phi3D_(face, 1) =uy + Rz*xs -Rx*zs;
-          phi3D_(face, 2) =uz + Rx*ys -Ry*xs;
-
+          bool first_writing=true;
+          printOutputFluidForceOnBeam(first_writing);
+          if (nb_output_points_1D>0)
+            printOutputBeam1D(first_writing);
+          if (nb_output_points_3D>0)
+            printOutputBeam3D(first_writing);
         }
-
     }
-}*/
-
+}
 

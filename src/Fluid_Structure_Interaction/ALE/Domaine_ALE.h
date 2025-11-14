@@ -70,7 +70,6 @@ public :
   void reading_vit_bords_ALE(Entree& is);
   void reading_solver_moving_mesh_ALE(Entree& is);
   void reading_beam_model(Entree& is);
-  void read_beam(Entree& is, int&);
   void reading_projection_ALE_boundary(Entree& is);
   void reading_ALE_Neumann_BC_for_grid_problem(Entree& is);
   void reading_structural_dynamic_mesh_model(Entree& is);
