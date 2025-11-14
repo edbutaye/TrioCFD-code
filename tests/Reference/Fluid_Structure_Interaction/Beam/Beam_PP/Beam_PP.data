@@ -47,7 +47,7 @@ Beam_model dom
     nb_beam 1
     Name Poutre {
 	    nb_modes 7 # number of modes #
-	    direction 0 # x=0, y=1, z=2 #
+	    longitudinal_axis 0 # x=0, y=1, z=2 #
 	    Young_Module 200.e+9 # Pa #
 	    Rho_beam 8100. # kg/m^3 #
 	    NewmarkTimeScheme MA

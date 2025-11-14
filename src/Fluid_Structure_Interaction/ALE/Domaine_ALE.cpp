@@ -1125,8 +1125,8 @@ void Domaine_ALE::read_beam(Entree& is, int& count)
   Nom absc_file_name;
   Nom CI_file_name="none";
   Nom Restart_file_name="none";
-  int var_int;
-  int nb_modes;
+  int var_int=0;
+  int nb_modes=0;
   int nb_output_points_1D=0;
   DoubleVect output_position_1D(nb_output_points_1D);
   int nb_output_points_3D=0;
@@ -1151,11 +1151,11 @@ void Domaine_ALE::read_beam(Entree& is, int& count)
           beam[count].setNbModes(nb_modes);
           Cerr << "Number of modes : " <<  beam[count].getNbModes() << finl;
         }
-      if(motlu=="direction")
+      if(motlu=="longitudinal_axis")
         {
           is >> var_int;
-          beam[count].setDirection(var_int);
-          Cerr << "Direction : " <<  beam[count].getDirection() << finl;
+          beam[count].setLongitudinalAxis(var_int);
+          Cerr << "Direction : " <<  beam[count].getLongitudinalAxis() << finl;
         }
       if(motlu=="bendingDirection")
         {
@@ -1264,9 +1264,9 @@ void Domaine_ALE::read_beam(Entree& is, int& count)
       if (motlu == accolade_fermee)
         break;
     }
-  beam[count].readInputMassStiffnessFiles(masse_and_stiffness_file_name);
+  // Warning: Do NOT change the order of these function calls. The correct execution of the code depends on this sequence.
   beam[count].readInputAbscFiles(absc_file_name);
-  assert(nb_modes==phi_file_name.size());
+  beam[count].readInputMassStiffnessFiles(masse_and_stiffness_file_name);
   beam[count].readInputModalDeformation(phi_file_name);
   if(CI_file_name!="none")
     {
@@ -1292,7 +1292,6 @@ void Domaine_ALE::read_beam(Entree& is, int& count)
             beam[count].printOutputBeam3D(first_writing);
         }
     }
-
 }
 //Read the mechanical beam model parameters. See the Beam class for details
 void Domaine_ALE::reading_beam_model(Entree& is)
@@ -1427,9 +1426,9 @@ const DoubleTab& Domaine_ALE::getBeamRotation(const int& i, const int& j) const
   return beam[i].getRotation(j);
 
 }
-inline const int& Domaine_ALE::getBeamDirection(const int& i) const
+inline const int& Domaine_ALE::getBeamLongitudinalAxis(const int& i) const
 {
-  return beam[i].getDirection();
+  return beam[i].getLongitudinalAxis();
 }
 
 inline const int& Domaine_ALE::getBeamBendingDirection(const int& i) const

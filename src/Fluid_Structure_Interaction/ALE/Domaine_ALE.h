@@ -97,7 +97,7 @@ public :
   //double computeDtBeam(Domaine_dis_base&);
   const DoubleTab& getBeamDisplacement(const int&, const int&) const;
   const DoubleTab& getBeamRotation(const int&, const int&) const;
-  inline const int& getBeamDirection(const int&) const;
+  inline const int& getBeamLongitudinalAxis(const int&) const;
   inline const int& getBeamBendingDirection(const int&) const;
   DoubleVect& getBeamVelocity(const int&,const double& tps, const double& dt);
   const int& getBeamNbModes(const int&) const;

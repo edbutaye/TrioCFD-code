@@ -48,7 +48,7 @@ Implemente_instanciable_sans_constructeur_ni_destructeur(Beam_model, "Beam_model
 //    nb_beam
 //    Name
 //     nb_modes number of modes
-//     direction 0|1|2
+//     longitudinal_axis 0|1|2
 //     bendingDirection 0|1|2
 //     NewmarkTimeScheme MA|FD|HHT
 //     Mass_and_stiffness_file_name
@@ -87,7 +87,7 @@ Implemente_instanciable_sans_constructeur_ni_destructeur(Beam_model, "Beam_model
 
 // XD bloc_poutre objet_lecture nul 1 Read poutre bloc
 // XD  attr nb_modes entier n 0 Number of modes
-// XD  attr direction entier dir 0 x=0, y=1, z=2
+// XD  attr longitudinal_axis entier dir 0 x=0, y=1, z=2. Axis along the length of the beam
 // XD  attr bendingDirection entier dir 0 x=0, y=1, z=2
 // XD  attr NewmarkTimeScheme NewmarkTimeScheme_deriv NewmarkTimeScheme 0 Solve the beam dynamics. Time integration scheme: choice between MA (Newmark mean acceleration),  FD (Newmark finite differences), and HHT alpha (Hilber-Hughes-Taylor, alpha usually -0.1 )
 // XD  attr Mass_and_stiffness_file_name chaine  Mass_and_stiffness_file_name 0 Name of the file containing the diagonal modal mass, stiffness, and damping matrices.
@@ -105,7 +105,7 @@ Beam_model::Beam_model()
 {
 
   nbModes_=0;;
-  direction_=0;
+  longitudinal_axis_=0;
   bending_dir_=1;
   young_=200.e+9;
   rho_ = 8100.;
@@ -652,12 +652,12 @@ DoubleVect Beam_model::interpolationOnThe3DSurface(const double& x, const double
   double xs=x;
   double ys=y;
   double zs=z;
-  if (direction_== 0)
+  if (longitudinal_axis_== 0)
     {
       s = xs;
       xs=0.;
     }
-  else if (direction_== 1)
+  else if (longitudinal_axis_== 1)
     {
       s = ys;
       ys=0.;
@@ -1096,15 +1096,15 @@ DoubleVect& Beam_model::NewmarkScheme (const double& dt)
   int abscissa_size = abscissa_.size();
   for(int face= 0; face<size; face++)
     {
-      if(abs(phi3D_(face, direction_)) <1.e-16) //this node has not yet been treated
+      if(abs(phi3D_(face, longitudinal_axis_)) <1.e-16) //this node has not yet been treated
         {
-          double s = coord_cg(face,direction_);
+          double s = coord_cg(face,longitudinal_axis_);
           double xs= coord_cg(face,0);
           double ys= coord_cg(face,1);
           double zs= coord_cg(face,2);
-          if (direction_==0)
+          if (longitudinal_axis_==0)
             xs=0.;
-          else if (direction_==1)
+          else if (longitudinal_axis_==1)
             ys=0.;
           else
             zs=0.;

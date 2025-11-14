@@ -95,7 +95,7 @@ public :
   void setCenterCoordinates(const double&,const double&, const double&);
 protected :
   int nbModes_; // Number of modes
-  int direction_; //x=0, y=1, z=2
+  int longitudinal_axis_; //x=0, y=1, z=2 Axis along the length of the beam
   int bending_dir_; // dir of  bending x=0, y=1, z=2
   double young_; // Young module
   double rho_; // solid density
@@ -154,11 +154,11 @@ inline void Beam_model::setBendingDirection(const int& direction)
 }
 inline const int& Beam_model::getLongitudinalAxis() const
 {
-  return direction_;
+  return longitudinal_axis_;
 }
 inline void Beam_model::setLongitudinalAxis(const int& direction)
 {
-  direction_=direction;
+	longitudinal_axis_=direction;
 }
 inline const double& Beam_model::getYoung() const
 {
