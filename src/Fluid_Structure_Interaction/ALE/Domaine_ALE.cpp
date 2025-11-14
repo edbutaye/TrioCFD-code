@@ -1153,13 +1153,37 @@ void Domaine_ALE::read_beam(Entree& is, int& count)
         }
       if(motlu=="longitudinal_axis")
         {
-          is >> var_int;
+          is >> nomlu;
+          if (nomlu == "x" || nomlu == "X")
+        	  var_int = 0;
+          else if (nomlu == "y" || nomlu == "Y")
+        	  var_int = 1;
+          else if (nomlu == "z" || nomlu == "Z")
+        	  var_int = 2;
+          else
+          {
+              Cerr << "ERROR: invalid main axis: " << nomlu
+	               << "'. Valid options are: x, y, or z." << finl;
+              Process::exit();
+          }
           beam[count].setLongitudinalAxis(var_int);
           Cerr << "Direction : " <<  beam[count].getLongitudinalAxis() << finl;
         }
       if(motlu=="bendingDirection")
         {
-          is >> var_int;
+    	  is >> nomlu;
+    	            if (nomlu == "x" || nomlu == "X")
+    	          	  var_int = 0;
+    	            else if (nomlu == "y" || nomlu == "Y")
+    	          	  var_int = 1;
+    	            else if (nomlu == "z" || nomlu == "Z")
+    	          	  var_int = 2;
+    	            else
+    	            {
+    	                Cerr << "ERROR: invalid direction of bending: '" << nomlu
+    	                     << "'. Valid options are: x, y, or z." << finl;
+    	                Process::exit();
+    	            }
           beam[count].setBendingDirection(var_int);
           Cerr << "Direction : " <<  beam[count].getBendingDirection() << finl;
         }

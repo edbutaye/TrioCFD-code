@@ -96,7 +96,7 @@ public :
 protected :
   int nbModes_; // Number of modes
   int longitudinal_axis_; //x=0, y=1, z=2 Axis along the length of the beam
-  int bending_dir_; // dir of  bending x=0, y=1, z=2
+  int bending_dir_; //  x=0, y=1, z=2 direction of  bending
   double young_; // Young module
   double rho_; // solid density
   DoubleVect mass_; //diagonal modal mass matrix

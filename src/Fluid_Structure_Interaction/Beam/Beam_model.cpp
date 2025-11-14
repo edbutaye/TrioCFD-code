@@ -48,8 +48,8 @@ Implemente_instanciable_sans_constructeur_ni_destructeur(Beam_model, "Beam_model
 //    nb_beam
 //    Name
 //     nb_modes number of modes
-//     longitudinal_axis 0|1|2
-//     bendingDirection 0|1|2
+//     longitudinal_axis x|y|z
+//     bendingDirection x|y|z
 //     NewmarkTimeScheme MA|FD|HHT
 //     Mass_and_stiffness_file_name
 //     Absc_file_name
@@ -87,8 +87,8 @@ Implemente_instanciable_sans_constructeur_ni_destructeur(Beam_model, "Beam_model
 
 // XD bloc_poutre objet_lecture nul 1 Read poutre bloc
 // XD  attr nb_modes entier n 0 Number of modes
-// XD  attr longitudinal_axis entier dir 0 x=0, y=1, z=2. Axis along the length of the beam
-// XD  attr bendingDirection entier dir 0 x=0, y=1, z=2
+// XD  attr longitudinal_axis chaine dir 0 x, y, z. Axis along the length of the beam
+// XD  attr bendingDirection chaine dir 0 x, y, z . Direction of  bending
 // XD  attr NewmarkTimeScheme NewmarkTimeScheme_deriv NewmarkTimeScheme 0 Solve the beam dynamics. Time integration scheme: choice between MA (Newmark mean acceleration),  FD (Newmark finite differences), and HHT alpha (Hilber-Hughes-Taylor, alpha usually -0.1 )
 // XD  attr Mass_and_stiffness_file_name chaine  Mass_and_stiffness_file_name 0 Name of the file containing the diagonal modal mass, stiffness, and damping matrices.
 // XD  attr Absc_file_name chaine Absc_file_name 0 Name of the file containing the coordinates of the Beam
