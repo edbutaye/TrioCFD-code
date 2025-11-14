@@ -57,8 +57,8 @@ public :
   inline void setLongitudinalAxis(const int&) ;
   inline const int& getNbplanes() const;
   inline void setNbplanes(const int&) ;
-  inline const int& getBendingDirection() const;
-  inline void setBendingDirection(const int&) ;
+  inline const int& getBendingDirection(const int&) const;
+  inline void setBendingDirection(const int&, const int&) ;
   inline const double& getYoung() const;
   inline void setYoung(const double&);
   inline const double& getRhoBeam() const;
@@ -99,7 +99,7 @@ public :
 protected :
   int nbModes_; // Number of modes
   int longitudinal_axis_; //x=0, y=1, z=2 Axis along the length of the beam
-  int bending_dir_; //  x=0, y=1, z=2 Direction of  bending
+  IntVect bending_dir_; //  x=0, y=1, z=2 Direction of  bending, size nb_planes_
   int nb_planes_;   // 1 or 2 Number of planes used in the beam dynamic model
   double young_; // Young module
   double rho_; // solid density
@@ -148,13 +148,13 @@ inline void Beam_model::setNbModes(const int& modes)
 {
   nbModes_=modes;
 }
-inline const int& Beam_model::getBendingDirection() const
+inline const int& Beam_model::getBendingDirection(const int& index) const
 {
-  return bending_dir_;
+  return bending_dir_[index];
 }
-inline void Beam_model::setBendingDirection(const int& direction)
+inline void Beam_model::setBendingDirection(const int& direction, const int& index)
 {
-  bending_dir_=direction;
+  bending_dir_[index]=direction;
 }
 inline const int& Beam_model::getLongitudinalAxis() const
 {

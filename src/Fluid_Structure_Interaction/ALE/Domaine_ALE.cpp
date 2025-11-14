@@ -1250,9 +1250,9 @@ inline const int& Domaine_ALE::getBeamLongitudinalAxis(const int& i) const
   return beam[i].getLongitudinalAxis();
 }
 
-inline const int& Domaine_ALE::getBeamBendingDirection(const int& i) const
+inline const int& Domaine_ALE::getBeamBendingDirection(const int& i, const int& index) const
 {
-  return beam[i].getBendingDirection();
+  return beam[i].getBendingDirection(index);
 }
 
 DoubleVect& Domaine_ALE::getBeamVelocity(const int& i, const double& tps, const double& dt)
@@ -1326,7 +1326,7 @@ void  Domaine_ALE::computeFluidForceOnBeam(const int& i)
                       const DoubleTab& u=getBeamDisplacement(i,nbmodes);
                       const DoubleTab& R=getBeamRotation(i,nbmodes);
                       phi=interpolationOnThe3DSurface(i,xv(face,0),xv(face,1),xv(face,2), u, R); //compute the 3D modal deformation
-                      int comp= getBeamBendingDirection(i);
+                      int comp= getBeamBendingDirection(i,0);
                       fluidForceOnBeam[nbmodes] += (flux_bords_grad(face, comp)+ flux_bords_diff(face, comp))*phi[comp];
                     }
                 }

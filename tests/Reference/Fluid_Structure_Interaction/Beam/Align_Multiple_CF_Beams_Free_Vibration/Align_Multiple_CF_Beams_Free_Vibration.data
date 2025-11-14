@@ -29,6 +29,7 @@ Beam_model dom
 		nb_modes 20 # number of modes #
 		longitudinal_axis z # axis along the length of the beam: x, y, or z  #
 	       bendingDirection x # direction of  bending: x, y, or z #
+	       nb_planes 2
 		Young_Module 6.9e10 # Pa #
 		Rho_beam 18450. # kg/m^3 #
 		BaseCenterCoordinates 0.0035 0. 0.
@@ -45,6 +46,7 @@ Beam_model dom
 		nb_modes 20 # number of modes #
 		longitudinal_axis z # axis along the length of the beam: x, y, or z  #
 	       bendingDirection x # direction of  bending: x, y, or z #
+	       nb_planes 2
 		Young_Module 6.9e10 # Pa #
 		Rho_beam 18450. # kg/m^3 #
 		BaseCenterCoordinates 0.0485 0. 0.

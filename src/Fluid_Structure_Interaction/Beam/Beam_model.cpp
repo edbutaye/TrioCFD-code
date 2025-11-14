@@ -89,7 +89,7 @@ Implemente_instanciable_sans_constructeur_ni_destructeur(Beam_model, "Beam_model
 // XD bloc_poutre objet_lecture nul 1 Read poutre bloc
 // XD  attr nb_modes entier n 0 Number of modes
 // XD  attr longitudinal_axis chaine dir 0 x, y, z. Axis along the length of the beam
-// XD  attr bendingDirection chaine dir_bending 0 x, y, z . Direction of  bending
+// XD  attr bendingDirection chaine dir_bending 0 x, y, z . Direction of  bending. If two planes, give the first one, the second direction is determine automatically
 // XD  attr nb_planes entier nplanes 0 Number of planes used in the beam dynamic model
 // XD  attr NewmarkTimeScheme NewmarkTimeScheme_deriv NewmarkTimeScheme 0 Solve the beam dynamics. Time integration scheme: choice between MA (Newmark mean acceleration),  FD (Newmark finite differences), and HHT alpha (Hilber-Hughes-Taylor, alpha usually -0.1 )
 // XD  attr Mass_and_stiffness_file_name chaine  Mass_and_stiffness_file_name 0 Name of the file containing the diagonal modal mass, stiffness, and damping matrices.
@@ -106,10 +106,11 @@ Implemente_instanciable_sans_constructeur_ni_destructeur(Beam_model, "Beam_model
 Beam_model::Beam_model()
 {
 
-  nbModes_=0;;
-  longitudinal_axis_=0;
-  bending_dir_=1;
+  nbModes_=0;
   nb_planes_=1;
+  longitudinal_axis_=-1;
+  bending_dir_.resize(1);
+  bending_dir_=-1;
   young_=200.e+9;
   rho_ = 8100.;
   alpha_= 0.;
@@ -1089,7 +1090,7 @@ void Beam_model::read_beam(Entree& is)
     	                     << "'. Valid options are: x, y, or z." << finl;
     	                Process::exit();
     	            }
-    	            bending_dir_=var_int;
+    	            bending_dir_[0]=var_int;
           Cerr << "Bending direction : " <<  bending_dir_ << finl;
         }
       if(motlu=="BaseCenterCoordinates")
@@ -1221,5 +1222,39 @@ void Beam_model::read_beam(Entree& is)
             printOutputBeam3D(first_writing);
         }
     }
+
+
+  if (longitudinal_axis_==-1){
+	  Cerr << "ERROR: you must specify the axis along the length of the beam."<<finl;
+	       Process::exit();
+  }
+  if (bending_dir_[0] == -1){
+	  Cerr << "ERROR: you must specify the bending direction."<<finl;
+	       Process::exit();
+  }
+
+  // Check that the first bending direction is not the longitudinal axis
+  if (bending_dir_[0] == longitudinal_axis_)
+  {
+      Cerr << "ERROR: invalid bendingDirection: it must be different from the longitudinal_axis."<<finl;
+      Process::exit();
+  }
+
+  // If there are two bending planes, determine the second direction automatically
+  if (nb_planes_ == 2)
+  {
+      bending_dir_.resize(2);
+
+      // The second bending direction is the remaining axis among {0,1,2}
+      for (int axis = 0; axis < 3; ++axis)
+      {
+          if (axis != longitudinal_axis_ && axis != bending_dir_[0])
+          {
+              bending_dir_[1] = axis;
+              break;
+          }
+      }
+  }
+
 }
 

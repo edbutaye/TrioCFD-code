@@ -49,6 +49,7 @@ Beam_model dom
 	    nb_modes 7 # number of modes #
 	    longitudinal_axis x # axis along the length of the beam: x, y, or z  #
 	    bendingDirection y # direction of  bending: x, y, or z #
+	    nb_planes 1
 	    Young_Module 200.e+9 # Pa #
 	    Rho_beam 8100. # kg/m^3 #
 	    NewmarkTimeScheme MA
