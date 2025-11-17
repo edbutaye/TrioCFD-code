@@ -8,7 +8,7 @@ Time is given in seconds
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                                               Context of the computation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Date:     11-11-2025 -- 07:35:06
+Date:     15-11-2025 -- 01:31:54
 OS:       is245197.intra.cea.fr__Linux__x86_64__5.6.6-300.fc32.x86_64__#1 SMP Tue Apr 21 13:44:19 UTC 2020
 CPU:      Model name:  Intel(R) Core(TM) i9-10900 CPU @ 2.80GHz ; Thread(s) per core:  2
 GPU:      No GPU was used for the computation
@@ -18,54 +18,54 @@ TRUST version: 1.9.7_beta
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                                            Computation start-up statistics
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Total time of the start-up:                                                2.41292        
-Percent of untracked time during computation start-up:                     1.85667e-07    
+Total time of the start-up:                                                2.30264        
+Percent of untracked time during computation start-up:                     1.97165e-07    
 Number of virtual exchanges:                                               510            
 Maximum number of MPI allreduce per time step                              204            
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                                                  Time loop statistics
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Total time of the time loop:                                               7.08118        
+Total time of the time loop:                                               6.46995        
 Number of time steps:                                                      3              
 Skipped time steps:                                                        0              
-Average time per time step:                                                2.36039        
-Standard deviation between time steps:                                     0.0214329      
+Average time per time step:                                                2.15665        
+Standard deviation between time steps:                                     0.0270373      
 Time elapsed in the skipped time steps:                                    0              
 
-Percent of total time spend in communication:                              47.0763        
+Percent of total time spend in communication:                              47.3834        
 
 Standard counter description             | Time/step       | % loop time | Call(s)/step   
 ------------------------------------------------------------------------------------------
-Convection operator                      | 0.00162447      |  0.1        | 3              
-Diffusion operator                       | 0.0032512       |  0.1        | 3              
-Source terms                             | 0.03580345      |  1.5        | 6              
-Computation of the time step dt          | 0.0002410645    |  0.0        | 1              
-Post-treatment operations                | 3.653e-06       |  2.9        | 1              
+Convection operator                      | 0.00142767      |  0.1        | 3              
+Diffusion operator                       | 0.003367328     |  0.2        | 3              
+Source terms                             | 0.03244832      |  1.5        | 6              
+Computation of the time step dt          | 0.000219326     |  0.0        | 1              
+Post-treatment operations                | 3.6385e-06      |  3.1        | 1              
 
 Custom counter description               | Time/step       | % loop time | Call(s)/step    | Level
 --------------------------------------------------------------------------------------------------
-Custom_counter::Calcul Indicatrice Next  | 0.7102492       | 30.1        | 3               | 1    
-Custom_counter::Calcul de l'indicatrice : recherche compo connexes | 0.03267438      | 1.38        | 3               | 3    
-Custom_counter::Calcul de l'indicatrice: calculs des drapeaux | 0.2245588       | 9.51        | 3               | 3    
-Custom_counter::Calcul rho mu indicatrice: calcul de l'indicatrice | 0.2618858       | 11.1        | 3               | 2    
-Custom_counter::Calcul rho mu indicatrice: calcul de l'indicatrice surface face | 0.01205324      | 0.511       | 3               | 2    
-Custom_counter::Calcul rho mu indicatrice: calcul de la surface interfaciale | 0.003522668     | 0.149       | 3               | 2    
-Custom_counter::Calcul rho mu indicatrice: calcul du barycentre | 0.004793109     | 0.203       | 3               | 2    
-Custom_counter::Mise a jour de la vitesse | 0.5513718       | 23.4        | 3               | 1    
-Custom_counter::Parcours de l'interface  | 0.1572259       | 6.66        | 4               | 2    
-Custom_counter::Redistribute             | 0.01850025      | 0.784       | 134             | 2    
-Custom_counter::Remaillage interf: bary/lissage systematiques | 0.08581286      | 3.64        | 1               | 1    
-Custom_counter::Remaillage interf: remaillage local | 0.782916        | 33.2        | 1               | 1    
-Custom_counter::Remaillage local: bary/lissage apres remaillage | 0.3744282       | 15.9        | 5               | 2    
-Custom_counter::Remaillage local: suppressions / divisions aretes | 0.02746406      | 1.16        | 6               | 2    
-Custom_counter::Supprimer_petites_aretes | 0.3663024       | 15.5        | 6               | 2    
-Custom_counter::Transporter_maillage     | 0.06539583      | 2.77        | 98              | 1    
-Custom_counter::Velocity update: projection | 0.4953523       | 21          | 3               | 2    
-Custom_counter::multigrid: jacobi residual | 0.002182773     | 0.0925      | 9               | 4    
-Custom_counter::projection: multigrid    | 0.4340718       | 18.4        | 6               | 3    
-Other operations                         | 0.1082766       |  4.6        | 
+Custom_counter::Calcul Indicatrice Next  | 0.6793948       | 31.5        | 3               | 1    
+Custom_counter::Calcul de l'indicatrice : recherche compo connexes | 0.03180238      | 1.47        | 3               | 3    
+Custom_counter::Calcul de l'indicatrice: calculs des drapeaux | 0.2166465       | 10          | 3               | 3    
+Custom_counter::Calcul rho mu indicatrice: calcul de l'indicatrice | 0.252677        | 11.7        | 3               | 2    
+Custom_counter::Calcul rho mu indicatrice: calcul de l'indicatrice surface face | 0.0111584       | 0.517       | 3               | 2    
+Custom_counter::Calcul rho mu indicatrice: calcul de la surface interfaciale | 0.003006175     | 0.139       | 3               | 2    
+Custom_counter::Calcul rho mu indicatrice: calcul du barycentre | 0.004359055     | 0.202       | 3               | 2    
+Custom_counter::Mise a jour de la vitesse | 0.4951708       | 23          | 3               | 1    
+Custom_counter::Parcours de l'interface  | 0.149477        | 6.93        | 4               | 2    
+Custom_counter::Redistribute             | 0.01671813      | 0.775       | 134             | 2    
+Custom_counter::Remaillage interf: bary/lissage systematiques | 0.07255555      | 3.36        | 1               | 1    
+Custom_counter::Remaillage interf: remaillage local | 0.6957871       | 32.3        | 1               | 1    
+Custom_counter::Remaillage local: bary/lissage apres remaillage | 0.3365691       | 15.6        | 5               | 2    
+Custom_counter::Remaillage local: suppressions / divisions aretes | 0.02200085      | 1.02        | 6               | 2    
+Custom_counter::Supprimer_petites_aretes | 0.3228537       | 15          | 6               | 2    
+Custom_counter::Transporter_maillage     | 0.04959243      | 2.3         | 98              | 1    
+Custom_counter::Velocity update: projection | 0.4419475       | 20.5        | 3               | 2    
+Custom_counter::multigrid: jacobi residual | 0.00207908      | 0.0964      | 9               | 4    
+Custom_counter::projection: multigrid    | 0.3883866       | 18          | 6               | 3    
+Other operations                         | 0.140471        |  6.5        | 
 
-Untracked time                           | 1.02e-05        | 0.000144    | 
+Untracked time                           | 1.09e-05        | 0.00017     | 
 
 Total number of virtual exchanges:                                         13998          
 Maximum number of MPI allreduce per time step                              2.29e+03       
@@ -77,23 +77,23 @@ Maximum number of MPI allreduce per time step                              2.29e
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                                                Time loop statistics: IO
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Output write sequential:                                                   2375           MB/s
+Output write sequential:                                                   2437           MB/s
 Total number of back-up:                                                   1              
 Total amount of data per back-up:                                          0              MB
-Average of the fraction of the time spent in communications between processors:      22             %
-Max of the fraction of the time spent in communications between processors:          47.2           %
-Min of the fraction of the time spent in communications between processors:          5.6            %
-Time of one mpsum measured by an internal bench over 0.1s (network latency):         1.10513e-06    
-Network maximum bandwidth on all processors:                                          5.4 GB/s      
+Average of the fraction of the time spent in communications between processors:      22.5           %
+Max of the fraction of the time spent in communications between processors:          47.5           %
+Min of the fraction of the time spent in communications between processors:          5.9            %
+Time of one mpsum measured by an internal bench over 0.1s (network latency):         1.10324e-06    
+Network maximum bandwidth on all processors:                                          5.7 GB/s      
 Total network traffic:                                                               992.108        MB/time step
 Average message size:                                                                9.69967        kB
-Min waiting time:                                                                    6.2            % of total time
-Max waiting time:                                                                    47.1           % of total time
-Avg waiting time:                                                                    22.075         % of total time
+Min waiting time:                                                                    7.2            % of total time
+Max waiting time:                                                                    47.4           % of total time
+Avg waiting time:                                                                    22.525         % of total time
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                                               Post-resolution statistics
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Time of the post-resolution:                                               8.1521e-05     
+Time of the post-resolution:                                               8.3509e-05     
 Maximum number of MPI allreduce per time step                              2              
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -101,5 +101,5 @@ Max waiting time big    => probably due to a bad partitioning
 Communications > 30%    => too many processors or network too slow
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Total time for the whole computation                                       9.49419        
+Total time for the whole computation                                       8.77268        
 
