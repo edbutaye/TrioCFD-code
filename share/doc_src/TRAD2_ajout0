@@ -39,7 +39,7 @@ combinaison mod_turb_hyd_ss_maille combinaison -1 This keyword specifies a turbu
 sous_maille mod_turb_hyd_ss_maille sous_maille -1 Structure sub-grid function model.
 modele_fonction_bas_reynolds_base objet_lecture modele_fonction_bas_reynolds_base -1 not_set
 transport_k_epsilon transport_equation_deriv transport_k_epsilon -1 The (k-eps) transport equation. To resume from a previous mixing length calculation, an external MED-format file containing reconstructed K and Epsilon quantities can be read (see fichier_ecriture_k_eps) thanks to the Champ_fonc_MED keyword. NL2 Warning, When used with the Quasi-compressible model, k and eps should be viewed as rho k and rho epsilon when defining initial and boundary conditions or when visualizing values for k and eps. This bug will be fixed in a future version.
-  attr disable_equation_residual chaine disable_equation_residual 1 The equation residual will not be used for the problem residual used when checking time convergence or computing dynamic time-step
+  attr disable_equation_residual entier disable_equation_residual 1 The equation residual will not be used for the problem residual used when checking time convergence or computing dynamic time-step
   attr convection bloc_convection convection 1 Keyword to alter the convection scheme.
   attr diffusion bloc_diffusion diffusion 1 Keyword to specify the diffusion operator.
   attr conditions_limites|boundary_conditions condlims conditions_limites 1 Boundary conditions.
@@ -412,7 +412,7 @@ mod_turb_hyd_rans modele_turbulence_hyd_deriv mod_turb_hyd_rans -1 Class for RAN
   attr quiet rien quiet 1 To disable printing of information about K and Epsilon/Omega.
 
 transport_equation_deriv objet_u transport_equation_deriv -1 not_set
-  attr disable_equation_residual chaine disable_equation_residual 1 The equation residual will not be used for the problem residual used when checking time convergence or computing dynamic time-step
+  attr disable_equation_residual entier disable_equation_residual 1 The equation residual will not be used for the problem residual used when checking time convergence or computing dynamic time-step
   attr convection bloc_convection convection 1 Keyword to alter the convection scheme.
   attr diffusion bloc_diffusion diffusion 1 Keyword to specify the diffusion operator.
   attr conditions_limites|boundary_conditions condlims conditions_limites 1 Boundary conditions.
