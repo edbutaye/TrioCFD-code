@@ -55,7 +55,7 @@ public :
   inline void setNbModes(const int&) ;
   inline const int& getLongitudinalAxis() const;
   inline void setLongitudinalAxis(const int&) ;
-  inline const int& getNbplanes() const;
+  inline const int& getNbPlanes() const;
   inline void setNbplanes(const int&) ;
   inline const int& getBendingDirection(const int&) const;
   inline void setBendingDirection(const int&, const int&) ;
@@ -79,8 +79,8 @@ public :
   DoubleVect interpolationOnThe3DSurface(const double& x, const double& y, const double& z, const DoubleTab& u, const DoubleTab& R) const;
   void initialization(double displacement);
   void initialization();
-  DoubleVect& NewmarkScheme(const double& dt);
-  DoubleVect& getVelocity(const double& tps, const double& dt);
+  DoubleTab& NewmarkScheme(const double& dt);
+  DoubleTab& getVelocity(const double& tps, const double& dt);
   inline double getSoundSpeed();
   inline  double getMass(int i);
   inline  double getStiffness(int i);
@@ -103,15 +103,15 @@ protected :
   int nb_planes_;   // 1 or 2 Number of planes used in the beam dynamic model
   double young_; // Young module
   double rho_; // solid density
-  DoubleVect mass_; //diagonal modal mass matrix
-  DoubleVect stiffness_; //diagonal modal stiffness_ matrix
-  DoubleVect damping_; //diagonal modal damping_ matrix
+  DoubleTab mass_; //diagonal modal mass matrix
+  DoubleTab stiffness_; //diagonal modal stiffness_ matrix
+  DoubleTab damping_; //diagonal modal damping_ matrix
   DoubleVect abscissa_; // coordinates of the Beam
   LIST(DoubleTab) u_;  // Beam modal displacement constituting the modal shape
   LIST(DoubleTab) R_; // Beam modal rotation constituting the modal shape
-  DoubleVect qSpeed_; // Beam 1d speed
-  DoubleVect qAcceleration_; //Beam 1d acceleration
-  DoubleVect qDisplacement_; //Beam 1d displacement
+  DoubleTab qSpeed_; // Beam 1d speed
+  DoubleTab qAcceleration_; //Beam 1d acceleration
+  DoubleTab qDisplacement_; //Beam 1d displacement
   //DoubleTab phi3D_;
   double temps_;
   DoubleVect output_position_1D_; //post-treatment of the 1d position of the points (points on the Beam)
@@ -123,18 +123,14 @@ protected :
   double dt_stab_; //critical time step, only for the explicit Newmark finite differences time discretisation
 
 
-  DoubleVect fluidForceOnBeam_; //Fluid force acting on the IFS boundary
+  DoubleTab fluidForceOnBeam_; //Fluid force acting on the IFS boundary
   double tempsComputeForceOnBeam_;
   double x0_; //x-coordinate of the center of the Beam base
   double y0_; //y-coordinate of the center of the Beam base
   double z0_; //z-coordinate of the center of the Beam base
-  mutable SFichier displacement_out_1d_; //output files of the displacement
-  mutable SFichier speed_out_1d_; //output files of the speed
-  mutable SFichier acceleration_out_1d_; //output files of the acceleration
   mutable SFichier displacement_out_3d_; //output files of the displacement
   mutable SFichier speed_out_3d_; //output files of the speed
   mutable SFichier acceleration_out_3d_; //output files of the acceleration
-  mutable SFichier fluidForceOnBeam_out_; //output files of the fluid force acting on the IFS boundary
 };
 inline const int& Beam_model::getNbModes() const
 {
@@ -164,7 +160,7 @@ inline void Beam_model::setLongitudinalAxis(const int& direction)
 {
 	longitudinal_axis_=direction;
 }
-inline const int& Beam_model::getNbplanes() const
+inline const int& Beam_model::getNbPlanes() const
 {
   return nb_planes_;
 }

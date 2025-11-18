@@ -75,37 +75,40 @@ void Champ_front_ALE_Beam::remplir_vit_som_bord_ALE(double tps)
 
   double dt = dom_ale.get_dt();
   const int nbModes=dom_ale.getBeamNbModes(index);
-  double x,y,z;
+  const int nb_planes = dom_ale.getBeamNbPlanes(index);
+  const int modes_per_plane = nbModes / nb_planes;
   int nbsf=faces.nb_som_faces();
   int i,j,k;
   int nb_som_tot=domaine.nb_som_tot();
   vit_som_bord_ALE.resize(nb_som_tot,nb_comp());
   vit_som_bord_ALE=0.;
-  const DoubleVect& beamVelocity=dom_ale.getBeamVelocity(index,tps, dt);
+  const DoubleTab& beamVelocity=dom_ale.getBeamVelocity(index,tps, dt);
   for( i=0; i<nb_faces; i++)
     {
-      x=y=z=0;
       for( k=0; k<nbsf; k++)
         {
-          x=domaine.coord(faces.sommet(i,k),0);
-          if(dimension>1)
-            y=domaine.coord(faces.sommet(i,k),1);
-          if(dimension>2)
-            z=domaine.coord(faces.sommet(i,k),2);
+          double x = domaine.coord(faces.sommet(i, k), 0);
+          double y = (dimension > 1) ? domaine.coord(faces.sommet(i, k), 1) : 0.;
+          double z = (dimension > 2) ? domaine.coord(faces.sommet(i, k), 2) : 0.;
+
           DoubleVect value(3);
           value=0.;
           DoubleVect phi(3);
-          for(int count=0; count<nbModes; count++ )
-            {
-              const DoubleTab& u=dom_ale.getBeamDisplacement(index,count);
-              const DoubleTab& R=dom_ale.getBeamRotation(index,count);
-              phi=dom_ale.interpolationOnThe3DSurface(index,x,y,z, u, R);
-              for(int comp=0; comp<nb_comp(); comp++)
-                {
-                  value[comp] +=beamVelocity[count]*phi[comp];
-                }
+          phi = 0.;
+          for (int plane = 0; plane < nb_planes; ++plane)
+              {
+                  for (int mode = 0; mode < modes_per_plane; ++mode)
+                  {
+                	  const DoubleTab& u = dom_ale.getBeamDisplacement(index, plane * modes_per_plane + mode);
+                	  const DoubleTab& R = dom_ale.getBeamRotation(index, plane * modes_per_plane + mode);
+                	  phi = dom_ale.interpolationOnThe3DSurface(index, x, y, z, u, R);
+					  for(int comp=0; comp<nb_comp(); comp++)
+						{
+						  value[comp] +=beamVelocity(mode, plane)*phi[comp];
+						}
 
-            }
+                  	 }
+              }
           for( j=0; j<nb_comp(); j++)
             {
               vit_som_bord_ALE(faces.sommet(i,k),j)=value[j];

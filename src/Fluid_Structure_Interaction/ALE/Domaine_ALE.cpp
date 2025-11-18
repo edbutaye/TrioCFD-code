@@ -1231,11 +1231,14 @@ const int& Domaine_ALE::getBeamNbModes(const int& i) const
   return beam[i].getNbModes();
 }
 
+const int& Domaine_ALE::getBeamNbPlanes(const int& i) const
+{
+  return beam[i].getNbPlanes();
+}
 const int& Domaine_ALE::getBeamNbBeam() const
 {
   return nbBeam;
 }
-
 const DoubleTab& Domaine_ALE::getBeamDisplacement(const int& i, const int& j) const
 {
   return beam[i].getDisplacement(j);
@@ -1255,7 +1258,7 @@ inline const int& Domaine_ALE::getBeamBendingDirection(const int& i, const int& 
   return beam[i].getBendingDirection(index);
 }
 
-DoubleVect& Domaine_ALE::getBeamVelocity(const int& i, const double& tps, const double& dt)
+DoubleTab& Domaine_ALE::getBeamVelocity(const int& i, const double& tps, const double& dt)
 {
   //if tps=tempsComputeForceOnBeam then the dynamics of the beam has already been solved. We only solve once per time step.
   double tempsComputeForceOnBeam=beam[i].getTempsComputeForceOnBeam();
@@ -1284,6 +1287,8 @@ void  Domaine_ALE::computeFluidForceOnBeam(const int& i)
   DoubleTab& flux_bords_grad=op_grad.flux_bords();
   DoubleTab& flux_bords_diff=op_diff.flux_bords();
   const int nbModes=getBeamNbModes(i);
+  const int nb_planes = getBeamNbPlanes(i);
+  const int modes_per_plane = nbModes / nb_planes;
 
   /*if (flux_bords_grad.size()==0)
     {
@@ -1304,8 +1309,9 @@ void  Domaine_ALE::computeFluidForceOnBeam(const int& i)
     }
   //end resumption
 
-  DoubleVect fluidForceOnBeam;
-  fluidForceOnBeam.resize(nbModes);
+  // Initialize 2D modal fluid force: [modes_per_plane, nb_planes]
+  DoubleTab fluidForceOnBeam;
+  fluidForceOnBeam.resize(modes_per_plane, nb_planes);
   fluidForceOnBeam=0.;
   if((flux_bords_grad.size() == flux_bords_diff.size()) && (flux_bords_grad.size() >0) )
     {
@@ -1321,14 +1327,18 @@ void  Domaine_ALE::computeFluidForceOnBeam(const int& i)
 
               for (int face=ndeb; face<nfin; face++)
                 {
-                  for(int nbmodes=0; nbmodes<nbModes; nbmodes++)
-                    {
-                      const DoubleTab& u=getBeamDisplacement(i,nbmodes);
-                      const DoubleTab& R=getBeamRotation(i,nbmodes);
-                      phi=interpolationOnThe3DSurface(i,xv(face,0),xv(face,1),xv(face,2), u, R); //compute the 3D modal deformation
-                      int comp= getBeamBendingDirection(i,0);
-                      fluidForceOnBeam[nbmodes] += (flux_bords_grad(face, comp)+ flux_bords_diff(face, comp))*phi[comp];
-                    }
+                  for (int plane = 0; plane < nb_planes; ++plane)
+                  {
+                      for (int mode = 0; mode < modes_per_plane; ++mode)
+                      {
+                          int global_mode_index = plane * modes_per_plane + mode;
+                          const DoubleTab& u = getBeamDisplacement(i, global_mode_index);
+                          const DoubleTab& R = getBeamRotation(i, global_mode_index);
+                          phi = interpolationOnThe3DSurface(i, xv(face,0), xv(face,1), xv(face,2), u, R);
+                          int comp = getBeamBendingDirection(i, plane); // bending direction for this plane
+                          fluidForceOnBeam(mode, plane) += (flux_bords_grad(face, comp) + flux_bords_diff(face, comp)) * phi[comp];
+                      }
+                  }
                 }
             }
 

@@ -87,19 +87,21 @@ Implemente_instanciable_sans_constructeur_ni_destructeur(Beam_model, "Beam_model
 // XD NewmarkTimeScheme_FD NewmarkTimeScheme_deriv FD 0 FD (Newmark finite differences) time integration scheme. Warning: this scheme is conditionally stable. The time step should satisfy the corresponding stability constraint, but this implementation does not automatically enforce it.The Newmark finite difference scheme is retained primarily for advanced users and benchmarking purposes.
 
 // XD bloc_poutre objet_lecture nul 1 Read poutre bloc
-// XD  attr nb_modes entier n 0 Number of modes
+// XD  attr nb_modes entier n 0 Number of modes. If there are two planes, indicate the total for both planes.
 // XD  attr longitudinal_axis chaine dir 0 x, y, z. Axis along the length of the beam
 // XD  attr bendingDirection chaine dir_bending 0 x, y, z . Direction of  bending. If two planes, give the first one, the second direction is determine automatically
 // XD  attr nb_planes entier nplanes 0 Number of planes used in the beam dynamic model
 // XD  attr NewmarkTimeScheme NewmarkTimeScheme_deriv NewmarkTimeScheme 0 Solve the beam dynamics. Time integration scheme: choice between MA (Newmark mean acceleration),  FD (Newmark finite differences), and HHT alpha (Hilber-Hughes-Taylor, alpha usually -0.1 )
-// XD  attr Mass_and_stiffness_file_name chaine  Mass_and_stiffness_file_name 0 Name of the file containing the diagonal modal mass, stiffness, and damping matrices.
+// XD  attr Mass_and_stiffness_file_name chaine  Mass_and_stiffness_file_name 0 Name of the file containing the diagonal modal mass, stiffness, and damping matrices. The file must contain nb_modes lines. When several bending planes are defined, the modes must be ordered plane-by-plane. The first modes_per_plane lines correspond to plane 0, the next modes_per_plane lines correspond to plane 1.
 // XD  attr Absc_file_name chaine Absc_file_name 0 Name of the file containing the coordinates of the Beam
-// XD  attr  Modal_deformation_file_name listchaine  Modal_deformation_file_name 0 Name of the file containing the modal deformation of the Beam (mandatory if different from 0. 0. 0.)
+// XD  attr Modal_deformation_file_name listchaine  Modal_deformation_file_name 0 Name of the file containing the modal deformation of the Beam.
 // XD  attr Young_Module floattant young 1 Young Module
 // XD  attr Rho_beam floattant rho 1 Beam density
 // XD  attr BaseCenterCoordinates listf pos_center 1 position of the base center coordinates on the Beam
-// XD  attr CI_file_name chaine CI_file_name 1 Name of the file containing the initial condition of the Beam
-// XD  attr Restart_file_name chaine Restart_file_name 1 SaveBeamForRestart.txt file to restart the calculation
+// XD  attr CI_file_name chaine CI_file_name 1 Name of the file containing the initial condition of the Beam. The initial condition file must contain nb_modes displacement values, one per line. When several bending planes are defined, the modes must be ordered plane-by-plane. The first modes_per_plane lines correspond to plane 0, the next modes_per_plane lines correspond to plane 1.
+// XD  attr Absc_file_name chaine Absc_file_name 0 Name of the file containing the coordinates of the Beam
+// XD  attr Restart_file_name chaine Restart_file_name 1 SaveBeamForRestart.txt file to restart the calculation. The file must contain nb_modes displacement values, one per line. When several bending planes are defined, the modes must be ordered plane-by-plane. The first modes_per_plane lines correspond to plane 0, the next modes_per_plane lines correspond to plane 1.
+// XD  attr Absc_file_name chaine Absc_file_name 0 Name of the file containing the coordinates of the Beam
 // XD  attr Output_position_1D list pt1d 1 nb_points  position Post-traitement of specific points on the Beam
 // XD  attr Output_position_3D listpoints pt3d 1 nb_points  position Post-traitement of specific points on the 3d FSI boundary
 
@@ -166,9 +168,20 @@ void Beam_model::readInputMassStiffnessFiles(Nom& masse_and_stiffness_file_name)
 {
     Cerr << "Reading beam model coefficients from file: " << masse_and_stiffness_file_name << finl;
 
-    mass_.resize(nbModes_);
-    stiffness_.resize(nbModes_);
-    damping_.resize(nbModes_);
+
+    if (nbModes_ % nb_planes_ != 0)
+    {
+        Cerr << "ERROR: invalid configuration. The number of modes (" << nbModes_
+             << ") must be divisible by the number of planes (" << nb_planes_ << ")." << finl;
+        Cerr << "Each plane must have the same number of modes." << finl;
+        Process::exit();
+    }
+
+    int modes_per_plane= nbModes_/nb_planes_;
+
+    mass_.resize(modes_per_plane, nb_planes_);
+    stiffness_.resize(modes_per_plane, nb_planes_);
+    damping_.resize(modes_per_plane, nb_planes_);
 
     const std::string filename(masse_and_stiffness_file_name);
     std::ifstream monFlux(filename.c_str());
@@ -180,7 +193,7 @@ void Beam_model::readInputMassStiffnessFiles(Nom& masse_and_stiffness_file_name)
     }
 
     std::string line;
-    int i = 0;
+    int index = 0;
     int lineNumber = 0;
 
     while (std::getline(monFlux, line))
@@ -200,7 +213,7 @@ void Beam_model::readInputMassStiffnessFiles(Nom& masse_and_stiffness_file_name)
          double dummy;
          if (!(issCheck >> dummy)) continue;
 
-        if (i >= nbModes_)
+        if (index >= nbModes_)
         {
             Cerr << "ERROR: File '" << filename << "' contains more data lines than nb_modes = "
                  << nbModes_ << " (at line " << lineNumber << ")." << finl;
@@ -238,32 +251,42 @@ void Beam_model::readInputMassStiffnessFiles(Nom& masse_and_stiffness_file_name)
             Process::exit();
         }
         // Store values
-        mass_[i] = mass;
-        stiffness_[i] = stiffness;
-        damping_[i] = damping;
-        ++i;
+        int p = index / modes_per_plane;      // plane index
+        int m = index % modes_per_plane;      // mode index
+        mass_(m, p) = mass;
+        stiffness_(m, p) = stiffness;
+        damping_(m, p) = damping;
+        ++index;
     }
 
-    if (i < nbModes_)
+    if (index < nbModes_)
     {
         Cerr << "ERROR: File '" << filename << "' contains too few data lines. "
-             << "Expected nb_modes = " << nbModes_ << ", but only " << i << " valid lines were read." << finl;
+             << "Expected nb_modes = " << nbModes_ << ", but only " << index << " valid lines were read." << finl;
         Process::exit();
     }
 
     Cerr << "Beam coefficients successfully read from '" << filename
-         << "' (" << i << " modes)." << finl;
+         << "' (" << index << " modes)." << finl;
 }
-
 
 void Beam_model::readInputCIFile(Nom& CI_file_name)
 {
-    Cerr << "Reading initial condition beam from file: " << CI_file_name << finl;
+    Cerr << "Reading initial beam conditions from file: " << CI_file_name << finl;
 
-    qSpeed_.resize(nbModes_);
-    qAcceleration_.resize(nbModes_);
-    qDisplacement_.resize(nbModes_);
-    fluidForceOnBeam_.resize(nbModes_);
+    if (nbModes_ % nb_planes_ != 0)
+    {
+        Cerr << "ERROR: invalid configuration. nb_modes (" << nbModes_
+             << ") must be divisible by nb_planes (" << nb_planes_ << ")." << finl;
+        Process::exit();
+    }
+
+    int modes_per_plane = nbModes_ / nb_planes_;
+
+    qSpeed_.resize(modes_per_plane, nb_planes_);
+    qAcceleration_.resize(modes_per_plane, nb_planes_);
+    qDisplacement_.resize(modes_per_plane, nb_planes_);
+    fluidForceOnBeam_.resize(modes_per_plane, nb_planes_);
 
     qSpeed_ = 0.;
     qAcceleration_ = 0.;
@@ -280,19 +303,20 @@ void Beam_model::readInputCIFile(Nom& CI_file_name)
     }
 
     std::string line;
-    int i = 0;
+    int index = 0;
     int lineNumber = 0;
 
     while (std::getline(monFlux, line))
     {
         ++lineNumber;
 
-        // Skip empty lines
+        // Skip empty or whitespace-only
         bool empty = true;
-        for (char c : line) { if (!std::isspace(static_cast<unsigned char>(c))) { empty = false; break; } }
+        for (char c : line)
+            if (!std::isspace(static_cast<unsigned char>(c))) { empty = false; break; }
         if (empty) continue;
 
-        // Skip comment lines starting with '#'
+        // Skip comments
         if (line[0] == '#') continue;
 
         // Skip non-numeric header lines
@@ -300,100 +324,97 @@ void Beam_model::readInputCIFile(Nom& CI_file_name)
         double dummy;
         if (!(issCheck >> dummy)) continue;
 
-        if (i >= nbModes_)
+        if (index >= nbModes_)
         {
-            Cerr << "ERROR: File '" << filename << "' contains more data lines than nb_modes = "
-                 << nbModes_ << " (at line " << lineNumber << ")." << finl;
+            Cerr << "ERROR: File '" << filename
+                 << "' contains more data than expected (nb_modes = " << nbModes_
+                 << "), at line " << lineNumber << "." << finl;
             Process::exit();
         }
 
         std::istringstream iss(line);
         double displacement;
+
         if (!(iss >> displacement))
         {
-            Cerr << "ERROR: Unable to read displacement value in file '" << filename
-                 << "' at line " << lineNumber << "." << finl;
+            Cerr << "ERROR: Invalid displacement value at line "
+                 << lineNumber << " in file '" << filename << "'." << finl;
             Cerr << "Line content: [" << line << "]" << finl;
             Process::exit();
         }
 
-        // Check if a second value exists (should be only one per line)
+        // Ensure only one value per line
         double extra;
         if (iss >> extra)
         {
-            Cerr << "ERROR: In file '" << filename << "', line " << lineNumber
-                 << " contains more than one value." << finl;
+            Cerr << "ERROR: Too many values at line " << lineNumber
+                 << " in file '" << filename << "'." << finl;
             Cerr << "Line content: [" << line << "]" << finl;
             Process::exit();
         }
 
-        qDisplacement_[i] = displacement;
-        // Initialize acceleration from fluid force and stiffness
-        qAcceleration_[i] = fluidForceOnBeam_[i] - (stiffness_[i] / mass_[i]) * qDisplacement_[i];
+        int p = index / modes_per_plane;  // plane index
+        int m = index % modes_per_plane;  // mode index
 
-        ++i;
+        qDisplacement_(m, p) = displacement;
+
+        // Compute initial acceleration
+        qAcceleration_(m, p) =
+            fluidForceOnBeam_(m, p) - (stiffness_(m, p) / mass_(m, p)) * displacement;
+
+        ++index;
     }
 
-    // Check that the file contains exactly nbModes_ values
-    if (i < nbModes_)
+    // Check file length
+    if (index < nbModes_)
     {
-        Cerr << "ERROR: File '" << filename << "' contains too few valid data lines. "
-             << "Expected nb_modes = " << nbModes_ << ", but only " << i << " were read." << finl;
+        Cerr << "ERROR: File '" << filename << "' contains too few data lines. "
+             << "Expected " << nbModes_ << ", but found " << index << "." << finl;
         Process::exit();
     }
 
-    Cerr << "Initial condition successfully read from '" << filename
-         << "' (" << i << " modes)." << finl;
+    Cerr << "Initial beam conditions successfully read from '" << filename
+         << "' (" << index << " values)." << finl;
 }
+
 
 void Beam_model::readRestartFile(Nom& Restart_file_name)
 {
     Cerr << "Reading restart file: " << Restart_file_name << finl;
+
+    int modes_per_plane = nbModes_ / nb_planes_;
+
+    // Resize 2D arrays
+    qDisplacement_.resize(modes_per_plane, nb_planes_);
+    qSpeed_.resize(modes_per_plane, nb_planes_);
+    qAcceleration_.resize(modes_per_plane, nb_planes_);
+
     const std::string filename(Restart_file_name);
     std::ifstream monFlux(filename.c_str());
 
     if (!monFlux)
     {
-        Cerr << "Beam_model::readRestartFile" << finl;
-        Cerr << "ERROR: Unable to open the restart file '" << filename << "'." << finl;
+        Cerr << "ERROR: Unable to open restart file '" << filename << "'." << finl;
         Process::exit();
     }
 
     std::string line;
-    int i = 0;
+    int index = 0;
     int lineNumber = 0;
 
     while (std::getline(monFlux, line))
     {
         ++lineNumber;
 
-        // Skip empty lines
-        bool empty = true;
-        for (char c : line) { if (!std::isspace(static_cast<unsigned char>(c))) { empty = false; break; } }
-        if (empty) continue;
 
-        // Skip comment lines starting with '#'
-        if (line[0] == '#') continue;
-
-        // Skip non-numeric header lines
-        std::istringstream issCheck(line);
-        double dummy;
-        if (!(issCheck >> dummy)) continue;
-
-        if (i >= nbModes_)
-        {
-            Cerr << "ERROR: File '" << filename << "' contains more data lines than nb_modes = "
-                 << nbModes_ << " (at line " << lineNumber << ")." << finl;
-            Process::exit();
-        }
-
+        // Read exactly 4 values
         std::istringstream iss(line);
         double temps, displacement, speed, acceleration;
 
         if (!(iss >> temps >> displacement >> speed >> acceleration))
         {
-            Cerr << "ERROR: In file '" << filename << "', line " << lineNumber
-                 << " does not contain exactly 4 numerical values." << finl;
+            Cerr << "ERROR: Line " << lineNumber << " in file '" << filename
+                 << "' does not contain exactly 4 numerical values." << finl;
             Cerr << "Line content: [" << line << "]" << finl;
             Process::exit();
         }
@@ -402,32 +423,34 @@ void Beam_model::readRestartFile(Nom& Restart_file_name)
         double extra;
         if (iss >> extra)
         {
-            Cerr << "ERROR: In file '" << filename << "', line " << lineNumber
-                 << " contains more than 4 values." << finl;
+            Cerr << "ERROR: Line " << lineNumber << " in file '" << filename
+                 << "' contains more than 4 values." << finl;
             Cerr << "Line content: [" << line << "]" << finl;
             Process::exit();
         }
 
-        // Store values
-        temps_ = temps;
-        qDisplacement_[i] = displacement;
-        qSpeed_[i] = speed;
-        qAcceleration_[i] = acceleration;
+        int plane = index / modes_per_plane;
+        int mode = index % modes_per_plane;
 
-        ++i;
+        temps_ = temps;
+        qDisplacement_(mode, plane) = displacement;
+        qSpeed_(mode, plane) = speed;
+        qAcceleration_(mode, plane) = acceleration;
+
+        ++index;
     }
 
-    // Check count
-    if (i < nbModes_)
+    // Check that all modes were read
+    if (index < nbModes_)
     {
         Cerr << "ERROR: File '" << filename << "' contains too few valid data lines. "
-             << "Expected nb_modes = " << nbModes_ << ", but only " << i << " were read." << finl;
+             << "Expected nb_modes = " << nbModes_ << ", but only " << index << " were read." << finl;
         Process::exit();
     }
 
     tempsComputeForceOnBeam_ = temps_;
     Cerr << "Restart file successfully read from '" << filename
-         << "' (" << i << " modes)." << finl;
+         << "' (" << index << " modes, " << nb_planes_ << " planes)." << finl;
 }
 
 void Beam_model::readInputAbscFiles(Nom& absc_file_name)
@@ -624,26 +647,31 @@ void Beam_model::readInputModalDeformation(Noms& modal_deformation_file_name)
 
 void Beam_model::initialization(double displacement)
 {
-  qSpeed_.resize(nbModes_);
-  qAcceleration_.resize(nbModes_);
-  qDisplacement_.resize(nbModes_);
-  fluidForceOnBeam_.resize(nbModes_);
-  qSpeed_=0.;
-  qAcceleration_=0.;
-  qDisplacement_=displacement;
-  fluidForceOnBeam_=0.;
+    int modes_per_plane = nbModes_ / nb_planes_;
 
+    qSpeed_.resize(modes_per_plane, nb_planes_);
+    qAcceleration_.resize(modes_per_plane, nb_planes_);
+    qDisplacement_.resize(modes_per_plane, nb_planes_);
+    fluidForceOnBeam_.resize(modes_per_plane, nb_planes_);
+
+    qSpeed_ = 0.;
+    qAcceleration_ = 0.;
+    qDisplacement_ = displacement;
+    fluidForceOnBeam_ = 0.;
 }
 void Beam_model::initialization()
 {
-  qSpeed_.resize(nbModes_);
-  qAcceleration_.resize(nbModes_);
-  qDisplacement_.resize(nbModes_);
-  fluidForceOnBeam_.resize(nbModes_);
-  qSpeed_=0.;
-  qAcceleration_=0.;
-  qDisplacement_=0.;
-  fluidForceOnBeam_=0.;
+    int modes_per_plane = nbModes_ / nb_planes_;
+
+    qSpeed_.resize(modes_per_plane, nb_planes_);
+    qAcceleration_.resize(modes_per_plane, nb_planes_);
+    qDisplacement_.resize(modes_per_plane, nb_planes_);
+    fluidForceOnBeam_.resize(modes_per_plane, nb_planes_);
+
+    qSpeed_ = 0.;
+    qAcceleration_ = 0.;
+    qDisplacement_ = 0.;
+    fluidForceOnBeam_ = 0.;
 }
 
 DoubleVect Beam_model::interpolationOnThe3DSurface(const double& x, const double& y, const double& z, const DoubleTab& u, const DoubleTab& R) const
@@ -737,218 +765,312 @@ DoubleVect Beam_model::interpolationOnThe3DSurface(const double& x, const double
 
 void Beam_model::saveBeamForRestart() const
 {
+    if (!je_suis_maitre()) return;
 
-  if (je_suis_maitre())
+    const Nom filename = beamName_ + "SaveBeamForRestart.txt";
+    std::ofstream ofs_sauve(filename, std::ofstream::out | std::ofstream::trunc);
+    ofs_sauve.precision(32);
+
+    if (!ofs_sauve)
     {
-      std::ofstream ofs_sauve;
-      ofs_sauve.open (beamName_+"SaveBeamForRestart.txt", std::ofstream::out | std::ofstream::trunc);
-      ofs_sauve.precision(32);
-      for(int j=0; j < nbModes_; j++)
-        {
-          ofs_sauve<<temps_<<"  "<<qDisplacement_[j]<<" "<<qSpeed_[j]<<" "<<qAcceleration_[j]<<" "<<endl;
-        }
-      ofs_sauve.close();
+        Cerr << "ERROR: Unable to open file '" << filename << "' for writing restart data." << finl;
+        Process::exit();
     }
 
+    int modes_per_plane = nbModes_ / nb_planes_;
+
+    for (int plane = 0; plane < nb_planes_; ++plane)
+    {
+        for (int mode = 0; mode < modes_per_plane; ++mode)
+        {
+            ofs_sauve << temps_ << "  "
+                      << qDisplacement_(mode, plane) << " "
+                      << qSpeed_(mode, plane) << " "
+                      << qAcceleration_(mode, plane) << std::endl;
+        }
+    }
+
+    ofs_sauve.close();
+    Cerr << "Beam state saved for restart in '" << filename << "' ("
+         << nbModes_ << " modes, " << nb_planes_ << " planes)." << finl;
 }
+
 
 void Beam_model::printOutputBeam1D(bool first_writing) const
 {
+    if (!je_suis_maitre()) return;
 
-  if (je_suis_maitre())
+    int nb_output_points = output_position_1D_.size();
+    int modes_per_plane = nbModes_ / nb_planes_;
+
+    for (int plane = 0; plane < nb_planes_; ++plane)
     {
-      int nb_output_points= output_position_1D_.size();
-      DoubleTab displacement(nb_output_points,3);
-      DoubleTab velocity(nb_output_points,3);
-      DoubleTab acceleration(nb_output_points,3);
-      displacement=0.;
-      velocity=0.;
-      acceleration=0.;
-      for(int j=0; j < nbModes_; j++)
+        // --- Compute 1D fields for THIS plane ---
+        DoubleTab displacement(nb_output_points, 3);
+        DoubleTab velocity(nb_output_points, 3);
+        DoubleTab acceleration(nb_output_points, 3);
+
+        displacement = 0.;
+        velocity     = 0.;
+        acceleration = 0.;
+
+        for (int mode = 0; mode < modes_per_plane; ++mode)
         {
-          const DoubleTab& u=u_(j);
-          for(int k=0; k<nb_output_points; k++)
+            int global_mode = plane * modes_per_plane + mode;
+            const DoubleTab& u = u_(global_mode);
+
+            for (int k = 0; k < nb_output_points; ++k)
             {
-              for(int i=0; i<3; i++)
+                int idx = int(output_position_1D_[k]);
+                for (int i = 0; i < 3; ++i)
                 {
-                  displacement(k, i) += qDisplacement_[j]*u(int(output_position_1D_[k]),i);
-                  velocity(k, i) += qSpeed_[j]*u(int(output_position_1D_[k]),i);
-                  acceleration(k, i) += qAcceleration_[j]*u(int(output_position_1D_[k]),i);
+                    displacement(k, i) += qDisplacement_(mode, plane) * u(idx, i);
+                    velocity(k, i)     += qSpeed_(mode, plane)        * u(idx, i);
+                    acceleration(k, i) += qAcceleration_(mode, plane)  * u(idx, i);
                 }
             }
         }
-      Nom filename_disp(beamName_);
-      filename_disp+="_Displacement1D.out";
-      Nom filename_speed(beamName_);
-      filename_speed+="_Velocity1D.out";
-      Nom filename_acc(beamName_);
-      filename_acc+="_Acceleration1D.out";
-      if (!displacement_out_1d_.is_open())
+
+        // -----------------------------------------------------
+        //               WRITE FILES FOR THIS PLANE
+        // -----------------------------------------------------
+
+        // ======== DISPLACEMENT FILE ========
         {
-          displacement_out_1d_.ouvrir(filename_disp, (first_writing?ios::out:ios::app));
-          displacement_out_1d_.setf(ios::scientific);
-        }
-      if (!speed_out_1d_.is_open())
-        {
-          speed_out_1d_.ouvrir(filename_speed, (first_writing?ios::out:ios::app));
-          speed_out_1d_.setf(ios::scientific);
-        }
-      if (!acceleration_out_1d_.is_open())
-        {
-          acceleration_out_1d_.ouvrir(filename_acc, (first_writing?ios::out:ios::app));
-          acceleration_out_1d_.setf(ios::scientific);
-        }
-      // comments are added to the file header
-      if (first_writing)
-        {
-          displacement_out_1d_<< "# Printing Beam 1D displacement: time  values of x y z -component at points ";
-          speed_out_1d_<< "# Printing Beam 1D velocity: time  values of x y z -component at points ";
-          acceleration_out_1d_<< "# Printing Beam 1D acceleration: time  values of x y z -component at points ";
-          for(int k=0; k<nb_output_points; k++)
+            Nom filename = beamName_;
+            filename += "_Displacement1D_plane_";
+            filename += Nom(plane);
+            filename += ".out";
+
+            SFichier out;
+            out.ouvrir(filename, first_writing ? ios::out : ios::app);
+            out.setf(ios::scientific);
+
+            if (first_writing)
             {
-              displacement_out_1d_<<output_position_1D_[k]<<" ";
-              speed_out_1d_<<output_position_1D_[k]<<" ";
-              acceleration_out_1d_<<output_position_1D_[k]<<" ";
+                out << "# Plane " << plane
+                    << " Beam 1D displacement: time x y z at points ";
+                for (int k = 0; k < nb_output_points; ++k)
+                    out << output_position_1D_[k] << " ";
+                out << finl;
             }
-          displacement_out_1d_<<finl;
-          speed_out_1d_<<finl;
-          acceleration_out_1d_<<finl;
+
+            out << temps_ << " ";
+            for (int k = 0; k < nb_output_points; ++k)
+                for (int i = 0; i < 3; ++i)
+                    out << displacement(k, i) << " ";
+            out << finl;
         }
-      displacement_out_1d_<< temps_<< " ";
-      speed_out_1d_<< temps_<< " ";
-      acceleration_out_1d_<< temps_<< " ";
-      for(int k=0; k<nb_output_points; k++)
+
+        // ======== VELOCITY FILE ========
         {
-          for(int i=0; i<3; i++)
+            Nom filename = beamName_;
+            filename += "_Velocity1D_plane_";
+            filename += Nom(plane);
+            filename += ".out";
+
+            SFichier out;
+            out.ouvrir(filename, first_writing ? ios::out : ios::app);
+            out.setf(ios::scientific);
+
+            if (first_writing)
             {
-              displacement_out_1d_<<displacement(k, i)<<" ";
-              speed_out_1d_<<velocity(k, i)<<" ";
-              acceleration_out_1d_<<acceleration(k, i)<<" ";
+                out << "# Plane " << plane
+                    << " Beam 1D velocity: time x y z at points ";
+                for (int k = 0; k < nb_output_points; ++k)
+                    out << output_position_1D_[k] << " ";
+                out << finl;
             }
+
+            out << temps_ << " ";
+            for (int k = 0; k < nb_output_points; ++k)
+                for (int i = 0; i < 3; ++i)
+                    out << velocity(k, i) << " ";
+            out << finl;
         }
-      displacement_out_1d_<<finl;
-      speed_out_1d_<<finl;
-      acceleration_out_1d_<<finl;
+
+        // ======== ACCELERATION FILE ========
+        {
+            Nom filename = beamName_;
+            filename += "_Acceleration1D_plane_";
+            filename += Nom(plane);
+            filename += ".out";
+
+            SFichier out;
+            out.ouvrir(filename, first_writing ? ios::out : ios::app);
+            out.setf(ios::scientific);
+
+            if (first_writing)
+            {
+                out << "# Plane " << plane
+                    << " Beam 1D acceleration: time x y z at points ";
+                for (int k = 0; k < nb_output_points; ++k)
+                    out << output_position_1D_[k] << " ";
+                out << finl;
+            }
+
+            out << temps_ << " ";
+            for (int k = 0; k < nb_output_points; ++k)
+                for (int i = 0; i < 3; ++i)
+                    out << acceleration(k, i) << " ";
+            out << finl;
+        }
     }
 }
+
+
+
 void Beam_model::printOutputBeam3D(bool first_writing) const
 {
+    if (!je_suis_maitre()) return;
 
-  if (je_suis_maitre())
+    const int nb_output_points = output_position_3D_.dimension(0);
+    DoubleTab displacement(nb_output_points, 3);
+    DoubleTab velocity(nb_output_points, 3);
+    DoubleTab acceleration(nb_output_points, 3);
+
+    displacement = 0.;
+    velocity = 0.;
+    acceleration = 0.;
+
+    const int modes_per_plane = qDisplacement_.dimension(0);
+    const int nb_planes = qDisplacement_.dimension(1);
+
+    DoubleVect phi3D(3);
+
+    // --- SUM OVER PLANES AND MODES ---
+    for (int p = 0; p < nb_planes; p++)
     {
-      int nb_output_points= output_position_3D_.dimension(0);
-      DoubleTab displacement(nb_output_points,3);
-      DoubleTab velocity(nb_output_points,3);
-      DoubleTab acceleration(nb_output_points,3);
-      displacement=0.;
-      velocity=0.;
-      acceleration=0.;
-      DoubleVect phi3D(3);
-      for(int j=0; j < nbModes_; j++)
+        for (int m = 0; m < modes_per_plane; m++)
         {
-          const DoubleTab& u=u_(j);
-          const DoubleTab& R=R_(j);
-          for(int k=0; k<nb_output_points; k++)
+            const DoubleTab& u = u_(m + p * modes_per_plane);
+            const DoubleTab& R = R_(m + p * modes_per_plane);
+
+            for (int k = 0; k < nb_output_points; k++)
             {
-              phi3D=interpolationOnThe3DSurface(output_position_3D_(k,0),output_position_3D_(k,1),output_position_3D_(k,2), u, R);
-              for(int i=0; i<3; i++)
+                phi3D = interpolationOnThe3DSurface(output_position_3D_(k,0),
+                                                   output_position_3D_(k,1),
+                                                   output_position_3D_(k,2),
+                                                   u, R);
+
+                for (int i = 0; i < 3; i++)
                 {
-                  displacement(k, i) += qDisplacement_[j]*phi3D[i];
-                  velocity(k, i) += qSpeed_[j]*phi3D[i];
-                  acceleration(k, i) += qAcceleration_[j]*phi3D[i];
+                    displacement(k,i) += qDisplacement_(m,p) * phi3D[i];
+                    velocity(k,i)     += qSpeed_(m,p)        * phi3D[i];
+                    acceleration(k,i) += qAcceleration_(m,p) * phi3D[i];
                 }
             }
         }
-
-      Nom filename_disp(beamName_);
-      filename_disp+="_Displacement3D.out";
-      Nom filename_speed(beamName_);
-      filename_speed+="_Velocity3D.out";
-      Nom filename_acc(beamName_);
-      filename_acc+="_Acceleration3D.out";
-      if (!displacement_out_3d_.is_open())
-        {
-          displacement_out_3d_.ouvrir(filename_disp, (first_writing?ios::out:ios::app));
-          displacement_out_3d_.setf(ios::scientific);
-        }
-      if (!speed_out_3d_.is_open())
-        {
-          speed_out_3d_.ouvrir(filename_speed, (first_writing?ios::out:ios::app));
-          speed_out_3d_.setf(ios::scientific);
-        }
-      if (!acceleration_out_3d_.is_open())
-        {
-          acceleration_out_3d_.ouvrir(filename_acc, (first_writing?ios::out:ios::app));
-          acceleration_out_3d_.setf(ios::scientific);
-        }
-      // comments are added to the file header
-      if (first_writing)
-        {
-          displacement_out_3d_<< "# Printing Beam 3D displacement: time  values of x y z -component at points ";
-          speed_out_3d_<< "# Printing Beam 3D velocity: time  values of x y z -component at points ";
-          acceleration_out_3d_<< "# Printing Beam 3D acceleration: time  values of x y z -component at points ";
-          for(int k=0; k<nb_output_points; k++)
-            {
-              displacement_out_3d_<<"( ";
-              speed_out_3d_<<"( ";
-              acceleration_out_3d_<<"( ";
-              for(int i=0; i<3; i++)
-
-                {
-                  displacement_out_3d_<<output_position_3D_(k, i)<<" ";
-                  speed_out_3d_<<output_position_3D_(k, i)<<" ";
-                  acceleration_out_3d_<<output_position_3D_(k, i)<<" ";
-                }
-              displacement_out_3d_<<")";
-              speed_out_3d_<<")";
-              acceleration_out_3d_<<")";
-            }
-          displacement_out_3d_<<finl;
-          speed_out_3d_<<finl;
-          acceleration_out_3d_<<finl;
-        }
-      displacement_out_3d_<< temps_<< " ";
-      speed_out_3d_<< temps_<< " ";
-      acceleration_out_3d_<< temps_<< " ";
-      for(int k=0; k<nb_output_points; k++)
-        {
-          for(int i=0; i<3; i++)
-            {
-              displacement_out_3d_<<displacement(k, i)<<" ";
-              speed_out_3d_<<velocity(k, i)<<" ";
-              acceleration_out_3d_<<acceleration(k, i)<<" ";
-            }
-        }
-      displacement_out_3d_<<finl;
-      speed_out_3d_<<finl;
-      acceleration_out_3d_<<finl;
     }
+
+    // ---------------------------
+    //  FILE HANDLING
+    // ---------------------------
+
+    Nom filename_disp(beamName_ + "_Displacement3D.out");
+    Nom filename_speed(beamName_ + "_Velocity3D.out");
+    Nom filename_acc(beamName_ + "_Acceleration3D.out");
+
+    if (!displacement_out_3d_.is_open())
+    {
+        displacement_out_3d_.ouvrir(filename_disp, (first_writing ? ios::out : ios::app));
+        displacement_out_3d_.setf(ios::scientific);
+    }
+    if (!speed_out_3d_.is_open())
+    {
+        speed_out_3d_.ouvrir(filename_speed, (first_writing ? ios::out : ios::app));
+        speed_out_3d_.setf(ios::scientific);
+    }
+    if (!acceleration_out_3d_.is_open())
+    {
+        acceleration_out_3d_.ouvrir(filename_acc, (first_writing ? ios::out : ios::app));
+        acceleration_out_3d_.setf(ios::scientific);
+    }
+
+    // --- HEADER ---
+    if (first_writing)
+    {
+        displacement_out_3d_ << "# 3D beam displacement: time, (x,y,z) at each output point ";
+        speed_out_3d_        << "# 3D beam velocity: time, (x,y,z) at each output point ";
+        acceleration_out_3d_ << "# 3D beam acceleration: time, (x,y,z) at each output point ";
+
+        for (int k = 0; k < nb_output_points; k++)
+            displacement_out_3d_ << "( " << output_position_3D_(k,0) << " " << output_position_3D_(k,1) << " " << output_position_3D_(k,2) << " ) ";
+
+        displacement_out_3d_ << finl;
+
+        for (int k = 0; k < nb_output_points; k++)
+            speed_out_3d_ << "( " << output_position_3D_(k,0) << " " << output_position_3D_(k,1) << " " << output_position_3D_(k,2) << " ) ";
+
+        speed_out_3d_ << finl;
+
+        for (int k = 0; k < nb_output_points; k++)
+            acceleration_out_3d_ << "( " << output_position_3D_(k,0) << " " << output_position_3D_(k,1) << " " << output_position_3D_(k,2) << " ) ";
+
+        acceleration_out_3d_ << finl;
+    }
+
+    // --- WRITE VALUES ---
+    displacement_out_3d_ << temps_ << " ";
+    speed_out_3d_        << temps_ << " ";
+    acceleration_out_3d_ << temps_ << " ";
+
+    for (int k = 0; k < nb_output_points; k++)
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            displacement_out_3d_  << displacement(k,i) << " ";
+            speed_out_3d_         << velocity(k,i)     << " ";
+            acceleration_out_3d_  << acceleration(k,i) << " ";
+        }
+    }
+
+    displacement_out_3d_  << finl;
+    speed_out_3d_         << finl;
+    acceleration_out_3d_  << finl;
 }
 
 void Beam_model::printOutputFluidForceOnBeam(bool first_writing) const
 {
-  if (je_suis_maitre()) // Write the result in the ModalForceFluide1D.txt file
+    if (!je_suis_maitre())
+        return;
+
+    int modes_per_plane = nbModes_ / nb_planes_;
+
+    for (int plane = 0; plane < nb_planes_; ++plane)
     {
-      Nom filename(beamName_);
-      filename+="_ModalForceFluide1D.out";
-      if (!fluidForceOnBeam_out_.is_open())
+        // Build the filename for this plane
+        Nom filename = beamName_;
+        filename += "_ModalForceFluide1D_plane_";
+        filename += Nom(plane);
+        filename += ".out";
+
+        // Open the file: overwrite if first writing, append otherwise
+        SFichier out;
+        out.ouvrir(filename, (first_writing ? ios::out : ios::app));
+        out.setf(ios::scientific);
+
+        // ===== Header =====
+        if (first_writing)
         {
-          fluidForceOnBeam_out_.ouvrir(filename, (first_writing?ios::out:ios::app));
-          fluidForceOnBeam_out_.setf(ios::scientific);
+            out << "# Modal fluid force for plane " << plane << ": time ";
+            for (int m = 0; m < modes_per_plane; ++m)  // renamed to 'm' to avoid shadowing
+                out << "(mode " << m + 1 << ") ";
+            out << finl;
         }
-      if (first_writing)
-        {
-          fluidForceOnBeam_out_<< "# Printing modal 1D fluid force: time mode ";
-          for(int nbmodes=0; nbmodes<nbModes_; nbmodes++)
-            fluidForceOnBeam_out_<<nbmodes+1<<" ";
-          fluidForceOnBeam_out_<<finl;
+        else{
+        // ===== Values =====
+        out << temps_ << " ";
+        for (int m = 0; m < modes_per_plane; ++m)
+            out << fluidForceOnBeam_(m, plane) << " ";
+        out << finl;
         }
-      fluidForceOnBeam_out_<< temps_<< " ";
-      for(int nbmodes=0; nbmodes<nbModes_; nbmodes++)
-        fluidForceOnBeam_out_<<fluidForceOnBeam_[nbmodes]<<" ";
-      fluidForceOnBeam_out_<<endl;
+        // Close the file after writing
+        out.close();
     }
 }
+
+
 
 void Beam_model::setCenterCoordinates(const double& x0,const double& y0, const double& z0)
 {
@@ -958,7 +1080,7 @@ void Beam_model::setCenterCoordinates(const double& x0,const double& y0, const d
   z0_=z0;
 }
 
-DoubleVect& Beam_model::getVelocity(const double& tps, const double& dt)
+DoubleTab& Beam_model::getVelocity(const double& tps, const double& dt)
 {
   if(dt == 0.)
     {
@@ -974,37 +1096,45 @@ DoubleVect& Beam_model::getVelocity(const double& tps, const double& dt)
     return qSpeed_;
 }
 
-
 //Solve the beam dynamics. Time integration scheme
-DoubleVect& Beam_model::NewmarkScheme (const double& dt)
+DoubleTab& Beam_model::NewmarkScheme(const double& dt)
 {
+    double squareDt = dt * dt;
+    int modes_per_plane = nbModes_ / nb_planes_;
 
-  double squareDt=dt*dt;
-  for(int j=0; j < nbModes_; j++)
+    // Loop over planes
+    for (int plane = 0; plane < nb_planes_; ++plane)
     {
-      double qDispl_pred= qDisplacement_[j] + dt*qSpeed_[j] + squareDt*(0.5-beta_)*qAcceleration_[j];
-      double qSpeed_pred= qSpeed_[j] + dt*(1-gamma_)*qAcceleration_[j];
+        for (int mode = 0; mode < modes_per_plane; ++mode)
+        {
+            // Predict displacement and speed
+            double qDispl_pred = qDisplacement_(mode, plane) + dt * qSpeed_(mode, plane)
+                                 + squareDt * (0.5 - beta_) * qAcceleration_(mode, plane);
+            double qSpeed_pred = qSpeed_(mode, plane) + dt * (1. - gamma_) * qAcceleration_(mode, plane);
 
-      double coeff1 = mass_[j] + dt*gamma_*(1.+ alpha_)*damping_[j] + squareDt*beta_*(1.+ alpha_)*stiffness_[j];
-      double coeff2 = (1. + alpha_)*damping_[j]*qSpeed_pred;
-      double coeff3 = (1. + alpha_)*stiffness_[j]*qDispl_pred;
-      double coeff4 = alpha_*stiffness_[j]*qDisplacement_[j];
-      double coeff5 = alpha_*damping_[j]*qSpeed_[j];
+            // Newmark coefficients
+            double coeff1 = mass_(mode, plane)
+                            + dt * gamma_ * (1. + alpha_) * damping_(mode, plane)
+                            + squareDt * beta_ * (1. + alpha_) * stiffness_(mode, plane);
+            double coeff2 = (1. + alpha_) * damping_(mode, plane) * qSpeed_pred;
+            double coeff3 = (1. + alpha_) * stiffness_(mode, plane) * qDispl_pred;
+            double coeff4 = alpha_ * stiffness_(mode, plane) * qDisplacement_(mode, plane);
+            double coeff5 = alpha_ * damping_(mode, plane) * qSpeed_(mode, plane);
 
-
-      qAcceleration_[j]=(fluidForceOnBeam_[j] - coeff2 - coeff3 + coeff4 + coeff5)/coeff1;
-      qDisplacement_[j] = qDispl_pred + squareDt*beta_*qAcceleration_[j];
-      qSpeed_[j] = qSpeed_pred + dt*gamma_*qAcceleration_[j];
+            // Update acceleration, displacement, and speed
+            qAcceleration_(mode, plane) = (fluidForceOnBeam_(mode, plane) - coeff2 - coeff3 + coeff4 + coeff5) / coeff1;
+            qDisplacement_(mode, plane) = qDispl_pred + squareDt * beta_ * qAcceleration_(mode, plane);
+            qSpeed_(mode, plane) = qSpeed_pred + dt * gamma_ * qAcceleration_(mode, plane);
+        }
     }
 
+    saveBeamForRestart();
+    if (output_position_1D_.size() > 0) printOutputBeam1D();
+    if (output_position_3D_.size() > 0) printOutputBeam3D();
 
-
-  saveBeamForRestart();
-  if(output_position_1D_.size()>0) printOutputBeam1D();
-  if(output_position_3D_.size()>0) printOutputBeam3D();
-
-  return qSpeed_;
+    return qSpeed_;
 }
+
 
 
 void Beam_model::read_beam(Entree& is)
@@ -1194,36 +1324,8 @@ void Beam_model::read_beam(Entree& is)
       if (motlu == close_brace)
         break;
     }
+
   // Warning: Do NOT change the order of these function calls. The correct execution of the code depends on this sequence.
-  readInputAbscFiles(absc_file_name);
-  readInputMassStiffnessFiles(masse_and_stiffness_file_name);
-  readInputModalDeformation(phi_file_name);
-  if(CI_file_name!="none")
-    {
-      readInputCIFile(CI_file_name);
-    }
-  else
-    {
-      initialization();
-    }
-  if(Restart_file_name!="none")
-    {
-      readRestartFile(Restart_file_name);
-    }
-  else
-    {
-      if(je_suis_maitre())
-        {
-          bool first_writing=true;
-          printOutputFluidForceOnBeam(first_writing);
-          if (nb_output_points_1D>0)
-            printOutputBeam1D(first_writing);
-          if (nb_output_points_3D>0)
-            printOutputBeam3D(first_writing);
-        }
-    }
-
-
   if (longitudinal_axis_==-1){
 	  Cerr << "ERROR: you must specify the axis along the length of the beam."<<finl;
 	       Process::exit();
@@ -1256,5 +1358,33 @@ void Beam_model::read_beam(Entree& is)
       }
   }
 
+  // Warning: Do NOT change the order of these function calls. The correct execution of the code depends on this sequence.
+  readInputAbscFiles(absc_file_name);
+  readInputMassStiffnessFiles(masse_and_stiffness_file_name);
+  readInputModalDeformation(phi_file_name);
+  if(CI_file_name!="none")
+    {
+      readInputCIFile(CI_file_name);
+    }
+  else
+    {
+      initialization();
+    }
+  if(Restart_file_name!="none")
+    {
+      readRestartFile(Restart_file_name);
+    }
+  else
+    {
+      if(je_suis_maitre())
+        {
+          bool first_writing=true;
+          printOutputFluidForceOnBeam(first_writing);
+          if (nb_output_points_1D>0)
+            printOutputBeam1D(first_writing);
+          if (nb_output_points_3D>0)
+            printOutputBeam3D(first_writing);
+        }
+    }
 }
 

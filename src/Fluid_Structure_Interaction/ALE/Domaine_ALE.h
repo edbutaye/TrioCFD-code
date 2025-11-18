@@ -98,8 +98,9 @@ public :
   const DoubleTab& getBeamRotation(const int&, const int&) const;
   inline const int& getBeamLongitudinalAxis(const int&) const;
   inline const int& getBeamBendingDirection(const int&, const int&) const;
-  DoubleVect& getBeamVelocity(const int&,const double& tps, const double& dt);
+  DoubleTab& getBeamVelocity(const int&,const double& tps, const double& dt);
   const int& getBeamNbModes(const int&) const;
+  const int& getBeamNbPlanes(const int&) const;
   const Nom& getBeamName(const int&) const;
   const int& getBeamNbBeam() const;
   void computeFluidForceOnBeam(const int&);
