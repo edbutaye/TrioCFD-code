@@ -1220,7 +1220,10 @@ DoubleVect Domaine_ALE::interpolationOnThe3DSurface(const int& i, const double& 
 {
   return beam[i].interpolationOnThe3DSurface(x,y,z, u, R);
 }
-
+double Domaine_ALE::interpolationPhiOnThe3DSurface(const int& i, const double& x, const double& y, const double& z, const int & dir, const DoubleTab& u) const
+{
+  return beam[i].interpolationPhiOnThe3DSurface(x,y,z, dir, u);
+}
 
 const Nom& Domaine_ALE::getBeamName(const int& i) const
 {
@@ -1315,9 +1318,6 @@ void  Domaine_ALE::computeFluidForceOnBeam(const int& i)
   fluidForceOnBeam=0.;
   if((flux_bords_grad.size() == flux_bords_diff.size()) && (flux_bords_grad.size() >0) )
     {
-
-      DoubleVect phi(3);
-      phi=0.;
       for (int n=0; n<nb_bords_ALE; n++)
         {
           if(les_bords_ALE(n).le_nom()==beam[i].getBeamName())
@@ -1333,10 +1333,9 @@ void  Domaine_ALE::computeFluidForceOnBeam(const int& i)
                       {
                           int global_mode_index = plane * modes_per_plane + mode;
                           const DoubleTab& u = getBeamDisplacement(i, global_mode_index);
-                          const DoubleTab& R = getBeamRotation(i, global_mode_index);
-                          phi = interpolationOnThe3DSurface(i, xv(face,0), xv(face,1), xv(face,2), u, R);
                           int comp = getBeamBendingDirection(i, plane); // bending direction for this plane
-                          fluidForceOnBeam(mode, plane) += (flux_bords_grad(face, comp) + flux_bords_diff(face, comp)) * phi[comp];
+                          double phi = interpolationPhiOnThe3DSurface(i, xv(face,0), xv(face,1), xv(face,2), comp, u);
+                          fluidForceOnBeam(mode, plane) += (flux_bords_grad(face, comp) + flux_bords_diff(face, comp)) * phi;
                       }
                   }
                 }

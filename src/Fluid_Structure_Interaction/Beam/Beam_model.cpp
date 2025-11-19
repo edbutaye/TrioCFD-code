@@ -673,6 +673,82 @@ void Beam_model::initialization()
     qDisplacement_ = 0.;
     fluidForceOnBeam_ = 0.;
 }
+double Beam_model::interpolationPhiOnThe3DSurface(const double& x, const double& y, const double& z, const int& comp, const DoubleTab& u) const
+{
+
+	  double phi=0.;
+	  double h = abscissa_[1] -abscissa_[0]; //1d mesh pitch
+	  int abscissa_size = abscissa_.size();
+	  double s=0.;
+	  double xs=x;
+	  double ys=y;
+	  double zs=z;
+	  if (longitudinal_axis_== 0)
+	    {
+	      s = xs;
+	      xs=0.;
+	    }
+	  else if (longitudinal_axis_== 1)
+	    {
+	      s = ys;
+	      ys=0.;
+	    }
+
+	  else
+	    {
+	      s = zs;
+	      zs=0.;
+	    }
+
+	  int i, j ;
+	  i = int(s/h);
+	  if((i+1) < abscissa_size)
+	    {
+	      j= i+1;
+	    }
+	  else
+	    {
+	      j=i;
+	    }
+
+	  //linear interpolation between points i and j
+	  double alpha, betha ;
+	  if (i==j)
+	    {
+	      alpha=1.;
+	      betha=0.;
+	    }
+	  else if(abs(abscissa_[i] - s)< 1.e-4)
+	    {
+	      alpha=1.;
+	      betha=0.;
+	    }
+	  else if (abs(abscissa_[j] - s)< 1.e-4)
+	    {
+	      alpha=0.;
+	      betha=1.;
+	    }
+	  else
+	    {
+	      alpha = (abscissa_[j] - s)/h;
+	      betha = (s - abscissa_[i])/h;
+	      if(alpha <0.)
+	        {
+	          alpha=0.;
+	          betha=1.;
+	        }
+	      else if (betha < 0.)
+	        {
+	          alpha=1.;
+	          betha=0.;
+	        }
+
+	    }
+
+	  phi=alpha*u(i, comp) + betha*u(j, comp);
+
+	  return phi;
+}
 
 DoubleVect Beam_model::interpolationOnThe3DSurface(const double& x, const double& y, const double& z, const DoubleTab& u, const DoubleTab& R) const
 {

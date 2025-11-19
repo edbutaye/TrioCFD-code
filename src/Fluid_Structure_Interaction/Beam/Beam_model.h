@@ -77,6 +77,7 @@ public :
   void readRestartFile(Nom& Restart_file_name);
   //void interpolationOnThe3DSurface(const Bords& les_bords_ALE);
   DoubleVect interpolationOnThe3DSurface(const double& x, const double& y, const double& z, const DoubleTab& u, const DoubleTab& R) const;
+  double interpolationPhiOnThe3DSurface(const double& x, const double& y, const double& z, const int& comp, const DoubleTab& u) const;
   void initialization(double displacement);
   void initialization();
   DoubleTab& NewmarkScheme(const double& dt);
