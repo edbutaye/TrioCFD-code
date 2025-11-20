@@ -13,6 +13,8 @@ connex_compo=0 # Initialisation a 0 de la premiere compo connexe
 cat $liste_bulles |
 {
   read x y z mesh
+
+  [ ! -f $mesh ] && echo "$mesh does not exists" && exit 1
   while test -n "$mesh"
   do
     echo bulle $x $y $z $mesh
@@ -37,7 +39,7 @@ seq $nelem | awk 'BEGIN{x=ENVIRON["connex_compo"]}{print x}'>>$compofile
     read x y z mesh
   done 
 
-  echo LATA_V2.1 >$lata
+  echo LATA_V2.1 >$lata   
   echo titi >>$lata
   echo Trio_U >>$lata
   echo Format ASCII,F_INDEXING,C_ORDERING,F_MARKERS_NO,INT32,REAL32 >>$lata
