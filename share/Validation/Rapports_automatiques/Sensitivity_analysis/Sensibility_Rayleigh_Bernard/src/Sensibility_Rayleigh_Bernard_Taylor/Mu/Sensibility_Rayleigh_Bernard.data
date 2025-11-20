@@ -44,9 +44,9 @@ Read sch
 	tmax 100
 	dt_min 1e-8
 	dt_max 1e-1
-	dt_impr 1e-8
+	dt_impr 1e-2
 	seuil_statio 1.e-6
-	# nb_pas_dt_max 20 #
+	nb_pas_dt_max 300000
 }
 
 
@@ -79,7 +79,7 @@ Read pb_etat
 	Navier_Stokes_standard
 	{
 
-		solveur_pression Cholesky { impr }
+		solveur_pression Cholesky { }
 		convection { centre }
 		diffusion { }
 		sources { boussinesq_temperature { T0 338 } }
