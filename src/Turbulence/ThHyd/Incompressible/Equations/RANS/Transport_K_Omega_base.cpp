@@ -203,13 +203,13 @@ int Transport_K_Omega_base::controler_K_Omega()
                       if (face_j != n)
                         {
                           double k_face = K_Omega_orig(face_j, 0);
-                          if (k_face >= K_MIN)
+                          if (k_face > K_MIN)
                             {
                               enerK += k_face;
                               nenerK++;
                             }
                           double o_face = K_Omega_orig(face_j, 1);
-                          if (o_face >= OMEGA_MIN)
+                          if (o_face > OMEGA_MIN)
                             {
                               omega += o_face;
                               nomega++;

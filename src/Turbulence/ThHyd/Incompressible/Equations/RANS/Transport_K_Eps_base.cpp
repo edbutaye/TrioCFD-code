@@ -227,13 +227,13 @@ int Transport_K_Eps_base::controler_K_Eps()
                           {
                             // Use original values for consistent neighbor averaging
                             double k_face = K_Eps_orig(elem_faces(elem, j), 0);
-                            if (k_face >= K_MIN)
+                            if (k_face > K_MIN)
                               {
                                 k_new += k_face;
                                 nk++;
                               }
                             double e_face = K_Eps_orig(elem_faces(elem, j), 1);
-                            if (e_face >= EPS_MIN)
+                            if (e_face > EPS_MIN)
                               {
                                 eps_new += e_face;
                                 neps++;
