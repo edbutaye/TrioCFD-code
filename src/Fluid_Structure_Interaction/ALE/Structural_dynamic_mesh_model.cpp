@@ -23,7 +23,7 @@ Implemente_instanciable_sans_constructeur(Structural_dynamic_mesh_model,"Structu
 
 // XD bloc_lecture_Structural_dynamic_mesh_model objet_lecture nul 0 bloc
 // XD  attr aco chaine(into=["{"]) aco 0 Opening curly bracket.
-// XD  attr Mfront_library chaine(into=["Mfront_library"]) Mfront_library 0 Keyword to specify the path_to_libBehaviour.so If the user does not define the MFront library path, we use the default one instead: path = $project_directory/share/MFront_material_libraries/<MFront_library_keyword>/src/libBehaviour.so
+// XD  attr Mfront_library chaine(into=["Mfront_library"]) Mfront_library 0 Keyword to specify the path_to_libBehaviour.so If the user does not define the MFront library path, we use the default one instead: path = \$project_directory/share/MFront_material_libraries/<MFront_library_keyword>/src/libBehaviour.so
 // XD  attr Mfront_model_name chaine(into=["Mfront_model_name"]) Mfront_model 0 keyword to specify the Mfront model. Choice between Ogden and SaintVenantKirchhoffElasticity.
 // XD  attr Mfront_material_property chaine(into=["Mfront_material_property"]) Mfront_material_property 0 keyword to specify the material property. Eg. Ogden_alpha_, Ogden_mu_, Ogden_K
 // XD  attr YoungModulus floattant young 1 Young Module
