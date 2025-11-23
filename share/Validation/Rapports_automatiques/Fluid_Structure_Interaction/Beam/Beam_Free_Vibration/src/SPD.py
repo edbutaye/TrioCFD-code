@@ -1,26 +1,47 @@
 import numpy as np
 
 
-# Signal
-t= np.loadtxt('Poutre_Displacement1D.out', unpack=True, usecols=[0])
-x = np.loadtxt('Poutre_Displacement1D.out', unpack=True, usecols=[3])
-max= np.max(x);
-signal = x/max  # signal array
+# -----------------------------
+# Paramètres fichier
+# -----------------------------
+file1 = "Poutre_Displacement1D_plane_0.out"
 
-# Compute the FFT
-fft = np.fft.fft(signal)
+# -----------------------------
+# Lecture signal
+# -----------------------------
+t = np.loadtxt(file1, usecols=[0])
+x = np.loadtxt(file1, usecols=[2])
 
-# Compute the power spectrum
-power_spectrum = np.abs(fft)**2
+# -----------------------------
+# Vérifier si le signal est uniformément échantillonné
+dt = np.diff(t)
+if np.max(dt) - np.min(dt) > 1e-12:
+    print("Attention : le signal n'est pas parfaitement uniforme, interpolation recommandée")
+    # Ici on interpole le signal pour uniformiser
+    t_uniform = np.linspace(t[0], t[-1], len(t))
+    x_uniform = np.interp(t_uniform, t, x)
+else:
+    t_uniform = t
+    x_uniform = x
 
-# Find the index of the maximum value in the power spectrum
-max_index = np.argmax(power_spectrum)
+# -----------------------------
+# FFT
+# -----------------------------
+N = len(x_uniform)
+fs = 1.0 / np.median(np.diff(t_uniform))  # fréquence d'échantillonnage
+Xf = np.fft.fft(x_uniform)
+freqs = np.fft.fftfreq(N, d=1/fs)
 
-# Compute the frequency corresponding to the maximum value in the power spectrum
-sampling_freq = 1 / (t[1] - t[0])  # sampling frequency
-freq = max_index * sampling_freq / len(signal)
+# On prend uniquement les fréquences positives
+pos_mask = freqs > 0
+freqs = freqs[pos_mask]
+power = np.abs(Xf[pos_mask])**2
 
-freq= round(freq,2)
+# Fréquence dominante
+idx_max = np.argmax(power)
+freq_dom = freqs[idx_max]
+
+freq= round(freq_dom,2)
 fichier = open("Freq.txt", "w")       
 fichier.write(str(freq))        
 fichier.close()

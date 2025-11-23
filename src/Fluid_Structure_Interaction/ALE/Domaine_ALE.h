@@ -92,7 +92,7 @@ public :
   void setUpdateTheGrid(bool) override;
 
 
-  DoubleVect interpolationOnThe3DSurface(const int&, const double& x, const double& y, const double& z, const DoubleTab& u, const DoubleTab& R) const;
+  DoubleTab interpolationOnThe3DSurface(const int&, const double& x, const double& y, const double& z, const DoubleTab& u, const DoubleTab& R) const;
   double interpolationPhiOnThe3DSurface(const int&, const double& x, const double& y, const double& z, const int& comp, const DoubleTab& u) const;
   //double computeDtBeam(Domaine_dis_base&);
   const DoubleTab& getBeamDisplacement(const int&, const int&) const;

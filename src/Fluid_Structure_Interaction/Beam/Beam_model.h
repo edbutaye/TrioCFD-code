@@ -76,7 +76,7 @@ public :
   void readInputCIFile(Nom& CI_file_name);
   void readRestartFile(Nom& Restart_file_name);
   //void interpolationOnThe3DSurface(const Bords& les_bords_ALE);
-  DoubleVect interpolationOnThe3DSurface(const double& x, const double& y, const double& z, const DoubleTab& u, const DoubleTab& R) const;
+  DoubleTab interpolationOnThe3DSurface(const double& x, const double& y, const double& z, const DoubleTab& u, const DoubleTab& R) const;
   double interpolationPhiOnThe3DSurface(const double& x, const double& y, const double& z, const int& comp, const DoubleTab& u) const;
   void initialization(double displacement);
   void initialization();
@@ -236,12 +236,12 @@ inline double  Beam_model::getStiffness(int i)
 
 inline const DoubleTab& Beam_model::getDisplacement(int i) const
 {
-  assert(i<nbModes_);
+  assert(i<nbModes_/nb_planes_);
   return u_(i);
 }
 inline const DoubleTab& Beam_model::getRotation(int i) const
 {
-  assert(i<nbModes_);
+  assert(i<nbModes_/nb_planes_);
   return R_(i);
 
 }

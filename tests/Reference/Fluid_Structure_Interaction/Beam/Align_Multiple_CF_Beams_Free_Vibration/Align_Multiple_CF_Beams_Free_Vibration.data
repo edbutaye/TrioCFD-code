@@ -37,7 +37,7 @@ Beam_model dom
 		Mass_and_stiffness_file_name Cylindre1/vibr_pout2tube.txt
 		Absc_file_name Cylindre1/vibr_pout2tube_absc.txt
 		CI_file_name Cylindre1/vibr_pout2tube_CI.txt 
-		Modal_deformation_file_name  20 Cylindre1/vibr_pout2tube_phi_1.txt Cylindre1/vibr_pout2tube_phi_2.txt Cylindre1/vibr_pout2tube_phi_3.txt Cylindre1/vibr_pout2tube_phi_4.txt Cylindre1/vibr_pout2tube_phi_5.txt Cylindre1/vibr_pout2tube_phi_6.txt Cylindre1/vibr_pout2tube_phi_7.txt Cylindre1/vibr_pout2tube_phi_8.txt Cylindre1/vibr_pout2tube_phi_9.txt Cylindre1/vibr_pout2tube_phi_10.txt Cylindre1/vibr_pout2tube_phi_11.txt Cylindre1/vibr_pout2tube_phi_12.txt Cylindre1/vibr_pout2tube_phi_13.txt Cylindre1/vibr_pout2tube_phi_14.txt Cylindre1/vibr_pout2tube_phi_15.txt Cylindre1/vibr_pout2tube_phi_16.txt Cylindre1/vibr_pout2tube_phi_17.txt Cylindre1/vibr_pout2tube_phi_18.txt Cylindre1/vibr_pout2tube_phi_19.txt Cylindre1/vibr_pout2tube_phi_20.txt
+		Modal_deformation_file_name  20 Cylindre1/phi_1.txt Cylindre1/phi_2.txt Cylindre1/phi_3.txt Cylindre1/phi_4.txt Cylindre1/phi_5.txt Cylindre1/phi_6.txt Cylindre1/phi_7.txt Cylindre1/phi_8.txt Cylindre1/phi_9.txt Cylindre1/phi_10.txt Cylindre1/phi_11.txt Cylindre1/phi_12.txt Cylindre1/phi_13.txt Cylindre1/phi_14.txt Cylindre1/phi_15.txt Cylindre1/phi_16.txt Cylindre1/phi_17.txt Cylindre1/phi_18.txt Cylindre1/phi_19.txt Cylindre1/phi_20.txt
 		Output_position_1D 1 100
 		Output_position_3D 1  0.007 0.0035 0.198  
 		# Restart_file_name cylindre1SaveBeamForRestart.txt #
@@ -54,7 +54,7 @@ Beam_model dom
 		Mass_and_stiffness_file_name Cylindre2/vibr_pout2tube.txt
 		Absc_file_name Cylindre2/vibr_pout2tube_absc.txt
 		CI_file_name Cylindre2/vibr_pout2tube_CI.txt
-		Modal_deformation_file_name  20 Cylindre2/vibr_pout2tube_phi_1.txt Cylindre2/vibr_pout2tube_phi_2.txt Cylindre2/vibr_pout2tube_phi_3.txt Cylindre2/vibr_pout2tube_phi_4.txt Cylindre2/vibr_pout2tube_phi_5.txt Cylindre2/vibr_pout2tube_phi_6.txt Cylindre2/vibr_pout2tube_phi_7.txt Cylindre2/vibr_pout2tube_phi_8.txt Cylindre2/vibr_pout2tube_phi_9.txt Cylindre2/vibr_pout2tube_phi_10.txt Cylindre2/vibr_pout2tube_phi_11.txt Cylindre2/vibr_pout2tube_phi_12.txt Cylindre2/vibr_pout2tube_phi_13.txt Cylindre2/vibr_pout2tube_phi_14.txt Cylindre2/vibr_pout2tube_phi_15.txt Cylindre2/vibr_pout2tube_phi_16.txt Cylindre2/vibr_pout2tube_phi_17.txt Cylindre2/vibr_pout2tube_phi_18.txt Cylindre2/vibr_pout2tube_phi_19.txt Cylindre2/vibr_pout2tube_phi_20.txt 
+		Modal_deformation_file_name  20 Cylindre2/phi_1.txt Cylindre2/phi_2.txt Cylindre2/phi_3.txt Cylindre2/phi_4.txt Cylindre2/phi_5.txt Cylindre2/phi_6.txt Cylindre2/phi_7.txt Cylindre2/phi_8.txt Cylindre2/phi_9.txt Cylindre2/phi_10.txt Cylindre2/phi_11.txt Cylindre2/phi_12.txt Cylindre2/phi_13.txt Cylindre2/phi_14.txt Cylindre2/phi_15.txt Cylindre2/phi_16.txt Cylindre2/phi_17.txt Cylindre2/phi_18.txt Cylindre2/phi_19.txt Cylindre2/phi_20.txt 
 		Output_position_1D 1 100
 		Output_position_3D 1  0.052 0.0035 0.198 
 		# Restart_file_name cylindre2SaveBeamForRestart.txt #

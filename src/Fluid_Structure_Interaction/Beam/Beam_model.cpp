@@ -94,7 +94,7 @@ Implemente_instanciable_sans_constructeur_ni_destructeur(Beam_model, "Beam_model
 // XD  attr NewmarkTimeScheme NewmarkTimeScheme_deriv NewmarkTimeScheme 0 Solve the beam dynamics. Time integration scheme: choice between MA (Newmark mean acceleration),  FD (Newmark finite differences), and HHT alpha (Hilber-Hughes-Taylor, alpha usually -0.1 )
 // XD  attr Mass_and_stiffness_file_name chaine  Mass_and_stiffness_file_name 0 Name of the file containing the diagonal modal mass, stiffness, and damping matrices. The file must contain nb_modes lines. When several bending planes are defined, the modes must be ordered plane-by-plane. The first modes_per_plane lines correspond to plane 0, the next modes_per_plane lines correspond to plane 1.
 // XD  attr Absc_file_name chaine Absc_file_name 0 Name of the file containing the coordinates of the Beam
-// XD  attr Modal_deformation_file_name listchaine  Modal_deformation_file_name 0 Name of the file containing the modal deformation of the Beam.
+// XD  attr Modal_deformation_file_name listchaine  Modal_deformation_file_name 0 Name of the file containing the modal deformation of the Beam (Two-column modal deformation file: W(X) modal displacement and the rotation dW/dX modal rotation).
 // XD  attr Young_Module floattant young 1 Young Module
 // XD  attr Rho_beam floattant rho 1 Beam density
 // XD  attr BaseCenterCoordinates listf pos_center 1 position of the base center coordinates on the Beam
@@ -550,99 +550,127 @@ void Beam_model::readInputModalDeformation(Noms& modal_deformation_file_name)
 {
     if (nbModes_ == 0)
     {
-        Cerr << "Error: no deformation modes defined. At least one deformation mode is required.\n";
-        Cerr << "Use the 'nb_modes' keyword to specify the number of modes.\n";
+        Cerr << "Error: no deformation modes defined. Use 'nb_modes'.\n";
         Process::exit();
     }
 
     if (nbModes_ != modal_deformation_file_name.size())
     {
-        Cerr << "Error: mismatch between the number of modal deformation files and nb_modes.\n"
-             << "Expected " << nbModes_ << " files, but found " << modal_deformation_file_name.size() << ".\n"
-             << "Adjust the inputs and restart the program.\n";
+        Cerr << "Error: mismatch: nbModes = " << nbModes_
+             << " but " << modal_deformation_file_name.size()
+             << " files provided.\n";
         Process::exit();
     }
 
-    Cerr << "Reading beam modal deformation coefficients from files: " << modal_deformation_file_name << finl;
+    Cerr << "Reading beam modal deformation from: "
+         << modal_deformation_file_name << finl;
 
-    for (int count = 0; count < nbModes_; ++count)
+    const int nPoints         = abscissa_.size();
+    const int modes_per_plane = nbModes_ / nb_planes_;
+
+    std::vector<DoubleVect> tmp_u(nbModes_);
+    std::vector<DoubleVect> tmp_R(nbModes_);
+
+
+    for (int global_mode = 0; global_mode < nbModes_; ++global_mode)
     {
-        const std::string filename(modal_deformation_file_name[count]);
+        const std::string filename(modal_deformation_file_name[global_mode]);
         std::ifstream monFlux(filename.c_str());
         if (!monFlux)
         {
-            Cerr << "ERROR: Unable to open the file '" << filename << "'." << finl;
+            Cerr << "ERROR: Cannot open '" << filename << "'" << finl;
             Process::exit();
         }
 
-        int nPoints = abscissa_.size();
-        DoubleTab u(nPoints, 3);
-        DoubleTab R(nPoints, 3);
+        DoubleVect u_vec(nPoints);
+        DoubleVect R_vec(nPoints);
 
         std::string lineContent;
         int lineNumber = 0;
-        int line = 0;
+        int k = 0;
 
         while (std::getline(monFlux, lineContent))
         {
             ++lineNumber;
 
-            // Skip empty lines
-            if (lineContent.find_first_not_of(" \t\n\r") == std::string::npos) continue;
-
-            // Skip comment lines
+            if (lineContent.find_first_not_of(" \t\r\n") == std::string::npos) continue;
             if (lineContent[0] == '#') continue;
 
-            // Skip non-numeric headers
             std::istringstream issCheck(lineContent);
             double dummy;
             if (!(issCheck >> dummy)) continue;
 
-            // Parse exactly 6 values
             std::istringstream iss(lineContent);
-            double ux, uy, uz, rx, ry, rz;
-            if (!(iss >> ux >> uy >> uz >> rx >> ry >> rz))
+            double disp, rot;
+            if (!(iss >> disp >> rot))
             {
-                Cerr << "ERROR: Unable to read 6 numeric values in file '" << filename
-                     << "' at line " << lineNumber << "." << finl;
-                Cerr << "Line content: [" << lineContent << "]" << finl;
+                Cerr << "ERROR: '" << filename << "', line "
+                     << lineNumber << " : could not read two numeric values.\n";
                 Process::exit();
             }
 
-            // Check for extra values
+            // Check for extra tokens
             double extra;
             if (iss >> extra)
             {
-                Cerr << "ERROR: Line " << lineNumber << " in file '" << filename
-                     << "' contains more than 6 values." << finl;
-                Cerr << "Line content: [" << lineContent << "]" << finl;
+                Cerr << "ERROR: '" << filename << "', line "
+                     << lineNumber << " : line contains more than two values.\n";
+                Cerr << "Line: [" << lineContent << "]\n";
                 Process::exit();
             }
 
-            // Store data
-            u(line, 0) = ux; u(line, 1) = uy; u(line, 2) = uz;
-            R(line, 0) = rx; R(line, 1) = ry; R(line, 2) = rz;
+            if (k >= nPoints)
+            {
+                Cerr << "ERROR: file '" << filename
+                     << "' has too many data lines (expected " << nPoints << ").\n";
+                Process::exit();
+            }
 
-            ++line;
+            u_vec(k) = disp;
+            R_vec(k) = rot;
+            ++k;
         }
 
-        monFlux.close();
-
-        //  Check that we read exactly nPoints lines
-        if (line != nPoints)
+        if (k != nPoints)
         {
-            Cerr << "ERROR: File '" << filename << "' contains " << line
-                 << " valid data lines, but " << nPoints << " lines were expected." << finl;
+            Cerr << "ERROR: file '" << filename
+                 << "' contains " << k << " valid data rows, expected "
+                 << nPoints << ".\n";
             Process::exit();
         }
 
-        // Add to modal arrays
-        u_.add(u);
-        R_.add(R);
+        tmp_u[global_mode] = u_vec;
+        tmp_R[global_mode] = R_vec;
+
+        monFlux.close();
     }
 
-    Cerr << "All modal deformation files successfully read." << finl;
+    u_.vide();
+    R_.vide();
+
+
+    for (int mode = 0; mode < modes_per_plane; ++mode)
+    {
+    	DoubleTab Ut(nPoints, nb_planes_);
+    	DoubleTab Rt(nPoints, nb_planes_);
+
+        for (int plane = 0; plane < nb_planes_; ++plane)
+        {
+            int global = plane * modes_per_plane + mode;
+            for (int p = 0; p < nPoints; ++p)
+            {
+                Ut(p, plane) = tmp_u[global](p);
+                Rt(p, plane)  = tmp_R[global](p);
+            }
+        }
+        u_.add(Ut);
+        R_.add(Rt);
+    }
+
+    Cerr << "Modal deformation successfully loaded for "
+         << nbModes_ << " modes over " << nb_planes_ << " planes." << finl;
 }
+
 
 
 void Beam_model::initialization(double displacement)
@@ -750,31 +778,24 @@ double Beam_model::interpolationPhiOnThe3DSurface(const double& x, const double&
 	  return phi;
 }
 
-DoubleVect Beam_model::interpolationOnThe3DSurface(const double& x, const double& y, const double& z, const DoubleTab& u, const DoubleTab& R) const
+DoubleTab Beam_model::interpolationOnThe3DSurface(const double& x, const double& y, const double& z, const DoubleTab& u, const DoubleTab& R) const
 {
-  DoubleVect phi(3);
-  phi=0.;
+
   double h = abscissa_[1] -abscissa_[0]; //1d mesh pitch
   int abscissa_size = abscissa_.size();
   double s=0.;
-  double xs=x;
-  double ys=y;
-  double zs=z;
   if (longitudinal_axis_== 0)
     {
-      s = xs;
-      xs=0.;
+      s = x;
     }
   else if (longitudinal_axis_== 1)
     {
-      s = ys;
-      ys=0.;
+      s = y;
     }
 
   else
     {
-      s = zs;
-      zs=0.;
+      s = z;
     }
 
   int i, j ;
@@ -787,7 +808,6 @@ DoubleVect Beam_model::interpolationOnThe3DSurface(const double& x, const double
     {
       j=i;
     }
-  double ux, uy, uz, Rx, Ry, Rz;
 
   //linear interpolation between points i and j
   double alpha, betha ;
@@ -823,19 +843,68 @@ DoubleVect Beam_model::interpolationOnThe3DSurface(const double& x, const double
 
     }
 
-  ux=alpha*u(i, 0) + betha*u(j, 0);
-  uy=alpha*u(i, 1) + betha*u(j, 1);
-  uz=alpha*u(i, 2) + betha*u(j, 2);
-  Rx=alpha*R(i, 0) + betha*R(j, 0);
-  Ry=alpha*R(i, 1) + betha*R(j, 1);
-  Rz=alpha*R(i, 2) + betha*R(j, 2);
+  DoubleTab u_interp(nb_planes_), R_interp(nb_planes_);
+  for (int plane = 0; plane < nb_planes_; ++plane){
+  u_interp[plane]=alpha*u(i, plane) + betha*u(j, plane);
+  R_interp[plane]=alpha*R(i, plane) + betha*R(j, plane);
+  }
 
-  phi[0] =ux + Ry*(zs-z0_) -Rz*(ys-y0_);
-  phi[1] =uy + Rz*(xs-x0_) -Rx*(zs-z0_);
-  phi[2] =uz + Rx*(ys-y0_) -Ry*(xs-x0_);
+  DoubleTab phi(3, nb_planes_);   // 3 components: axial + 2 transverse
+  phi = 0.;
 
+  DoubleVect pos(3);
+  pos(0) = x - x0_;  // relative X position from beam axis
+  pos(1) = y - y0_;  // relative Y position from beam axis
+  pos(2) = z - z0_;  // relative Z position from beam axis
 
+  for (int plane = 0; plane < nb_planes_; ++plane)
+  {
+      int e_long  = longitudinal_axis_;      // main axis of the beam (0=x,1=y,2=z)
+      int e_trans = bending_dir_[plane];     // bending direction for this plane
 
+      double W   = u_interp[plane];          // transverse displacement
+      double Rot = R_interp[plane];          // derivative of displacement (rotation)
+
+      // indices of the remaining axes for computing axial displacement
+      int idx1 = (e_long + 1) % 3;
+      int idx2 = (e_long + 2) % 3;
+/*
+      // axial displacement component due to section rotation
+      if (e_trans == idx1)
+          phi(e_long, plane) = -Rot * pos(idx2);
+      else if (e_trans == idx2)
+          phi(e_long, plane) =  Rot * pos(idx1);
+      else
+          phi(e_long, plane) = 0.0; // safety: bending direction same as longitudinal
+
+      // transverse displacement along the bending direction
+      phi(e_trans, plane) = W;
+
+      // the other transverse component is zero
+      int e_other = 3 - e_long - e_trans;
+      phi(e_other, plane) = 0.0; */
+
+      if (e_trans == idx1)
+          {
+              phi(e_long, plane) =  Rot * pos(idx2);
+              phi(idx2, plane)   = 0.0; // transverse component perpendicular to bending
+              phi(idx1, plane)   = W;   // transverse along bending
+          }
+          else if (e_trans == idx2)
+          {
+              phi(e_long, plane) = -Rot * pos(idx1);
+              phi(idx1, plane)   = 0.0; // transverse component perpendicular to bending
+              phi(idx2, plane)   = W;   // transverse along bending
+          }
+          else
+          {
+              //bending direction equals longitudinal axis
+              phi(e_long, plane) = 0.0;
+              phi(idx1, plane)   = 0.0;
+              phi(idx2, plane)   = 0.0;
+          }
+
+  }
   return phi;
 }
 
@@ -907,9 +976,6 @@ void Beam_model::printOutputBeam1D(bool first_writing) const
             }
         }
 
-        // -----------------------------------------------------
-        //               WRITE FILES FOR THIS PLANE
-        // -----------------------------------------------------
 
         // ======== DISPLACEMENT FILE ========
         {
@@ -999,7 +1065,6 @@ void Beam_model::printOutputBeam1D(bool first_writing) const
 void Beam_model::printOutputBeam3D(bool first_writing) const
 {
     if (!je_suis_maitre()) return;
-
     const int nb_output_points = output_position_3D_.dimension(0);
     DoubleTab displacement(nb_output_points, 3);
     DoubleTab velocity(nb_output_points, 3);
@@ -1012,18 +1077,18 @@ void Beam_model::printOutputBeam3D(bool first_writing) const
     const int modes_per_plane = qDisplacement_.dimension(0);
     const int nb_planes = qDisplacement_.dimension(1);
 
-    DoubleVect phi3D(3);
+    DoubleTab phi3D(3, nb_planes);
 
-    // --- SUM OVER PLANES AND MODES ---
     for (int p = 0; p < nb_planes; p++)
     {
         for (int m = 0; m < modes_per_plane; m++)
         {
-            const DoubleTab& u = u_(m + p * modes_per_plane);
-            const DoubleTab& R = R_(m + p * modes_per_plane);
+            const DoubleTab& u = u_(m);
+            const DoubleTab& R = R_(m);
 
             for (int k = 0; k < nb_output_points; k++)
             {
+
                 phi3D = interpolationOnThe3DSurface(output_position_3D_(k,0),
                                                    output_position_3D_(k,1),
                                                    output_position_3D_(k,2),
@@ -1031,17 +1096,15 @@ void Beam_model::printOutputBeam3D(bool first_writing) const
 
                 for (int i = 0; i < 3; i++)
                 {
-                    displacement(k,i) += qDisplacement_(m,p) * phi3D[i];
-                    velocity(k,i)     += qSpeed_(m,p)        * phi3D[i];
-                    acceleration(k,i) += qAcceleration_(m,p) * phi3D[i];
+                    displacement(k,i) += qDisplacement_(m,p) * phi3D(i,p);
+                    velocity(k,i)     += qSpeed_(m,p)        * phi3D(i,p);
+                    acceleration(k,i) += qAcceleration_(m,p) * phi3D(i,p);
                 }
             }
         }
     }
 
-    // ---------------------------
-    //  FILE HANDLING
-    // ---------------------------
+
 
     Nom filename_disp(beamName_ + "_Displacement3D.out");
     Nom filename_speed(beamName_ + "_Velocity3D.out");
@@ -1104,6 +1167,7 @@ void Beam_model::printOutputBeam3D(bool first_writing) const
     displacement_out_3d_  << finl;
     speed_out_3d_         << finl;
     acceleration_out_3d_  << finl;
+
 }
 
 void Beam_model::printOutputFluidForceOnBeam(bool first_writing) const

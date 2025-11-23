@@ -1216,7 +1216,7 @@ double Domaine_ALE::computeDtBeam(Domaine_dis_base& le_domaine_dis, const int& i
   dt = 0.5*(minSurf/soundSpeed);
   return dt;
 }
-DoubleVect Domaine_ALE::interpolationOnThe3DSurface(const int& i, const double& x, const double& y, const double& z, const DoubleTab& u, const DoubleTab& R) const
+DoubleTab Domaine_ALE::interpolationOnThe3DSurface(const int& i, const double& x, const double& y, const double& z, const DoubleTab& u, const DoubleTab& R) const
 {
   return beam[i].interpolationOnThe3DSurface(x,y,z, u, R);
 }

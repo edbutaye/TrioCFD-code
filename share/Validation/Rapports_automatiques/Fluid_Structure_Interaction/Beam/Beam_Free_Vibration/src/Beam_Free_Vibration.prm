@@ -10,7 +10,7 @@ Parameters {
 	ParametersTRUST Medium : Fluide_Incompressible: air and water
 	ParametersTRUST Hydraulic problem : Navier_Stokes_standard_ALE
         ParametersTRUST Convection scheme: ALE muscl
-        ParametersTRUST Beam time integration scheme: Hilber, Hughes and Taylor (HHT). Modal resolution, 20 modes (10 in xy plane, 10 in xz plane)
+        ParametersTRUST Beam time integration scheme: Hilber, Hughes and Taylor (HHT). Modal resolution, 10 modes
         ParametersTRUST Beam boundary conditions : clamped-free and pinned-pinned
         ParametersTRUST Beam mechanical properties, the Young modulus 2.1e11  Pa and the density equal to 7850 kg/m3
         ParametersTRUST Explicit coupling with the fluid         
@@ -64,13 +64,13 @@ Results {
 		
 		Courbe {
 			legend "CF Air"
-			file ./CF_Air/Poutre_Displacement1D.out
+			file ./CF_Air/Poutre_Displacement1D_plane_0.out
 			columns $1 $3
 			Style lines
 		}
 		Courbe {
 			legend "CF Water"
-			file ./CF_Water/Poutre_Displacement1D.out
+			file ./CF_Water/Poutre_Displacement1D_plane_0.out
 			columns $1 $3
 			Style lines
 		}
@@ -266,13 +266,13 @@ Results {
 		
 		Courbe {
 			legend "PP Air"
-			file ./PP_Air/Poutre_Displacement1D.out
+			file ./PP_Air/Poutre_Displacement1D_plane_0.out
 			columns $1 $3
 			Style lines
 		}
 		Courbe {
 			legend "PP Water"
-			file ./PP_Water/Poutre_Displacement1D.out
+			file ./PP_Water/Poutre_Displacement1D_plane_0.out
 			columns $1 $3
 			Style lines
 		}
