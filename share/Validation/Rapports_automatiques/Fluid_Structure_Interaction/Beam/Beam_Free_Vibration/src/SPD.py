@@ -10,7 +10,7 @@ file1 = "Poutre_Displacement1D_plane_0.out"
 # Lecture signal
 # -----------------------------
 t = np.loadtxt(file1, usecols=[0])
-x = np.loadtxt(file1, usecols=[2])
+x = np.loadtxt(file1, usecols=[1])
 
 # -----------------------------
 # Vérifier si le signal est uniformément échantillonné

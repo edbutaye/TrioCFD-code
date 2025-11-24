@@ -131,7 +131,7 @@ Read pb
         }
         # Fields #
         format lata
-        fields dt_post 1e-1
+        fields dt_post 1e+4
         {
             pression_pa som
             vitesse som
