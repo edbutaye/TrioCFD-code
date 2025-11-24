@@ -951,9 +951,9 @@ void Beam_model::printOutputBeam1D(bool first_writing) const
     for (int plane = 0; plane < nb_planes_; ++plane)
     {
         // --- Compute 1D fields for THIS plane ---
-        DoubleTab displacement(nb_output_points, 3);
-        DoubleTab velocity(nb_output_points, 3);
-        DoubleTab acceleration(nb_output_points, 3);
+        DoubleVect displacement(nb_output_points);
+        DoubleVect velocity(nb_output_points);
+        DoubleVect acceleration(nb_output_points);
 
         displacement = 0.;
         velocity     = 0.;
@@ -961,18 +961,15 @@ void Beam_model::printOutputBeam1D(bool first_writing) const
 
         for (int mode = 0; mode < modes_per_plane; ++mode)
         {
-            int global_mode = plane * modes_per_plane + mode;
-            const DoubleTab& u = u_(global_mode);
+            const DoubleTab& u = u_(mode);
 
             for (int k = 0; k < nb_output_points; ++k)
             {
                 int idx = int(output_position_1D_[k]);
-                for (int i = 0; i < 3; ++i)
-                {
-                    displacement(k, i) += qDisplacement_(mode, plane) * u(idx, i);
-                    velocity(k, i)     += qSpeed_(mode, plane)        * u(idx, i);
-                    acceleration(k, i) += qAcceleration_(mode, plane)  * u(idx, i);
-                }
+                    displacement[k] += qDisplacement_(mode, plane) * u(idx, plane);
+                    velocity[k]     += qSpeed_(mode, plane)        * u(idx, plane);
+                    acceleration[k] += qAcceleration_(mode, plane)  * u(idx, plane);
+
             }
         }
 
@@ -999,8 +996,7 @@ void Beam_model::printOutputBeam1D(bool first_writing) const
 
             out << temps_ << " ";
             for (int k = 0; k < nb_output_points; ++k)
-                for (int i = 0; i < 3; ++i)
-                    out << displacement(k, i) << " ";
+                    out << displacement[k] << " ";
             out << finl;
         }
 
@@ -1026,8 +1022,7 @@ void Beam_model::printOutputBeam1D(bool first_writing) const
 
             out << temps_ << " ";
             for (int k = 0; k < nb_output_points; ++k)
-                for (int i = 0; i < 3; ++i)
-                    out << velocity(k, i) << " ";
+                    out << velocity[k] << " ";
             out << finl;
         }
 
@@ -1053,8 +1048,7 @@ void Beam_model::printOutputBeam1D(bool first_writing) const
 
             out << temps_ << " ";
             for (int k = 0; k < nb_output_points; ++k)
-                for (int i = 0; i < 3; ++i)
-                    out << acceleration(k, i) << " ";
+                    out << acceleration[k] << " ";
             out << finl;
         }
     }

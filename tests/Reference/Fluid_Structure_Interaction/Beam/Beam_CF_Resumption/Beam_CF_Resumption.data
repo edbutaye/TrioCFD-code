@@ -41,7 +41,7 @@ Beam_model dom
 	    NewmarkTimeScheme MA
 	    Mass_and_stiffness_file_name vibr_pout2tube.txt
 	    Absc_file_name vibr_pout2tube_absc.txt
-	    CI_file_name vibr_pout2tube.txt
+	    CI_file_name vibr_pout2tube_CI.txt
 	    Modal_deformation_file_name  1 phi_1.txt
 	    Output_position_1D 1  500
 	    Output_position_3D 1  0.7 0.02 0.02
