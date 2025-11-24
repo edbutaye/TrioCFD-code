@@ -1,0 +1,138 @@
+# Explicit coupling between the fluid (in ALE description) and the structure (beam model)  #
+# Clamped-free boundary conditions for the beam, time integration scheme: HHT  #
+# Hydraulique 3D laminar #
+# PARALLEL ONLY 10 #
+
+
+dimension 3
+
+Pb_hydraulique_ALE pb
+Domaine_ALE dom
+
+# BEGIN SCATTER #
+Scatter DOM.Zones dom
+# END SCATTER #
+
+
+
+# For the Arbitrary Lagrangian-Eulerian framework: block to indicate the number of mobile
+boundaries of the domain and specify the speed that must be imposed on them #
+Imposer_vit_bords_ALE dom
+{
+    1 # number of mobile boundaries #
+    Poutre     Champ_front_ALE_Beam 3  0.   0.  0.
+}
+
+Beam_model dom
+{
+    nb_beam 1
+    Name Poutre {
+	    nb_modes 10 # number of modes #
+	    longitudinal_axis z # axis along the length of the beam: x, y, or z  #
+	    bendingDirection x # direction of  bending: x, y, or z #
+	    nb_planes 1
+	    Young_Module 2.e+11 # Pa #
+	    Rho_beam 7850. # kg/m^3 #
+	    NewmarkTimeScheme HHT -0.1
+	    Mass_and_stiffness_file_name BaseModale/vibr_pout2tube.txt
+	    Absc_file_name BaseModale/vibr_pout2tube_absc.txt
+	    CI_file_name BaseModale/vibr_pout2tube_CI.txt
+	    Modal_deformation_file_name  10 BaseModale/phi_1.txt BaseModale/phi_2.txt BaseModale/phi_3.txt BaseModale/phi_4.txt BaseModale/phi_5.txt BaseModale/phi_6.txt BaseModale/phi_7.txt BaseModale/phi_8.txt BaseModale/phi_9.txt BaseModale/phi_10.txt 
+	    Output_position_1D 1  100
+	    # Restart_file_name SaveBeamForRestart.txt #
+    }
+
+}
+
+# Solver used to solve the system giving the moving mesh velocity #
+# Solver_moving_mesh_ALE dom { Cholesky { }  } #
+Solver_moving_mesh_ALE dom { PETSC GCP { precond ssor { omega 1.5 } seuil 1e-8  } }
+
+# I select a discretization #
+VEFPreP1B ma_discretisation
+
+
+
+# Time scheme, choice between: explicit or implicit #
+Scheme_euler_implicit mon_schema
+Read mon_schema
+{
+    # Time step #
+    # Initial time [s] #
+    tinit 0
+	nb_pas_dt_max 3
+    # Min time step #
+    dt_min 1.e-7
+    dt_max 1.e-5
+    # Output criteria #
+    # .out files printing period #
+    dt_impr 1.e-6
+    # facsec such as dt = facsec * min(dt(CFL),dt_max) ; for explicit scheme facsec <= 1. By default facsec equals to 1 #
+    facsec 10
+    facsec_max 100
+    solveur implicite_ALE
+    {
+        solveur gmres { diag seuil 1.e-12 nb_it_max 5 }
+    }
+    # Stop if one of the following criteria is checked: #
+    # End time [s] #
+    tmax  0.1
+    # Convergence threshold (see .dt_ev file) #
+    seuil_statio 1.e-15
+
+}
+
+# Association between the different objects #
+Associate pb dom
+Associate pb mon_schema
+Discretize pb ma_discretisation
+
+Read pb
+{
+    # I define a medium #
+    Fluide_Incompressible
+    {
+    	mu  Champ_Uniforme 1 0.00001825
+   	rho Champ_Uniforme 1 1.204
+
+    }
+    Navier_Stokes_standard_ALE
+    {
+        # Pressure matrix solved with #
+        solveur_pression PETSC GCP { precond ssor { omega 1.5 } seuil 1e-9  }
+        # solveur_pression PETSC Cholesky { } #
+        # Two operators are defined #
+        convection {  ALE { muscl } } # A convective scheme for ALE framework : choice between: amont and muscl #
+        diffusion { }
+        # Uniform initial condition for velocity #
+        initial_conditions {
+            vitesse Champ_Uniforme 3 0.0 0. 0.
+        }
+        # Boundary conditions #
+        boundary_conditions {
+            Poutre  frontiere_ouverte_vitesse_imposee_ALE Champ_front_ALE_Beam 3  0. 0.  0.
+            Wall  paroi_fixe
+            Inlet frontiere_ouverte_vitesse_imposee Champ_front_Uniforme 3 0. 0. 0.
+            Outlet   frontiere_ouverte_pression_imposee Champ_front_Uniforme 1 0.
+        }
+    }
+    Post_processing
+    {
+        format lml
+        fields dt_post 1e+4
+        {
+            pression_pa som
+            vitesse som
+            ALEMeshVelocity som
+        }
+    }
+
+ Sauvegarde pdi Beam_Unconfined_Cylinder_Free_Vibration.sauv
+}
+EcritureLectureSpecial 0
+# The problem is solved with #
+Solve pb
+
+# Not necessary keyword to finish #
+End
+

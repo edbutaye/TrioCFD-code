@@ -20,8 +20,7 @@ Parameters {
 	TestCase  PP_Water Beam_Free_Vibration.data 2 /*jdd en annexe*/ 
 	IncludeData 2
 
-       Reference "1. Assessment of an Euler-Bernoulli Beam Model Coupled to CFD in Order to Perform Fluid-Structure Simulations, D. Vivaldi and G. Ricciardi, Pressure Vessels and Piping Conference, 2022."
-       Reference  "2. Viscous theory for the vibrations of coaxial cylinders. Analytical formulas for the fluid forces and the modal added coefficients, R. Lagrange and M. A. Puscas, Journal of Applied Mechanics, 90(6), 2023."
+       Reference  "1. Viscous theory for the vibrations of coaxial cylinders. Analytical formulas for the fluid forces and the modal added coefficients, R. Lagrange and M. A. Puscas, Journal of Applied Mechanics, 90(6), 2023."
 	 
 	 
 }
@@ -30,7 +29,7 @@ Purpose {
         Description "This test case was created to validate the fluid-structure partitioned coupling between an Euler-Bernoulli beam model for the structure and the incompressible viscous flow model of TrioCFD. "
         Description "It allows two-way explicit fluid-structure coupling where the Arbitrary Lagrangian-Eulerian (ALE) module is used to consider the structure displacement/deformations in the fluid domain."
         Description "The coupling is similar to that presented in reference [1]. The points of difference are in the resolution of the beam model, which in our case uses a model-based solution, and in the construction of the displacement/deformation of the fluid-structure interface."
-        Description "The geometry is taken from [2]. The validation investigates the free vibrations for a cantilever cylinder in static air and water. The cylinder frequency vibrations are compared to the reference data [2]."
+        Description "The geometry is taken from [1]. The validation investigates the free vibrations for a cantilever cylinder in static air and water. The cylinder vibrations are compared to the reference data [1]."
 }
 
 Pb_description {
@@ -84,7 +83,7 @@ Results {
 	Figure {
 		Title "Air: velocity as a function of time of the point (0.7 0.02 0.02)."		
 		LabelX "t [s]"
-		LabelY "D [m]"
+		LabelY "V [m/s]"
 		legend outside
 		include_description_curves 0
 		
@@ -110,7 +109,7 @@ Results {
 		Figure {
 		Title "Air: acceleration as a function of time of the point (0.7 0.02 0.02)."		
 		LabelX "t [s]"
-		LabelY "D [m]"
+		LabelY "A [m/s*s]"
 		legend outside
 		include_description_curves 0
 		
@@ -162,7 +161,7 @@ Results {
 	Figure {
 		Title "Water: velocity as a function of time of the point (0.7 0.02 0.02)"		
 		LabelX "t [s]"
-		LabelY "D [m]"
+		LabelY "V [m/s]"
 		legend outside
 		include_description_curves 0
 		
@@ -188,7 +187,7 @@ Results {
 	Figure {
 		Title "Water: acceleration as a function of time of the point (0.7 0.02 0.02)."		
 		LabelX "t [s]"
-		LabelY "D [m]"
+		LabelY "A [m/s*s]"
 		legend outside
 		include_description_curves 0
 		
@@ -223,7 +222,7 @@ Results {
 		include_description_lines 0
 
 		Line {
-			legend "Theoretical solution [2]"
+			legend "Theoretical solution [1]"
 			values 59.07 39.39
 		}
 		
@@ -352,14 +351,14 @@ Results {
 		Courbe {
 			legend "CF air"
 			Fichier ./CF_Air/Numerical_force.txt
-			columns $1 $2
+			columns $1 $3
 			Style lines
 		}
 
 		Courbe {
 			legend "CF water"
 			file ./CF_Water/Numerical_force.txt
-			columns $1 $2
+			columns $1 $3
 			Style lines
 		}
 
@@ -420,7 +419,7 @@ Results {
 	Figure {
 		Title "Air: velocity as a function of time of the point (0.35 0.02 0.02)."		
 		LabelX "t [s]"
-		LabelY "D [m]"
+		LabelY "V [m/s]"
 		legend outside
 		include_description_curves 0
 		
@@ -446,7 +445,7 @@ Results {
 		Figure {
 		Title "Air: acceleration as a function of time of the point (0.35 0.02 0.02)."		
 		LabelX "t [s]"
-		LabelY "D [m]"
+		LabelY "A [m/s*s]"
 		legend outside
 		include_description_curves 0
 		
@@ -498,7 +497,7 @@ Results {
 	Figure {
 		Title "Water: velocity as a function of time of the point (0.35 0.02 0.02)."		
 		LabelX "t [s]"
-		LabelY "D [m]"
+		LabelY "V [m/s]"
 		legend outside
 		include_description_curves 0
 		
@@ -524,7 +523,7 @@ Results {
 	Figure {
 		Title "Water: acceleration as a function of time of the point (0.35 0.02 0.02)."		
 		LabelX "t [s]"
-		LabelY "D [m]"
+		LabelY "A [m/s*s]"
 		legend outside
 		include_description_curves 0
 		
@@ -558,7 +557,7 @@ Results {
 		include_description_lines 0
 
 		Line {
-			legend "Theoretical solution [2]"
+			legend "Theoretical solution [1]"
 			values 165.81 107.72
 		}
 		Line {
@@ -581,15 +580,15 @@ Results {
 		include_description_curves 0
 		
 		Courbe {
-			legend "CF air"
-			Fichier ./CF_Air/Beam_Free_Vibration_VITESSE_SONDE_H.son
+			legend "PP air"
+			Fichier ./PP_Air/Beam_Free_Vibration_VITESSE_SONDE_H.son
 			columns $1 $3
 			Style lines
 		}
 
 		Courbe {
-			legend "CF water"
-			file ./CF_Water/Beam_Free_Vibration_VITESSE_SONDE_H.son
+			legend "PP water"
+			file ./PP_Water/Beam_Free_Vibration_VITESSE_SONDE_H.son
 			columns $1 $3
 			Style lines
 		}
@@ -622,7 +621,7 @@ Results {
 	
 		
 		Figure {
-		Title "CF case: pressure fields along the line AB"
+		Title "PP case: pressure fields along the line AB"
 		
 		LabelX "t [s]"
 		LabelY "P [Pa]"
@@ -674,7 +673,7 @@ Results {
 
 	}
 	Figure {
-		Title "CF case: force per unit length of cylinder, y-component"
+		Title "PP case: force per unit length of cylinder, y-component"
 		
 		LabelX "t [s]"
 		LabelY "F [Pa/m]"
@@ -727,5 +726,5 @@ Results {
 
 Conclusion {
 
-	Description The fluid-structure partitioned coupling between an Euler-Bernoulli beam model for the structure and the incompressible viscous flow model of TrioCFD was investigated through the simulations of the free vibrations for a cantilever cylinder in static air and water. The simulating natural frequencies in air and water well agree with the analytical solution [2]. Remark: in order to reduce the numerical error a much more refined mesh must be used!
+	Description The fluid-structure partitioned coupling between an Euler-Bernoulli beam model for the structure and the incompressible viscous flow model of TrioCFD was investigated through the simulations of the free vibrations for a cantilever cylinder in static air and water. The simulating natural frequencies in air and water well agree with the analytical solution [1]. Remark: in order to reduce the numerical error a much more refined mesh must be used!
 }

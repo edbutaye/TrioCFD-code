@@ -1,0 +1,149 @@
+Parameters {
+	newvalidTrio
+        Title "Free vibration of a cantilever cylinder in a narrow coaxial cylindrical channel"
+        Author " M. A. Puscas"
+	ParametersTRUST Problem : Pb_hydraulique_ALE
+	ParametersTRUST Dimension : 3D
+	ParametersTRUST Domain : Domaine_ALE
+	ParametersTRUST Fluid Discretization : VEFPre1B
+	ParametersTRUST Fluid Time scheme : Scheme_euler_implicit with solver implicite_ALE
+	ParametersTRUST Medium : Fluide_Incompressible: air and water
+	ParametersTRUST Hydraulic problem : Navier_Stokes_standard_ALE
+        ParametersTRUST Convection scheme: ALE muscl
+        ParametersTRUST Beam time integration scheme: Hilber, Hughes and Taylor (HHT). Modal resolution, 10 modes
+        ParametersTRUST Beam boundary conditions : clamped-free 
+        ParametersTRUST Beam mechanical properties, the Young modulus 2.1e11  Pa and the density equal to 7850 kg/m3
+        ParametersTRUST Explicit coupling with the fluid         
+	TestCase  Air Beam_Unconfined_Cylinder_Free_Vibration.data 10
+	TestCase  Water Beam_Unconfined_Cylinder_Free_Vibration.data 10 /*jdd en annexe*/ 
+	IncludeData 2
+
+       Reference "1. Assessment of an Euler-Bernoulli Beam Model Coupled to CFD in Order to Perform Fluid-Structure Simulations, D. Vivaldi and G. Ricciardi, Pressure Vessels and Piping Conference, 2022."
+       Reference  "2. Viscous theory for the vibrations of coaxial cylinders. Analytical formulas for the fluid forces and the modal added coefficients, R. Lagrange and M. A. Puscas, Journal of Applied Mechanics, 90(6), 2023."
+	 
+	 
+}
+
+Purpose {
+        Description "This test case was created to validate the fluid-structure partitioned coupling between an Euler-Bernoulli beam model for the structure and the incompressible viscous flow model of TrioCFD. "
+        Description "It allows two-way explicit fluid-structure coupling where the Arbitrary Lagrangian-Eulerian (ALE) module is used to consider the structure displacement/deformations in the fluid domain."
+        Description "The coupling is similar to that presented in reference [1]. The points of difference are in the resolution of the beam model, which in our case uses a model-based solution, and in the construction of the displacement/deformation of the fluid-structure interface."
+        Description "The geometry is taken from [1]. The validation investigates the free vibrations for a cantilever cylinder in static air and water. The cylinder vibrations are compared to the reference data [2]."
+}
+
+Pb_description {
+	Description "The domain used for the numerical simulations is the one in Figure 1. It is composed of a cantilever cylinder, with a length of 0.25 m and a diameter of 5 mm, in a large fluid channel."
+
+	geometry {
+		Figure {
+			Title "Domain: cantilever cylinder totally non-confined"
+			Width 10cm
+			picture cylindre_isole.png
+			}
+		}
+	icbc {
+
+		Description "The external cylinder is fixed. The internal cylinder is flexible. "
+		Description "Initially, the fluid is at rest."
+		Description "The simulations were performed in air and in water."
+		Description "In this test case we consider clamped-free boundary conditions: at x=0 clamped  and at x=L free."
+		Description "Initial conditions for the beam: at the beginning of the simulation an initial displacement of 0.0001 m is imposed to the beam at x=L." 
+	} 
+}
+
+Results {
+	Description "Clamped-free beam natural frequency validation in static air and water."
+		Figure {
+			Title Air: Amplitude of the cylinder free end displacement as a function of time."
+			Width 10cm
+			picture Displacement_air.png
+			}
+
+		Figure {
+			Title Water: Amplitude of the cylinder free end displacement as a function of time."
+			Width 10cm
+			picture Displacement_water.png
+			}
+			
+		Figure {
+			Title Air: Amplitude of the cylinder free end velocity as a function of time."
+			Width 10cm
+			picture Velocity_air.png
+			}
+
+		Figure {
+			Title Water: Amplitude of the cylinder free end displacement as a function of time."
+			Width 10cm
+			picture Velocity_water.png
+			}
+		Figure {
+			Title Air: Amplitude of the cylinder free end acceleration as a function of time."
+			Width 10cm
+			picture Acceleration_air.png
+			}
+
+		Figure {
+			Title Water: Amplitude of the cylinder free end acceleration as a function of time."
+			Width 10cm
+			picture Acceleration_water.png
+			}
+	Description "Table 1 illustrates the corresponding results in terms of natural frequency in air and water for the clamped-free beam." 
+
+
+	Table {
+		Title "Comparison of the clamped-free beam numerical natural frequency with the analytical solution."
+		nb_columns 2
+		label Air | Water
+		include_description_lines 0
+
+		Line {
+			legend "Theoretical solution [2]"
+			values 113 107.24
+		}
+		Line {
+			legend "Numerical reference [1]"
+			values 112 106
+		}
+		
+		Line {
+			Nb_colonnes_fichier 2
+			legend "Coupled TrioCFD-Beam"
+			file Freq.txt 
+			Colonnes $1 $2
+
+		}
+
+	}
+
+			
+
+   Figure {
+		Title " Modal force per unit length of cylinder"
+		
+		LabelX "t [s]"
+		LabelY "F [Pa/m]"
+		legend outside
+		include_description_curves 0
+
+		RangeX 0.01 0.1
+		Courbe {
+			legend "Air"
+			Fichier ./Air/Poutre_ModalForceFluide1D_plane_0.out
+			columns $1 $2
+			Style lines
+		}
+
+		Courbe {
+			legend "Water"
+			file ./Water/Poutre_ModalForceFluide1D_plane_0.out
+			columns $1 $2
+			Style lines
+		}
+
+	}
+}
+
+Conclusion {
+
+	Description The fluid-structure partitioned coupling between an Euler-Bernoulli beam model for the structure and the incompressible viscous flow model of TrioCFD was investigated through the simulations of the free vibrations for a cantilever cylinder in static air and water. The simulating natural frequencies in air and water well agree with the analytical solution [2]. Remark: in order to reduce the numerical error a much more refined mesh must be used!
+}

@@ -1,0 +1,5 @@
+python ForceNum.py
+python SPD.py
+cd ../ 
+python Freq.py
+python Displacement_Th_Num.py

@@ -46,7 +46,7 @@ Beam_model dom
 	    CI_file_name BaseModale_PP/vibr_pout2tube_CI.txt
 	     Modal_deformation_file_name  10 BaseModale_PP/phi_1.txt BaseModale_PP/phi_2.txt BaseModale_PP/phi_3.txt BaseModale_PP/phi_4.txt BaseModale_PP/phi_5.txt BaseModale_PP/phi_6.txt BaseModale_PP/phi_7.txt BaseModale_PP/phi_8.txt BaseModale_PP/phi_9.txt BaseModale_PP/phi_10.txt
 	    Output_position_1D 1  25
-	    Output_position_3D 1  0.7 0.02 0.02
+	    Output_position_3D 1  0.35 0.02 0.02
 	    # Restart_file_name PoutreSaveBeamForRestart.txt #
     }
 
@@ -133,7 +133,7 @@ Read pb
         }
         # Fields #
         format lml
-        fields dt_post 1e-1
+        fields dt_post 1e+4
         {
             pression_pa som
             vitesse som

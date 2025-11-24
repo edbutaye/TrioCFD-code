@@ -1,0 +1,10 @@
+cp ForceNum.py Air
+cp SPD.py Air
+cp post_run Air
+cp DOM_p10.Zones Air
+cp -r BaseModale Air
+cp ForceNum.py Water
+cp SPD.py Water
+cp post_run Water
+cp DOM_p10.Zones Water
+cp -r BaseModale Water
