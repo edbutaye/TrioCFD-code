@@ -91,8 +91,8 @@ public :
   void printOutputBeam1D(bool first_writing=false) const;
   void printOutputBeam3D(bool first_writing=false) const;
   void printOutputFluidForceOnBeam(bool first_writing=false) const;
-  inline void setFluidForceOnBeam(const DoubleVect&);
-  inline DoubleVect getFluidForceOnBeam();
+  inline void setFluidForceOnBeam(const DoubleTab&);
+  inline DoubleTab getFluidForceOnBeam();
   inline void setTempsComputeForceOnBeam(const double&);
   inline const double& getTempsComputeForceOnBeam() const;
   void setCenterCoordinates(const double&,const double&, const double&);
@@ -265,12 +265,14 @@ inline void Beam_model::setBeamName(const Nom& value)
 {
   beamName_=value;
 }
-inline void Beam_model::setFluidForceOnBeam(const DoubleVect& force)
+inline void Beam_model::setFluidForceOnBeam(const DoubleTab& force)
 {
   if (mp_norme_vect(fluidForceOnBeam_)>0. && alpha_!=0.)
     {
-      for (int i=0; i< nbModes_; i++)
-        fluidForceOnBeam_[i]=(1.+ alpha_)*force[i] - alpha_*fluidForceOnBeam_[i];
+	  int modes_per_plane = nbModes_ / nb_planes_;
+	  for (int plane = 0; plane < nb_planes_; ++plane)
+		  for (int mode = 0; mode < modes_per_plane; ++mode)
+			  fluidForceOnBeam_(mode, plane)=(1.+ alpha_)*force(mode, plane) - alpha_*fluidForceOnBeam_(mode, plane);
     }
   else
     {
@@ -279,7 +281,7 @@ inline void Beam_model::setFluidForceOnBeam(const DoubleVect& force)
     }
 
 }
-inline DoubleVect  Beam_model::getFluidForceOnBeam()
+inline DoubleTab  Beam_model::getFluidForceOnBeam()
 {
 
   return fluidForceOnBeam_;
