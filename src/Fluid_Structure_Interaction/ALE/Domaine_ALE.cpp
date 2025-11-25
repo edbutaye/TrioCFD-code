@@ -1333,7 +1333,7 @@ void  Domaine_ALE::computeFluidForceOnBeam(const int& i)
                       {
                           const DoubleTab& u = getBeamDisplacement(i, mode);
                           int comp = getBeamBendingDirection(i, plane); // bending direction for this plane
-                          double phi = interpolationPhiOnThe3DSurface(i, xv(face,0), xv(face,1), xv(face,2), comp, u);
+                          double phi = interpolationPhiOnThe3DSurface(i, xv(face,0), xv(face,1), xv(face,2), plane, u);
                           fluidForceOnBeam(mode, plane) += (flux_bords_grad(face, comp) + flux_bords_diff(face, comp)) * phi;
                       }
                   }
