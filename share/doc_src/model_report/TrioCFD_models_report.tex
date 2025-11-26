@@ -52,6 +52,18 @@
     -- +(\a:\len pt)
   } -- cycle
 }
+
+\usetikzlibrary{calc}
+\usetikzlibrary[shadings]
+\usetikzlibrary{shapes.geometric}
+\newcommand*\circled[1]{\tikz[baseline=(char.base)]{
+        \node[shape=circle,fill=red!30,draw,inner sep=0.5pt] (char) {#1};}}
+\newcommand*\circledb[1]{\tikz[baseline=(char.base)]{
+        \node[shape=circle,fill=blue!30,draw,inner sep=0.5pt] (char) {#1};}}
+\newcommand*\circledg[1]{\tikz[baseline=(char.base)]{
+        \node[shape=circle,fill=green!30,draw,inner sep=0.5pt] (char) {#1};}}
+        
+        
 \def\b_v{\mathbf{v}}
 \def\U{\mathbf{U}}
 \def\V{\mathbf{V}}
@@ -83,6 +95,18 @@
 \newcommand{\lavect}{\bm{\lambda}'}
 \newcommand{\al}{\alpha}
 \newcommand{\be}{\beta}
+
+\def\U{\mathbf{U}}
+\def\V{\mathbf{V}}
+\def\Q{\mathbf{Q}}
+\def\F{\mathbf{F}}
+
+\usepackage{amsmath}
+\usepackage{yhmath}
+\usepackage{stmaryrd}
+
+
+
 %%%%%   CMFD   %%%%%
 
 \DeclareMathAlphabet{\mathpzc}{OT1}{pzc}{m}{it}
@@ -315,6 +339,7 @@
 % - TrioCFD version
 \newcommand\codeVersion{1.9.6}
 
+
 \makeindex
 
 \begin{document}
@@ -371,7 +396,7 @@ v\codeVersion & \today & A. B du CLUZEAU & TrioCFD Team\\
 \clearpage
 %
 %\listoffigures
-%
+
 %\vspace{6cm}
 \listoftables
 
@@ -399,7 +424,7 @@ v\codeVersion & \today & A. B du CLUZEAU & TrioCFD Team\\
 \input{./part43-Phase_field.tex}
 \input{./part44-IJK.tex}
 
-\part{The Arbitrary Lagrangian-Eulerian Method}
+\part{Fluid Structure Interaction Method}
 \label{sec:ALE}
 \normalsize \normalfont
 \input{./part5-ALE.tex}

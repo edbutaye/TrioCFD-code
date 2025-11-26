@@ -1,12 +1,16 @@
 \rhead{ALE METHOD}
-\chapter{The Arbitrary Lagrangian-Eulerian Method}
-\lhead{The Arbitrary Lagrangian-Eulerian Method}
-To determine the flow of a fluid, it is necessary to describe the kinematics of all its material particles throughout time. To do so, one can adopt either an Euler description of motion, in which a fluid particle is identified by its initial position, or a Lagrange description of motion, in which a fluid particle is identified by its instantaneous position. 
-Both descriptions are totally equivalent, leading to different forms of the Navier-Stokes equations that can be discretized on a stationary mesh grid (Euler) or a mesh grid that follows the motion of the fluid particles (Lagrange). In both cases, the mesh grids do not account for the motion of the boundaries, which makes the numerical simulations of the related Navier-Stokes equations delicate. To overpass this problem, several approaches, such as the immersed boundary methods~\cite{puscas2015three, puscas2015time, puscas2015conservative}, or the Arbitrary Lagrangian-Eulerian (ALE) method~\cite{donea2004arbitrary, fourestey2004second, koobus2000computation} have been developed.
 
-Here, we rely on the ALE method. In the ALE approach, the fluid flow is computed in a domain that is deformed in order to follow the movement of the fluid-solid interface. It provides a hybrid description not associated with the fluid particles and the laboratory coordinates. We associate the description with a moving imaginary mesh that follows the fluid domain.  The motion of the ALE computational mesh is independent of the material motion, the approach treats the mesh as a frame that moves with the arbitrary velocity $\mathbf{v}_{ALE}$. In the Eulerian approach, this velocity is zero, whereas it is equal to the velocity of the fluid particles in the Lagrangian approach. But in the ALE method, this velocity is equal to neither zero nor the velocity of the fluid particles; it varies smoothly and arbitrarily between both of them.  This method is a Lagrangian description in zones and directions near solid, and Eulerian elsewhere. 
+Fluid-structure interaction (FSI) problems play a crucial role in many engineering applications, particularly in the nuclear industry, where internal components such as fuel rods and steam generator tubes are subjected to fluid-induced vibrations. These vibrations can lead to structural fatigue, wear, and, in extreme cases, the failure of critical components.
+
+
+\chapter{The Arbitrary Lagrangian-Eulerian Method}
+To determine the flow of a fluid, it is necessary to describe the kinematics of all its material particles throughout time. To do so, one can adopt either an Euler description of motion, in which a fluid particle is identified by its initial position, or a Lagrange description of motion, in which a fluid particle is identified by its instantaneous position. 
+Both descriptions are totally equivalent, leading to different forms of the Navier-Stokes equations that can be discretized on a stationary mesh grid (Euler) or a mesh grid that follows the motion of the fluid particles (Lagrange). In both cases, the mesh grids do not account for the motion of the boundaries, which makes the numerical simulations of the related Navier-Stokes equations delicate. To overpass this problem, several approaches, such as the immersed boundary methods~\cite{puscas2015three, puscas2015time, puscas2015conservative}, or the Arbitrary Lagrangian-Eulerian (ALE) method~\cite{donea2004arbitrary, fourestey2004second, koobus2000computation} have been developed. Here, we rely on the ALE method.
 
 \section{ALE kinematic description}
+\lhead{The Arbitrary Lagrangian-Eulerian Method}
+
+In the ALE approach, the fluid flow is computed in a domain that is deformed in order to follow the movement of the fluid-solid interface. It provides a hybrid description not associated with the fluid particles and the laboratory coordinates. We associate the description with a moving imaginary mesh that follows the fluid domain.  The motion of the ALE computational mesh is independent of the material motion, the approach treats the mesh as a frame that moves with the arbitrary velocity $\mathbf{v}_{ALE}$. In the Eulerian approach, this velocity is zero, whereas it is equal to the velocity of the fluid particles in the Lagrangian approach. But in the ALE method, this velocity is equal to neither zero nor the velocity of the fluid particles; it varies smoothly and arbitrarily between both of them.  This method is a Lagrangian description in zones and directions near solid, and Eulerian elsewhere. 
 In the ALE kinematic description, neither the Lagrangian (material frame) configuration ${R}_{\mathbf{X}}$ 
 (coordinates are denoted by $ \mathbf{X}$), nor Eulerian (spatial frame) configuration $R_{\mathbf{x}}$ 
 (coordinates are denoted $ \mathbf{x} $) is taken as the reference. A third domain is consider, 
@@ -153,7 +157,7 @@ velocity is important. This arbitrary mesh velocity keeps the movement of the me
 from which the kinematics of the mesh grid is updated, i.e. ${\textbf{x}}^{new}={\textbf{x}}^{old} + \Delta t{\textbf{v}}_{ALE}$.
 
 \rhead{ALE METHOD}
-\chapter{Principle of the ALE numerical method}
+\section{Principle of the ALE numerical method}
 \lhead{Principle of the ALE numerical method}
 To determine the flow of a fluid, it is necessary to describe the kinematics of all its material particles throughout time. To do so, one can adopt either an Euler description of motion, in which a fluid particle is identified by its instantaneous position, or a Lagrange description of motion, in which a fluid particle is identified by its initial position. 
 Both descriptions are totally equivalent, leading to different forms of the Navier-Stokes equations that can be discretized on a stationary mesh grid (Euler) or a mesh grid that follows the motion of the fluid particles (Lagrange). In both cases, the mesh grids do not account for the motion of the boundaries, which makes the numerical simulations of the related Navier-Stokes equations delicate. 
@@ -286,8 +290,8 @@ Two material models are considered for testing purposes in the proposed work. Fi
         basicstyle=\footnotesize,
         frame = single, 
         keywordstyle=\color{blue},
-        stringstyle=\color{myGreen},
-        commentstyle=\color{myGreen}\itshape,
+        stringstyle=\color{green},
+        commentstyle=\color{green}\itshape,
         morecomment=[l][\color{magenta}]{\#},
         keywordsprefix=\@,alsoletter=\@
 }
@@ -355,28 +359,21 @@ The second Piola-Kirchhoff stress tensor is finally obtained as:
 An example of user input is given in Fig.~\ref{fig-triocfd-mfront-data}, where the Ogden material model with $N=1$ is solved through the \underline{\textit{libBehaviour.so}} library whose absolute path is passed to the program. The entry names \underline{\textit{Ogden\_alpha}}, \underline{\textit{Ogden\_mu}}, and \underline{\textit{Ogden\_K}} map the material parameters $\alpha_1, \mu_1, K$ in eq.~(\ref{eq-ogden-model}), while \underline{\textit{Density}} and \underline{\textit{Inertial\_Damping}} provide the values for scalars $\rho_g$ and $d_g$ in eq.~(\ref{eq-final-grid-problem}). An implementation of the Ogden model is available in the \textbf{Mfront} gallery at \url{https://thelfer.github.io/tfel/web/ogden.html}.
 
 
-\newcommand{\lstblue}[1]{\textcolor{myGreen}{#1}}
-\newcommand{\lstmagenta}[1]{\textcolor{magenta}{#1}}
+
+
 \begin{figure}[H]
 \lstset{language=C++,
         basicstyle=\footnotesize,
-        frame = single, 
-        keywordstyle=\color{blue}\footnotesize,
-        stringstyle=\color{myGreen},
-        commentstyle=\color{myGreen}\itshape,
-        morecomment=[l][\color{magenta}]{\[},
-        keywordsprefix=Structural,alsoletter=Structural,
-        moredelim={[is][\lstblue]{\\lstblue\{}{\}}},
-        moredelim={[is][\lstmagenta]{\\lstmagenta\{}{\}}}
+        frame = single
 }
 \begin{lstlisting}
 Structural_dynamic_mesh_model dom
 {
-  Mfront_library \lstmagenta{[local-absolute-path]}\lstblue{/Ogden/src/libBehaviour.so}
-  Mfront_model_name \lstblue{Ogden}
-  Mfront_material_property { \lstblue{Ogden_alpha}   28.8 }
-  Mfront_material_property { \lstblue{Ogden_mu}   27778.  }
-  Mfront_material_property { \lstblue{Ogden_K} 69444444.  }
+  Mfront_library {[local-absolute-path]}{/Ogden/src/libBehaviour.so}
+  Mfront_model_name {Ogden}
+  Mfront_material_property { {Ogden_alpha}   28.8 }
+  Mfront_material_property { {Ogden_mu}   27778.  }
+  Mfront_material_property { {Ogden_K} 69444444.  }
   Grid_dt_min 1.e-7
   Density 10000.
   Inertial_Damping 1000.
@@ -386,4 +383,326 @@ Structural_dynamic_mesh_model dom
 \label{fig-triocfd-mfront-data}
 \end{figure}
 
+\chapter{Partitioned coupling between Euler-Bernoulli beams and incompressible viscous Newtonian fluids}
 
+
+
+The high computational resources required for FSI simulations can be a limitation for industrial
+applications. To address this, a one-dimensional Euler-Bernoulli beam model is proposed as a
+simplified modeling approach for slender structures. The beam model is integrated into TrioCFD, enabling internal fluid-structure coupling and reducing data exchange between separate
+software. 
+By embedding the
+structural model directly within the CFD code, the approach eliminates the need for traditional code-to-code coupling, providing a
+simpler and more efficient FSI framework. This approach eliminates the need for inter-solver coupling, three-dimensional interpolations, data exchange, and communication between separate
+solvers. The solid solver employs an unconditionally stable time
+discretization scheme that only requires the solution of diagonal
+matrix systems, ensuring numerical robustness and computational
+efficiency. The time coupling for FSI follows the explicit conventional serial staggered (CSS) algorithm.
+
+The fluid-structure coupling strategy follows a partitioned approach, where the fluid and solid problems are solved independently by their respective solvers. The coupled system is iteratively solved at each time step, where variables are exchanged at the fluid-structure interface. This approach allows the use of distinct mathematical models, numerical methods, and discretization techniques for each medium. In this work, the fluid dynamics are solved using the incompressible fluid module of TrioCFD while the structure is modeled using the new beam module of TrioCFD.  The coupling is performed through boundary conditions at the fluid-structure interface, ensuring the continuity of the velocities and the normal component of the stress tensors. Denoting \({\Gamma}_{FS}\) as the set of all time-dependent moving interfaces (which reduces to $\partial\mathcal{C}$) that can exist in a fluid-structure problem, the boundary conditions can be written as
+\begin{subequations}\label{eq:BC_on_IFS}
+  \begin{align}
+  \label{eq:BC_Dirichlet}
+{\mathbf{V}} - \frac{\partial{{\mathbf{U}}}}{\partial T}&={\mathbf{0}},\quad \text{on}\quad  {\Gamma}_{FS},\\  
+\label{eq:BC_Neumann}
+\left({\boldsymbol{\sigma}}_{f} -{\boldsymbol{\sigma}}_{s}\right)\cdot {\mathbf{n}}_{sf}&= {\mathbf{0}},\quad \text{on}\quad  {\Gamma}_{FS},
+\end{align}
+\end{subequations} 
+where \(\mathbf{V}\), \({\boldsymbol{\sigma}}_{f}\), \(\partial {\mathbf{U}}/\partial T\), and \({\boldsymbol{\sigma}}_{s}\) represent the velocity, stress tensor for the fluid, velocity, stress tensor for the structure, respectively. The vector \({\mathbf{n}}_{sf}\) represents the unit normal vector of the interface ${\Gamma}_{FS}$, oriented from the structure to the fluid. 
+At each time iteration, the Navier-Stokes equations are solved for the variables \(({\mathbf{V}}, P)\), subject to Dirichlet boundary conditions \eqref{eq:BC_Dirichlet} on \(\Gamma_{FS}\), while the structure equation~\eqref{Eq_EulerBernoulli} is solved with Neumann boundary conditions \eqref{eq:BC_Neumann} on \(\Gamma_{FS}\).
+
+\section{Euler-Bernoulli beam model with modal resolution}
+
+The dynamics of the structure, here after denoted by ${\mathcal{C}}$,  is modeled by an Euler-Bernoulli beam equation, including mass and stiffness proportional Rayleigh damping coefficients, $\alpha_1$ and $\alpha_2$, respectively. This equation can be written as
+\begin{equation}
+\label{Eq_EulerBernoulli}
+\rho_{s} S_{} \frac{\partial^{2} Y_{}}{\partial T^{2}}+\frac{\partial}{\partial T}\left(2\alpha_1 \rho_{s} S_{} Y_{}+2\alpha_2 E_{} I_{} \frac{\partial^{4} Y_{}}{\partial {X_1}^{4}}\right)+E_{} I_{} \frac{\partial^{4} Y_{}}{\partial {X_1}^{4}}= \overline{F}.
+\end{equation}
+
+The term $\overline{F_{}}$ in Eq. \eqref{Eq_EulerBernoulli} represents the $\boldsymbol{\mathrm{e}}_{2}$-component of the linear fluid force on $\mathcal{C}_{}$ due to its own motion.
+
+The modal representation of the Euler-Bernoulli beam equation \eqref{Eq_EulerBernoulli} is obtained by expressing the neutral axis displacement as a linear expansion
+\begin{equation}\label{Eq_Expansion_Displacement_Modal}
+Y\left(X_1,T\right) = \sum_{k=1}^{m} Q^{(k)}(T) \frac{W^{(k)}(X_1)}{N^{(k)}},
+\end{equation}
+where \( Q^{(k)}(T) \) represents the time-dependent dimensional amplitude of the \( k \)-th structural vibration mode of the beam, denoted by \( W^{(k)}(X) \).
+Substituting Eq.~\eqref{Eq_Expansion_Displacement_Modal} into Eq.~\eqref{Eq_EulerBernoulli} and projecting onto the structural vibration mode \( W^{(l)} \), for \( l \in \llbracket 1,m\rrbracket \), leads to the modal equation
+\begin{equation}
+\label{eq:eq_poutre_mode_vect_damping}
+[\mathbf{M}] \ddot{\mathbf{Q}} + [\mathbf{C}] \dot{\mathbf{Q}} + [\mathbf{K}] {\mathbf{Q}} = {\mathbf{F}},
+\end{equation}
+where \(\mathbf{Q}\) is the real column vector of length \(m\) containing the modal amplitudes \( Q^{(k)} \). The terms \(\ddot{\mathbf{Q}} = {\textrm{d}}^2{\mathbf{Q}}/{\textrm{d}}T^2\) and \(\dot{\mathbf{Q}} = {\textrm{d}}{\mathbf{Q}}/{\textrm{d}}T\) denote the second and first time derivatives of \(\mathbf{Q}\), respectively.
+In Eq.~\eqref{eq:eq_poutre_mode_vect_damping}, the right-hand side term \({\mathbf{F}}\) represents the time-dependent modal dimensional linear fluid force. It is a vector of length \(m\), whose \(k\)-th element is given by  
+$F^{(k)} = \left\langle W^{(k)},\overline{F} \right\rangle_{L}/N^{(k)}$. In Eq.~\eqref{eq:eq_poutre_mode_vect_damping}, $[\mathbf{M}]$, $[\mathbf{C}]$, and $[\mathbf{K}]$ are the dimensional structural mass, damping, and stiffness modal matrices. These matrices, of size $m\times m$, are diagonal due to the orthogonality of the modes, with diagonal terms 
+\begin{subequations}
+\begin{align}
+         M^{(kk)} &= \rho_s S \frac{\left\langle W_{}^{(k)},W_{}^{(k)}\right\rangle_{L}}{N_{}^{(k)}N_{}^{(k)}},\\
+         C^{(kk)} &= 2 \left(\alpha_1 \rho_s S + \alpha_2 EI \left(\frac{\lambda^{(k)}}{L}\right)^4\right)\frac{\left\langle W_{}^{(k)},W_{}^{(k)}\right\rangle_{L}}{N_{}^{(k)}N_{}^{(k)}},\\
+         K^{(kk)} &= EI \left(\frac{\lambda^{(k)}}{L}\right)^4 \frac{\left\langle W_{}^{(k)},W_{}^{(k)}\right\rangle_{L}}{N_{}^{(k)}N_{}^{(k)}}.
+\end{align}
+\end{subequations}
+Equation \eqref{eq:eq_poutre_mode_vect_damping} is time-discretized using the Hilbert-Hughes-Taylor (HHT) scheme, also known as the HHT-\(\alpha\) method, see~\cite{HHT} for more details. Denote \(\Q^{n}\), \(\dot{\Q}^{n}\), \(\ddot{\Q}^{n}\) and ${\mathbf{F}}^{n}$ as the values of \(\Q\), \(\dot{\Q}\), \(\ddot{\Q}\) and ${\mathbf{F}}$, respectively, at the time instant \(T^{n} = n \Delta T\), $n\in\llbracket 0,n_{max}\rrbracket$. The HHT scheme can then be written as
+\begin{subequations}\label{eq:HHT}
+ \begin{align}
+ &\left( [\mathbf{M}] + \gamma \Delta T (1+\alpha) [\mathbf{C}] + \beta \Delta T^2(1+\alpha) [\mathbf{K}] \right) \ddot{\Q}^{n+1} = (1+\alpha){\mathbf{F}}^{n+1} -\alpha {\mathbf{F}}^{n} \nonumber\\
+ & \quad \quad \quad \quad \quad   \quad \quad \quad\quad \quad \quad \quad \quad \quad \quad \quad \quad \quad \quad \quad  \quad \quad - (1+\alpha) [\mathbf{C}] \left( \dot{\Q}^{n} + (1-\gamma)\Delta T \ddot{\Q}^{n} \right)\nonumber \\
+ & \quad \quad \quad \quad \quad   \quad \quad \quad\quad \quad \quad \quad \quad \quad \quad \quad \quad \quad \quad \quad \quad \quad  - (1+\alpha) [\mathbf{K}]\left( \Q^{n} + \Delta T \dot{\Q}^{n} + \Delta T^2 \left( \frac{1}{2}- \beta\right) \ddot{\Q}^{n}\right)\nonumber\\ &\quad \quad \quad \quad \quad \quad \quad \quad \quad  \quad \quad \quad\quad \quad \quad \ \quad \quad \quad \quad \quad  \quad \quad + \alpha [\mathbf{C}]  \dot{\Q}^{n} + \alpha [\mathbf{K}]  \Q^{n},\label{eq:HHT_a} \\
+&\dot{\Q}^{n+1} = \dot{\Q}^{n} + (1-\gamma) \Delta T \ddot{\Q}^{n} + \gamma \Delta T \ddot{\Q}^{n+1},\label{eq:HHT_b} \\
+&\Q^{n+1} =  \Q^{n} +  \Delta T \dot{\Q}^{n} + \Delta T^2 \left( \frac{1}{2}- \beta\right) \ddot{\Q}^{n} +  \Delta T^2 \beta \ddot{\Q}^{n+1}.\label{eq:HHT_c}
+\end{align}
+\end{subequations}
+In Eq. \eqref{eq:HHT}, the parameters $\alpha$, $\beta$, and $\gamma$ are typically chosen as \(\alpha \in [-1/3, 0]\), \(\beta = (1 - \alpha)^2 / 4\), and \(\gamma = 1/2 - \alpha\), which ensures that the scheme is unconditionally stable. The parameter \(\alpha\) introduces dissipation for high frequencies. Specifically, \(\alpha = 0\) corresponds to the Newmark average acceleration integration scheme~\cite{newmark1959method}.
+
+Starting from an initial state \(\left({\Q}^{0},\dot{\Q}^{0}\right)\), the quantities \(\ddot{\Q}^{n}\), \(\dot{\Q}^{n}\), and \({\Q}^{n}\) are successively determined using Eqs. \eqref{eq:HHT_a}, \eqref{eq:HHT_b}, and \eqref{eq:HHT_c}, respectively.  
+The quantity \(\dot{\Q}^{n}\) is then used to determine the velocity of the neutral axis of the beam, which according to Eq. \eqref{Eq_Expansion_Displacement_Modal} is
+\begin{equation}
+    \forall n\in\llbracket 1,n_{max}\rrbracket,\quad \dot{Y}^{n} (X_1)=\sum_{k=1}^m \dot{Q}^{(k), n}  \frac{W^{(k)} (X_1)}{N^{(k)}}.
+\end{equation}
+In the general case of flexural motions about the \(\boldsymbol{\mathrm{e}}_{2}\) and \(\boldsymbol{\mathrm{e}}_{3}\) directions, the three-dimensional velocity \(\dot{\mathbf{U}}^{n}\) of a point \((X_1, X_2, X_3)\in\Gamma_{FS}\) is defined by the Euler-Bernoulli kinematic relation
+\begin{align}\label{3d_modal_def}
+    \forall n\in\llbracket 1,n_{max}\rrbracket,\quad \dot{\mathbf{U}}^{n}(X_1, X_2, X_3) = &\sum_{k=1}^{m} \dot{Q}^{(k),n}_Y \frac{1}{N_{Y}^{(k)}}\left(- X_2 \frac{{\textrm{d}} W_Y^{(k)}}{{\textrm{d}} X_1}(X_1) \boldsymbol{\mathrm{e}}_{1} +  W_Y^{(k)}(X_1) \boldsymbol{\mathrm{e}}_{2} \right)\nonumber\\
++ &\sum_{k=1}^{m} \dot{Q}^{(k),n}_Z \frac{1}{N_{Z}^{(k)}}\left( X_3 \frac{{\textrm{d}} W_Z^{(k)}}{{\textrm{d}} X_1}(X_1) \boldsymbol{\mathrm{e}}_{1} +  W_Z^{(k)}(X_1) \boldsymbol{\mathrm{e}}_{3} \right),
+\end{align}
+where $\dot{Q}^{(k),n}_Y$ (resp. $\dot{Q}^{(k),n}_Z$) is the modal velocity of the structural vibration mode $W_Y^{(k)}$ (resp. $W_Z^{(k)}$) of infinity norm $N_Y^{(k)}$ (resp. $N_Z^{(k)}$). The modal velocity $\dot{Q}^{(k),n}_Y$ can be calculated from Eq. \eqref{eq:HHT}, considering ${\mathbf{F}}^{n}$ as the vector containing the modal fluid forces $F^{(k),n}_Y$. These modal forces are given by    
+\begin{equation}
+      \forall \left(k,n\right)\in\llbracket 1,m\rrbracket\times\llbracket 1,n_{max}\rrbracket,\quad    F^{(k),n}_Y= \boldsymbol{\mathrm{e}}_2\cdot\int_{\Gamma_{FS}} \left(-P^n \mathbf{n}_{sf}  +\rho_f \nu_f  \left[\nabla {{\mathbf{V}}^n} +\left(\nabla {{\mathbf{V}}^n} \right)^{T} \right]\cdot \mathbf{n}_{sf} \right) \frac{{W}^{(k)}_Y}{{N_{Y}^{(k)}}}{\textrm{d}}S,
+     \label{eq:_modal_force_Y}
+    \end{equation}
+where $\left(\nabla{{\mathbf{V}}} \right)^{T}$ is the transpose of the velocity gradient tensor $\nabla{{\mathbf{V}}}$ and ${\textrm{d}}S$ is an infinitesimal surface element of $\Gamma_{FS}$. 
+ The calculation of \( F^{(k),n}_Z \) follows similarly, replacing \( \boldsymbol{\mathrm{e}}_2 \) and \( W_Y^{(k)} \) with \( \boldsymbol{\mathrm{e}}_3 \) and \( W_Z^{(k)} \), respectively, in Eq.~\eqref{eq:_modal_force_Y}.
+In Eq. \eqref{3d_modal_def}, the terms \(- X_2 {{\textrm{d}} W_Y^{(k)}}/{{\textrm{d}} X_1}\) and  \(X_3 {{\textrm{d}} W_Z^{(k)}}/{{\textrm{d}} X_1}\) represent the axial displacement component in the \(\boldsymbol{\mathrm{e}}_1\)-direction, which arises due to the rotation of the cross-sections. Further details can be found in~\cite{lagrange2025fluid}.
+
+
+\section{Coupling algorithm}\label{sec:CSS}
+
+In this work, the explicit Conventional Serial Staggered (CSS) algorithm (see~\cite{CSS} for more details) is used to couple the fluid and the structure. The CSS algorithm, illustrated in Fig.~\ref{explicite}, proceeds as follows. At time \(T^n\), $n>0$, the structure velocity \(\dot{\mathbf{U}}^{n}\), the fluid velocity \(\V^{n}\), and the fluid pressure \(P^{n}\) are known. To advance to the next time step \(T^{n+1}\), the following sequence is performed:
+\begin{enumerate}
+    \item The structure velocity $\dot{\mathbf{U}}^{n}$ is communicated to the fluid solver through the coupling interface. 
+    \item The grid velocity $\V^{n+1}_{h,ALE}$ is determined using Eq.~\eqref{harmonic_mesh}, with $\mathbf{v}_{S} = \dot{\mathbf{U}}^{n}$ in Eq.~\eqref{harmonic_mesh}. {The position vector ${\mathbf{X}}^n$ of a point on the grid is updated according to
+ ${\mathbf{X}}^{n+1} = {\mathbf{X}}^{n} + \Delta T \V^{n+1}_{h,ALE}$.}
+    \item Equation \eqref{eq:NS_ALE2} is solved for \(\V^{n+1}\) and \(P^{n+1}\), using the boundary condition \(\dot{\mathbf{U}} = \dot{\mathbf{U}}^{n}\).  
+    \item The modal fluid forces $F^{(k), n+1}$ are computed using the fluid velocity $\V^{n+1}$ and pressure $P^{n+1}$, according to Eq.~\eqref{eq:_modal_force_Y}. The computed forces are then transferred to the structure solver through the coupling interface.
+    \item The quantities \(\ddot{\Q}^{n+1}\), \(\dot{\Q}^{n+1}\) and \({\Q}^{n+1}\) are computed using Eqs. \eqref{eq:HHT_a}, \eqref{eq:HHT_b} and \eqref{eq:HHT_c}, respectively.
+    \item The structure velocity $\dot{\mathbf{U}}^{n+1}$ is reconstructed according to Eq. \eqref{3d_modal_def}.
+    \item If \(T^{n+1}\) reaches the final time, the process stops. Otherwise, the time loop advances to \(T^{n+2} = T^{n+1} + \Delta T\), using a time step \(\Delta T\) that satisfies the fluid CFL condition. The solid discretization imposes no restrictions on the time step, as the HHT scheme is unconditionally stable.  Further details can be found in~\cite{lagrange2025fluid}.
+\end{enumerate}
+
+\begin{figure}[h!]
+  \centering
+  \resizebox{1.\textwidth}{!}{
+    \begin{tikzpicture}
+      \centering 
+      \draw (0,0.5) node[anchor=north,rounded
+      corners=3pt,draw=blue]{FLUID};
+      \draw (8,0.5) node[anchor=north,rounded
+      corners=3pt,draw=green]{STRUCTURE};
+      \draw (4,0.5) node[anchor=north,rounded
+      corners=3pt,draw=red]{COUPLING};
+      %\draw[-latex] (0,-1) -- (0,-4.1);
+
+      \draw (0,-1) node[anchor=north,rounded
+      corners=3pt,draw=blue,fill=white]{$\V^{n}, P^{n}$};  
+      \draw (6,-2.) node[anchor=east]{
+        \begin{minipage}{4.5cm}
+           \circled{1} Send structure velocity \color{red}$\dot{\mathbf{U}}^{n}$
+         
+        \end{minipage}}; 
+      \draw (8,-2) node[anchor=north,rounded
+      corners=3pt,draw=green,fill=white]{$\ddot{\Q}^{n}, \dot{\Q}^{n}, \Q^{n}$};
+      %\draw[-latex] (0,-3.4) -- (0,-5.);
+      \draw[-latex, blue] (0.,-1.5) -- (0.,-4.);
+      %\draw[-latex] (0,-3.4) -- (1.9,-4.1);
+%      \draw (0,-3.4) node[anchor=north,rounded
+%      corners=3pt,draw=black,fill=white]{
+%      $\vect{F}_{I,i}^{n}$,
+%        $\vect{\mathcal{M}}_{I,i}^{n}$}; 
+      \draw[-latex, red] (6.9,-2.25) -- (0.,-2.25);
+ 
+
+
+      \draw[-latex, green] (8,-2.5) -- (8,-5.5); 
+      \draw (7.95,-5) node[anchor=west]{
+        \begin{minipage}{3cm}
+         \circledg{4} Struct. update
+        \end{minipage}};
+
+      
+      \draw (0.9,-2.8) node[anchor=east]{
+        \begin{minipage}{4cm}
+          \circledb{2} Fluid update
+        \end{minipage}};
+
+      \draw[-latex, red] (0.9,-4.35) -- (8,-4.35);
+      
+      \draw (7.,-5) node[anchor=south east]{
+        \begin{minipage}{5.cm}
+          \circled{3} Send fluid force \color{red}$\F^{n+1}$
+           
+            
+      \end{minipage}};
+      \draw (0.,-4.) node[anchor=north,rounded
+      corners=3pt,draw=blue,fill=white]{$\V^{n+1}, P^{n+1}$};
+      \draw (8,-5.5) node[anchor=north,rounded
+      corners=3pt,draw=green,fill=white]{$\ddot{\Q}^{n+1}, \dot{\Q}^{n+1}, \Q^{n+1}$}; 
+    \end{tikzpicture}
+  }
+  \caption{Sketch of the explicit Conventional
+Serial Staggered algorithm. First, the structure velocity \(\dot{\mathbf{U}}^{n}\) is sent to the fluid solver. Second, it is used to compute the fluid velocity $\V^{n+1}$ and pressure $P^{n+1}$. Third, the resulting modal fluid force ${\mathbf{F}}^{n+1}$ is transferred to the structure solver. Fourth, ${\mathbf{F}}^{n+1}$ is used to compute the modal displacement $\Q^{n+1}$, velocity $\dot{\Q}^{n+1}$, and acceleration $\ddot{\Q}^{n+1}$.  
+}
+  \label{explicite}
+\end{figure}
+
+
+
+\section{Euler--Bernoulli Beam Model Configuration}
+
+This section describes how to configure an Euler--Bernoulli beam model inside
+the \texttt{Beam\_model} block of a TrioCFD input file.
+The formulation supports vibrations in one or two bending planes as well as an
+arbitrary orientation of the beam in space.  
+For each beam, the user must provide modal data (mass, stiffness, mode shapes,
+abscissae, initial conditions) and specify the geometric and numerical
+parameters of the model.
+
+\subsection*{General Structure}
+
+A typical \texttt{Beam\_model} block contains the definition of one or several
+beams, each introduced with a \texttt{Name} section.  
+The global structure is:
+
+\begin{lstlisting}
+Beam_model my_domain
+{
+    nb_beam <number_of_beams>
+
+    Name <beam_name> {
+        ... beam configuration ...
+    }
+
+    Name <beam_name> {
+        ... beam configuration ...
+    }
+}
+\end{lstlisting}
+
+\subsection*{Description of User Parameters}
+
+Each beam requires the following fields:
+
+\begin{itemize}
+  \item \texttt{nb\_planes}: number of bending planes (1 or 2).
+  \item \texttt{nb\_modes}: number of structural vibration modes to load.  If multiple planes are used (\texttt{nb\_planes > 1}),  the modes are divided evenly across planes. 
+  \item \texttt{longitudinal\_axis}: main axis of the beam (x, y, or z).
+  \item \texttt{bendingDirection}: bending direction for the beam:
+\begin{itemize}
+    \item Single-plane (\texttt{nb\_planes = 1}): User must provide the bending direction explicitly.
+    \item Two-plane (\texttt{nb\_planes = 2}): 
+        \begin{itemize}
+            \item User provides only the first plane direction.
+            \item Second plane direction is determined automatically as perpendicular to both the beam axis and the first bending direction.
+        \end{itemize}
+\end{itemize}
+  \item \texttt{BaseCenterCoordinates}: 3D coordinates of the beam axis origin.
+  \item \texttt{NewmarkTimeScheme}: MA (Newmark mean acceleration) or HHT (Hilber-Hughes-Taylor) numerical scheme parameters.
+  \item \texttt{Mass\_and\_stiffness\_file\_name}: modal mass and stiffness data. Must contain exactly \texttt{nb\_modes} lines.
+  \item \texttt{Absc\_file\_name}: 1D abscissae of the modal deformation.
+  \item \texttt{CI\_file\_name}: initial modal state (displacement). Must contain exactly \texttt{nb\_modes} lines.
+  \item \texttt{Modal\_deformation\_file\_name}: one file per mode, each must contain exactly two numerical columns:\\
+        \quad (1) the modal deformation \(W(X)\)\\
+        \quad (2) its derivative \(-\mathrm{d}W/\mathrm{d}X\) (cross-section rotation)
+
+The number of rows must match the abscissae provided in \texttt{Absc\_file\_name}.
+
+  \item \texttt{Output\_position\_1D}: locations along the beam axis for 1D output.
+  \item \texttt{Output\_position\_3D}: 3D coordinates of points where the full
+        3D beam displacement is interpolated and output.
+\end{itemize}
+
+
+
+\subsection*{Complete Example}
+
+Below is a complete example with two beams, each vibrating in two bending planes.
+
+
+\begin{lstlisting}
+Beam_model dom_cylindres
+{
+    nb_beam 2
+
+    Name cylindre1 {
+        nb_modes 20
+        longitudinal_axis z       
+        bendingDirection x      
+        nb_planes 2
+
+        BaseCenterCoordinates 0.0035 0. 0.
+        NewmarkTimeScheme HHT -0.1
+
+        Mass_and_stiffness_file_name ../Cylindre1/vibr_pout2tube.txt
+        Absc_file_name ../Cylindre1/vibr_pout2tube_absc.txt
+        CI_file_name ../Cylindre1/vibr_pout2tube_CI.txt
+
+        Modal_deformation_file_name 20 \
+            ../Cylindre1/phi_1.txt ../Cylindre1/phi_2.txt ...
+
+        Output_position_1D 1 50
+        Output_position_3D 1 0.007 0.0035 0.198
+        
+        # Restart_file_name cylindre1SaveBeamForRestart.txt #  # Optional: file to resume calculations #
+
+    }
+
+    Name cylindre2 {
+        nb_modes 20
+        longitudinal_axis z
+        bendingDirection x
+        nb_planes 2
+
+        BaseCenterCoordinates 0.0485 0. 0.
+        NewmarkTimeScheme HHT -0.1
+
+        Mass_and_stiffness_file_name ../Cylindre2/vibr_pout2tube.txt
+        Absc_file_name ../Cylindre2/vibr_pout2tube_absc.txt
+        CI_file_name ../Cylindre2/vibr_pout2tube_CI.txt
+
+        Modal_deformation_file_name 20 \
+            ../Cylindre2/phi_1.txt ../Cylindre2/phi_2.txt ...
+
+        Output_position_1D 1 50
+        Output_position_3D 1 0.052 0.0035 0.198
+        
+        # Restart_file_name cylindre2SaveBeamForRestart.txt #  # Optional: file to resume calculations #
+    }
+}
+\end{lstlisting}
+
+
+\begin{figure}[h!]
+\centering
+\begin{tikzpicture}[scale=3.5,>=stealth]
+
+% Draw beam axis
+\draw[thick, ->] (0,0,0) -- (3,0,0) node[anchor=north] {$e_\text{long}$};
+
+% Draw local coordinate frame at the start
+\draw[->, red] (0,0,0) -- (0,0.8,0) node[left] {$e_\text{trans,1}$};
+\draw[->, blue] (0,0,0) -- (0,0,0.8) node[right] {$e_\text{trans,2}$};
+
+% Draw transverse displacement W in plane 1 (red)
+\draw[red, thick, ->] (1,0,0) -- (1,0.4,0) node[midway, left] {$W_1$};
+
+% Draw transverse displacement W in plane 2 (blue)
+\draw[blue, thick, ->] (2,0,0) -- (2,0,0.4) node[midway, right] {$W_2$};
+
+% Draw rotation vectors (R) as small arcs
+\draw[red, ->] (1,0.4,0) arc (90:120:0.15);
+\draw[blue, ->] (2,0,0.4) arc (0:30:0.15);
+
+% Label beam ends
+\node at (0, -0.2,0) {Beam Base};
+\node at (3, -0.2,0) {Beam Tip};
+
+\end{tikzpicture}
+\caption{Euler-Bernoulli beam with two bending planes. $e_\text{long}$ is the beam axis, $e_\text{trans,1}$ and $e_\text{trans,2}$ are bending directions. $W_1, W_2$ are transverse displacements.}
+\end{figure}
