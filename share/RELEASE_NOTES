@@ -1,6 +1,8 @@
 --------------------------------------------------------------------------------------------------
 Release notes version 1.9.7_beta : Enhancements, modifications and corrected bugs since version 1.9.6 :
 --------------------------------------------------------------------------------------------------
+02/12/25 (TrioCFD) New Doc     : Documentation for the Beam model
+02/12/25 (TrioCFD) New feature : New formulation of the Beam model :  supports vibrations in one or two bending planes as well as an arbitrary orientation of the beam in space
 02/12/25 (TrioCFD) Bug fix     : Fix k-Omega error where k could be negative, resulting in floating point exception
 18/11/25 (TrioCFD) Turbulence  : Extension of the coding verification jupyter notebook to the k-omega model (renamed to Verification_RANS_equations).
 13/11/25 (TrioCFD) Validation  : Add validation sheet for ALE interface with MFront/MGIS for large scale grid motion
