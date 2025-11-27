@@ -37,16 +37,16 @@ Beam_model dom
 	    nb_modes 10 # number of modes #
 	    longitudinal_axis x # axis along the length of the beam: x, y, or z  #
 	    bendingDirection y # direction of  bending: x, y, or z #
-	    nb_planes 1
+	    nb_planes 1 # number of bending planes (1 or 2) #
 	    Young_Module 210.e+9 # Pa #
 	    Rho_beam 7850. # kg/m^3 #
 	    NewmarkTimeScheme HHT -0.1
-	    Mass_and_stiffness_file_name BaseModale_CF/vibr_pout2tube.txt
-	    Absc_file_name BaseModale_CF/vibr_pout2tube_absc.txt
-	    CI_file_name BaseModale_CF/vibr_pout2tube_CI.txt
+	    Mass_and_stiffness_file_name BaseModale_CF/vibr_pout2tube.txt # modal mass and stiffness data #
+	    Absc_file_name BaseModale_CF/vibr_pout2tube_absc.txt # 1D abscissae of the modal deformation #
+	    CI_file_name BaseModale_CF/vibr_pout2tube_CI.txt # initial modal state (displacement) #
 	     Modal_deformation_file_name  10 BaseModale_CF/phi_1.txt BaseModale_CF/phi_2.txt BaseModale_CF/phi_3.txt BaseModale_CF/phi_4.txt BaseModale_CF/phi_5.txt BaseModale_CF/phi_6.txt BaseModale_CF/phi_7.txt BaseModale_CF/phi_8.txt BaseModale_CF/phi_9.txt BaseModale_CF/phi_10.txt 
-	    Output_position_1D 1  50
-	    Output_position_3D 1  0.7 0.02 0.02
+	    Output_position_1D 1  50 # locations along the beam axis for 1D output #
+	    Output_position_3D 1  0.7 0.02 0.02 # 3D coordinates of points where the full 3D beam displacement is interpolated and output #
 	    # Restart_file_name PoutreSaveBeamForRestart.txt #
     }
 
