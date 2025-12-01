@@ -1,0 +1,60 @@
+# Boiling bubble simulation #
+# PARALLEL NOT #
+dimension 2
+PrecisionGeom 1e-18
+bidim_axi
+
+domaine dom_fluide
+domaine dom_solide
+
+Mailler dom_fluide
+{
+  Pave pave1
+  {
+    origine 0. 0.
+    longueurs 1. 1. 
+    nombre_de_noeuds $Nx $Ny
+    Facteurs 1.0 1.0
+  }
+  {
+    bord left     X = 0.          0. <= Y <= 1.
+    raccord distant homogene bot      Y = 0.          0. <= X <= 1.
+    bord right     X = 1.          0. <= Y <= 1.
+    bord up      Y = 1.          0. <= X <= 1.
+  }   
+}
+transformer dom_fluide x*$rmax y*$zmax
+
+Mailler dom_solide
+{  
+  Pave pave5
+  { 
+    origine 0. 0.
+    longueurs 1. 1.
+    nombre_de_noeuds $Nx $Ns
+    Facteurs 1.0 1.0
+  }
+  {
+    raccord distant homogene sup     Y = 1.          0. <= X <= 1.
+    bord sbot     Y = 0.          0. <= X <= 1.
+    bord sleft    X = 0.          0 <= Y <= 1.
+    bord sright    X = 1.          0 <= Y <= 1.
+  } 
+}
+transformer dom_solide x*$rmax (y-1.)*$zsol
+
+Partition dom_fluide
+{
+  Partitionneur tranche { tranches $nprocx $nprocy }
+  Larg_joint 2
+  Nom_Zones DOM_FLUIDE
+}
+
+Partition dom_solide
+{
+  Partitionneur tranche { tranches $nprocx $nprocy }
+  Larg_joint 2
+  Nom_Zones DOM_SOLIDE
+}
+
+Fin
