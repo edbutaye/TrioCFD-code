@@ -172,6 +172,7 @@ int Transport_K_Omega_base::controler_K_Omega()
   // Phase 2: Parallel correction of negative k with neighbor averaging
   // Create a snapshot of original values to ensure consistent neighbor averaging
   DoubleTrav tab_K_Omega_original(K_Omega);
+  tab_K_Omega_original = K_Omega;
   CDoubleTabView K_Omega_orig = tab_K_Omega_original.view_ro();
   const bool vef_algo = sub_type(Domaine_VEF, domaine_vf) && !disable_VEF_mean_value_corrections_;
   const int nb_faces_elem = domaine_vf.elem_faces().line_size();
