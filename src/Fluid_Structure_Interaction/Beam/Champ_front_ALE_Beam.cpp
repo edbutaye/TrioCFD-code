@@ -96,19 +96,19 @@ void Champ_front_ALE_Beam::remplir_vit_som_bord_ALE(double tps)
           DoubleTab phi(3,nb_planes);
           phi = 0.;
           for (int plane = 0; plane < nb_planes; ++plane)
-              {
-                  for (int mode = 0; mode < modes_per_plane; ++mode)
-                  {
-                	  const DoubleTab& u = dom_ale.getBeamDisplacement(index, mode);
-                	  const DoubleTab& R = dom_ale.getBeamRotation(index, mode);
-                	  phi = dom_ale.interpolationOnThe3DSurface(index, x, y, z, u, R);
-					  for(int comp=0; comp<nb_comp(); comp++)
-						{
-						  value[comp] +=beamVelocity(mode, plane)*phi(comp,plane);
-						}
+            {
+              for (int mode = 0; mode < modes_per_plane; ++mode)
+                {
+                  const DoubleTab& u = dom_ale.getBeamDisplacement(index, mode);
+                  const DoubleTab& R = dom_ale.getBeamRotation(index, mode);
+                  phi = dom_ale.interpolationOnThe3DSurface(index, x, y, z, u, R);
+                  for(int comp=0; comp<nb_comp(); comp++)
+                    {
+                      value[comp] +=beamVelocity(mode, plane)*phi(comp,plane);
+                    }
 
-                  	 }
-              }
+                }
+            }
           for( j=0; j<nb_comp(); j++)
             {
               vit_som_bord_ALE(faces.sommet(i,k),j)=value[j];

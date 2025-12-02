@@ -160,7 +160,7 @@ inline const int& Beam_model::getLongitudinalAxis() const
 }
 inline void Beam_model::setLongitudinalAxis(const int& direction)
 {
-	longitudinal_axis_=direction;
+  longitudinal_axis_=direction;
 }
 inline const int& Beam_model::getNbPlanes() const
 {
@@ -168,7 +168,7 @@ inline const int& Beam_model::getNbPlanes() const
 }
 inline void Beam_model::setNbplanes(const int& nb_planes)
 {
-	nb_planes_=nb_planes;
+  nb_planes_=nb_planes;
 }
 inline const double& Beam_model::getYoung() const
 {
@@ -196,10 +196,10 @@ inline void Beam_model::setTimeScheme(const Nom& timeScheme, double& alpha)
       gamma_=0.5;
       alpha_=0.;
       Cerr << "Warning: You selected the Newmark finite difference scheme.\n"
-                << "This scheme is conditionally stable. Use a sufficiently small time step "
-                << "to ensure stability.\n"
-                << "Alternatively, choose the Newmark Mean Acceleration (MA) or "
-                << "Hilber–Hughes–Taylor (HHT) scheme for unconditional stability."<<finl;
+           << "This scheme is conditionally stable. Use a sufficiently small time step "
+           << "to ensure stability.\n"
+           << "Alternatively, choose the Newmark Mean Acceleration (MA) or "
+           << "Hilber–Hughes–Taylor (HHT) scheme for unconditional stability."<<finl;
     }
   else if(timeScheme=="MA")
     {
@@ -270,10 +270,10 @@ inline void Beam_model::setFluidForceOnBeam(const DoubleTab& force)
 {
   if (mp_norme_vect(fluidForceOnBeam_)>0. && alpha_!=0.)
     {
-	  int modes_per_plane = nbModes_ / nb_planes_;
-	  for (int plane = 0; plane < nb_planes_; ++plane)
-		  for (int mode = 0; mode < modes_per_plane; ++mode)
-			  fluidForceOnBeam_(mode, plane)=(1.+ alpha_)*force(mode, plane) - alpha_*fluidForceOnBeam_(mode, plane);
+      int modes_per_plane = nbModes_ / nb_planes_;
+      for (int plane = 0; plane < nb_planes_; ++plane)
+        for (int mode = 0; mode < modes_per_plane; ++mode)
+          fluidForceOnBeam_(mode, plane)=(1.+ alpha_)*force(mode, plane) - alpha_*fluidForceOnBeam_(mode, plane);
     }
   else
     {

@@ -1220,7 +1220,7 @@ DoubleTab Domaine_ALE::interpolationOnThe3DSurface(const int& i, const double& x
 {
   return beam[i].interpolationOnThe3DSurface(x,y,z, u, R);
 }
-double Domaine_ALE::interpolationPhiOnThe3DSurface(const int& i, const double& x, const double& y, const double& z, const int & dir, const DoubleTab& u) const
+double Domaine_ALE::interpolationPhiOnThe3DSurface(const int& i, const double& x, const double& y, const double& z, const int& dir, const DoubleTab& u) const
 {
   return beam[i].interpolationPhiOnThe3DSurface(x,y,z, dir, u);
 }
@@ -1328,15 +1328,15 @@ void  Domaine_ALE::computeFluidForceOnBeam(const int& i)
               for (int face=ndeb; face<nfin; face++)
                 {
                   for (int plane = 0; plane < nb_planes; ++plane)
-                  {
+                    {
                       for (int mode = 0; mode < modes_per_plane; ++mode)
-                      {
+                        {
                           const DoubleTab& u = getBeamDisplacement(i, mode);
                           int comp = getBeamBendingDirection(i, plane); // bending direction for this plane
                           double phi = interpolationPhiOnThe3DSurface(i, xv(face,0), xv(face,1), xv(face,2), plane, u);
                           fluidForceOnBeam(mode, plane) += (flux_bords_grad(face, comp) + flux_bords_diff(face, comp)) * phi;
-                      }
-                  }
+                        }
+                    }
                 }
             }
 
