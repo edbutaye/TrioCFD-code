@@ -660,7 +660,7 @@ void Beam_model::readInputModalDeformation(Noms& modal_deformation_file_name)
             for (int p = 0; p < nPoints; ++p)
             {
                 Ut(p, plane) = tmp_u[global](p);
-                Rt(p, plane)  = tmp_R[global](p);
+                Rt(p, plane) = tmp_R[global](p);
             }
         }
         u_.add(Ut);
@@ -701,79 +701,63 @@ void Beam_model::initialization()
     qDisplacement_ = 0.;
     fluidForceOnBeam_ = 0.;
 }
+
+void Beam_model::interpolationWeights(const double& x, const double& y, const double& z, int& i, int& j, double& alpha, double& betha) const {
+
+	double h = abscissa_[1] -abscissa_[0]; //1d mesh pitch
+	int abscissa_size = abscissa_.size();
+	double s = 0.0;
+
+	switch (longitudinal_axis_) {
+		      case 0: s = x; break;
+		      case 1: s = y; break;
+		      default: s = z; break;
+		  }
+
+	i = int(s / h);
+	j = (i + 1 < abscissa_size) ? i + 1 : i;
+
+	//linear interpolation between points i and j
+	if (i==j)
+		    {
+		      alpha=1.;
+		      betha=0.;
+		    }
+	else if(abs(abscissa_[i] - s)< 1.e-4)
+		    {
+		      alpha=1.;
+		      betha=0.;
+		    }
+	else if (abs(abscissa_[j] - s)< 1.e-4)
+		    {
+		      alpha=0.;
+		      betha=1.;
+		    }
+	else
+		    {
+		      alpha = (abscissa_[j] - s)/h;
+		      betha = (s - abscissa_[i])/h;
+		      if(alpha <0.)
+		        {
+		          alpha=0.;
+		          betha=1.;
+		        }
+		      else if (betha < 0.)
+		        {
+		          alpha=1.;
+		          betha=0.;
+		        }
+
+		    }
+}
+
+
 double Beam_model::interpolationPhiOnThe3DSurface(const double& x, const double& y, const double& z, const int& comp, const DoubleTab& u) const
 {
-
-	  double phi=0.;
-	  double h = abscissa_[1] -abscissa_[0]; //1d mesh pitch
-	  int abscissa_size = abscissa_.size();
-	  double s=0.;
-	  double xs=x;
-	  double ys=y;
-	  double zs=z;
-	  if (longitudinal_axis_== 0)
-	    {
-	      s = xs;
-	      xs=0.;
-	    }
-	  else if (longitudinal_axis_== 1)
-	    {
-	      s = ys;
-	      ys=0.;
-	    }
-
-	  else
-	    {
-	      s = zs;
-	      zs=0.;
-	    }
-
-	  int i, j ;
-	  i = int(s/h);
-	  if((i+1) < abscissa_size)
-	    {
-	      j= i+1;
-	    }
-	  else
-	    {
-	      j=i;
-	    }
-
-	  //linear interpolation between points i and j
-	  double alpha, betha ;
-	  if (i==j)
-	    {
-	      alpha=1.;
-	      betha=0.;
-	    }
-	  else if(abs(abscissa_[i] - s)< 1.e-4)
-	    {
-	      alpha=1.;
-	      betha=0.;
-	    }
-	  else if (abs(abscissa_[j] - s)< 1.e-4)
-	    {
-	      alpha=0.;
-	      betha=1.;
-	    }
-	  else
-	    {
-	      alpha = (abscissa_[j] - s)/h;
-	      betha = (s - abscissa_[i])/h;
-	      if(alpha <0.)
-	        {
-	          alpha=0.;
-	          betha=1.;
-	        }
-	      else if (betha < 0.)
-	        {
-	          alpha=1.;
-	          betha=0.;
-	        }
-
-	    }
-
-	  phi=alpha*u(i, comp) + betha*u(j, comp);
+	  double alpha=0.0, betha=0.0 ;
+	  int i=0, j=0;
+	  interpolationWeights(x,y,z, i, j, alpha, betha);
+	  double phi=alpha*u(i, comp) + betha*u(j, comp);
 
 	  return phi;
 }
@@ -781,67 +765,9 @@ double Beam_model::interpolationPhiOnThe3DSurface(const double& x, const double&
 DoubleTab Beam_model::interpolationOnThe3DSurface(const double& x, const double& y, const double& z, const DoubleTab& u, const DoubleTab& R) const
 {
 
-  double h = abscissa_[1] -abscissa_[0]; //1d mesh pitch
-  int abscissa_size = abscissa_.size();
-  double s=0.;
-  if (longitudinal_axis_== 0)
-    {
-      s = x;
-    }
-  else if (longitudinal_axis_== 1)
-    {
-      s = y;
-    }
-
-  else
-    {
-      s = z;
-    }
-
-  int i, j ;
-  i = int(s/h);
-  if((i+1) < abscissa_size)
-    {
-      j= i+1;
-    }
-  else
-    {
-      j=i;
-    }
-
-  //linear interpolation between points i and j
-  double alpha, betha ;
-  if (i==j)
-    {
-      alpha=1.;
-      betha=0.;
-    }
-  else if(abs(abscissa_[i] - s)< 1.e-4)
-    {
-      alpha=1.;
-      betha=0.;
-    }
-  else if (abs(abscissa_[j] - s)< 1.e-4)
-    {
-      alpha=0.;
-      betha=1.;
-    }
-  else
-    {
-      alpha = (abscissa_[j] - s)/h;
-      betha = (s - abscissa_[i])/h;
-      if(alpha <0.)
-        {
-          alpha=0.;
-          betha=1.;
-        }
-      else if (betha < 0.)
-        {
-          alpha=1.;
-          betha=0.;
-        }
-
-    }
+  double alpha=0.0, betha=0.0 ;
+  int i=0, j=0;
+  interpolationWeights(x,y,z, i, j, alpha, betha);
 
   DoubleTab u_interp(nb_planes_), R_interp(nb_planes_);
   for (int plane = 0; plane < nb_planes_; ++plane){
@@ -868,21 +794,6 @@ DoubleTab Beam_model::interpolationOnThe3DSurface(const double& x, const double&
       // indices of the remaining axes for computing axial displacement
       int idx1 = (e_long + 1) % 3;
       int idx2 = (e_long + 2) % 3;
-/*
-      // axial displacement component due to section rotation
-      if (e_trans == idx1)
-          phi(e_long, plane) = -Rot * pos(idx2);
-      else if (e_trans == idx2)
-          phi(e_long, plane) =  Rot * pos(idx1);
-      else
-          phi(e_long, plane) = 0.0; // safety: bending direction same as longitudinal
-
-      // transverse displacement along the bending direction
-      phi(e_trans, plane) = W;
-
-      // the other transverse component is zero
-      int e_other = 3 - e_long - e_trans;
-      phi(e_other, plane) = 0.0; */
 
       if (e_trans == idx1)
           {
@@ -950,7 +861,7 @@ void Beam_model::printOutputBeam1D(bool first_writing) const
 
     for (int plane = 0; plane < nb_planes_; ++plane)
     {
-        // --- Compute 1D fields for THIS plane ---
+        //Compute 1D fields
         DoubleVect displacement(nb_output_points);
         DoubleVect velocity(nb_output_points);
         DoubleVect acceleration(nb_output_points);
@@ -968,11 +879,10 @@ void Beam_model::printOutputBeam1D(bool first_writing) const
                 int idx = int(output_position_1D_[k]);
                     displacement[k] += qDisplacement_(mode, plane) * u(idx, plane);
                     velocity[k]     += qSpeed_(mode, plane)        * u(idx, plane);
-                    acceleration[k] += qAcceleration_(mode, plane)  * u(idx, plane);
+                    acceleration[k] += qAcceleration_(mode, plane)  *u(idx, plane);
 
             }
         }
-
 
         // ======== DISPLACEMENT FILE ========
         {
@@ -1188,7 +1098,7 @@ void Beam_model::printOutputFluidForceOnBeam(bool first_writing) const
         if (first_writing)
         {
             out << "# Modal fluid force for plane " << plane << ": time ";
-            for (int m = 0; m < modes_per_plane; ++m)  // renamed to 'm' to avoid shadowing
+            for (int m = 0; m < modes_per_plane; ++m)
                 out << "(mode " << m + 1 << ") ";
             out << finl;
         }
@@ -1199,7 +1109,6 @@ void Beam_model::printOutputFluidForceOnBeam(bool first_writing) const
             out << fluidForceOnBeam_(m, plane) << " ";
         out << finl;
         }
-        // Close the file after writing
         out.close();
     }
 }
@@ -1208,7 +1117,6 @@ void Beam_model::printOutputFluidForceOnBeam(bool first_writing) const
 
 void Beam_model::setCenterCoordinates(const double& x0,const double& y0, const double& z0)
 {
-
   x0_=x0;
   y0_=y0;
   z0_=z0;

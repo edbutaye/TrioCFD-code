@@ -97,6 +97,7 @@ public :
   inline const double& getTempsComputeForceOnBeam() const;
   void setCenterCoordinates(const double&,const double&, const double&);
   void read_beam(Entree& is);
+  void interpolationWeights(const double&, const double&, const double&, int&, int&, double&, double&) const;
 protected :
   int nbModes_; // Number of modes
   int longitudinal_axis_; //x=0, y=1, z=2 Axis along the length of the beam
