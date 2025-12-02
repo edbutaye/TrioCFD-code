@@ -46,11 +46,14 @@ protected:
 
   virtual void set_param(Param& ) override;
 
+  void report_on_corrected_values();
+
   OWN_PTR(Champ_Inc_base) le_champ_K_Omega;
 
 private:
   bool exit_on_negative_k_omega_ = false;
   bool exit_on_big_omega_ = false;
+  bool disable_report_on_corrected_values_ = false;
 };
 
 /*! @brief Renvoie le champ inconnue de l'equation.

@@ -51,6 +51,7 @@ void Transport_K_Omega_base::set_param(Param& param)
   Transport_2eq_base::set_param(param);
   param.ajouter_flag("exit_on_negative_k_omega", &exit_on_negative_k_omega_); // X_D_ADD_P flag Flag to exit (with postprocessing of fields) if a negative value is found for k or omega
   param.ajouter_flag("exit_on_big_omega", &exit_on_big_omega_); // X_D_ADD_P flag Flag to exit (with postprocessing of fields) if an excessively big values of omega are found
+  param.ajouter_flag("disable_report_on_corrected_values", &disable_report_on_corrected_values_); // X_D_ADD_P flag Flag disable the reports on number of corrected values, which are written to the log files per MPI process. Use to maximize performance if you do not care about these informations. Using this will also diable the two flags exit_on_xxx.
 }
 
 void Transport_K_Omega_base::discretiser()
@@ -101,13 +102,10 @@ int Transport_K_Omega_base::controler_K_Omega()
     }
 
 
-  // these will store the amount of problematic values of k or omega found
-  // for reporting at the end
-  int count_negative_k = 0;
-  int count_omega_under_threshold = 0;
-  int count_omega_too_big = 0;
-
-  const int lquiet = modele_turbulence().get_lquiet(); // cAlan remonter ce lquiet dans modele_turbu
+  if (not(disable_report_on_corrected_values_))
+    {
+      report_on_corrected_values();
+    }
 
   // cAlan, le 20/01/2023 : on force les valeurs au min et max comme pour le K_Eps.
   const Domaine_VF& domaine_vf = ref_cast(Domaine_VF, domaine_dis());
@@ -118,59 +116,10 @@ int Transport_K_Omega_base::controler_K_Omega()
 
   Debog::verifier("Transport_K_Omega_base::controler_K_Omega K_Omega before", K_Omega);
 
-  // Two-phase parallel algorithm following Transport_K_Eps_base pattern
-
-  // Phase 1: Parallel detection and simple corrections
-  struct CountValues
-  {
-    int count_negative_k;
-    int count_omega_under_threshold;
-    int count_omega_too_big;
-
-    KOKKOS_INLINE_FUNCTION CountValues() : count_negative_k(0), count_omega_under_threshold(0), count_omega_too_big(0) {}
-    KOKKOS_INLINE_FUNCTION CountValues(const CountValues& rhs) : count_negative_k(rhs.count_negative_k), count_omega_under_threshold(rhs.count_omega_under_threshold), count_omega_too_big(rhs.count_omega_too_big) {}
-    KOKKOS_INLINE_FUNCTION CountValues& operator=(const CountValues&) = default;
-    KOKKOS_INLINE_FUNCTION void operator+=(const CountValues& rhs)
-    {
-      count_negative_k += rhs.count_negative_k;
-      count_omega_under_threshold += rhs.count_omega_under_threshold;
-      count_omega_too_big += rhs.count_omega_too_big;
-    }
-  };
-
-  DoubleTabView tab_K_Omega = K_Omega.view_rw();
-  CountValues result;
-  Kokkos::parallel_reduce(start_gpu_timer(__KERNEL_NAME__), size,
-                          KOKKOS_LAMBDA(const int n, CountValues& local_count)
-  {
-    double& enerK = tab_K_Omega(n, 0);
-    double& omega = tab_K_Omega(n, 1);
-
-    // Count and correct big omega (simple correction, no dependencies)
-    if (omega > OMEGA_MAX)
-      {
-        local_count.count_omega_too_big++;
-        omega = OMEGA_MAX;
-      }
-    // Count and correct small omega (simple correction, no dependencies)
-    if (omega < OMEGA_MIN)
-      {
-        local_count.count_omega_under_threshold++;
-        omega = OMEGA_MIN;
-      }
-
-    // Count negative k (correction will be done in phase 2)
-    if (enerK < 0) local_count.count_negative_k++;
-
-  }, result);
-  end_gpu_timer(__KERNEL_NAME__);
-
-  count_negative_k = result.count_negative_k;
-  count_omega_under_threshold = result.count_omega_under_threshold;
-  count_omega_too_big = result.count_omega_too_big;
 
   // Phase 2: Parallel correction of negative k with neighbor averaging
   // Create a snapshot of original values to ensure consistent neighbor averaging
+  DoubleTabView tab_K_Omega = K_Omega.view_rw();
   DoubleTrav tab_K_Omega_original(K_Omega);
   tab_K_Omega_original = K_Omega;
   CDoubleTabView K_Omega_orig = tab_K_Omega_original.view_ro();
@@ -183,8 +132,14 @@ int Transport_K_Omega_base::controler_K_Omega()
     double& enerK = tab_K_Omega(n, 0);
     double& omega = tab_K_Omega(n, 1);
 
-    // correct negative k
-    if (K_Omega_orig(n, 0) < 0)
+    // correct big omega (simple correction, no dependencies)
+    if (omega > OMEGA_MAX)
+      {
+        omega = OMEGA_MAX;
+      }
+
+    // correct negative k or omega
+    if (enerK < 0 or omega < 0)
       {
         enerK = 0;
         omega = 0;
@@ -237,7 +192,80 @@ int Transport_K_Omega_base::controler_K_Omega()
   Debog::verifier("Transport_K_Omega_base::controler_K_Omega K_Omega after", K_Omega);
 
 
-  if (schema_temps().limpr() && !modele_turbulence().get_lquiet())
+  return 1;
+}
+
+
+void Transport_K_Omega_base::report_on_corrected_values()
+{
+  DoubleTab& K_Omega = le_champ_K_Omega->valeurs();
+  int size = K_Omega.dimension(0);
+  if (size < 0)
+    {
+      if (!sub_type(Champ_Inc_P0_base, le_champ_K_Omega.valeur()))
+        Process::exit("Unsupported K_Omega field in Transport_K_Omega_base::controler_K_Omega()");
+      size = le_champ_K_Omega->equation().domaine_dis().domaine().nb_elem();
+    }
+
+  const double OMEGA_MIN = modele_turbulence().get_OMEGA_MIN();
+  const double OMEGA_MAX = modele_turbulence().get_OMEGA_MAX();
+
+  // these will store the amount of problematic values of k or omega found
+  // for reporting at the end
+  int count_negative_k = 0;
+  int count_omega_under_threshold = 0;
+  int count_omega_too_big = 0;
+
+
+  // Two-phase parallel algorithm following Transport_K_Eps_base pattern
+
+  // Phase 1: Parallel detection and simple corrections
+  struct CountValues
+  {
+    int count_negative_k;
+    int count_omega_under_threshold;
+    int count_omega_too_big;
+
+    KOKKOS_INLINE_FUNCTION CountValues() : count_negative_k(0), count_omega_under_threshold(0), count_omega_too_big(0) {}
+    KOKKOS_INLINE_FUNCTION CountValues(const CountValues& rhs) : count_negative_k(rhs.count_negative_k), count_omega_under_threshold(rhs.count_omega_under_threshold), count_omega_too_big(rhs.count_omega_too_big) {}
+    KOKKOS_INLINE_FUNCTION CountValues& operator=(const CountValues&) = default;
+    KOKKOS_INLINE_FUNCTION void operator+=(const CountValues& rhs)
+    {
+      count_negative_k += rhs.count_negative_k;
+      count_omega_under_threshold += rhs.count_omega_under_threshold;
+      count_omega_too_big += rhs.count_omega_too_big;
+    }
+  };
+
+  DoubleTabView tab_K_Omega = K_Omega.view_rw();
+  CountValues result;
+  Kokkos::parallel_reduce(start_gpu_timer(__KERNEL_NAME__), size,
+                          KOKKOS_LAMBDA(const int n, CountValues& local_count)
+  {
+    double& enerK = tab_K_Omega(n, 0);
+    double& omega = tab_K_Omega(n, 1);
+
+    if (omega > OMEGA_MAX)
+      {
+        local_count.count_omega_too_big++;
+      }
+    if (omega < OMEGA_MIN)
+      {
+        local_count.count_omega_under_threshold++;
+      }
+
+    // Count negative k (correction will be done in phase 2)
+    if (enerK < 0) local_count.count_negative_k++;
+
+  }, result);
+  end_gpu_timer(__KERNEL_NAME__);
+
+  count_negative_k = result.count_negative_k;
+  count_omega_under_threshold = result.count_omega_under_threshold;
+  count_omega_too_big = result.count_omega_too_big;
+
+  const int lquiet = modele_turbulence().get_lquiet(); // cAlan remonter ce lquiet dans modele_turbu
+  if (schema_temps().limpr() && !lquiet)
     {
       if (count_negative_k || count_omega_under_threshold)
         {
@@ -261,8 +289,8 @@ int Transport_K_Omega_base::controler_K_Omega()
           const double ratio_omega = 100. * count_omega_under_threshold / size;
           if ((ratio_k > 0.01 || ratio_omega > 0.01) && !lquiet)
             {
-              Cerr << "WARNING: Found high ratio of invalid values for k and/or omega (more that 0.01%) on process" << Process::me() << finl;
-              Cerr << "Check journal log file for more information. These messages can be disabled with the flag 'quiet' in modele_turbulence." << finl;
+              Journal() << "WARNING: Found high ratio of invalid values for k and/or omega (more that 0.01%) on process" << Process::me() << finl;
+              Journal() << "Check journal log file for more information. These messages can be disabled with the flag 'quiet' in modele_turbulence." << finl;
               // cAlan : adapter le texte pour omega
               Journal() << "It is possible your initial and/or boundary conditions on k and/or omega are wrong." << finl;
             }
@@ -289,9 +317,7 @@ int Transport_K_Omega_base::controler_K_Omega()
 
         }
     }
-  return 1;
 }
-
 /*! @brief on remet omega et K positifs
  *
  */
