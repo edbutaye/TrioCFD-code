@@ -20,5 +20,6 @@ for ext in aux bbl blg idx log lot toc bcf run.xml; do
     rm "${DOC}.${ext}" 2>/dev/null
 done
 rm "${DOC}-blx.bib" 2>/dev/null
+rm ${DOC}.pdf
 
-exit 0
+exit $?
