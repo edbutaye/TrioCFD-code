@@ -99,9 +99,7 @@ Implemente_instanciable_sans_constructeur_ni_destructeur(Beam_model, "Beam_model
 // XD  attr Rho_beam floattant rho 1 Beam density
 // XD  attr BaseCenterCoordinates listf pos_center 1 position of the base center coordinates on the Beam
 // XD  attr CI_file_name chaine CI_file_name 1 Name of the file containing the initial condition of the Beam. The initial condition file must contain nb_modes displacement values, one per line. When several bending planes are defined, the modes must be ordered plane-by-plane. The first modes_per_plane lines correspond to plane 0, the next modes_per_plane lines correspond to plane 1.
-// XD  attr Absc_file_name chaine Absc_file_name 0 Name of the file containing the coordinates of the Beam
 // XD  attr Restart_file_name chaine Restart_file_name 1 SaveBeamForRestart.txt file to restart the calculation. The file must contain nb_modes displacement values, one per line. When several bending planes are defined, the modes must be ordered plane-by-plane. The first modes_per_plane lines correspond to plane 0, the next modes_per_plane lines correspond to plane 1.
-// XD  attr Absc_file_name chaine Absc_file_name 0 Name of the file containing the coordinates of the Beam
 // XD  attr Output_position_1D list pt1d 1 nb_points  position Post-traitement of specific points on the Beam
 // XD  attr Output_position_3D listpoints pt3d 1 nb_points  position Post-traitement of specific points on the 3d FSI boundary
 
@@ -1371,6 +1369,15 @@ void Beam_model::read_beam(Entree& is)
         {
           is >> nomlu;
           Restart_file_name=nomlu;
+        }
+      if (motlu=="direction")
+        {
+          Cerr << "Error: Syntax changed in v1.9.7. You should now replace:" << finl;
+          Cerr << "          'direction N'" << finl;
+          Cerr << "       by something like:" << finl;
+          Cerr << "          'longitudinal_axis X'" << finl;
+          Cerr << "          'bendingDirection Y'" << finl;
+          Process::exit();
         }
 
       if (motlu == close_brace)
