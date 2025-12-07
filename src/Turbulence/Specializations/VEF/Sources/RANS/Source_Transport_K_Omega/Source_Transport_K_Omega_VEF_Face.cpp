@@ -185,9 +185,9 @@ void Source_Transport_K_Omega_VEF_Face::compute_blending_F1(DoubleTab& tab_gradK
     double const enerK = K_Omega(face, 0);
     double const omega = K_Omega(face, 1);
     double const kinematic_viscosity = is_dilatable ? visc_face(face) : visc_cst;
-    double const tmp1 = Kokkos::sqrt(enerK)/(BETA_K*omega*dmin);
-    double const tmp2 = 500.0*kinematic_viscosity/(omega*dmin*dmin);
-    double const maxval = Kokkos::fmax(2*SIGMA_OMEGA2*gradKgradOmega(face)/omega, cst_min_cd_komega);
+    double const tmp1 = Kokkos::sqrt(enerK)/(BETA_K*omega*dmin + 1.e-20);
+    double const tmp2 = 500.0*kinematic_viscosity/(omega*dmin*dmin + 1.e-20);
+    double const maxval = Kokkos::fmax(2*SIGMA_OMEGA2*gradKgradOmega(face)/(omega + 1.e-20), cst_min_cd_komega);
     double const tmp3 = 4.0*SIGMA_OMEGA2*enerK/(maxval*dmin*dmin);
 
     double const arg1 = Kokkos::fmin(Kokkos::fmax(tmp1, tmp2), tmp3); // Common name of the variable
@@ -403,7 +403,7 @@ void Source_Transport_K_Omega_VEF_Face::contribuer_a_avec(const DoubleTab& a,
 
         const double coef_omega = (-cALPHA*production_TKE(face)/tke
                                    + cBETA*omega
-                                   - cSIGMA/(omega*omega)*gradKgradOmega(face) ) * volporo;
+                                   - cSIGMA/(omega*omega + 1.e-20)*gradKgradOmega(face) ) * volporo;
         matrice.add(face*2 + 1, face*2 + 1, coef_omega);
       }
   });
