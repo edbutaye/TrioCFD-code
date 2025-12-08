@@ -1,4 +1,5 @@
 # Thermohydraulique turbulent 2D VDF couplee a conduction avec rayonnement de paroi #
+# TRUSTIFY NOT #
 # PARALLEL OK #
 
 dimension 2    

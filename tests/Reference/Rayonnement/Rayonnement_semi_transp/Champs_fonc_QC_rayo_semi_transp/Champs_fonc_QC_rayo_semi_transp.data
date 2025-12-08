@@ -1,5 +1,6 @@
 # Thermo_Hydraulique_Turbulent_Quasi_Compressible_Rayonnement 3D VEF P1NC/P0  #
 # PARALLEL OK 3 #
+# TRUSTIFY NOT #
 dimension 3
 
 Pb_Rayo_Thermohydraulique_Turbulent_QC pb

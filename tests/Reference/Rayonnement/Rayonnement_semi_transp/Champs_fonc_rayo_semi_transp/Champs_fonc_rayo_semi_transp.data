@@ -1,5 +1,6 @@
 # Thermo_Hydraulique_Turbulent 3D VEF P1NC/P0  #
 # PARALLEL OK 3 #
+# TRUSTIFY NOT #
 # EchgItemsComm 1 1e-14 #
 
 dimension 3

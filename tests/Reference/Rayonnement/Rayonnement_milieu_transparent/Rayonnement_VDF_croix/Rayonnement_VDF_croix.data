@@ -1,4 +1,5 @@
 # ThermoHydraulique 3D dans une structure en croix pour verifier symetrie #
+# TRUSTIFY NOT #
 # PARALLEL OK 8 #
 
 dimension 3

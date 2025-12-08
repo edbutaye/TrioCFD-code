@@ -1,5 +1,6 @@
 # Thermohydraulique turbulent 3D VEF couplee a conduction avec rayonnement de paroi #
 # PARALLEL OK #
+# TRUSTIFY NOT #
 dimension 3    
 Schema_Euler_explicite sch
 Lire sch

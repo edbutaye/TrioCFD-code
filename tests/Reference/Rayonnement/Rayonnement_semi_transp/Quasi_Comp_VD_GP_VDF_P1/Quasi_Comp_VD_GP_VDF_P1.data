@@ -1,5 +1,6 @@
 # Thermohydraulique 2D : vahl davis quasi compressible gaz parfait VDF #
 # PARALLEL OK 8 #
+# TRUSTIFY NOT #
 dimension 2
 Pb_Rayo_Thermohydraulique_QC pb
 Domaine dom
