@@ -21,7 +21,7 @@
 
 
 Implemente_instanciable(Switch_FT_double, "Switch_FT_double", Switch_double);
-
+// XD Switch_FT_double Switch_double Switch_FT_double 1 not_set
 Sortie & Switch_FT_double::printOn(Sortie&s) const
 {
   return s;
@@ -38,7 +38,7 @@ void Switch_FT_double::set_param(Param& param)
 
   // Parametres pour le FT:
   param.ajouter("interfaces", &interfaces_);
-  param.ajouter("old_ijk_splitting_ft_extension", &old_ijk_splitting_ft_extension_);
+  param.ajouter("old_ijk_splitting_ft_extension", &old_ijk_splitting_ft_extension_); // XD_ADD_P entier not_set
 
   // Parametres pour la thermique:
   param.ajouter("thermals", &thermals_);

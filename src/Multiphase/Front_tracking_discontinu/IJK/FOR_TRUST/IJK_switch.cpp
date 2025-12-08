@@ -19,7 +19,7 @@
 #include <SChaine.h>
 
 Implemente_base(Switch_double, "Switch_double", Interprete);
-
+// XD Switch_double interprete Switch_double 1 not_set
 Sortie& Switch_double::printOn(Sortie& s) const
 {
   return s;
@@ -112,12 +112,12 @@ void Switch_double::set_param(Param& param)
 {
   direct_write_=1;
   perio_k_=1;
-  param.ajouter("old_ijk_splitting", &old_mesh_name_, Param::REQUIRED);
-  param.ajouter("new_ijk_splitting", &new_mesh_name_, Param::REQUIRED);
+  param.ajouter("old_ijk_splitting", &old_mesh_name_, Param::REQUIRED); // XD_ADD_P chaine not_set
+  param.ajouter("new_ijk_splitting", &new_mesh_name_, Param::REQUIRED); // XD_ADD_P chaine not_set
 
-  param.ajouter("nom_sauvegarde", &nom_sauvegarde_, Param::REQUIRED);
-  param.ajouter("nom_reprise", &nom_reprise_, Param::REQUIRED);
-  param.ajouter("direct_write", &direct_write_);
+  param.ajouter("nom_sauvegarde", &nom_sauvegarde_, Param::REQUIRED); // XD_ADD_P chaine not_set
+  param.ajouter("nom_reprise", &nom_reprise_, Param::REQUIRED); // XD_ADD_P chaine not_set
+  param.ajouter("direct_write", &direct_write_); // XD_ADD_P entier not_set
 }
 
 Entree& Switch_double::interpreter(Entree& is)

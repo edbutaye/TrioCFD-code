@@ -48,7 +48,7 @@ Read sch
     nb_pas_dt_max 10
     tinit 0.
     dt_impr 0.001
-    dt_sauv 5.E-6
+    # dt_sauv 5.E-6 #
     dt_min 1.E-11
     dt_max 1.
     facsec 5

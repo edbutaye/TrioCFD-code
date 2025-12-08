@@ -263,7 +263,7 @@ solved_equations
     }   
    }
 
-sauvegarde binaire source.sauv
+# sauvegarde binaire source.sauv #
 sauvegarde xyz source.xyz
 # reprise binaire ../R0/source.sauv #
 # reprise xyz ../R0/source.xyz #

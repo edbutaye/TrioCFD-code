@@ -88,7 +88,7 @@ void Modele_turbulence_hyd_K_Omega::set_param(Param& param)
   param.ajouter("Sigma_K2", &Sigma_K2_); // XD_ADD_P double Sigma_K2 for SST model (default value 1.).
   param.ajouter("Sigma_Omega1", &Sigma_OMEGA1_); // XD_ADD_P double Sigma_Omega1 for SST model (default value 1./2.).
   param.ajouter("Sigma_Omega2", &Sigma_OMEGA2_); // XD_ADD_P double Prandt_Omega2 for SST model (default value 0.856).
-  param.ajouter("expert_mode", &expert_mode_);
+  param.ajouter("expert_mode", &expert_mode_); // XD_ADD_P bloc_lecture not_set
 }
 
 
