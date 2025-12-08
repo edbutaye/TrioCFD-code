@@ -10,7 +10,7 @@ Read mon_schema
 {
         # Time step #
           # Initial time [s] #
-	tinit 0
+	 tinit 0
           # Min time step #
 	 dt_min 1.e-6
 	 dt_max 1.e-3
@@ -21,9 +21,10 @@ Read mon_schema
           # facsec such as dt = facsec * min(dt(CFL),dt_max) ; for explicit scheme facsec <= 1. By default facsec equals to 1 #
         # Output criteria #
           # .out files printing period #
-        dt_impr 1.e-6 # Note: small value to print at each time step #
+        dt_impr 1.e-2 # Note: small value to print at each time step #
           # Convergence threshold (see .dt_ev file) #
 	seuil_statio 1.e-7
+	nb_pas_dt_max 169220
 }
 
 
