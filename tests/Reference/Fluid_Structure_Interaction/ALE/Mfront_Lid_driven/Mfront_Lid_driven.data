@@ -2,6 +2,7 @@
 # Hydraulique 2D laminar with ALE: large scale grid motion managed through MGIS/Mfront #
 # Saint Venant Kirchhoff Elasticity model used for the grid motion problem  #
 # PARALLEL OK #
+# TRUSTIFY NOT #
 dimension 2    
 Pb_hydraulique_ALE pb
 Domaine_ALE dom
