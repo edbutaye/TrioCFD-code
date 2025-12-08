@@ -1,4 +1,5 @@
 # PARALLEL ONLY 9 #
+# TRUSTIFY NOT #
 # Le decoupage ne fait rien #
 # Astuce pour que make_PAR.data trouve le bon nombre de processeurs de calcul:
 Nom_Zones toto
