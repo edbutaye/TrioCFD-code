@@ -6,7 +6,7 @@ rm -f *.dat
 for file in *.err
 do
    CELLS=`awk '/Total number of elements / {cells=$NF} END {print cells}' $file`
-   [ -f ${file%.err}.TU ] && awk -v CELLS=$CELLS '/Temps total/ {i++;if (i==2) temps=$3} END {print CELLS" "temps/CELLS}' ${file%.err}.TU
+   [ -f ${file%.err}.TU ] && awk -v CELLS=$CELLS '/Total time for the whole computation/ {print CELLS" "$NF/CELLS}' ${file%.err}.TU
 done > cpu.dat
 
 # Calcul de l'erreur
