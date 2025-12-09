@@ -44,8 +44,8 @@ function install_mfront
   tar -xzvf $source_dir/tfel-TFEL-$mfront_version.tar.gz &> $source_dir/build-tfel-TFEL-$mfront_version.LOG
   mkdir build
   cd build
-  echo "CC=$TRUST_cc_BASE CXX=$TRUST_CC_base FC=$TRUST_F77_BASE cmake ../tfel-TFEL-$mfront_version -DCMAKE_BUILD_TYPE=Release -Denable-reference-doc=OFF -Denable-website=OFF -DCMAKE_INSTALL_PREFIX=$install_dir"
-  eval "CC=$TRUST_cc_BASE CXX=$TRUST_CC_base FC=$TRUST_F77_BASE cmake ../tfel-TFEL-$mfront_version -DCMAKE_BUILD_TYPE=Release -Denable-reference-doc=OFF -Denable-website=OFF -DCMAKE_INSTALL_PREFIX=$install_dir &>> $source_dir/build-tfel-TFEL-$mfront_version.LOG"
+  echo "CC=$TRUST_cc_BASE CXX=$TRUST_CC_BASE FC=$TRUST_F77_BASE cmake ../tfel-TFEL-$mfront_version -DCMAKE_BUILD_TYPE=Release -Denable-reference-doc=OFF -Denable-website=OFF -DCMAKE_INSTALL_PREFIX=$install_dir"
+  eval "CC=$TRUST_cc_BASE CXX=$TRUST_CC_BASE FC=$TRUST_F77_BASE cmake ../tfel-TFEL-$mfront_version -DCMAKE_BUILD_TYPE=Release -Denable-reference-doc=OFF -Denable-website=OFF -DCMAKE_INSTALL_PREFIX=$install_dir &>> $source_dir/build-tfel-TFEL-$mfront_version.LOG"
   ret=$?
   if ((ret)); then
      echo "Error in configuring Tfel/MFront, see file $source_dir/build-tfel-TFEL-$mfront_version.LOG"
