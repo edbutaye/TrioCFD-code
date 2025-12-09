@@ -68,10 +68,9 @@ void Source_Transport_K_Eps_VEF_Face::get_noms_champs_postraitables(Noms& nom,
 {
   Source_Transport_VEF_Face_base::get_noms_champs_postraitables(nom, opt);
   Noms noms_compris = champs_compris_.liste_noms_compris();
-  noms_compris.add("production_k");
 
   if (opt == DESCRIPTION)
-    Cerr << " Source_Transport_K_Omega_VEF_Face : " << noms_compris << finl;
+    Cerr << "Source_Transport_K_Eps_VEF_Face : " << noms_compris << finl;
   else
     nom.add(noms_compris);
 }
