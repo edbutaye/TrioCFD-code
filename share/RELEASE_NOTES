@@ -26,6 +26,7 @@ Release notes version 1.9.7_beta : Enhancements, modifications and corrected bug
 12/09/25 (TrioCFD) Syntax      : Turbulence - keyword 'Transport_K_Epsilon_Realisable' should now be replaced by 'transport_equation Transport_K_Epsilon_Realisable' in datafiles
 12/09/25 (TrioCFD) Bug fix     : Correction of the computation of (nu_lam + nu_turb*sigma) for VEF k_omega turbulence model
 12/09/25 (TrioCFD) New feature : K_omega turbulence model is available for VDF discretization. Model variants are: standard, SST, BSL. See https://turbmodels.larc.nasa.gov/index.html.
+                                 The K_omega SST model is currently usable with the implicit and explicit euler time scheme. Other time schemes are not guaranteed.
 12/09/25 (TrioCFD) New feature : BSL model variant is available for VEF discretization.
 12/09/25 (TrioCFD) New feature : Post-processing of production and dissipation term are available for k_omega turbulence model (VEF,VDF). Cross_diffusion, grad_k_face, grad_omega_face are also post-processable as well as F1, F2 and enstrophy for SST model.
 10/09/25 (TrioCFD) Keyword     : FTD - parameter 'iterations_correction_volume N' is now obsolete. To get the same behavior as previously, your should replace it by:
