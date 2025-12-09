@@ -132,124 +132,195 @@ int Transport_K_Eps_base::controler_K_Eps()
   double EPS_MAX = modele_turbulence().get_EPS_MAX();
   double K_MIN = modele_turbulence().get_K_MIN();
   int nb_faces_elem = domaine_vf.elem_faces().line_size();
-  CIntTabView face_voisins = domaine_vf.face_voisins().view_ro();
-  CIntTabView elem_faces = domaine_vf.elem_faces().view_ro();
-  DoubleTabView K_Eps = tab_K_Eps.view_rw();
   // PL on ne fixe au seuil minimum que si negatifs
   // car la loi de paroi peut fixer a des valeurs tres petites
   // et le rapport K*K/eps est coherent
   // Changement: 13/12/07: en cas de valeurs negatives pour k OU eps
   // on fixe k ET eps a une valeur moyenne des 2 elements voisins
 
-  // Two-phase parallel algorithm:
-  // Phase 1: Detection and counting with parallel reductions
-  // Phase 2: Correction with safe neighbor averaging
-
-  // Phase 1: Parallel detection and counting + simple corrections
-  struct CountValues
-  {
-    int count_k;
-    int count_eps;
-    int count_big;
-
-    KOKKOS_INLINE_FUNCTION
-    CountValues() : count_k(0), count_eps(0), count_big(0) {}
-
-    KOKKOS_INLINE_FUNCTION
-    CountValues(const CountValues& rhs) : count_k(rhs.count_k), count_eps(rhs.count_eps), count_big(rhs.count_big) {}
-
-    KOKKOS_INLINE_FUNCTION CountValues& operator=(const CountValues&) = default;
-
-    KOKKOS_INLINE_FUNCTION
-    void operator+=(const CountValues& rhs)
+  // PL: 09/12/25 GPU parallel algorithm has slower convergence on FLOREAL_KEPS study
+  // so we revert back to the CPU algorithm (sequential and numerotation dependent...)
+  // Need to think hard about a robust algorithm to control K-Eps values...
+  if (getenv("TRUST_CONTROL_KEPS_GPU")==nullptr)
     {
-      count_k += rhs.count_k;
-      count_eps += rhs.count_eps;
-      count_big += rhs.count_big;
+      const IntTab& face_voisins = domaine_vf.face_voisins();
+      const IntTab& elem_faces = domaine_vf.elem_faces();
+      ToDo_Kokkos("critical");
+      for (int n = 0; n < size; n++)
+        {
+          double& k   = tab_K_Eps(n, 0);
+          double& eps = tab_K_Eps(n, 1);
+
+          // correct big values of epsilon
+          if (eps > EPS_MAX)
+            {
+              count_big_eps++;
+              eps = EPS_MAX;
+            }
+
+          // correct negative values of k or epsilon
+          if ((k < 0 || eps < 0) )
+            {
+              count_negative_k += (  k<0 ? 1 : 0);
+              count_negative_eps += (eps<0 ? 1 : 0);
+
+              // On impose une valeur plus physique (moyenne des elements voisins)
+              k = 0;
+              eps = 0;
+              int nk = 0;
+              int neps = 0;
+
+              if (vef_algo)
+                {
+                  // Here we are in VEF discretization
+                  for (int i = 0; i < 2; i++)
+                    {
+                      int elem = face_voisins(n, i);
+                      if (elem != -1)
+                        for (int j = 0; j < nb_faces_elem; j++)
+                          if (j != n)
+                            {
+                              double k_face = tab_K_Eps(elem_faces(elem, j), 0);
+                              if (k_face > K_MIN)
+                                {
+                                  k += k_face;
+                                  nk++;
+                                }
+                              double e_face = tab_K_Eps(elem_faces(elem, j), 1);
+                              if (e_face > EPS_MIN)
+                                {
+                                  eps += e_face;
+                                  neps++;
+                                }
+                            }
+                    }
+                }
+
+              if (nk != 0) {k /= nk;}
+              else {k = K_MIN;}
+              if (neps != 0) { eps /= neps; }
+              else { eps = EPS_MIN; }
+
+            } // fin (k < 0 || eps < 0)
+        }
     }
-  };
+  else
+    {
+      CIntTabView face_voisins = domaine_vf.face_voisins().view_ro();
+      CIntTabView elem_faces = domaine_vf.elem_faces().view_ro();
+      DoubleTabView K_Eps = tab_K_Eps.view_rw();
 
-  CountValues result;
-  Kokkos::parallel_reduce(start_gpu_timer(__KERNEL_NAME__), size,
-                          KOKKOS_LAMBDA(const int n, CountValues& local_count)
-  {
-    double& k = K_Eps(n, 0);
-    double& eps = K_Eps(n, 1);
+      // Two-phase parallel algorithm:
+      // Phase 1: Detection and counting with parallel reductions
+      // Phase 2: Correction with safe neighbor averaging
 
-    // Count and correct big values of epsilon (simple correction, no dependencies)
-    if (eps > EPS_MAX)
+      // Phase 1: Parallel detection and counting + simple corrections
+      struct CountValues
       {
-        local_count.count_big++;
-        eps = EPS_MAX;
-      }
+        int count_k;
+        int count_eps;
+        int count_big;
 
-    // Count negative values (correction will be done in phase 2)
-    if (k < 0) local_count.count_k++;
-    if (eps < 0) local_count.count_eps++;
+        KOKKOS_INLINE_FUNCTION
+        CountValues() : count_k(0), count_eps(0), count_big(0) {}
 
-  }, result);
-  end_gpu_timer(__KERNEL_NAME__);
+        KOKKOS_INLINE_FUNCTION
+        CountValues(const CountValues& rhs) : count_k(rhs.count_k), count_eps(rhs.count_eps),
+          count_big(rhs.count_big) {}
 
-  count_negative_k = result.count_k;
-  count_negative_eps = result.count_eps;
-  count_big_eps = result.count_big;
+        KOKKOS_INLINE_FUNCTION CountValues& operator=(const CountValues&) = default;
 
-  // Phase 2: Parallel correction of negative values with neighbor averaging
-  // Create a snapshot of original values to ensure consistent neighbor averaging
-  DoubleTrav K_Eps_original(tab_K_Eps);
-  CDoubleTabView K_Eps_orig = K_Eps_original.view_ro();
-  Kokkos::parallel_for(start_gpu_timer(__KERNEL_NAME__), size, KOKKOS_LAMBDA(const int n)
-  {
-    double& k = K_Eps(n, 0);
-    double& eps = K_Eps(n, 1);
+        KOKKOS_INLINE_FUNCTION
+        void operator+=(const CountValues& rhs)
+        {
+          count_k += rhs.count_k;
+          count_eps += rhs.count_eps;
+          count_big += rhs.count_big;
+        }
+      };
 
-    // correct negative values of k or epsilon
-    // IMPORTANT: In original algorithm, when EITHER k OR eps is negative, BOTH are corrected
-    if ((k < 0 || eps < 0))
+      CountValues result;
+      Kokkos::parallel_reduce(start_gpu_timer(__KERNEL_NAME__), size,
+                              KOKKOS_LAMBDA(const int n, CountValues &local_count)
       {
-        // On impose une valeur plus physique (moyenne des elements voisins)
-        double k_new = 0;
-        double eps_new = 0;
-        int nk = 0;
-        int neps = 0;
+        double& k = K_Eps(n, 0);
+        double& eps = K_Eps(n, 1);
 
-        if (vef_algo)
+        // Count and correct big values of epsilon (simple correction, no dependencies)
+        if (eps > EPS_MAX)
           {
-            // Here we are in VEF discretization
-            for (int i = 0; i < 2; i++)
+            local_count.count_big++;
+            eps = EPS_MAX;
+          }
+
+        // Count negative values (correction will be done in phase 2)
+        if (k < 0) local_count.count_k++;
+        if (eps < 0) local_count.count_eps++;
+
+      }, result);
+      end_gpu_timer(__KERNEL_NAME__);
+
+      count_negative_k = result.count_k;
+      count_negative_eps = result.count_eps;
+      count_big_eps = result.count_big;
+
+      // Phase 2: Parallel correction of negative values with neighbor averaging
+      // Create a snapshot of original values to ensure consistent neighbor averaging
+      DoubleTrav K_Eps_original(tab_K_Eps);
+      CDoubleTabView K_Eps_orig = K_Eps_original.view_ro();
+      Kokkos::parallel_for(start_gpu_timer(__KERNEL_NAME__), size, KOKKOS_LAMBDA(const int n)
+      {
+        double& k = K_Eps(n, 0);
+        double& eps = K_Eps(n, 1);
+
+        // correct negative values of k or epsilon
+        // IMPORTANT: In original algorithm, when EITHER k OR eps is negative, BOTH are corrected
+        if ((k < 0 || eps < 0))
+          {
+            // On impose une valeur plus physique (moyenne des elements voisins)
+            double k_new = 0;
+            double eps_new = 0;
+            int nk = 0;
+            int neps = 0;
+
+            if (vef_algo)
               {
-                int elem = face_voisins(n, i);
-                if (elem != -1)
+                // Here we are in VEF discretization
+                for (int i = 0; i < 2; i++)
                   {
-                    for (int j = 0; j < nb_faces_elem; j++)
+                    int elem = face_voisins(n, i);
+                    if (elem != -1)
                       {
-                        if (j != n)
+                        for (int j = 0; j < nb_faces_elem; j++)
                           {
-                            // Use original values for consistent neighbor averaging
-                            double k_face = K_Eps_orig(elem_faces(elem, j), 0);
-                            if (k_face > K_MIN)
+                            if (j != n)
                               {
-                                k_new += k_face;
-                                nk++;
-                              }
-                            double e_face = K_Eps_orig(elem_faces(elem, j), 1);
-                            if (e_face > EPS_MIN)
-                              {
-                                eps_new += e_face;
-                                neps++;
+                                // Use original values for consistent neighbor averaging
+                                double k_face = K_Eps_orig(elem_faces(elem, j), 0);
+                                if (k_face > K_MIN)
+                                  {
+                                    k_new += k_face;
+                                    nk++;
+                                  }
+                                double e_face = K_Eps_orig(elem_faces(elem, j), 1);
+                                if (e_face > EPS_MIN)
+                                  {
+                                    eps_new += e_face;
+                                    neps++;
+                                  }
                               }
                           }
                       }
                   }
               }
-          }
 
-        // Apply corrections to BOTH k and eps when either is negative (like original algorithm)
-        k = (nk != 0) ? (k_new / nk) : K_MIN;
-        eps = (neps != 0) ? (eps_new / neps) : EPS_MIN;
-      }
-  });
-  end_gpu_timer(__KERNEL_NAME__);
+            // Apply corrections to BOTH k and eps when either is negative (like original algorithm)
+            k = (nk != 0) ? (k_new / nk) : K_MIN;
+            eps = (neps != 0) ? (eps_new / neps) : EPS_MIN;
+          }
+      });
+      end_gpu_timer(__KERNEL_NAME__);
+    }
   tab_K_Eps.echange_espace_virtuel();
   Debog::verifier("Transport_K_Eps_base::controler_K_Eps K_Eps after", tab_K_Eps);
 
