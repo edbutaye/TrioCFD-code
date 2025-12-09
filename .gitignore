@@ -39,3 +39,13 @@ preserve_FAILED.tgz
 eclipse-trust-config
 README_BALTIK_ECLIPSE
 *.launch
+
+# Mfront
+share/Mfront_material_libraries
+# because of build logs in share/Mfront
+*.LOG
+
+# from latex docs
+*.aux
+*.idx
+*.log
