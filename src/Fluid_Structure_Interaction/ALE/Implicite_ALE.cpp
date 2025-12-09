@@ -52,6 +52,7 @@ void Implicite_ALE::first_special_treatment(Equation_base& eqn, Navier_Stokes_st
       iCoCoImplicitIteration=eqn.probleme().getOutputIntValue("iCoCoImplicitIteration");
       Cerr << "iCoCoImplicitIteration in Implicite_ALE: " << iCoCoImplicitIteration << finl ;
     }
+  dom_ale.setUpdateJacobian_Old(true) ; // This is the default
   if (iCoCoImplicitIteration > 0) dom_ale.setUpdateJacobian_Old(false) ;
 
   DoubleTab New_ALEjacobian_Old=dom_ale.getNewJacobian(); //New  value for ALEjacobian_old

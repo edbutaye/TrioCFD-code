@@ -90,6 +90,8 @@ public:
   void computeForceFaces(const int nb_faces, const int nb_som_face, const IntTab& face_sommets) ;
   void checkElemOrientation(int elnodes[4], const int elem) ;
   void resumptionMesh(double, DoubleTab&, DoubleTab&, DoubleTab&, DoubleTab&, DoubleTab&, DoubleTab&, DoubleTab&);
+  inline void saveBeginning_of_stepVariables() ;
+  inline void resetVariablestoBeginning_of_step() ;
 
   // Global vectors and arrays for dynamic time integration
   // ------------------------------------------------------
@@ -121,6 +123,16 @@ public:
 
   int resumption =0; //1 if resumption of calculation else 0
 
+  // ICoCo + FSI: acceleration solution within implicit iterations
+  // ----------------------------------------------------------------
+
+  int iCoCoImplicitIteration = -1 ; // Default, no ICoCo implicit coupling
+  bool acceleratedSolutionEnabled = true;
+  int acceleratedSolution = 0 ;
+  DoubleTab xLast ;
+  DoubleTab vpLast ;
+  double dtLast ;
+  bool skipStressComputation = false ;
 
 protected:
 
@@ -213,6 +225,24 @@ protected:
   DoubleVect meshPbPressure_ ;
   DoubleVect meshPbVonMises_ ;
   DoubleTab  meshPbForceFace_ ;
+
+  // ICoCo + FSI: save variables for implicit + subcycling iterations
+  // ----------------------------------------------------------------
+
+  double gridDt_n ;
+  int gridNStep_n ;
+  DoubleTab x_n ;
+  DoubleTab u_n ;
+  DoubleTab v_n ;
+  DoubleTab a_n ;
+  DoubleTab B0_n ;
+  DoubleTab Ft_n ;
+  DoubleTab Stress_n ;
+
+  // ICoCo + FSI: acceleration solution within implicit iterations
+  // ----------------------------------------------------------------
+
+  DoubleVect cSoundElem_ ;
 
   // Functions
   // ---------
@@ -336,6 +366,36 @@ inline void Structural_dynamic_mesh_model::applyDtCoefficient()
 inline double Structural_dynamic_mesh_model::getGridDtMin()
 {
   return gridDtMin_ ;
+}
+
+inline void Structural_dynamic_mesh_model::saveBeginning_of_stepVariables()
+{
+  Cerr << "implicit iterations with structural grid problem: save beginning-of-step variables" << finl ;
+  gridTime_n = gridTime ;
+  gridDt_n = gridDt ;
+  gridNStep_n = gridNStep ;
+  x_n = x ;
+  u_n = u ;
+  v_n = v ;
+  a_n = a ;
+  B0_n = B0_ ;
+  Ft_n = Ft_ ;
+  Stress_n = Stress_ ;
+}
+
+inline void Structural_dynamic_mesh_model::resetVariablestoBeginning_of_step()
+{
+  Cerr << "implicit iterations with structural grid problem: reset variables to beginning-of-step" << finl ;
+  gridTime = gridTime_n ;
+  gridDt = gridDt_n ;
+  gridNStep = gridNStep_n ;
+  x = x_n ;
+  u = u_n ;
+  v = v_n ;
+  a = a_n ;
+  B0_ = B0_n ;
+  Ft_ = Ft_n ;
+  Stress_ = Stress_n ;
 }
 
 #endif

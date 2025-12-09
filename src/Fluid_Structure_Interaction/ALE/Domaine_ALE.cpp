@@ -117,22 +117,44 @@ void Domaine_ALE::mettre_a_jour (double temps, Domaine_dis_base& le_domaine_dis,
 
   bool  check_NoZero_ALE=true; //  if ALE boundary velocity is zero, ALE mesh velocity is zero and mettre_a_jour is skipped.
 
-  ALE_mesh_velocity = calculer_vitesse(temps,le_domaine_dis,pb, check_NoZero_ALE);
-
+  //--------------------------------------------------------------------------------------------
+  // ICoCo coupling with implicit sub-iterations with update of the grid
+  //--------------------------------------------------------------------------------------------
   int iCoCoImplicitIteration=-1; // default value, no ICoCo implicit coupling
   if ((eq.valeur()).probleme().checkOutputIntEntry("iCoCoImplicitIteration"))
     {
       iCoCoImplicitIteration=(eq.valeur()).probleme().getOutputIntValue("iCoCoImplicitIteration");
       Cerr << "Domaine_ALE::mettre_a_jour, iCoCoImplicitIteration: " << iCoCoImplicitIteration << finl ;
+
+      if (meshMotionModel_ == 1) str_mesh_model.iCoCoImplicitIteration=iCoCoImplicitIteration;
     }
 
-  // ICoCo coupling with implicit sub-iterations: save coordinates at first iteration
-  if (iCoCoImplicitIteration == 0) saveSommetsCoordinates();
+  if (meshMotionModel_ == 1)
+    {
+      str_mesh_model.acceleratedSolution=0 ; // Reset to default value
+      if ((eq.valeur()).probleme().checkOutputIntEntry("acceleratedGridMode")) str_mesh_model.acceleratedSolution=(eq.valeur()).probleme().getOutputIntValue("acceleratedGridMode");
+    }
+
+  if (iCoCoImplicitIteration == 0)
+    {
+      saveSommetsCoordinates(); // Save coordinates at first iteration
+      if (meshMotionModel_ == 1) str_mesh_model.saveBeginning_of_stepVariables() ;
+    }
+  else if (iCoCoImplicitIteration > 0)
+    {
+      resetSommetsCoordinates(); // reset coordinates to beginning-of-step
+      if (meshMotionModel_ == 1)
+        {
+          if (str_mesh_model.acceleratedSolution == 0) str_mesh_model.resetVariablestoBeginning_of_step() ;
+          else str_mesh_model.gridTime = str_mesh_model.gridTime_n ; // Reset only gridTime for the accelerated mode
+        }
+    }
+  //--------------------------------------------------------------------------------------------
+
+  ALE_mesh_velocity = calculer_vitesse(temps,le_domaine_dis,pb, check_NoZero_ALE);
 
   if(check_NoZero_ALE)
     {
-      if (iCoCoImplicitIteration > 0) resetSommetsCoordinates(); // reset coordinates to beginning-of-step in case of
-      // grid update during implicit iterations
       for (int i=0; i<N_som; i++)
         {
           for (int k=0; k<dimension; k++)
@@ -717,6 +739,7 @@ DoubleTab Domaine_ALE::calculer_vitesse(double temps, Domaine_dis_base& le_domai
                 for (int k=0; k<dimension; k++)
                   str_mesh_model.x(i,k) = coord(i,k) ;
               }
+
             // Solve explicit dynamic problem giving mesh displacement and velocity at time "temps"
             int nbSom = nb_som() ;
             int nbElem = nb_elem() ;
@@ -725,8 +748,11 @@ DoubleTab Domaine_ALE::calculer_vitesse(double temps, Domaine_dis_base& le_domai
             int nbFace = domaine_VEF.nb_faces() ;
             int nbSomFace = domaine_VEF.nb_som_face() ;
             const IntTab& face_sommets = domaine_VEF.face_sommets() ;
+
             solveDynamicMeshProblem(temps, vit_bords, tag_nodes_bords, vit_maillage, nbSom, nbElem, nbSomElem, sommets,
                                     nbFace, nbSomFace, face_sommets) ;
+
+            if (str_mesh_model.iCoCoImplicitIteration == 0) str_mesh_model.acceleratedSolutionEnabled=true ; // Enable grid acceleration for next iCoCo iterations
           }
           break ;
 
@@ -739,6 +765,10 @@ DoubleTab Domaine_ALE::calculer_vitesse(double temps, Domaine_dis_base& le_domai
   else
     {
       check_NoZero_ALE = false;
+      if (meshMotionModel_ == 1)
+        {
+          if (str_mesh_model.iCoCoImplicitIteration == 0) str_mesh_model.acceleratedSolutionEnabled=false ; // Grid acceleration disabled if zero ALE mesh motion at iCoCo iteration 0
+        }
     }
 
   Debog::verifier("Domaine_ALE::calculer_vitesse -vit_maillage", vit_maillage);
@@ -1495,6 +1525,16 @@ void Domaine_ALE::solveDynamicMeshProblem(const double temps, const DoubleTab& i
           str_mesh_model.gridResetTime += str_mesh_model.configurationResetDt ;
         }
     }
+
+  // ICoCo + FSI : accelerated mode to activate within implicit iteration with subcycling
+  if (str_mesh_model.iCoCoImplicitIteration <= 0) str_mesh_model.acceleratedSolution=0 ; // No iCoCo coupling or no possible acceleration at iteration 0
+  else
+    {
+      if (!str_mesh_model.acceleratedSolutionEnabled) str_mesh_model.acceleratedSolution=0 ; // Acceleration disabled after zero mesh motion at iteration 0
+    }
+
+  if (str_mesh_model.acceleratedSolution == 1) Cerr << "Domaine_ALE::solveDynamicMeshProblem, accelerated solution with iCoCo implicit iteration: " << str_mesh_model.iCoCoImplicitIteration << finl ;
+
   while (loopOnGridProblem)
     {
       // Adjust the grid time step for smooth arrival at time = temps
@@ -1508,25 +1548,65 @@ void Domaine_ALE::solveDynamicMeshProblem(const double temps, const DoubleTab& i
           str_mesh_model.gridDt = 0.5 * (temps - tt) ;
         }
 
-      double Dt = str_mesh_model.gridDt ;
-      tt += Dt ;
-
-      // Update mid-step velocities, displacements and coordinates
-      for (int i=0; i<nbSom; i++)
+      double Dt ;
+      if (str_mesh_model.acceleratedSolution == 0)
         {
-          int ii = get_renum_som_perio(i) ; // to get imposed velocity from periodic boundaries if any
-          for (int j=0; j<dimension; j++)
+
+          Dt = str_mesh_model.gridDt ;
+
+          // Update mid-step velocities, displacements and coordinates
+
+          for (int i=0; i<nbSom; i++)
             {
-              str_mesh_model.vp(i,j) = str_mesh_model.v(i,j) + 0.5 * Dt * str_mesh_model.a(i,j) ;
-              if (imposedVelocityTag[i] == 1)
+              int ii = get_renum_som_perio(i) ; // to get imposed velocity from periodic boundaries if any
+              for (int j=0; j<dimension; j++)
                 {
-                  str_mesh_model.vp(i,j) = imposedVelocity(ii,j) ; // Apply imposed velocity from the boundary
+                  str_mesh_model.vp(i,j) = str_mesh_model.v(i,j) + 0.5 * Dt * str_mesh_model.a(i,j) ;
+                  if (imposedVelocityTag[i] == 1) str_mesh_model.vp(i,j) = imposedVelocity(ii,j) ; // Apply imposed velocity from the boundary
+
+                  double du = Dt * str_mesh_model.vp(i,j) ;
+                  str_mesh_model.u(i,j) += du ;
+                  str_mesh_model.x(i,j) += du ;
                 }
-              double du = Dt * str_mesh_model.vp(i,j) ;
-              str_mesh_model.u(i,j) += du ;
-              str_mesh_model.x(i,j) += du ;
             }
         }
+      else
+        {
+
+          // Accelerated mode
+
+          Dt = temps - tt ; // One step only
+          loopOnGridProblem = false ;
+
+          str_mesh_model.x=str_mesh_model.xLast ;
+          str_mesh_model.vp=str_mesh_model.vpLast ;
+
+          // Update mid-step velocities, displacements and coordinates for nodes on FSI boundary only
+
+          for (int i=0; i<nbSom; i++)
+            {
+              int ii = get_renum_som_perio(i) ; // to get imposed velocity from periodic boundaries if any
+              for (int j=0; j<dimension; j++)
+                {
+                  if (imposedVelocityTag[i] == 1)
+                    {
+                      str_mesh_model.vp(i,j) = imposedVelocity(ii,j) ; // Apply imposed velocity from the boundary
+                      double du = Dt * str_mesh_model.vp(i,j) ;
+                      str_mesh_model.u(i,j) += du ;
+                      str_mesh_model.x(i,j) = x0(i,j) + du ;
+                    }
+                }
+            }
+        }
+
+      if (str_mesh_model.iCoCoImplicitIteration == 0 && !loopOnGridProblem)
+        {
+          str_mesh_model.xLast = str_mesh_model.x ;
+          str_mesh_model.vpLast = str_mesh_model.vp ;
+          str_mesh_model.dtLast = Dt ;
+        }
+
+      tt += Dt ;
 
       // Compute internal forces
       str_mesh_model.ff = 0. ;
@@ -1552,9 +1632,17 @@ void Domaine_ALE::solveDynamicMeshProblem(const double temps, const DoubleTab& i
 
       for (int elem=0; elem<nbElem; elem++)
         {
-          for (int i=0; i< nbn; i++)
+          for (int i=0; i< nbn; i++) elnodes[i] = sommets(elem,i) ;
+
+          if (str_mesh_model.acceleratedSolution == 0) str_mesh_model.skipStressComputation = false ;
+          else
             {
-              elnodes[i] = sommets(elem,i) ;
+              str_mesh_model.skipStressComputation = true ; // No stress computation by default in accelerated mode
+              for (int i=0; i< nbn; i++)
+                {
+                  int ii=elnodes[i];
+                  if (imposedVelocityTag[ii] == 1) str_mesh_model.skipStressComputation = false ; // Compute stress for cells connected to the moving boundary
+                }
             }
 
           str_mesh_model.checkElemOrientation(elnodes, elem) ; // check orientation to ensure a positive element volume
@@ -1621,6 +1709,10 @@ void Domaine_ALE::solveDynamicMeshProblem(const double temps, const DoubleTab& i
       double rhs ;
       double den ;
       double d = str_mesh_model.getDampingCoefficient() ;
+
+      double dtUpdate=Dt ;
+      if (str_mesh_model.acceleratedSolution == 1) dtUpdate=str_mesh_model.dtLast ; // Accelerated mode: acceleration and velocity update must be done with the last stable dt
+
       for (int i=0; i<nbSom; i++)
         {
           mm = str_mesh_model.mass[i] ;
@@ -1628,25 +1720,29 @@ void Domaine_ALE::solveDynamicMeshProblem(const double temps, const DoubleTab& i
           for (int j=0; j<dimension; j++)
             {
               rhs = -str_mesh_model.ff(i,j) - d * mm * str_mesh_model.vp(i,j) ;
-              den = mm * (1. + 0.5 * d * Dt) ;
+              den = mm * (1. + 0.5 * d * dtUpdate) ;
               str_mesh_model.a(i,j) = rhs / den ;
-              str_mesh_model.v(i,j) = str_mesh_model.vp(i,j) + 0.5 * Dt * str_mesh_model.a(i,j) ;
+              str_mesh_model.v(i,j) = str_mesh_model.vp(i,j) + 0.5 * dtUpdate * str_mesh_model.a(i,j) ;
             }
         }
+
       str_mesh_model.gridNStep += 1 ;
       str_mesh_model.applyDtCoefficient() ;
       str_mesh_model.gridTime = tt ;
       nstepCurr += 1 ;
       if (dtm > 0.)
         {
-          Cerr << "Grid dynamic problem, internal step: "<< nstepCurr << ", dt= " << Dt << ", dt_stab= " << str_mesh_model.gridDt << ", [mass scaling] added_mass_ratio= "<< totalScaleMass / str_mesh_model.totalMass << ", time= " << tt << ", target fluid time= " << temps << finl ;
+          if (str_mesh_model.acceleratedSolution == 0) Cerr << "Grid dynamic problem, internal step: "<< nstepCurr << ", dt= " << Dt << ", dt_stab= " << str_mesh_model.gridDt << ", [mass scaling] added_mass_ratio= "<< totalScaleMass / str_mesh_model.totalMass << ", time= " << tt << ", target fluid time= " << temps << finl ;
+          else Cerr << "Grid dynamic problem, accelerated internal step: "<< nstepCurr << ", dt= " << Dt << ", [mass scaling] added_mass_ratio= "<< totalScaleMass / str_mesh_model.totalMass << ", time= " << tt << ", target fluid time= " << temps << finl ;
         }
       else
         {
-          Cerr << "Grid dynamic problem, internal step: "<< nstepCurr << ", dt= " << Dt << ", dt_stab= " << str_mesh_model.gridDt << ", time= " << tt << ", target fluid time= " << temps << finl ;
+          if (str_mesh_model.acceleratedSolution == 0) Cerr << "Grid dynamic problem, internal step: "<< nstepCurr << ", dt= " << Dt << ", dt_stab= " << str_mesh_model.gridDt << ", time= " << tt << ", target fluid time= " << temps << finl ;
+          else Cerr << "Grid dynamic problem, accelerated internal step: "<< nstepCurr << ", dt= " << Dt  << ", time= " << tt << ", target fluid time= " << temps << finl ;
         }
 
     } // End time loop on grid problem
+
   if (tt > t0)
     {
       for (int i=0; i<nbSom; i++)

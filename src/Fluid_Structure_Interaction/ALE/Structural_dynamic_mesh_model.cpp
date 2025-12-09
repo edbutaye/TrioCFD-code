@@ -303,6 +303,7 @@ void Structural_dynamic_mesh_model::initDynamicMeshProblem(const double temps, c
     {
       u=0 ;
       v=0 ;
+      vp=0 ;
       a=0 ;
     }
   vp=0 ;
@@ -451,7 +452,7 @@ void Structural_dynamic_mesh_model::computeInternalForces(double& Vol, double& X
       setB0_(B) ;
       B0l_ = B ;
 
-      for (int i=0; i<symSize_; i++) { Stress_(iel_,i) = 0. ; }
+      for (int i=0; i<symSize_; i++) Stress_(iel_,i) = 0. ;
       switch (dimension)
         {
         case (2) :
@@ -480,66 +481,78 @@ void Structural_dynamic_mesh_model::computeInternalForces(double& Vol, double& X
         }
     }
 
-  //  Next transformation gradient
-
-  std::vector <double> ftpdt(nSymSize_) ;
-  for (int i=0; i<nSymSize_; i++) { ftpdt[i] = 0 ; }
-
 #define _xikbjk(i,j) xl_(k,i)*B0l_(j,k)
-  for (int k=0; k<nbn_; k++)
-    {
-      ftpdt[0] += _xikbjk(0,0); // F11=x1k*dNk/dx01
-      ftpdt[1] += _xikbjk(1,1); // F22=x2k*dNk/dx02
-      ftpdt[3] += _xikbjk(0,1); // F12=x1k*dNk/dx02
-      ftpdt[4] += _xikbjk(1,0); // F21=x2k*dNk/dx01
-      if (dimension == 2)
-        {
-          ftpdt[2] = 1. ;
-        }
-      else if (dimension == 3)
-        {
-          ftpdt[2] += _xikbjk(2,2); // F33=x3k*dNk/dx03
-          ftpdt[5] += _xikbjk(0,2); // F13=x1k*dNk/dx03
-          ftpdt[6] += _xikbjk(2,0); // F31=x3k*dNk/dx01
-          ftpdt[7] += _xikbjk(1,2); // F23=x2k*dNk/dx03
-          ftpdt[8] += _xikbjk(2,1); // F32=x3k*dNk/dx02
-        }
-    }
-
-  //  Integrate material behavior
-
-  std::vector <double> ft(nSymSize_) ;
-  for (int i=0; i<nSymSize_; i++) { ft[i] = Ft_(iel_,i) ; }
-
   std::vector <double> stress(symSize_) ;
-  for (int i=0; i<symSize_; i++) { stress[i] = Stress_(iel_,i) ; }
 
-  std::vector <double> evars(sizeEvars_) ;
-  for (int i=0; i<sizeEvars_; i++) { evars[i] = mfrontEvars_(iel_,i) ; }
-
-  double voidInternalVars[1] ; // 0 size forbidden
-  std::vector <double>  K(stiffnessMatrixMinSize_) ;
-  K[0] = 100; // Stiffness matrix not computed, see mfront/mgis convention
-  // Value >= 50: compute speed of sound
-
-  double speedOfSound[1] ;
-  Stress_.echange_espace_virtuel();
-
-  integrate_behaviour_(&stress[0], voidInternalVars, &evars[0], &K[0], &ft[0], &ftpdt[0], speedOfSound) ;
-
-  if (speedOfSound[0] <= 0.)
+  if (!skipStressComputation)
     {
-      Cerr << "Error (mesh motion): speed of sound not computed in provided Mfront behaviour" << finl ;
-      Process::exit();
+
+      //  Next transformation gradient
+
+      std::vector <double> ftpdt(nSymSize_) ;
+      for (int i=0; i<nSymSize_; i++) ftpdt[i] = 0 ;
+
+      for (int k=0; k<nbn_; k++)
+        {
+          ftpdt[0] += _xikbjk(0,0); // F11=x1k*dNk/dx01
+          ftpdt[1] += _xikbjk(1,1); // F22=x2k*dNk/dx02
+          ftpdt[3] += _xikbjk(0,1); // F12=x1k*dNk/dx02
+          ftpdt[4] += _xikbjk(1,0); // F21=x2k*dNk/dx01
+          if (dimension == 2)
+            {
+              ftpdt[2] = 1. ;
+            }
+          else if (dimension == 3)
+            {
+              ftpdt[2] += _xikbjk(2,2); // F33=x3k*dNk/dx03
+              ftpdt[5] += _xikbjk(0,2); // F13=x1k*dNk/dx03
+              ftpdt[6] += _xikbjk(2,0); // F31=x3k*dNk/dx01
+              ftpdt[7] += _xikbjk(1,2); // F23=x2k*dNk/dx03
+              ftpdt[8] += _xikbjk(2,1); // F32=x3k*dNk/dx02
+            }
+        }
+
+      //  Integrate material behavior
+
+      std::vector <double> ft(nSymSize_) ;
+      for (int i=0; i<nSymSize_; i++) ft[i] = Ft_(iel_,i) ;
+
+      for (int i=0; i<symSize_; i++) stress[i] = Stress_(iel_,i) ;
+
+      std::vector <double> evars(sizeEvars_) ;
+      for (int i=0; i<sizeEvars_; i++) evars[i] = mfrontEvars_(iel_,i) ;
+
+      double voidInternalVars[1] ; // 0 size forbidden
+      std::vector <double>  K(stiffnessMatrixMinSize_) ;
+      K[0] = 100; // Stiffness matrix not computed, see mfront/mgis convention
+      // Value >= 50: compute speed of sound
+
+      double speedOfSound[1] ;
+
+      integrate_behaviour_(&stress[0], voidInternalVars, &evars[0], &K[0], &ft[0], &ftpdt[0], speedOfSound) ;
+
+      if (speedOfSound[0] <= 0.)
+        {
+          Cerr << "Error (mesh motion): speed of sound not computed in provided Mfront behaviour" << finl ;
+          Process::exit();
+        }
+      else
+        {
+          cSound = speedOfSound[0];
+          cSoundElem_(iel_) = cSound;
+        }
+
+      // Update stress and transformation gradient
+      for (int i=0; i<symSize_; i++) Stress_(iel_,i) = stress[i] ;
+      for (int i=0; i<nSymSize_; i++) Ft_(iel_,i) = ftpdt[i] ;
     }
   else
     {
-      cSound = speedOfSound[0];
+      // Skipped stress computation: take stored values for stress and cSound
+      for (int i=0; i<symSize_; i++) stress[i] = Stress_(iel_,i) ;
+      cSound = cSoundElem_(iel_) ;
     }
 
-  // Update stress and transformation gradient
-  for (int i=0; i<symSize_; i++) { Stress_(iel_,i) = stress[i] ; }
-  for (int i=0; i<nSymSize_; i++) { Ft_(iel_,i) = ftpdt[i] ; }
   //  Compute local forces
   aux = 1./sqrt(2.) ;
   fl_ = 0 ;
