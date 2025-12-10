@@ -321,7 +321,7 @@ void Source_Transport_K_Omega_VDF_Elem::compute_cross_diffusion() const
 
 void Source_Transport_K_Omega_VDF_Elem::compute_blending_F1() const
 {
-  const DoubleTab& K_Omega = eqn_K_Omega->inconnue().valeurs();
+  const DoubleTab& K_Omega = eqn_K_Omega->inconnue().passe();
   const DoubleTab& distmin = le_dom_VDF->y_elem(); // Minimum distance to the edge
   DoubleTab& gradKgradOmega_elem = ref_cast_non_const(DoubleTab, grad_k_omega_elem_->valeurs());
   const Navier_Stokes_std& eq_ns = ref_cast(Navier_Stokes_std, eqn_K_Omega->modele_turbulence().equation());

@@ -174,7 +174,7 @@ void Source_Transport_K_Omega_VEF_Face::compute_blending_F1(DoubleTab& tab_gradK
 
   CDoubleArrView visc_face;
   if (is_dilatable) visc_face = static_cast<ArrOfDouble&>(tab_visc_face).view_ro();
-  CDoubleTabView K_Omega = eqn_K_Omega->inconnue().valeurs().view_ro();
+  CDoubleTabView K_Omega = eqn_K_Omega->inconnue().passe().view_ro();
   CDoubleArrView distmin = static_cast<const ArrOfDouble&>(le_dom_VEF->y_faces()).view_ro();
   CDoubleArrView gradKgradOmega = static_cast<const ArrOfDouble&>(tab_gradKgradOmega).view_ro();
   DoubleArrView F1 = static_cast<ArrOfDouble&>(tab_F1).view_wo();
