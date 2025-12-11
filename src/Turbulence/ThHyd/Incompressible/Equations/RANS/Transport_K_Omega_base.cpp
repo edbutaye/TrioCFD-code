@@ -137,9 +137,14 @@ int Transport_K_Omega_base::controler_K_Omega()
       {
         omega = OMEGA_MAX;
       }
+    // correct small omega (simple correction, no dependencies)
+    if (omega < OMEGA_MIN)
+      {
+        omega = OMEGA_MIN;
+      }
 
-    // correct negative k or omega
-    if (enerK < 0 or omega < 0)
+    // correct negative k
+    if (enerK < 0)
       {
         enerK = 0;
         omega = 0;
