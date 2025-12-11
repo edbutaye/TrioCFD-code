@@ -24,7 +24,6 @@ Read mon_schema
         dt_impr 1.e-2 # Note: small value to print at each time step #
           # Convergence threshold (see .dt_ev file) #
 	seuil_statio 1.e-7
-	nb_pas_dt_max 169220
 }
 
 
@@ -132,8 +131,8 @@ Read pb_sensibilite
         {       
                 polynomial_chaos 0.1
                 uncertain_variable { velocity }
-		state { pb_champ_evaluateur pb_etat  vitesse } 
-      		solveur_pression gcp  { precond ssor { omega 1.5 } seuil 1.e-8 }  
+		state { pb_champ_evaluateur pb_etat  vitesse }
+      		solveur_pression amg gcp  { atol 1.e-8 }
                 convection { Sensibility { amont } } 
                 diffusion { }
                 initial_conditions {
