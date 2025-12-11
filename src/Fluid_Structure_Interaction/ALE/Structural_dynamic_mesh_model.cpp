@@ -288,6 +288,8 @@ void Structural_dynamic_mesh_model::initDynamicMeshProblem(const double temps, c
 
   massElem_.resize(nelem) ;
 
+  cSoundElem_.resize(nelem) ;
+
   meshPbPressure_.resize(nelem) ;
   meshPbVonMises_.resize(nelem) ;
   meshPbForceFace_.resize(nface,dimension) ;
@@ -303,7 +305,6 @@ void Structural_dynamic_mesh_model::initDynamicMeshProblem(const double temps, c
     {
       u=0 ;
       v=0 ;
-      vp=0 ;
       a=0 ;
     }
   vp=0 ;
@@ -978,16 +979,16 @@ void Structural_dynamic_mesh_model::checkElemOrientation(int elnodes[4], const i
     }
 
 }
-void Structural_dynamic_mesh_model::resumptionMesh(double tinit,DoubleTab& u_n, DoubleTab& v_n, DoubleTab& a_n,  DoubleTab& x_n, DoubleTab& B0_n, DoubleTab& Ft_n, DoubleTab& Stress_n)
+void Structural_dynamic_mesh_model::resumptionMesh(double tinit,DoubleTab& u_res_n, DoubleTab& v_res_n, DoubleTab& a_res_n,  DoubleTab& x_res_n, DoubleTab& B0_res_n, DoubleTab& Ft_res_n, DoubleTab& Stress_res_n)
 {
-  u=u_n;
-  v=v_n;
-  a=a_n;
-  x=x_n;
+  u=u_res_n;
+  v=v_res_n;
+  a=a_res_n;
+  x=x_res_n;
 
-  B0_=B0_n;
-  Ft_=Ft_n;
-  Stress_=Stress_n;
+  B0_=B0_res_n;
+  Ft_=Ft_res_n;
+  Stress_=Stress_res_n;
 
   gridTime=tinit;
   resumption = 1;

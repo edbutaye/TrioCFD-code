@@ -112,6 +112,7 @@ public:
 
   int gridNStep = 0.;
   double gridTime = 0.;
+  double gridTime_n=0. ;
   double gridDt = 0.;
   bool isMassBuilt = false;
 
