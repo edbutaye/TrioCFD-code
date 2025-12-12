@@ -1,7 +1,7 @@
 # 3D forced oscillating cylindrical beam (imposed movement) into a confined space #
 # Modele_turbulence (K, Omega) with wall law  #
 # Warning: very coarse mesh.  This is a numerical test case, we do not look at physical aspects in detail here #
-
+# PARALLEL OK 3 #
 
 
 dimension 3
@@ -16,6 +16,19 @@ Read_MED {
 }
 # END MESH #
 
+# BEGIN PARTITION
+Partition dom
+{
+    Partition_tool metis { nb_parts 3 }
+    Larg_joint 2
+    zones_name DOM
+}
+End
+END PARTITION #
+
+# BEGIN SCATTER
+Scatter DOM.Zones dom
+END SCATTER #
 
 
 # For the Arbitrary Lagrangian-Eulerian framework: block to indicate the number of mobile
