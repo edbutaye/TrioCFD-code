@@ -644,11 +644,12 @@ int Marching_Cubes::construire_noeuds_et_facettes(const ArrOfBit& signe,
             }
           else
             {
-              if (indic == (1. - phase))
+              // PL: clang :error: arithmetic between floating-point type 'double' and enumeration type 'const Maillage_FT_Disc::AjoutPhase' is deprecated [-Werror,-Wdeprecated-enum-float-conversion]
+              if (indic == (1. - (double)phase))
                 {
                   // Ne rien faire
                 }
-              else if (indicatrice_approchee[elem] != (1. - phase))
+              else if (indicatrice_approchee[elem] != (1. - (double)phase))
                 {
                   // Collision !
                   resultat_ok = 0;
