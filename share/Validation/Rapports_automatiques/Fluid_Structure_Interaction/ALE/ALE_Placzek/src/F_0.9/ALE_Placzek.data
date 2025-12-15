@@ -40,7 +40,7 @@ Read mon_schema
 	# Output criteria #
         # .out files printing period #
         dt_impr 5.e-6
-	tcpumax 47
+	# tcpumax 47 #
 	# .sauv files printing period #
         periode_sauvegarde_securite_en_heures 7
  	# facsec such as dt = facsec * min(dt(CFL),dt_max) ; for explicit scheme facsec <= 1. By default facsec equals to 1 #
