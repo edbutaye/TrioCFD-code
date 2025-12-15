@@ -1,6 +1,7 @@
 --------------------------------------------------------------------------------------------------
 Release notes version 1.9.8_beta : Enhancements, modifications and corrected bugs since version 1.9.7 :
 --------------------------------------------------------------------------------------------------
+03/02/26 (TrioCFD) New feature : ICoCo: Add an example for the use of icoco_python through swig in TrioCFD
 12/01/26 (TrioCFD) Bug fix     : k-omega: error in cross diffusion term of transport equation (VDF and VEF). k-omega test cases had diffs around 1e-3 (after 3 tstep).
 
 --------------------------------------------------------------------------------------------------

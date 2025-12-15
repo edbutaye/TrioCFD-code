@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.18)
 
 set(ATELIER  ON)
-include(../../build/src/CMakeLists.txt.trust)  # Needs to be put before "project()" (it tweaks compiler)
+include($ENV{project_directory}/build/src/CMakeLists.txt.trust)  # Needs to be put before "project()" (it tweaks compiler)
 set(LIBRARY_OUTPUT_PATH  ${CMAKE_BUILD_DIR})   # Make sure we don't pollute TRUST/lib directory
 #SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)   # Added when we had a dependency on libpython*.so
 
