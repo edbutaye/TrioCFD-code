@@ -9,11 +9,11 @@
 <UL><BR>
 <B>TrioCFD documentation</B><BR><BR>
 <a HREF=https://triocfd-documentation.readthedocs.io/en/latest>TrioCFD online documentation</a><BR>
-<a HREF=share/RELEASE_NOTES>Release notes</a><BR>
-Generic guide <a HREF=TRUSTR/doc/TRUST/TRUST_Generic_documentation.pdf#TRUST%20Generic%20Guide>[pdf]  </a><a HREF=https://cea-trust-platform.readthedocs.io/en/latest/srcs/generic/index.html#trust-generic-guide> [online]</a><BR>
+<a HREF=RELEASE_NOTES>Release notes</a><BR>
+TRUST General Guide  <a HREF=TRUSTR/doc/TRUST/TRUST_Generic_documentation.pdf#section.1.1>[pdf]</a>  <a HREF=https://cea-trust-platform.readthedocs.io/en/latest/user_guide/physics_data/index.html> [online]</a><BR>
 <a HREF=share/doc/TrioCFD_Reference_Manual.pdf>Reference manual</a><BR>
 <a HREF=share/doc/TrioCFD_validation_report.pdf>Validation report</a><BR>
-<a HREF=share/doc/TrioCFD_validation_report.pdf#page=200>Validation test cases overview (Appendix A from validation report)</a><BR>
+<a HREF=share/doc/TrioCFD_validation_report.pdf#Annexe%20A:%20List%20of%20TrioCFD%20PRM%20files>Validation test cases overview (Appendix A from validation report)</a><BR>
 <a HREF=share/doc/TrioCFD_models_report.pdf>Models Description</a><BR>
 <a HREF=share/doc/TrioCFD_Pb_multiphase.pdf> Description of Pb_Multiphase Module</a><BR>
 <a HREF=share/doc/TrioCFD_PGC.pdf>Configuration Management Plan</a><BR><BR>
