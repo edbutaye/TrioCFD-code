@@ -1,0 +1,111 @@
+ # 
+Canal turbulent anisotherme
+ #
+
+dimension 3
+
+Domaine_IJK grid_geom2
+Lire grid_geom2
+{
+  nbelem 64 36 -123 # modified from 128 72 xxx to shorten test case #
+  size_dom 0.0375055897 0.0125018632 -123.
+  perio 1 1 0
+  file_coords ?? ?? coord_k_0.txt
+  nproc 1 1 1
+ 
+  ijk_splitting_ft_extension 0
+}
+
+
+
+
+dns_qc_double 
+{
+  ijk_splitting grid_geom2
+  timestep 1
+  nb_pas_dt_max 5
+  multigrid_solver
+  {
+    coarsen_operators 4
+    Coarsen_Operator_K { file_z_coord coord_k_1.txt } 
+    Coarsen_Operator_K { file_z_coord coord_k_2.txt }
+    Coarsen_Operator_K { file_z_coord coord_k_3.txt }
+    Coarsen_Operator_K { file_z_coord coord_k_4.txt }
+    
+    ghost_size 2
+    pre_smooth_steps 4 5 5 5 5
+    smooth_steps     4 5 5 5 5
+    
+    relax_jacobi 4 0.69 0.69 0.69 0.69
+    solveur_grossier GCP { seuil  0.5e-6 precond ssor { omega 1.5 } }
+    check_residu 0
+    seuil 2.5e-6
+    nb_full_mg_steps 2 4 1
+    solver_precision mixed
+    /* impr */
+  }
+  timestep_facsec 1.
+  
+  tinit 0.
+  
+  expression_t_init   2.68867*10^15*z^5-4.01903*10^13*z^4+2.15984*10^11*z^3-5.00048*10^8*z^2+490671*z+900
+  expression_vx_init  95*(1-((((z-0.0029846)/0.0029846)^2)^0.5)^9)
+  expression_vy_init  0.
+  expression_vz_init  (sin((x-0.0375055897)/0.0375055897*6.28318530717959)*sin(y/0.0125018632*6.28318530717959)+sin((x-0.0375055897)/0.0375055897*6.28318530717959*6)*sin(y/0.0125018632*6.28318530717959*4)+sin((x-0.0375055897)/0.0375055897*6.28318530717959*2)*sin(y/0.0125018632*6.28318530717959*8))*z*(0.0059692-z)*4/(0.0059692*0.0059692) 
+
+  dt_post             5
+#  spectral_splitting  post_splitting
+  dt_post_spectral    100  #
+  # sauvegarde_splitting post_splitting # 
+  dt_sauvegarde       9999999
+
+  nom_sauvegarde      dns_1.sauv
+  # nom_reprise         dns_1.sauv #
+  check_stop_file     stop_file
+  
+  sauvegarde_post_instantanes
+  champs_a_postraiter 2 RHO VELOCITY
+  compteur_post_instantanes 1
+
+  convection_rho_centre2
+  # QDM C4 #
+
+  
+  turbulent_viscosity
+  structural_uu
+  type_velocity_turbulent_diffusion simple_with_transpose
+  turbulent_viscosity_model amd
+  structural_uu_model gradient
+  turbulent_viscosity_model_constant 0.6
+  structural_uu_model_constant 0.5
+
+  turbulent_diffusivity
+  structural_uscalar
+  type_scalar_turbulent_diffusion normal
+  turbulent_diffusivity_model amd
+  structural_uscalar_model gradient
+  turbulent_diffusivity_model_constant 0.5
+  structural_uscalar_model_constant 0.4
+
+  variation_cste_modele_fonctionnel
+  smoothing_center_fr 0.00023193 
+  smoothing_factor_fr 0.00016235
+  Re_tau_fr 968.
+  Re_tau_ch 968.
+  ponderation_fr 1.
+  ponderation_ch 1.
+  center_constant 0.15
+
+
+  large_eddy_simulation_formulation favre
+  filter_kernel_name box
+
+
+  t_paroi_impose_kmin 900.0
+  t_paroi_impose_kmax 1300.0
+  p_thermo_init       10.0e5
+  cp                  1155.0
+  gamma               1.4 
+
+  terme_source_acceleration_constant      15349.8795619994
+}

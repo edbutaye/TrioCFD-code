@@ -1,0 +1,13 @@
+#!/bin/bash
+lata=`ls algo_qc_structural_lata_*.sauv.lata 2>/dev/null`
+tar xzf ref.tar.gz || exit -1 
+erreur=0
+[ "$lata" = "" ] && echo "no lata files? error!" && exit -1
+for f in $lata 
+do
+  echo "Compare $f with reference..."
+  compare_lata $f  ref/$f
+  err=$?
+  [ $err != 0 ] && erreur=$err
+done
+exit $erreur
