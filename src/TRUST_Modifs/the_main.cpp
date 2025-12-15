@@ -17,9 +17,9 @@
 #include <mon_main.h>
 #include <Schema_Comm_Vecteurs.h>
 
-/*! \mainpage TRUST html documentation
+/*! \mainpage TrioCFD html documentation
 *
-* Welcome to the doxygen documentation of TRUST C++ sources.
+* Welcome to the doxygen documentation of TrioCFD C++ sources.
 *
 * To visit CEA TRUST Platform's organization on Github, see:
 *
