@@ -151,7 +151,7 @@ void Operateur_IJK_faces_diff_base_double::flux_loop_(IJK_Field_local_double& re
    */
   ConstIJK_double_ptr turbulent_nu      (is_turb_ ? get_nu() : dummy_field, 0, 0, k_layer);
   ConstIJK_double_ptr turbulent_k_energy(is_turb_ ? get_nu() : dummy_field, 0, 0, k_layer );
-  ConstIJK_double_ptr structural_model(is_structural_ ? get_coeff_tensor(_DIR_, _VCOMPO_) : *nu_, 0, 0, k_layer);
+  ConstIJK_double_ptr structural_model(is_structural_ ? get_coeff_tensor(_DIR_, _VCOMPO_) : dummy_field, 0, 0, k_layer);
 
   // Result (fluxes in direction DIR for component COMPO of the convected field)
   IJK_double_ptr resu_ptr(resu, 0, 0, 0);

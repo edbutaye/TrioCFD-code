@@ -271,7 +271,7 @@ class OpDiffStructuralOnlyIJKScalar_double : public Operateur_IJK_elem_diff_base
 {
   Declare_instanciable_sans_constructeur(OpDiffStructuralOnlyIJKScalar_double);
 public:
-  OpDiffStructuralOnlyIJKScalar_double() : Operateur_IJK_elem_diff_base_double() { is_structural_ = true; }
+  OpDiffStructuralOnlyIJKScalar_double() : Operateur_IJK_elem_diff_base_double() { is_structural_ = true; is_vectorial_ = true; }
 };
 
 #include <Operateur_IJK_elem_diff_base.tpp>

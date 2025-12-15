@@ -9653,9 +9653,7 @@ void DNS_QC_double::run()
 
       if (flag_kappa_vectorial_)
         {
-          turbulent_kappa_vector_[0].allocate(domaine_, Domaine_IJK::ELEM, ghost_size_turbulent_kappa);
-          turbulent_kappa_vector_[1].allocate(domaine_, Domaine_IJK::ELEM, ghost_size_turbulent_kappa);
-          turbulent_kappa_vector_[2].allocate(domaine_, Domaine_IJK::ELEM, ghost_size_turbulent_kappa);
+          allocate_cell_vector(turbulent_kappa_vector_, domaine_, ghost_size_turbulent_kappa);
           turbulent_kappa_vector_[0].data() = 0.;
           turbulent_kappa_vector_[1].data() = 0.;
           turbulent_kappa_vector_[2].data() = 0.;
@@ -9705,10 +9703,7 @@ void DNS_QC_double::run()
   if (structural_uscalar_)
     {
       int ghost_size_structural_uscalar = flag_structural_uscalar_filtre_ ? max((int) 2, ghost_size_filter) : 2;
-
-      structural_uscalar_vector_[0].allocate(domaine_, Domaine_IJK::ELEM, ghost_size_structural_uscalar);
-      structural_uscalar_vector_[1].allocate(domaine_, Domaine_IJK::ELEM, ghost_size_structural_uscalar);
-      structural_uscalar_vector_[2].allocate(domaine_, Domaine_IJK::ELEM, ghost_size_structural_uscalar);
+      allocate_cell_vector(structural_uscalar_vector_, domaine_,ghost_size_structural_uscalar );
       structural_uscalar_vector_[0].data() = 0.;
       structural_uscalar_vector_[1].data() = 0.;
       structural_uscalar_vector_[2].data() = 0.;
@@ -9741,9 +9736,7 @@ void DNS_QC_double::run()
     {
       if (flag_kappa_vectorial_)
         {
-          turbulent_kappa_filtre_vector_[0].allocate(domaine_, Domaine_IJK::ELEM, 2);
-          turbulent_kappa_filtre_vector_[1].allocate(domaine_, Domaine_IJK::ELEM, 2);
-          turbulent_kappa_filtre_vector_[2].allocate(domaine_, Domaine_IJK::ELEM, 2);
+          allocate_cell_vector(turbulent_kappa_filtre_vector_, domaine_,2 );
           turbulent_kappa_filtre_vector_[0].data() = 0.;
           turbulent_kappa_filtre_vector_[1].data() = 0.;
           turbulent_kappa_filtre_vector_[2].data() = 0.;
@@ -9801,9 +9794,7 @@ void DNS_QC_double::run()
     {
       int ghost_size_structural_uscalar_tmp = flag_structural_uscalar_tmp_ ? max((int) 2, ghost_size_filter) : 2;
 
-      structural_uscalar_tmp_vector_[0].allocate(domaine_, Domaine_IJK::ELEM, ghost_size_structural_uscalar_tmp);
-      structural_uscalar_tmp_vector_[1].allocate(domaine_, Domaine_IJK::ELEM, ghost_size_structural_uscalar_tmp);
-      structural_uscalar_tmp_vector_[2].allocate(domaine_, Domaine_IJK::ELEM, ghost_size_structural_uscalar_tmp);
+      allocate_cell_vector(structural_uscalar_tmp_vector_, domaine_, ghost_size_structural_uscalar_tmp);
       structural_uscalar_tmp_vector_[0].data() = 0.;
       structural_uscalar_tmp_vector_[1].data() = 0.;
       structural_uscalar_tmp_vector_[2].data() = 0.;
