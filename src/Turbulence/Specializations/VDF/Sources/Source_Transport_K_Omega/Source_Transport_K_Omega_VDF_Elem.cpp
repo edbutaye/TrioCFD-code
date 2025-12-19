@@ -211,7 +211,7 @@ void Source_Transport_K_Omega_VDF_Elem::fill_resu(const DoubleVect& P, DoubleTab
 
           double cSIGMA;
           if (turbulence_model->is_SST_or_BSL())
-            cSIGMA = 2*(1 - turbulence_model->get_tabF1()(elem)*SIGMA_OMEGA2);
+            cSIGMA = 2*(1 - turbulence_model->get_tabF1()(elem))*SIGMA_OMEGA2;
           else
             cSIGMA = (gradKgradOmega_elem(elem) > 0) ? 0.125 : 0.;
 
@@ -267,7 +267,7 @@ void Source_Transport_K_Omega_VDF_Elem::ajouter_blocs(matrices_t matrices, Doubl
 
           double cSIGMA;
           if (turbulence_model->is_SST_or_BSL())
-            cSIGMA = 2*(1 - turbulence_model->get_tabF1()(c)*SIGMA_OMEGA2);
+            cSIGMA = 2*(1 - turbulence_model->get_tabF1()(c))*SIGMA_OMEGA2;
           else
             cSIGMA = (gradKgradOmega_elem(c) > 0) ? 0.125 : 0.;
 

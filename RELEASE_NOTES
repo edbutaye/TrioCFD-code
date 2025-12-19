@@ -1,3 +1,4 @@
+XX/XX/XX (TrioCFD) Bug fix     : Turbulence K-omega: Bug fix in cross-diffusion term in k-omega transport equation in VDF and VEF
 --------------------------------------------------------------------------------------------------
 Release notes version 1.9.8_beta : Enhancements, modifications and corrected bugs since version 1.9.7 :
 --------------------------------------------------------------------------------------------------

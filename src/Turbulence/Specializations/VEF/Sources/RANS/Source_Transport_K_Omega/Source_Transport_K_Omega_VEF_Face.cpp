@@ -317,7 +317,7 @@ void Source_Transport_K_Omega_VEF_Face::fill_resu_k_omega(const DoubleVect& tab_
                              : BETA_OMEGA;
         double cSIGMA;
         if (is_SST_or_BSL)
-          cSIGMA = 2*(1 - F1(face)*SIGMA_OMEGA2);
+          cSIGMA = 2*(1 - F1(face))*SIGMA_OMEGA2;
         else
           cSIGMA = (gradKgradOmega(face) > 0) ? 0.125 : 0.;
 
@@ -398,7 +398,7 @@ void Source_Transport_K_Omega_VEF_Face::contribuer_a_avec(const DoubleTab& a,
                              : BETA_OMEGA;
 
         const double cSIGMA = is_SST_or_BSL
-                              ? 2*(1 - F1(face)*SIGMA_OMEGA2)
+                              ? 2*(1 - F1(face))*SIGMA_OMEGA2
                               : (gradKgradOmega(face) > 0)*0.125;
 
         const double coef_omega = (-cALPHA*production_TKE(face)/tke
