@@ -16,7 +16,7 @@ schema_euler_explicite_IJK sch
 lire sch 
 {
   tinit 0.0
-  nb_pas_dt_max 30
+	nb_pas_dt_max 3
   timestep 3.31e-4
   timestep_facsec 1
   dt_sauvegarde 99999999
@@ -88,8 +88,9 @@ lire pb
 
     multigrid_solver {
       solver_precision mixed
-      $coarsen_operators
-      $mycoarsen
+      coarsen_operators 2
+      Coarsen_Operator_Uniform { coarsen_i 3 coarsen_j 3 coarsen_k 2 }
+Coarsen_Operator_Uniform { coarsen_i 16 coarsen_j 16 coarsen_k 12 }
       ghost_size 1
       pre_smooth_steps 1 10
       smooth_steps 1 10
