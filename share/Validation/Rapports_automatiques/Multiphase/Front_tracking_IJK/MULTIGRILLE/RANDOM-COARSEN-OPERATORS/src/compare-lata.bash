@@ -61,12 +61,25 @@ function check-diff {
 }
 
 function main {
-    if type parallel 1>/dev/null 2>&1; then
-        echo "We use the GNU parallel power!"
-        compare-parallel
-    else
-        compare-loop
+
+    # only does the work if this file does not exists
+    # allows to skip parsing the lata files during archive mode of the validation report
+    # if changing the name, also change it in the notbook, in the cell where this script is called
+    FILE_TEST="compare_lata_done"
+
+    if [ ! -f "${FILE_TEST}" ]; then
+        if type parallel 1>/dev/null 2>&1; then
+            echo "We use the GNU parallel power!"
+            compare-parallel
+        else
+            compare-loop
+        fi
+    else 
+        echo "compare_lata already done, not running again"
     fi
+
+    touch ${FILE_TEST}
+
 }
 
 main
