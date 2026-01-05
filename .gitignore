@@ -3,6 +3,7 @@
 .*
 
 configure
+dependencies.tmp
 Makefile
 env_TrioCFD.sh
 full_env_TrioCFD.sh

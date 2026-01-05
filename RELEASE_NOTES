@@ -1,4 +1,8 @@
 --------------------------------------------------------------------------------------------------
+Release notes version 1.9.8_beta : Enhancements, modifications and corrected bugs since version 1.9.7 :
+--------------------------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------------------------
 Release notes version 1.9.7 : Enhancements, modifications and corrected bugs since version 1.9.6 :
 --------------------------------------------------------------------------------------------------
 15/12/25 (TrioCFD) Bug fix     : Algo_QC: fixed several segfaults for structural model
