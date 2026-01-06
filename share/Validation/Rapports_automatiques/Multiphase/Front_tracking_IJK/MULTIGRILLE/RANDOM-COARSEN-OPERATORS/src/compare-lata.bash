@@ -12,22 +12,6 @@ repocompar2="2-LEVEL/COMPARELATA"
 repocompar3="3-LEVEL/COMPARELATA"
 mkdir -p "${repocompar1}" "${repocompar2}" "${repocompar3}"
 
-function compare-parallel {
-    echo "Run 1-LEVEL"
-    lesnums=$(find 1-LEVEL/ -mindepth 1 -type d -name "COARSEN*" | sort | sed "s|1-LEVEL/COARSEN-||g")
-    parallel "compare_lata \"${ref}\" \"1-LEVEL/COARSEN-{}/rcu-{}.lata\" &> \"${repocompar1}/compare-lata-{}.log\"" ::: "${lesnums}"
-    (check-diff "${repocompar1}")
-
-    echo "Run 2-LEVEL"
-    lesnums=$(find 2-LEVEL/ -mindepth 1 -type d -name "COARSEN*" | sort | sed "s|2-LEVEL/COARSEN-||g")
-    parallel "compare_lata \"${ref}\" \"2-LEVEL/COARSEN-{}/rcu-{}.lata\" &> \"${repocompar2}/compare-lata-{}.log\"" ::: "${lesnums}"
-    (check-diff "${repocompar2}")
-
-    echo "Run 3-LEVEL"
-    lesnums=$(find 3-LEVEL/ -mindepth 1 -type d -name "COARSEN*" | sort | sed "s|3-LEVEL/COARSEN-||g")
-    parallel "compare_lata \"${ref}\" \"3-LEVEL/COARSEN-{}/rcu-{}.lata\" &> \"${repocompar3}/compare-lata-{}.log\"" ::: "${lesnums}"
-    (check-diff "${repocompar3}")
-}
 
 function compare-loop {
     echo "Run 1-LEVEL"
@@ -68,14 +52,9 @@ function main {
     FILE_TEST="compare_lata_done"
 
     if [ ! -f "${FILE_TEST}" ]; then
-        if type parallel 1>/dev/null 2>&1; then
-            echo "We use the GNU parallel power!"
-            compare-parallel
-        else
-            compare-loop
-        fi
-    else 
-        echo "compare_lata already done, not running again"
+        compare-loop
+    # else 
+    #     echo "compare_lata already done, not running again"
     fi
 
     touch ${FILE_TEST}
