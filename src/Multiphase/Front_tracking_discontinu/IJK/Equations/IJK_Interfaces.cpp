@@ -5967,7 +5967,7 @@ void IJK_Interfaces::ajouter_terme_source_interfaces(
   IJK_Field_vector3_double& vabsrepul
 ) const
 {
-  statistics().begin_count(STD_COUNTERS::rhs,statistics().get_last_opened_counter_level()+1);
+  statistics().begin_count(STD_COUNTERS::source_terms,statistics().get_last_opened_counter_level()+1);
 
   const Domaine_IJK& geom = ref_domaine_.valeur();
 
@@ -6264,7 +6264,7 @@ void IJK_Interfaces::ajouter_terme_source_interfaces(
             }
         }
     }
-  statistics().end_count(STD_COUNTERS::rhs);
+  statistics().end_count(STD_COUNTERS::source_terms);
 }
 
 static inline double determinant(const Vecteur3& v1, const Vecteur3& v2, const Vecteur3& v3)

@@ -260,10 +260,10 @@ void Convection_Diffusion_Espece_Multi_QC::assembler_blocs_avec_inertie(matrices
     }
   statistics().end_count(STD_COUNTERS::matrix_assembly);
 
-  statistics().begin_count(STD_COUNTERS::rhs,statistics().get_last_opened_counter_level()+1);
+  statistics().begin_count(STD_COUNTERS::source_terms,statistics().get_last_opened_counter_level()+1);
   for (int i = 0; i < sources().size(); i++)
     sources()(i)->ajouter_blocs(matrices, secmem, semi_impl);
-  statistics().end_count(STD_COUNTERS::rhs);
+  statistics().end_count(STD_COUNTERS::source_terms);
 
   statistics().begin_count(STD_COUNTERS::matrix_assembly,statistics().get_last_opened_counter_level()+1);
   if (mat)

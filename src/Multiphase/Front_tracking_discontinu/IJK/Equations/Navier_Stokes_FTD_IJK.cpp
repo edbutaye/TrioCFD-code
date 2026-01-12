@@ -1450,7 +1450,7 @@ void Navier_Stokes_FTD_IJK::calculer_terme_source_acceleration(IJK_Field_double&
   if (expression_derivee_acceleration_ == Nom("0"))
     return;
 
-  statistics().begin_count(STD_COUNTERS::rhs,statistics().get_last_opened_counter_level()+1);
+  statistics().begin_count(STD_COUNTERS::source_terms,statistics().get_last_opened_counter_level()+1);
 
   double v_moy = calculer_v_moyen(vx);
   update_rho_v();
@@ -1649,7 +1649,7 @@ void Navier_Stokes_FTD_IJK::calculer_terme_source_acceleration(IJK_Field_double&
       fic << finl;
       fic.close();
     }
-  statistics().end_count(STD_COUNTERS::rhs);
+  statistics().end_count(STD_COUNTERS::source_terms);
 }
 
 #ifdef COMPLEMENT_ANTI_DEVIATION_RESIDU

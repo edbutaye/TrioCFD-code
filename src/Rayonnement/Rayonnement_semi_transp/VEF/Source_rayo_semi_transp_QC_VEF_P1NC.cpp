@@ -61,9 +61,9 @@ DoubleTab& Source_rayo_semi_transp_QC_VEF_P1NC::calculer(DoubleTab& resu) const
 
 DoubleTab& Source_rayo_semi_transp_QC_VEF_P1NC::ajouter(DoubleTab& resu) const
 {
-  statistics().end_count(STD_COUNTERS::rhs,0,0);
+  statistics().end_count(STD_COUNTERS::source_terms,0,0);
   DoubleTab& res =le_source_rayo.ajouter(resu);
-  statistics().begin_count(STD_COUNTERS::rhs,statistics().get_last_opened_counter_level()+1);
+  statistics().begin_count(STD_COUNTERS::source_terms,statistics().get_last_opened_counter_level()+1);
   return res;
 }
 
