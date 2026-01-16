@@ -25,7 +25,7 @@
 #include <Viscosite_turbulente_k_omega.h>
 #include <Op_Dift_Multiphase_VDF_Face.h>
 #include <Viscosite_turbulente_k_tau.h>
-#include <Op_Diff_PolyMAC_P0_base.h>
+#include <Op_Diff_PolyMAC_MPFA_base.h>
 #include <Loi_paroi_adaptative.h>
 #include <Frontiere_dis_base.h>
 #include <Navier_Stokes_std.h>

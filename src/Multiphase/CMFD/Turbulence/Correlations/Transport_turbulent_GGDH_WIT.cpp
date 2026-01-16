@@ -75,7 +75,7 @@ void Transport_turbulent_GGDH_WIT::modifier_mu(const Convection_Diffusion_std& e
   MD_Vector_tools::creer_tableau_distribue(nu.get_md_vector(), Rij);
 
   int i_part = -1;
-  ConstDoubleTab_parts p_u(tab_u); //en PolyMAC_P0, tab_u contient (nf.u) aux faces, puis (u_i) aux elements
+  ConstDoubleTab_parts p_u(tab_u); //en PolyMAC_MPFA, tab_u contient (nf.u) aux faces, puis (u_i) aux elements
   for (int i = 0; i < p_u.size(); i++)
     if (p_u[i].get_md_vector() == Rij.get_md_vector())
       i_part = i; //on cherche une partie ayant le meme support

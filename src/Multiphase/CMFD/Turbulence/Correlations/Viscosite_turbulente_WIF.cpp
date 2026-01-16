@@ -60,7 +60,7 @@ void Viscosite_turbulente_WIF::reynolds_stress(DoubleTab& R_ij) const // Renvoie
     Process::exit("Visocisty_turbulente_WIF is only coded for 3 dimensions");
 
   const DoubleTab& tab_u = pb_->get_champ("vitesse").passe();
-  ConstDoubleTab_parts p_u(tab_u); //en PolyMAC_P0, tab_u contient (nf.u) aux faces, puis (u_i) aux elements
+  ConstDoubleTab_parts p_u(tab_u); //en PolyMAC_MPFA, tab_u contient (nf.u) aux faces, puis (u_i) aux elements
   int i_part {-1};
   for (int i = 0; i < p_u.size(); i++)
     if (p_u[i].get_md_vector() == R_ij.get_md_vector())

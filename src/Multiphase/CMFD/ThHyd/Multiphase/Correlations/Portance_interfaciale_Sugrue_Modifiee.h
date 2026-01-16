@@ -20,7 +20,7 @@
 
 /*! @brief classe Portance_interfaciale_Sugrue_Modifiee lift coefficient for a deformable bubbly flow
  *
- *       Le coefficient renvoye par cette classe est toujours >0, c'est Portanc_interfaciale_PolyMAC_P0 qui gere les signes
+ *       Le coefficient renvoye par cette classe est toujours >0, c'est Portanc_interfaciale_PolyMAC_MPFA qui gere les signes
  *
  *
  */

@@ -25,7 +25,7 @@
 #include <Op_Dift_Multiphase_VDF_Elem.h>
 #include <Viscosite_turbulente_base.h>
 #include <Transport_turbulent_base.h>
-#include <Op_Diff_PolyMAC_P0_base.h>
+#include <Op_Diff_PolyMAC_MPFA_base.h>
 #include <Loi_paroi_adaptative.h>
 #include <Convection_diffusion_turbulence_multiphase.h>
 #include <Champ_Face_base.h>
@@ -63,9 +63,9 @@ void Cond_lim_k_complique_transition_flux_nul_demi::me_calculer()
   const int cnu = nu_visc.dimension(0) == 1;
   const int cmu = mu_visc.dimension(0) == 1;
 
-  // On va chercher le mu turbulent de polymac et celui de vdf et on prend le bon dans la suite
-  const DoubleTab *mu_poly = domaine.que_suis_je().debute_par("Domaine_PolyMAC")
-                             ? &ref_cast(Op_Diff_PolyMAC_P0_base,
+  // On va chercher le mu turbulent de PolyMAC_CDO et celui de vdf et on prend le bon dans la suite
+  const DoubleTab *mu_poly = domaine.que_suis_je().debute_par("Domaine_PolyMAC_CDO")
+                             ? &ref_cast(Op_Diff_PolyMAC_MPFA_base,
                                          domaine_Cl_dis().equation().operateur(0).l_op_base())
                              .nu()
                              : nullptr;

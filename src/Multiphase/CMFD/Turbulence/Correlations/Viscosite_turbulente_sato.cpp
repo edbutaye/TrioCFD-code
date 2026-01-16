@@ -27,7 +27,7 @@
 #include <Probleme_base.h>
 #include <Champ_base.h>
 #include <Param.h>
-#include <Champ_Face_PolyMAC_P0.h>
+#include <Champ_Face_PolyMAC_MPFA.h>
 
 Implemente_instanciable(Viscosite_turbulente_sato, "Viscosite_turbulente_sato", Viscosite_turbulente_base);
 
@@ -71,7 +71,7 @@ void Viscosite_turbulente_sato::reynolds_stress(DoubleTab& R_ij) const // Renvoi
 
   // Récupère les champs de vitesse - alpha - d_bulles (diamètre des bulles) - grad vitesse
   const Pb_Multiphase* pbm = sub_type(Pb_Multiphase, pb_.valeur()) ? &ref_cast(Pb_Multiphase, pb_.valeur()) : nullptr ;
-  const Domaine_PolyMAC_P0& domaine = ref_cast(Domaine_PolyMAC_P0, pb_->domaine_dis());
+  const Domaine_PolyMAC_MPFA& domaine = ref_cast(Domaine_PolyMAC_MPFA, pb_->domaine_dis());
   const DoubleTab& tab_u = pb_->get_champ("vitesse").passe();
   const DoubleTab& d_bulles = pb_->get_champ("diametre_bulles").passe();
   const DoubleTab& alpha = pb_->get_champ("alpha").passe();
@@ -82,7 +82,7 @@ void Viscosite_turbulente_sato::reynolds_stress(DoubleTab& R_ij) const // Renvoi
   const int N = alpha.dimension(1);
 
   // Champ de vitesse
-  ConstDoubleTab_parts p_u(tab_u); //en PolyMAC_P0, tab_u contient (nf.u) aux faces, puis (u_i) aux elements
+  ConstDoubleTab_parts p_u(tab_u); //en PolyMAC_MPFA, tab_u contient (nf.u) aux faces, puis (u_i) aux elements
   int i_part = -1;
 
   for (int i = 0; i < p_u.size(); i++)

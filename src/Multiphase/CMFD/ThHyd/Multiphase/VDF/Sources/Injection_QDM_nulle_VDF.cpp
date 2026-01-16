@@ -14,7 +14,7 @@
 *****************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 //
-// File:        Injection_QDM_nulle_PolyMAC_P0.cpp
+// File:        Injection_QDM_nulle_PolyMAC_MPFA.cpp
 // Directory:   $TRUST_ROOT/src/ThHyd/Multiphase/Correlations
 // Version:     /main/18
 //

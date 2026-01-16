@@ -14,7 +14,7 @@
 *****************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 //
-// File:        Correction_Lubchenko_PolyMAC_P0.h
+// File:        Correction_Lubchenko_PolyMAC_MPFA.h
 // Directory:   $TRUST_ROOT/src/ThHyd/Multiphase/Correlations
 // Version:     /main/18
 //

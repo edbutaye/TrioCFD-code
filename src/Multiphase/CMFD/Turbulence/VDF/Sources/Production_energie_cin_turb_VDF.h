@@ -15,7 +15,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //
 // File:        Production_energie_cin_turb_VDF.h
-// Directory:   $TRUST_ROOT/src/ThHyd/Multiphase/PolyMAC_P0
+// Directory:   $TRUST_ROOT/src/ThHyd/Multiphase/PolyMAC_MPFA
 // Version:     /main/12
 //
 //////////////////////////////////////////////////////////////////////////////
@@ -25,11 +25,11 @@
 
 #include <Source_Production_energie_cin_turb.h>
 
-/*! @brief Classe Production_energie_cin_turb_VDF Cette classe implemente dans PolyMAC_P0 un operateur de production d'énergie cinetique turbulente k
+/*! @brief Classe Production_energie_cin_turb_VDF Cette classe implemente dans PolyMAC_MPFA un operateur de production d'énergie cinetique turbulente k
  *
  *
  *
- * @sa Operateur_PolyMAC_P0_base Operateur_base
+ * @sa Operateur_PolyMAC_MPFA_base Operateur_base
  */
 class Production_energie_cin_turb_VDF: public Source_Production_energie_cin_turb
 {

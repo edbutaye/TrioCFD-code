@@ -16,7 +16,7 @@
 #include <Energie_cinetique_turbulente.h>
 #include <EcritureLectureSpecial.h>
 #include <Scalaire_impose_paroi.h>
-#include <Champ_Face_PolyMAC_P0.h>
+#include <Champ_Face_PolyMAC_MPFA.h>
 #include <Echange_global_impose.h>
 #include <Schema_Implicite_base.h>
 #include <Neumann_sortie_libre.h>
@@ -95,12 +95,12 @@ void Energie_cinetique_turbulente::mettre_a_jour(double temps)
 
   const Navier_Stokes_std& eqv = ref_cast(Navier_Stokes_std, probleme().equation(0));
 
-  if (probleme().discretisation().is_polymac_p0() && limit_k_)
+  if (probleme().discretisation().is_PolyMAC_MPFA() && limit_k_)
     if ( temps > schema_temps().temps_courant() && coef_limit_ > 0 )
       {
         Cerr << "Limiting the value of K : coeff used = " << coef_limit_ << finl;
-        const Champ_Face_PolyMAC_P0& ch_vit = ref_cast(Champ_Face_PolyMAC_P0, eqv.vitesse());
-        const Domaine_PolyMAC_P0& domaine = ref_cast(Domaine_PolyMAC_P0, domaine_dis());
+        const Champ_Face_PolyMAC_MPFA& ch_vit = ref_cast(Champ_Face_PolyMAC_MPFA, eqv.vitesse());
+        const Domaine_PolyMAC_MPFA& domaine = ref_cast(Domaine_PolyMAC_MPFA, domaine_dis());
         DoubleTab& k_val = inconnue().valeurs();
         const int N = k_val.line_size(), D = dimension;
 

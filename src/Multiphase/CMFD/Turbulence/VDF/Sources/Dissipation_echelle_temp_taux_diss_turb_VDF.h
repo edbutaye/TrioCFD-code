@@ -36,7 +36,7 @@ class Convection_Diffusion_std;
  *  en l'etat, si plusieurs phases sont turbulentes et sont decrites par le modele k-tau, alors elles doivent se suivre dans le bloc phases { } du jeu de donnees
  *
  */
-class Dissipation_echelle_temp_taux_diss_turb_VDF : public Source_Dissipation_echelle_temp_taux_diss_turb 	// Terme_Source_PolyMAC_P0_base
+class Dissipation_echelle_temp_taux_diss_turb_VDF : public Source_Dissipation_echelle_temp_taux_diss_turb 	// Terme_Source_PolyMAC_MPFA_base
 {
   Declare_instanciable(Dissipation_echelle_temp_taux_diss_turb_VDF);
 };

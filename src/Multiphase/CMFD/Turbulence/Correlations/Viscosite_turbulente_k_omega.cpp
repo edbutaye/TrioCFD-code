@@ -113,7 +113,7 @@ void Viscosite_turbulente_k_omega::reynolds_stress(DoubleTab& R_ij) const // Ren
   const int Nk = k.dimension(1);
 
   int i_part = -1;
-  ConstDoubleTab_parts p_gu(grad_u); //en PolyMAC_P0, grad_u contient (nf.grad)u_i aux faces, puis (d_j u_i) aux elements
+  ConstDoubleTab_parts p_gu(grad_u); //en PolyMAC_MPFA, grad_u contient (nf.grad)u_i aux faces, puis (d_j u_i) aux elements
   for (int i = 0; i < p_gu.size(); i++)
     if (p_gu[i].get_md_vector() == R_ij.get_md_vector())
       i_part = i; //on cherche une partie ayant le meme support que k

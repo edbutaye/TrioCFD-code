@@ -271,7 +271,7 @@ void Convection_Diffusion_Espece_Multi_QC::assembler_blocs_avec_inertie(matrices
 
   schema_temps().ajouter_blocs(matrices, secmem, *this);
 
-  if (!discretisation().is_polymac_family())
+  if (!discretisation().is_poly_family())
     modifier_pour_Cl(*mat, secmem);
 
   statistics().end_count(STD_COUNTERS::matrix_assembly);

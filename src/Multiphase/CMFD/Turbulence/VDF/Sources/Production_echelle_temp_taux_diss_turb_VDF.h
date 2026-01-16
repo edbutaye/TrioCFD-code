@@ -15,7 +15,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //
 // File:        Production_echelle_temp_taux_diss_turb_VDF.h
-// Directory:   $TRUST_ROOT/src/ThHyd/Multiphase/PolyMAC_P0
+// Directory:   $TRUST_ROOT/src/ThHyd/Multiphase/PolyMAC_MPFA
 // Version:     /main/12
 //
 //////////////////////////////////////////////////////////////////////////////
@@ -25,11 +25,11 @@
 
 #include <Source_Production_echelle_temp_taux_diss_turb.h>
 
-/*! @brief Classe Production_echelle_temp_taux_diss_turb_VDF Cette classe implemente dans PolyMAC_P0 un operateur de production de l'échelle de temps turbulente tau ou du taux de dissipation turbulent omega
+/*! @brief Classe Production_echelle_temp_taux_diss_turb_VDF Cette classe implemente dans PolyMAC_MPFA un operateur de production de l'échelle de temps turbulente tau ou du taux de dissipation turbulent omega
  *
  *
  *
- * @sa Operateur_PolyMAC_P0_base Operateur_base
+ * @sa Operateur_PolyMAC_MPFA_base Operateur_base
  */
 class Production_echelle_temp_taux_diss_turb_VDF: public Source_Production_echelle_temp_taux_diss_turb
 {

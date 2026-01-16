@@ -22,7 +22,7 @@
 
 #include <Source_Diffusion_croisee_echelle_temp_taux_diss_turb.h>
 
-#include <Domaine_Cl_PolyMAC.h>
+#include <Domaine_Cl_PolyMAC_family.h>
 #include <Pb_Multiphase.h>
 #include <Matrix_tools.h>
 #include <Array_tools.h>

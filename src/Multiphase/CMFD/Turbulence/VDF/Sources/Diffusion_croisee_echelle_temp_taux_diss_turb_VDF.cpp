@@ -15,7 +15,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //
 // File:        Source_Diffusion_croisee_echelle_temp_taux_diss_turb.cpp
-// Directory:   $TRUST_ROOT/src/ThHyd/Multiphase/PolyMAC_P0/Sources
+// Directory:   $TRUST_ROOT/src/ThHyd/Multiphase/PolyMAC_MPFA/Sources
 // Version:     /main/13
 //
 //////////////////////////////////////////////////////////////////////////////
@@ -28,7 +28,7 @@
 #include <Champ_Inc_P0_base.h>
 #include <Echange_impose_base.h>
 #include <Domaine_VF.h>
-#include <Domaine_Cl_PolyMAC.h>
+#include <Domaine_Cl_PolyMAC_family.h>
 #include <Pb_Multiphase.h>
 #include <Dirichlet.h>
 

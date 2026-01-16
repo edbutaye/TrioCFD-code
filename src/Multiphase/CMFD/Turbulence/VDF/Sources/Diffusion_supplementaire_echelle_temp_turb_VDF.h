@@ -15,7 +15,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //
 // File:        Diffusion_supplementaire_echelle_temp_turb_VDF.h
-// Directory:   $TRUST_ROOT/src/ThHyd/Multiphase/PolyMAC_P0
+// Directory:   $TRUST_ROOT/src/ThHyd/Multiphase/PolyMAC_MPFA
 // Version:     /main/12
 //
 //////////////////////////////////////////////////////////////////////////////
@@ -25,11 +25,11 @@
 
 #include <Source_Diffusion_supplementaire_echelle_temp_turb.h>
 
-/*! @brief Classe Diffusion_supplementaire_echelle_temp_turb_PolyMAC_P0 Cette classe implemente dans PolyMAC_P0 la diffusion supplementaire venant de l'introduction du temps tau
+/*! @brief Classe Diffusion_supplementaire_echelle_temp_turb_PolyMAC_MPFA Cette classe implemente dans PolyMAC_MPFA la diffusion supplementaire venant de l'introduction du temps tau
  *
  *
  *
- * @sa Operateur_PolyMAC_P0_base Operateur_base
+ * @sa Operateur_PolyMAC_MPFA_base Operateur_base
  */
 class Diffusion_supplementaire_echelle_temp_turb_VDF: public Source_Diffusion_supplementaire_echelle_temp_turb
 {
