@@ -103,8 +103,8 @@ void Paroi_frottante_simple::me_calculer()
   const int cmu = mu_visc.dimension(0) == 1;
   const int cr = rho.dimension(0) == 1;
 
-  // On va chercher le mu turbulent de PolyMAC_CDO et celui de vdf et on prend le bon dans la suite
-  const DoubleTab* mu_poly = domaine.que_suis_je().debute_par("Domaine_PolyMAC_CDO") ? &ref_cast(Op_Diff_PolyMAC_MPFA_base, domaine_Cl_dis().equation().operateur(0).l_op_base()).nu() : nullptr;
+  // On va chercher le mu turbulent de PolyMAC et celui de vdf et on prend le bon dans la suite
+  const DoubleTab* mu_poly = domaine.que_suis_je().debute_par("Domaine_PolyMAC") ? &ref_cast(Op_Diff_PolyMAC_MPFA_base, domaine_Cl_dis().equation().operateur(0).l_op_base()).nu() : nullptr;
   const DoubleTab *mu_vdf = domaine.que_suis_je().debute_par("Domaine_VDF") ? &ref_cast(Op_Dift_Multiphase_VDF_Face, domaine_Cl_dis().equation().operateur(0).l_op_base()).get_diffusivite_turbulente() : nullptr;
   assert((mu_poly) || (mu_vdf));
 
@@ -141,7 +141,7 @@ void Paroi_frottante_simple::me_calculer()
           for (int d = 0 ; d < D ; d++)
             u_parallel(d) = pvit_elem(e, N*d+n) - u_orth*(-n_f(f_domaine,d))/fs(f_domaine) ; // ! n_f pointe vers la face 1 donc vers l'exterieur de l'element, d'ou le -
         }
-      else // mu_PolyMAC_CDO
+      else // mu_PolyMAC
         {
           for (int d = 0; d < D ; d++)
             u_orth -= vit(nf_tot + e * D+d, n)*n_f(f_domaine,d)/fs(f_domaine); // ! n_f pointe vers la face 1 donc vers l'exterieur de l'element, d'ou le -

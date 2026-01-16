@@ -13,8 +13,8 @@
 *
 *****************************************************************************/
 
-#ifndef Flux_2groupes_PolyMAC_CDOP0_included
-#define Flux_2groupes_PolyMAC_CDOP0_included
+#ifndef Flux_2groupes_PolyMAC_MPFA_included
+#define Flux_2groupes_PolyMAC_MPFA_included
 
 #include <Source_base.h>
 #include <Correlation_base.h>

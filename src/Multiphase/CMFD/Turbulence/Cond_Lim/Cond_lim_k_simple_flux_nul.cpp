@@ -75,8 +75,8 @@ void Cond_lim_k_simple_flux_nul::me_calculer()
   const int cvisc = visc_c.dimension(0) == 1;
   const int cmu = mu_visc.dimension(0) == 1;
 
-  // On va chercher le mu turbulent de PolyMAC_CDO et celui de vdf et on prend le bon dans la suite
-  const DoubleTab* mu_poly = domaine.que_suis_je().debute_par("Domaine_PolyMAC_CDO") ? &ref_cast(Op_Diff_PolyMAC_MPFA_base, domaine_Cl_dis().equation().operateur(0).l_op_base()).nu() : nullptr;
+  // On va chercher le mu turbulent de PolyMAC et celui de vdf et on prend le bon dans la suite
+  const DoubleTab* mu_poly = domaine.que_suis_je().debute_par("Domaine_PolyMAC") ? &ref_cast(Op_Diff_PolyMAC_MPFA_base, domaine_Cl_dis().equation().operateur(0).l_op_base()).nu() : nullptr;
   const DoubleTab* mu_vdf = domaine.que_suis_je().debute_par("Domaine_VDF") ? &ref_cast(Op_Dift_Multiphase_VDF_Elem, domaine_Cl_dis().equation().operateur(0).l_op_base()).get_diffusivite_turbulente() : nullptr;
   assert((mu_poly) || (mu_vdf));
 
