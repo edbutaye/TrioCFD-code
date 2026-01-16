@@ -580,14 +580,12 @@ bool KerasLayerEmbedding::Apply(Tensor* in, Tensor* out) {
     out->dims_ = {output_rows, output_cols};
     out->data_.reserve(output_rows * output_cols);
 
-    std::for_each(in->data_.begin(), in->data_.end(), [=](float i) {
-        std::vector<float>::const_iterator first =
-            this->weights_.data_.begin() + (std::lrint(i) * output_cols);
-        std::vector<float>::const_iterator last =
-            this->weights_.data_.begin() + (std::lrint(i) + 1) * output_cols;
+    for (const auto& i: in->data_) {
+        std::vector<float>::const_iterator first = this->weights_.data_.begin() + (std::lrint(i) * output_cols);
+        std::vector<float>::const_iterator last = this->weights_.data_.begin() + (std::lrint(i) + 1) * output_cols;
 
         out->data_.insert(out->data_.end(), first, last);
-    });
+    }
 
     return true;
 }
