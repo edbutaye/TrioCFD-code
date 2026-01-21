@@ -44,7 +44,7 @@ To perform 2D axi-symmetrical simulations, the keyword \texttt{bidim\_axi} must 
 The discretization method is defined as follows.
 \begin{lstlisting}
 # Example of discretization on unstructured mesh #
-PolyMAC_P0 dis option_PolyMAC_P0 { traitement_axi }
+PolyMAC_MPFA dis option_PolyMAC_MPFA { traitement_axi }
 \end{lstlisting}
 Multiple different discretizations can be used in the TrioCFD multiphase solver.
 More details on the mathematical formulations of these discretizations can be found in chapter~\ref{sec:spatial_scheme}.\\
@@ -431,7 +431,7 @@ Solve pb
   \path[ color=codekeyword4]
     node[fill=codebackground,rounded corners=2pt,inner sep=2pt] {Pb_Multiphase}
     child[ color=codeword] { node[color=black] {Spatial scheme} 
-      child[ color=codekeyword3] { node[fill=codebackground,rounded corners=2pt,inner sep=2pt] {PolyMAC_P0} }
+      child[ color=codekeyword3] { node[fill=codebackground,rounded corners=2pt,inner sep=2pt] {PolyMAC_MPFA} }
     }
       child[ color=codeword] { node[] {Source Terms} 
       child[ color=codekeyword2] { node[fill=codebackground,rounded corners=2pt,inner sep=2pt] {correlations} }

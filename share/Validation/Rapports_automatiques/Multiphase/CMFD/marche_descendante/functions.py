@@ -74,7 +74,7 @@ def method_name(config):
         else:
             name = "VDF"
             if "polymac" in method:
-                name = "PolyMAC_P0"
+                name = "PolyMAC_MPFA"
             names.append(name)
     return names
 

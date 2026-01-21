@@ -55,8 +55,8 @@ Scatter dom_fluide.Zones dom_fluide
 Scatter dom_solide.Zones dom_solide
 END SCATTER #
 
-PolyMAC_P0  dis
-Option_PolyMAC { traitement_axi }
+PolyMAC_MPFA  dis
+Option_PolyMAC_family { traitement_axi }
 
 
 Schema_euler_implicite sch_fluide

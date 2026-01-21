@@ -28,7 +28,7 @@ H = 1  # [m] demi hauteur du canal (CL : symétrie)
 ###############################################################################
 
 # # A mettre à jour lors de l'ajout d'une configuration (nouveau modèle ou nouveau problème ou les deux) !!!
-vef, vdf, plm = "VEFPreP1b", "VDF", "PolyMAC_P0"
+vef, vdf, plm = "VEFPreP1b", "VDF", "PolyMAC_MPFA"
 keps, komg, ktau = "k-epsilon", "k-omega", "k-tau"
 pbt, pbh, pbm = "turb", "hydr", "multi"
 

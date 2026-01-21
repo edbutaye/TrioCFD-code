@@ -218,7 +218,7 @@ with
 \end{align}
 It is derived directly from Source_base and currently only implemented in PolyMAC.
 
-The added production term in the turbulent kinetic energy equation is defined in Production_HZDR_PolyMAC_P0. The added term in the dissipation equation is defined in Source_Dissipation_HZDR_PolyMAC_P0. TODO: To avoid code duplication, the dissipation source term should call the production source term.
+The added production term in the turbulent kinetic energy equation is defined in Production_HZDR_PolyMAC_MPFA. The added term in the dissipation equation is defined in Source_Dissipation_HZDR_PolyMAC_MPFA. TODO: To avoid code duplication, the dissipation source term should call the production source term.
 
 \subsection{RSM-like model}\label{subsec:RSM}
 By two-phase turbulence, we mean the effect of the bubbles on the turbulence in the liquid phase. To model this, we implemented the models developed during the PhD of Antoine \textsc{du~Cluzeau} \cite{DuCluzeau2019, Cluzeau2019, Cluzeau2019a}. Following the work of \cite{Risso2018}, the authors divide the velocity fluctuations caused by the movement of bubbles in the fluid in two parts: wake-induced turbulence and wake-induced fluctuations. The total Reynolds stress tensor is the sum of all single-phase (calculated using 2-equation turbulence models) and two-phase turbulence.
@@ -268,8 +268,8 @@ where $C_\Lambda = 2.7$, $Re_b^c = 170$, $C_D'$ is a user-inputted drag coeffici
 This model is implemented in \texttt{Energie_cinetique_turbulente_WIT.cpp} and inherits from \texttt{Convection_Diffusion_std}. The different terms of the right-hand side of the equations must be modeled. Thus, we have
 \begin{itemize}
     \item Viscosite_turbulente_WIT
-    \item Dissipation_WIT_PolyMAC_P0
-    \item Production_WIT_PolyMAC_P0
+    \item Dissipation_WIT_PolyMAC_MPFA
+    \item Production_WIT_PolyMAC_MPFA
 \end{itemize}
 
 As specified above, it is currently only available with PolyMAC. To take the WIT into account in the momentum equation, one must specify its presence in the diffusion term using\footnote{This syntax might evolve to avoid repeating the names.}

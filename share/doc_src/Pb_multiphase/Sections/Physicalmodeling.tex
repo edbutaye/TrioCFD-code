@@ -1068,7 +1068,7 @@ with
 The model is described in \cite{ANTAL1991635}.\\
 The model is implemented in :
 \begin{lstlisting}[language=c++]
-void Correction_Antal_PolyMAC_P0::set_param(Param& param)
+void Correction_Antal_PolyMAC_MPFA::set_param(Param& param)
 {
   param.ajouter("Cw1", &Cw1_);
   param.ajouter("Cw2", &Cw2_);
@@ -1089,7 +1089,7 @@ with
 Tht model is partially described in \cite{LUBCHENKO201836}.\\
 The dumping is implemented in :
 \begin{lstlisting}[language=c++]
-void Correction_Lubchenko_PolyMAC_P0::set_param(Param& param)
+void Correction_Lubchenko_PolyMAC_MPFA::set_param(Param& param)
 {
   param.ajouter("beta_lift", &beta_lift_);
   param.ajouter("beta_disp", &beta_disp_);
@@ -1873,7 +1873,7 @@ When a fluid flow is injected through a wall with zero momentum via a Neumann bo
 
 The model is implemented in:
 \begin{lstlisting}[language=c++]
-void Injection_QDM_nulle_PolyMAC_P0::set_param(Param& param)
+void Injection_QDM_nulle_PolyMAC_MPFA::set_param(Param& param)
 {
   Param param(que_suis_je());
   param.ajouter("beta", &beta_);
@@ -2011,7 +2011,7 @@ The {\colorbox{codebackground}{\color{codekeyword3} Density\ change}} model is :
 \begin{equation}
     -\frac{2}{3}\frac{a_{i}}{\rho_g}\frac{d\rho_g}{dt}
 \end{equation}
-The {\colorbox{codebackground}{\color{codekeyword3} Density\ change}} is implemented in \texttt{Variation_rho_Elem_PolyMAC_P0} :
+The {\colorbox{codebackground}{\color{codekeyword3} Density\ change}} is implemented in \texttt{Variation_rho_Elem_PolyMAC_MPFA} :
 \begin{lstlisting}[language=c++]
 Void Variation_rho::set_param(Param& param)
 \end{lstlisting}
@@ -2064,9 +2064,9 @@ The {\colorbox{codebackground}{\color{codekeyword3} Coalescence}} model is :
 \end{aligned}
 \end{equation}
 with $K_{c1} = 2.86$, $K_{c2} = 1.922$, $K_{c3} = 1.017$, $We_{cr} = 1.24$, $g(\alpha) = \frac{\alpha_\text{max}^{1/3}-\alpha^{1/3}}{\alpha_\text{max}^{1/3}}$, $\alpha_\text{max} = \frac{\pi}{6}$.\\
-The {\colorbox{codebackground}{\color{codekeyword3} Coalescence}} model is implemented as $\frac{36\pi}{3}(\frac{\alpha}{a_i})^2\Phi_{Coal}={\color{mydarkorchid}f_1(\alpha,ai,k,\varepsilon)}{\color{myslateblue} f_2(\alpha,ai,k,\varepsilon)}$ so that for the sake of simplicity $d({\color{mydarkorchid}f_1}{\color{myslateblue} f_2})={\color{myslateblue} f_2}d{\color{mydarkorchid} f_1}$  in {\color{mydarkorchid} Coalescence_bulles_1groupe_PolyMAC_P0} :
+The {\colorbox{codebackground}{\color{codekeyword3} Coalescence}} model is implemented as $\frac{36\pi}{3}(\frac{\alpha}{a_i})^2\Phi_{Coal}={\color{mydarkorchid}f_1(\alpha,ai,k,\varepsilon)}{\color{myslateblue} f_2(\alpha,ai,k,\varepsilon)}$ so that for the sake of simplicity $d({\color{mydarkorchid}f_1}{\color{myslateblue} f_2})={\color{myslateblue} f_2}d{\color{mydarkorchid} f_1}$  in {\color{mydarkorchid} Coalescence_bulles_1groupe_PolyMAC_MPFA} :
 \begin{lstlisting}[language=c++]
-void Coalescence_bulles_1groupe_PolyMAC_P0::set_param(Param& param)
+void Coalescence_bulles_1groupe_PolyMAC_MPFA::set_param(Param& param)
 {
   Param param(que_suis_je());
   param.ajouter("beta_k", &beta_k_);
@@ -2103,9 +2103,9 @@ The {\colorbox{codebackground}{\color{codekeyword3}  Break-up}} model is :
 \end{equation}
 with $K_{b1} = 1.6$, $K_{b2} = 0.42$, $We_{cr} = 1.24$.
 
-The {\colorbox{codebackground}{\color{codekeyword3}  Break-up}} model is implemented as $\frac{36\pi}{3}\parent{\frac{\alpha}{a_i}}^2\Phi_{\text{breakup}}={\color{mydarkorchid}f_1(\alpha,ai,k,\varepsilon)}{\color{myslateblue} f_2(\alpha,ai,k,\varepsilon)}$ so that for the sake of simplicity $d({\color{mydarkorchid}f_1}{\color{myslateblue} f_2})={\color{myslateblue} f_2}d{\color{mydarkorchid} f_1}$  in {\color{mydarkorchid} Rupture_bulles_1groupe_PolyMAC_P0} :
+The {\colorbox{codebackground}{\color{codekeyword3}  Break-up}} model is implemented as $\frac{36\pi}{3}\parent{\frac{\alpha}{a_i}}^2\Phi_{\text{breakup}}={\color{mydarkorchid}f_1(\alpha,ai,k,\varepsilon)}{\color{myslateblue} f_2(\alpha,ai,k,\varepsilon)}$ so that for the sake of simplicity $d({\color{mydarkorchid}f_1}{\color{myslateblue} f_2})={\color{myslateblue} f_2}d{\color{mydarkorchid} f_1}$  in {\color{mydarkorchid} Rupture_bulles_1groupe_PolyMAC_MPFA} :
 \begin{lstlisting}[language=c++]
-void Rupture_bulles_1groupe_PolyMAC_P0::set_param(Param& param)
+void Rupture_bulles_1groupe_PolyMAC_MPFA::set_param(Param& param)
 {
   Param param(que_suis_je());
   param.ajouter("beta_k", &beta_k_);
@@ -2140,9 +2140,9 @@ The {\colorbox{codebackground}{\color{codekeyword3}  Nucleation}} model is :
 \end{equation}
 with $\Phi_{e}$ wall heat transfer.
 
-The {\colorbox{codebackground}{\color{codekeyword3}  Nucleation}} model is implemented in Nucleation_paroi_PolyMAC_P0:
+The {\colorbox{codebackground}{\color{codekeyword3}  Nucleation}} model is implemented in Nucleation_paroi_PolyMAC_MPFA:
 \begin{lstlisting}[language=c++]
-void Nucleation_paroi_PolyMAC_P0::set_param(Param& param)
+void Nucleation_paroi_PolyMAC_MPFA::set_param(Param& param)
 \end{lstlisting}
 This terms injected only on boundary elements and is fully explicit:
 \begin{equation}

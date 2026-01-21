@@ -6,8 +6,8 @@ Parameters {
 	VersionTrio_U "1.9.0"
 #
 	ParametersTrio_U Type of problem: 1D Two-phase problem
-	ParametersTrio_U Discretization: PolyMAC_P0
-	ParametersTrio_U Time scheme: Implicit Euler for PolyMAC_P0
+	ParametersTrio_U Discretization: PolyMAC_MPFA
+	ParametersTrio_U Time scheme: Implicit Euler for PolyMAC_MPFA
 	ParametersTrio_U Momentum convection scheme: Amont
 	ParametersTrio_U Solving of equations: QDM_Multiphase
 	ParametersTrio_U Master Test case: expansion_sans_mass_HEM.data

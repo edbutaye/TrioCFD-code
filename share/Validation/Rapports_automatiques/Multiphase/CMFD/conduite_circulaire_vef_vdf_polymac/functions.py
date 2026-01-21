@@ -66,7 +66,7 @@ for config in available_config:
     elif "VDF" in config:
         param_config[config]["method"] = "VDF"
     else:
-        param_config[config]["method"] = "PolyMAC_P0"
+        param_config[config]["method"] = "PolyMAC_MPFA"
 # Option VDF 
 for config in available_config:
     if "VDF" in config:
