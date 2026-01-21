@@ -38,7 +38,7 @@ Scatter dom.Zones dom
 END SCATTER #
 
 
-PolyMAC_P0 dis  
+PolyMAC_MPFA dis  
 
 Schema_euler_implicite sch
 Read sch

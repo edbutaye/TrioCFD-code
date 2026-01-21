@@ -39,7 +39,7 @@ Scatter DOM_FLU.Zones dom_flu
 Scatter DOM_SO.Zones dom_so
   END SCATTER # 
 
-PolyMAC_P0  dis option_PolyMAC { traitement_axi } 
+PolyMAC_MPFA  dis Option_PolyMAC_family { traitement_axi } 
 
 Schema_euler_implicite sch
 Read sch
