@@ -2,7 +2,7 @@
 \chapter{\label{sec:CMFD}Computational Multiphase Fluid Dynamics}
 \lhead{CMFD}
 \section{Turbulence implementation in TrioCFMD}
-A CFD module, called CMFD (Computaional Multiphase Fluid Dynamics) is currently under development and will be able to handle single and multi-phase turbulent flows. TrioCMFD uses the PolyMAC numerical scheme \cite{Gerschenfeld_PolyMAC2018, Gerschenfeld_PolyMAC2022}. This scheme was initially developed for component scale codes. The resolution of the equations is done using semi-implicit ICE and SETS solvers. Turbulence is treated through two-equation models. There is an equation on the turbulent kinetic energy $k$ and one on the turbulent dissipation rate $\omega$ or time scale $\tau$. The equations for turbulent quantities are treated in the same way as the conservation equation for energy and solved in a Newton algorithm in the same matrix as the mass, velocity, pressure and temperature equations. \\
+A CFD module, called CMFD (Computaional Multiphase Fluid Dynamics) is currently under development and will be able to handle single and multi-phase turbulent flows. TrioCMFD uses the PolyMAC\_MPFA numerical scheme \cite{Gerschenfeld_PolyMAC2018, Gerschenfeld_PolyMAC2022}. This scheme was initially developed for component scale codes. The resolution of the equations is done using semi-implicit ICE and SETS solvers. Turbulence is treated through two-equation models. There is an equation on the turbulent kinetic energy $k$ and one on the turbulent dissipation rate $\omega$ or time scale $\tau$. The equations for turbulent quantities are treated in the same way as the conservation equation for energy and solved in a Newton algorithm in the same matrix as the mass, velocity, pressure and temperature equations. \\
 
 Turbulence acts on the momentum equation through a modified diffusivity as per the eddy-viscosity hypothesis. It acts on the energy equation through a SGDH transport term of which the user can tune the Prandtl number. \\
 
@@ -451,7 +451,7 @@ The implementation of shear-induced turbulence for single-phase flows was done b
 
 \section{Multiphase CFD in TrioCFMD}
 
-TrioCMFD uses the PolyMAC numerical scheme \cite{Gerschenfeld_PolyMAC2018, Gerschenfeld_PolyMAC2022}. This scheme was initially developed for multiphase component scale codes. TrioCMFD is based on a 2-fluid 6-equation Euler-Euler framework called Pb\_Multiphase. The resolution of the equations is done using semi-implicit ICE and SETS solvers that are located in TRUST. TrioCMFD regroups interfacial terms that are specific to CFD applications. This includes interfacial forces, energy transfer, wall heat flux partitioning, bubble diameter determination... \\
+TrioCMFD uses the PolyMAC\_MPFA numerical scheme \cite{Gerschenfeld_PolyMAC2018, Gerschenfeld_PolyMAC2022}. This scheme was initially developed for multiphase component scale codes. TrioCMFD is based on a 2-fluid 6-equation Euler-Euler framework called Pb\_Multiphase. The resolution of the equations is done using semi-implicit ICE and SETS solvers that are located in TRUST. TrioCMFD regroups interfacial terms that are specific to CFD applications. This includes interfacial forces, energy transfer, wall heat flux partitioning, bubble diameter determination... \\
 
 Work is still being done on the models presented in this section, and they are not fully validated.
 

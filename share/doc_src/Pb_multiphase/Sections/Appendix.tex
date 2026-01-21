@@ -9,7 +9,7 @@ For fields stored at the center of the element: index = $N\times{}e + n$ with $N
 For momentum equation, it depends on the numerical scheme:
 \begin{itemize}
 \item[\small \textcolor{blue}{\ding{109}}]For VDF (velocity on faces): index = $N\times{}f + n$ with $N$ the number of phases of the equation unknown, $n$ the phase number and $f$ the face number
-\item[\small \textcolor{blue}{\ding{109}}]For PolyMAC\_P0: same as VDF for faces unknown and $N\times{}\parent{\mathit{nf}_{\text{tot}} + D\times{}e + d} + n$ for the element unknown with $\mathit{nf}_{\text{tot}}$ the total number of faces, $D$ the number of dimensions, $e$ the element number, $d$ the dimension and $n$ the phase number
+\item[\small \textcolor{blue}{\ding{109}}]For PolyMAC\_MPFA: same as VDF for faces unknown and $N\times{}\parent{\mathit{nf}_{\text{tot}} + D\times{}e + d} + n$ for the element unknown with $\mathit{nf}_{\text{tot}}$ the total number of faces, $D$ the number of dimensions, $e$ the element number, $d$ the dimension and $n$ the phase number
 \item[\small \textcolor{blue}{\ding{109}}]For PolyVEF\_P0, only unknown on faces, index = $N\times{}\parent{D\times{}f + d} + n$
 \end{itemize}
 

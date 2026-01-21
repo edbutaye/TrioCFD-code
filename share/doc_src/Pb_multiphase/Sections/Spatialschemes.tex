@@ -1,7 +1,7 @@
 \chapter{Spatial Scheme}
 \label{sec:spatial_scheme}
 
-This chapter gives an overview of the available spatial schemes for multiphase flow in \texttt{TRUST}/\texttt{TrioCFD}. First, common notations are given at Section~\ref{sec:notation-spa-sch}. The different schemes of the PolyMAC family are described in Section~\ref{sec:polymac-family}. Few elements are given on the PolyVEF scheme in Section~\ref{sec:polyvef} and on the VDF scheme in Section~\ref{sec:vdf}. Finally, details about the boundary conditions are given in Section~\ref{sec:bounda-condi}.
+This chapter gives an overview of the available spatial schemes for multiphase flow in \texttt{TRUST}/\texttt{TrioCFD}. First, common notations are given at Section~\ref{sec:notation-spa-sch}. The different schemes of the PolyMAC family are described in Section~\ref{sec:polymac-family}. A few elements are given on the PolyVEF scheme in Section~\ref{sec:polyvef} and on the VDF scheme in Section~\ref{sec:vdf}. Finally, details about the boundary conditions are given in Section~\ref{sec:bounda-condi}.
 
 \section{Notation\label{sec:notation-spa-sch}}
 First, we consider a certain polyhedral mesh $\mathtt{M}$. In a three-dimensional framework, $\mathtt{M}$ is composed of different elements: cells $c$, faces $f$, edges $e$ and vertexes $v$. A cell is a peculiar volume subset of the grid. The set of those subsets span the whole grid. A face is defined as the intersection of two cells or the intersection of a cell and a boundary of the domain. An edge is therefore an intersection of faces (and potentially a boundary) and a vertex is the intersection of edges (and potentially a boundary). The total number of each element $\myel$ on the mesh is fixed and will be referred as $\# \myel$. The set of faces of a peculiar cell c will be denoted $F_c$. In the same fashion, the set of edges of a peculiar face $f$ will be noted as $E_f$ and eventually, the two vertexes of an edge $e$ will be denoted $V_e$. 
@@ -12,7 +12,7 @@ In the sequel, the measure of an unknown $x$ at an element of the mesh $\myel$ w
 \end{equation}
 where $|\cdot|$ will be a global measure operator of a mesh element. For example, $|c|$ refers to the volume of the cell $c$, $|f|$ to the surface of the face $f$ and $|e|$ to the length of the edge $e$.
 
-Available spatial discretisations in Pb\_multiphase can be seen as extensions of the Marker And Cell (MAC) method \cite{harlow1965numerical} to meshes more complex than Cartesian grids. All those schemes are also available in \texttt{TRUST} \cite{trustonline} for a single phase flow. They are called respectively: VDF, PolyMAC, PolyMAC\_P0, PolyMAC\_P0-P1NC. On the other hand, the PolyVEF\_P0 scheme can be seen as an extension of the Crouzet-Raviart Finite Element scheme.
+Available spatial discretisations in Pb\_multiphase can be seen as extensions of the Marker And Cell (MAC) method \cite{harlow1965numerical} to meshes more complex than Cartesian grids. All those schemes are also available in \texttt{TRUST} \cite{trustonline} for a single phase flow. They are called respectively: VDF, PolyMAC_CDO, PolyMAC\_MPFA, PolyMAC\_HFV. On the other hand, the PolyVEF\_P0 scheme can be seen as an extension of the Crouzet-Raviart Finite Element scheme.
 
 Compatibility of the available spacial discretisation is summarized in Table~\ref{compatibilteespace}. Please note that only PolyMAC\_P0 and VDF discretisations are currently\footnote{May 2024} validated on multiple test cases. We recommend to use VDF whenever it is possible as computation time is drastically lower than PolyMAC. Figure~\ref{Spatialdiscretisation} succinctly presents the locations of the unknowns for the different discretisations available in Pb\_multiphase.
 \begin{table}[!ht]
@@ -162,13 +162,13 @@ Compatibility of the available spacial discretisation is summarized in Table~\re
 \section{The PolyMAC family\label{sec:polymac-family}}
 As stated above, the PolyMAC discretisation's family aims to extend the MAC scheme to complex polyhedral and deformed grids. Indeed, staggered discretisation tends to decrease the appearance of potential spurious mode in low Mach number regime. PolyMAC are based on Finite Volumes methods. As such, unknown are discretised and stored on control volumes. Moreover, for each PolyMAC method, a dual mesh (more or less complex depending on the PolyMAC version) is constructed and operators are defined in order to interpolate unknowns from a control volume to another (face to edge, vertex to cell, \ldots). Those scheme are also available in \texttt{TRUST} code for solving the incompressible Navier-Stokes system. In practice, the discretisation methods are coded in \texttt{TRUST} in a modular fashion, so that they can be used for various models. 
 
-\subsection{PolyMAC}
-The first developed PolyMAC version, simply called PolyMAC in \texttt{TRUST}/\texttt{TrioCFD}, is based on a \textit{mimetic} method~\cite{lipnikov2014mimetic}. The core idea of those methods is to conserve exact property at the discrete level. To be more precise, PolyMAC lays in the \textit{Compact Discrete Operator} framework, such as the one presented by \cite{bonelle2014,milani2020}. A dual mesh has to be build and unknown and equations are discretised on this dual mesh. In this framework, local quantities are discretised according to their physical properties. This leads to exact discrete operator such as the gradient, curl and divergence. Some other approximated interpolation operators, called Hodge operators, must also be defined.
+\subsection{PolyMAC_CDO}
+The first developed PolyMAC scheme, called PolyMAC_CDO in \texttt{TRUST}/\texttt{TrioCFD}, is based on a \textit{mimetic} method~\cite{lipnikov2014mimetic}. The core idea of those methods is to conserve exact property at the discrete level. To be more precise, PolyMAC_CDO lays in the \textit{Compact Discrete Operator} framework, such as the one presented by \cite{bonelle2014,milani2020}. A dual mesh has to be build and unknown and equations are discretised on this dual mesh. In this framework, local quantities are discretised according to their physical properties. This leads to exact discrete operator such as the gradient, curl and divergence. Some other approximated interpolation operators, called Hodge operators, must also be defined.
 
 However, up to know, this version is not available in Pb\_multiphase as the discretisation of the two-phase flow model leads to a non-triangular matrix (because of the use of the vorticity) and two saddle point problems that impair greatly the stability and performance of the computation in the multiphase flow framework. 
 
-\subsection{PolyMAC\textunderscore{}P0}
-Unlike the first PolyMAC discretisation, PolyMAC\_P0 is not based on a CDO approach and the discretisation does not require explicitly a dual mesh. Moreover, in this case, equations are discretised at the control volume of their principal unknown: $\alpha _k \rho _k$ for $\mathcal{M}_k$, $u_k$ for $\mathcal{Q}_k$ and $T_k$ for $\mathcal{E}_k$.
+\subsection{PolyMAC\textunderscore{}MPFA}
+Unlike the first PolyMAC discretisation, PolyMAC\_MPFA is not based on a CDO approach and the discretisation does not require explicitly a dual mesh. Moreover, in this case, equations are discretised at the control volume of their principal unknown: $\alpha _k \rho _k$ for $\mathcal{M}_k$, $u_k$ for $\mathcal{Q}_k$ and $T_k$ for $\mathcal{E}_k$.
 
 \subsubsection{Discretisation of the unknown}
 For $k \in \{1,2\}$:
@@ -192,7 +192,7 @@ For $k \in \{1,2\}$:
     \end{equation}
 \end{itemize}
 \subsubsection*{Discretisation of gradient terms}
-For PolyMAC\_P0, the reconstruction of the gradient at the face is conducted through a Multi Point Flux Approximation (MPFA) method \cite[section 4.1]{droniou2018gradient}. Those methods gives approximations of the gradient at the face, called $G^{\text{MPFA}}$ (see sub-section \ref{MPFA_gradient_subsec} for its definition). However, gradient of a scalar field $\mathcal{F}_s$ at the cell center will be needed in the following. Its value is thus interpolate by using the following operator taken from \cite{bonelle2014}:
+For PolyMAC\_MPFA, the reconstruction of the gradient at the face is conducted through a Multi Point Flux Approximation (MPFA) method \cite[section 4.1]{droniou2018gradient}. Those methods gives approximations of the gradient at the face, called $G^{\text{MPFA}}$ (see sub-section \ref{MPFA_gradient_subsec} for its definition). However, gradient of a scalar field $\mathcal{F}_s$ at the cell center will be needed in the following. Its value is thus interpolate by using the following operator taken from \cite{bonelle2014}:
 \begin{equation}
     \croc{\vec{\nabla F_s}}_c = \frac{1}{|c|} \sum _{f \in F_c} |f| [u]_f |\nabla  \mathcal{F}_s |_f \vec{x}_{c \rightarrow f},
 \end{equation}
@@ -201,9 +201,9 @@ where $\vec{x}_{c \rightarrow f}$ is the vector linking the gravity center of th
 \subsubsection{Discretisation of the scalar equations}
 First, we want to take care of the scalar equations. Those equations, \textit{i.e.} for $k\in \{1,2\} $ ($\mathcal{M}_k$) and ($\mathcal{E}_k$), are discretised at the cell. Considering a scalar field $\mathcal{F}_s$, then, owing to the Stokes theorem, we have:
 \begin{equation}
-    |c| [\nabla \cdot (F_s \vec{u})]_c = \sum _{f \in F_c} |f| [\mathcal{F}_s]_f [u]_f \label{disc_div_polyp0}
+    |c| [\nabla \cdot (F_s \vec{u})]_c = \sum _{f \in F_c} |f| [\mathcal{F}_s]_f [u]_f \label{disc_div_polympfa}
 \end{equation}
-The scalar fields at the face are reconstructed from their values at the cell by using an upwind reconstruction. Equation \eqref{disc_div_polyp0} is used to discretised every divergence terms in the scalar equations. 
+The scalar fields at the face are reconstructed from their values at the cell by using an upwind reconstruction. Equation \eqref{disc_div_polympfa} is used to discretised every divergence terms in the scalar equations. 
 
 \subsubsection*{Discretisation of the momentum equation}
 
@@ -221,7 +221,7 @@ The momentum equation ($\mathcal{Q}_k$) is discretised at the faces. However, as
                                                                         &= \frac{[\alpha _k \rho _k]_c}{|c|} \sum _{f \in F_c} |f| [\vec{u}_k \otimes \vec{u}_k]_f \\
                                                                         &\simeq \frac{[\alpha _k \rho _k]_c}{|c|} \sum _{f \in F_c} |f| [u]_f \left( \beta \left( \gamma \vec{u_c} + \left(1-\gamma \right) \vec{u_{c'}} \right) \right. \notag \\ & \quad \left. + (1-\beta) \left( \frac{\vec{u_c} +\vec{u_{c'}}}{2} \right) \right),
     \end{align}
-    with $\beta \in [0,1]$ and $\gamma \in \{0,1\}$ such that $\gamma =1$ if $[u_f]\geq 0$ and $0$ otherwise. When taking $\beta =0$, the staggered scheme is retrieved, and when taking $\beta =1$, we retrieved the upwind scheme (used by default in PolyMAC\_P0).
+    with $\beta \in [0,1]$ and $\gamma \in \{0,1\}$ such that $\gamma =1$ if $[u_f]\geq 0$ and $0$ otherwise. When taking $\beta =0$, the staggered scheme is retrieved, and when taking $\beta =1$, we retrieved the upwind scheme (used by default in PolyMAC\_MPFA).
   \item Interpolate convective terms to the face:
     \begin{equation}
       [\nabla \cdot (\alpha _k \rho _k \vec{u}_k \otimes \vec{u}_k)]_f = \lambda_{c,f} [\nabla \cdot (\alpha _k \rho _k \vec{u}_k \otimes \vec{u}_k)]_c + \lambda_{c',f} [\nabla \cdot (\alpha _k \rho _k \vec{u}_k \otimes \vec{u}_k)]_{c'}
@@ -319,16 +319,16 @@ Some remarks:
 {
 \it
 \begin{itemize} 
-    \item  Due to large stencil of the MPFA scheme induced by the elimination of the auxiliary unknows, PolyMAC\_P0 tends to be more costly when using tetrahedron grids rather than hexahedron grids.
+    \item  Due to large stencil of the MPFA scheme induced by the elimination of the auxiliary unknows, PolyMAC\_MPFA tends to be more costly when using tetrahedron grids rather than hexahedron grids.
     \item  On the boundary of the domain, only one auxiliary quantity is constructed by face when no Dirichlet or Neumann are imposed. 
 \end{itemize}
 }
 
-\subsection{PolyMAC\textunderscore{}P0-P1NC}
+\subsection{PolyMAC\textunderscore{}HFV}
 The PolyMAC\_P0-P1NC discretisation aims at reducing some stability issues of PolyMAC\_P0. It uses an Hybrid Finite Volume method described in \cite{eymard2007} in the case of a diffusion problem. Moreover, as in the first PolyMAC discretisation, the vorticity $\omega = \nabla \wedge u$ is introduced. We remind that no source terms are implemented and no validation have been made for this scheme. We do not recommend to use this scheme for most cases.
 
 \section{PolyVEF\textunderscore{}P0\label{sec:polyvef}}
-The PolyVEF\_P0 discretisation method is different from the PolyMAC family. Indeed, it is an extension to arbitrary polyhedron of the Crouzeix-Raviart Finite Element Method named VEF in \texttt{TRUST}/\texttt{TrioCFD}, hence the name PolyVEF. In this case, scalar quantities are stored at the cell and at the vertexes. However, the entire velocity vector is stored at the face as described in Figure~\ref{PolyVEF}. As in PolyMAC\_P0, the gradient is reconstructed by using MPFA methods. 
+The PolyVEF\_P0 discretisation method is different from the PolyMAC family. Indeed, it is an extension to arbitrary polyhedron of the Crouzeix-Raviart Finite Element Method named VEF in \texttt{TRUST}/\texttt{TrioCFD}, hence the name PolyVEF. In this case, scalar quantities are stored at the cell and at the vertexes. However, the entire velocity vector is stored at the face as described in Figure~\ref{PolyVEF}. As in PolyMAC\_MPFA, the gradient is reconstructed by using MPFA methods. 
 However, time schemes ICE and SETS are not sufficient for using PolyVEF\_P0. We remind that no validation have been made for this scheme and that it is not available in the TRUST environment. We do not recommend to use this scheme for most cases.
 
 \section{VDF\label{sec:vdf}}

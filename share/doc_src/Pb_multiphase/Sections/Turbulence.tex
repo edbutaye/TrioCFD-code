@@ -3,7 +3,7 @@
 \hide{
 \begin{itemize}
     \item structure des équations : terme insta + advection = diffusion + sources
-    \item rapide explication du fonctionnement des classes : sources génériques (i.e. classe base) dans src/Multiphase/CMFD/Turbulence/Sources et spécialisation par discrétisation dans src/Multiphase/CMFD/Turbulence/VDF/Sources et src/Multiphase/CMFD/Turbulence/PolyMAC/Sources
+    \item rapide explication du fonctionnement des classes : sources génériques (i.e. classe base) dans src/Multiphase/CMFD/Turbulence/Sources et spécialisation par discrétisation dans src/Multiphase/CMFD/Turbulence/VDF/Sources et src/Multiphase/CMFD/Turbulence/PolyMAC_MPFA/Sources
     \item Rappel du JDD en début de section ?
     \item décrire l'implicitation des termes si existant (section spécifique "time stepping" de la turbulence"
     \item un mot sur les scalaires ?
@@ -216,7 +216,7 @@ with
     &\mathit{Eo} = \frac{g\norm{\rho_l - \rho_g}D_b^2}{\sigma}\\
     &\mathit{Re}_b = \frac{D_b u_r}{\nu_l}
 \end{align}
-It is derived directly from Source_base and currently only implemented in PolyMAC.
+It is derived directly from Source_base and currently only implemented in PolyMAC_MPFA.
 
 The added production term in the turbulent kinetic energy equation is defined in Production_HZDR_PolyMAC_MPFA. The added term in the dissipation equation is defined in Source_Dissipation_HZDR_PolyMAC_MPFA. TODO: To avoid code duplication, the dissipation source term should call the production source term.
 
@@ -272,7 +272,7 @@ This model is implemented in \texttt{Energie_cinetique_turbulente_WIT.cpp} and i
     \item Production_WIT_PolyMAC_MPFA
 \end{itemize}
 
-As specified above, it is currently only available with PolyMAC. To take the WIT into account in the momentum equation, one must specify its presence in the diffusion term using\footnote{This syntax might evolve to avoid repeating the names.}
+As specified above, it is currently only available with the PolyMAC\_MPFA discretisation. To take the WIT into account in the momentum equation, one must specify its presence in the diffusion term using\footnote{This syntax might evolve to avoid repeating the names.}
 
 \begin{lstlisting}[language=c++]
 diffusion {
