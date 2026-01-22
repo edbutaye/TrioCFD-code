@@ -58,7 +58,7 @@ END PARTITION #
 Scatter DOM.Zones dom
 END SCATTER #
 
-PolyMAC_P0 dis
+PolyMAC_MPFA dis
 
 Schema_Euler_implicite sch
 Lire sch
