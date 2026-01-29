@@ -110,8 +110,8 @@ int  Paroi_std_scal_hyd_VDF::calculer_scal(Champ_Fonc_base& diffusivite_turb)
   if ((!l_unif) && (tab_visco.local_min_vect()<DMINFLOAT))
     //   on ne doit pas changer tab_visco ici !
     {
-      Cerr<<" visco <=0 ?"<<finl;
-      Process::exit();
+      Cerr << "In Paroi_std_scal_hyd_VDF::calculer_scal : visco = " << tab_visco.local_min_vect() << " <= 0 ? " << finl;
+      throw;
     } //    tab_visco+=DMINFLOAT;
 
   double dist;

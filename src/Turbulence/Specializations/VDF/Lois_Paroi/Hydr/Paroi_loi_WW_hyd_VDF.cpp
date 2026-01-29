@@ -124,8 +124,8 @@ int Paroi_loi_WW_hyd_VDF::calculer_hyd(DoubleTab& tab_nu_t,DoubleTab& tab_k)
   if ((!l_unif) && (tab_visco.local_min_vect()<DMINFLOAT))
     //   on ne doit pas changer tab_visco ici !
     {
-      Cerr<<" visco <=0 ?"<<finl;
-      Process::exit();
+      Cerr << "In Paroi_loi_WW_hyd_VDF::calculer_hyd : visco = " << tab_visco.local_min_vect() << " <= 0 ? " << finl;
+      throw;
     }
   //    tab_visco+=DMINFLOAT;
 

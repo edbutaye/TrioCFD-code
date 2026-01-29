@@ -110,8 +110,8 @@ int Paroi_Cisaillement_Imp_VEF::calculer_hyd_commun()
   if ((!l_unif) && (tab_visco.local_min_vect()<DMINFLOAT))
     //   on ne doit pas changer tab_visco ici !
     {
-      Cerr<<" visco <=0 ?"<<finl;
-      Process::exit();
+      Cerr << "In Paroi_Cisaillement_Imp_VEF::calculer_hyd_commun : visco = " << tab_visco.local_min_vect() << " <= 0 ? " << finl;
+      throw;
     }
   //tab_visco+=DMINFLOAT;
 

@@ -153,8 +153,8 @@ int  Loi_Paroi_Nu_Impose_VDF::calculer_scal(Champ_Fonc_base& diffusivite_turb)
   if ((!l_unif) && (local_min_vect(tab_visco)<DMINFLOAT))
     //   on ne doit pas changer tab_visco ici !
     {
-      Cerr<<" visco <=0 ?"<<finl;
-      Process::exit();
+      Cerr << "In Loi_Paroi_Nu_Impose_VDF::calculer_scal : visco = " << tab_visco.local_min_vect() << " <= 0 ? " << finl;
+      throw;
     }
   //tab_visco+=DMINFLOAT;
 

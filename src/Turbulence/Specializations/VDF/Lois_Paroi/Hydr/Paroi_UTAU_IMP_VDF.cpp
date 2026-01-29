@@ -90,8 +90,8 @@ int Paroi_UTAU_IMP_VDF::calculer_hyd_BiK(DoubleTab& tab_k,DoubleTab& tab_eps)
   if ((!l_unif) && (tab_visco.local_min_vect()<DMINFLOAT))
     //   on ne doit pas changer tab_visco ici !
     {
-      Cerr<<" visco <=0 ?"<<finl;
-      Process::exit();
+      Cerr << "In Paroi_UTAU_IMP_VDF::calculer_hyd_BiK : visco = " << tab_visco.local_min_vect() << " <= 0 ? " << finl;
+      throw;
     }
   //    tab_visco+=DMINFLOAT;
 
@@ -244,8 +244,8 @@ int Paroi_UTAU_IMP_VDF::calculer_hyd(DoubleTab& tab1,int isKeps,DoubleTab& tab2)
   if ((!l_unif) && (tab_visco.local_min_vect()<DMINFLOAT))
     //   on ne doit pas changer tab_visco ici !
     {
-      Cerr<<" visco <=0 ?"<<finl;
-      Process::exit();
+      Cerr << "In Paroi_UTAU_IMP_VDF::calculer_hyd : visco = " << tab_visco.local_min_vect() << " <= 0 ? " << finl;
+      throw;
     }
   //    tab_visco+=DMINFLOAT;
 
