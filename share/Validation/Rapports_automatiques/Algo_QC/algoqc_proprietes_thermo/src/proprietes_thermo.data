@@ -1,0 +1,57 @@
+# Test pour verifications des proprietes thermodynamiques lambda, rho et mu de T #
+# PARALLEL NOT #
+
+dimension  3
+
+Domaine_IJK grid_geom
+Lire grid_geom
+{
+  nbelem 4 4 32
+  size_dom 0.023441 0.03 0.029846
+  perio 1 1 0
+  nproc 1 1 1
+ 
+  ijk_splitting_ft_extension 0
+}
+
+dns_qc_double 
+{
+  ijk_splitting grid_geom
+  timestep 0.001
+  timestep_facsec 1.
+  nb_pas_dt_max 1
+/* tinit 0. */
+  multigrid_solver { 
+    coarsen_operators 1
+	Coarsen_Operator_Uniform { coarsen_i 1 coarsen_j 1 coarsen_k 2 }
+    ghost_size 1
+    pre_smooth_steps 1 5
+    smooth_steps 1 5
+    relax_jacobi 1 0.65
+    solveur_grossier GCP { seuil  0.5e-25 precond ssor { omega 1.5 } impr }
+    seuil 1.e-20
+    nb_full_mg_steps 2 5 1
+    solver_precision mixed
+  }
+  champs_a_postraiter 1 tous
+dt_post 1
+sauvegarde_post_instantanes 
+  t_paroi_impose_kmin 200
+  t_paroi_impose_kmax 1000
+  p_thermo_init       214072
+  cp                  1005.0
+  gamma               1.4
+
+  
+  debit_massique 0.
+  dumping_factor 1e99
+expression_vx_init 0.
+  expression_vy_init 0.
+  expression_vz_init 0.
+  expression_t_init 200+800*z/0.029846
+}
+Fin
+
+# pour NR #
+system "ln -sf *_1.sauv.lata qc_ijk_proprietes_thermo_jdd1.lata"
+# lata convert #
