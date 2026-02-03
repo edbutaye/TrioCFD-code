@@ -1,0 +1,136 @@
+Parameters {
+	Title "Validation de l'operateur de diffusion turbulente de la masse volumique"
+	Author "Dorian Dupuy"
+	VersionTrio_U 1.7.4
+ 	TestCase test_small test_diffusivite_turbulente.data
+ 	TestCase test_diffusivite_turbulente test_diffusivite_turbulente.data
+	ExtraUsedFile */instructions.py
+}
+
+Chapter {
+ 
+  	Title "Cas test_diffusivite_turbulente" 
+
+Description "\latex_(\input{../description_cas.tex}\latex_)"
+
+	visu {
+		nb_img_without_newline 2
+		Description "simu_d_rho"
+		cycles -1
+		Instruction_visit exec(open("test_diffusivite_turbulente/instructions.py").read())
+                origine instruction
+
+		pseudocolor test_diffusivite_turbulente/test_diffusivite_turbulente_lata_1.sauv.lata simu_d_rho 
+		Operator Slice2D_Y 0.5 0.5 0.5
+		Width 7cm
+	}
+	visu {
+		nb_img_without_newline 2
+		Description "ana_d_rho"
+		cycles -1
+		Instruction_visit exec(open("test_diffusivite_turbulente/instructions.py").read())
+                origine instruction
+
+		pseudocolor test_diffusivite_turbulente/test_diffusivite_turbulente_lata_1.sauv.lata ana_d_rho 
+		Operator Slice2D_Y 0.5 0.5 0.5
+		Width 7cm
+	}
+	visu {
+		nb_img_without_newline 2
+		Description "error_d_rho"
+		cycles -1
+		Instruction_visit exec(open("test_diffusivite_turbulente/instructions.py").read())
+                origine instruction
+
+		pseudocolor test_diffusivite_turbulente/test_diffusivite_turbulente_lata_1.sauv.lata error_d_rho 
+		Operator Slice2D_Y 0.5 0.5 0.5
+		Width 7cm
+	}
+
+	Figure {
+		Title_figure "Profil suivant z a x=y=0.5"
+		nb_img_without_newline 2
+		LabelX "z"
+		LabelY "d_rho"
+		include_description_curves 0
+		legend bottom right
+
+		Curve {
+			legend "simu_d_rho"
+			file test_diffusivite_turbulente/simu_d_rho0000.curve
+		}
+		Curve {
+			legend "ana_d_rho"
+			file test_diffusivite_turbulente/ana_d_rho0000.curve
+		}
+		Curve {
+			legend "error_d_rho"
+			file test_diffusivite_turbulente/error_d_rho0000.curve
+		}
+		Width 14cm
+	}
+
+}
+
+Chapter {
+ 
+  	Title "Smaller case for NR (not fully converged)" 
+
+	visu {
+		nb_img_without_newline 2
+		Description "simu_d_rho"
+		cycles -1
+		Instruction_visit exec(open("test_small/instructions.py").read())
+                origine instruction
+
+		pseudocolor test_small/test_diffusivite_turbulente_lata_1.sauv.lata simu_d_rho 
+		Operator Slice2D_Y 0.5 0.5 0.5
+		Width 7cm
+	}
+	visu {
+		nb_img_without_newline 2
+		Description "ana_d_rho"
+		cycles -1
+		Instruction_visit exec(open("test_small/instructions.py").read())
+                origine instruction
+
+		pseudocolor test_small/test_diffusivite_turbulente_lata_1.sauv.lata ana_d_rho 
+		Operator Slice2D_Y 0.5 0.5 0.5
+		Width 7cm
+	}
+	visu {
+		nb_img_without_newline 2
+		Description "error_d_rho"
+		cycles -1
+		Instruction_visit exec(open("test_small/instructions.py").read())
+                origine instruction
+
+		pseudocolor test_small/test_diffusivite_turbulente_lata_1.sauv.lata error_d_rho 
+		Operator Slice2D_Y 0.5 0.5 0.5
+		Width 7cm
+	}
+
+	Figure {
+		Title_figure "Profil suivant z a x=y=0.5"
+		nb_img_without_newline 2
+		LabelX "z"
+		LabelY "d_rho"
+		include_description_curves 0
+		legend bottom right
+
+		Curve {
+			legend "simu_d_rho"
+			file test_small/simu_d_rho0000.curve
+		}
+		Curve {
+			legend "ana_d_rho"
+			file test_small/ana_d_rho0000.curve
+		}
+		Curve {
+			legend "error_d_rho"
+			file test_small/error_d_rho0000.curve
+		}
+		Width 14cm
+	}
+
+}
