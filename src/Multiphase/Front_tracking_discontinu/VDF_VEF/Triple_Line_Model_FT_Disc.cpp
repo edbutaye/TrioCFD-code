@@ -783,28 +783,49 @@ double compute_distance(const Domaine_VF& domaine_vf, const int num_face, const 
 double Triple_Line_Model_FT_Disc::compute_Qint(const DoubleTab& in_out, const double theta_app_loc,
                                                const int num_wall_face, double& Q_meso) const
 {
+  const double yl = in_out(0,1);
+  const double yr = in_out(1,1);
+
+  const double ytop = std::fmax(yr,yl);
+  const double ybot = std::fmin(yr,yl);
+
+  // Meso region is between ym_ and ymeso_:
+
+  double ln_y = log(std::fmin(ymeso_,std::fmax(ytop,ym_))/std::fmin(ymeso_,std::fmax(ybot,ym_)));
+
   double circum_dis = 1.;
   if (Objet_U::bidim_axi)
     {
       const double xl = in_out(0,0);
       const double xr = in_out(1,0);
-      double radial_dis = (xr + xl)/2;
+
+
+      double radial_dis = (xl + xr)/2;
+
+      if ((ym_ > ybot) && (ym_ < ytop))
+        {
+
+          const double cotan = (fabs(theta_app_loc)>DMINFLOAT) ? 1./tan(theta_app_loc) : DMAXFLOAT;
+
+          const double xm = xl + (ym_-yl)*cotan;
+          if ((xm > xr) || (xm < xl))
+            {
+              Cerr << "(xl, xm, xr) = (" << xl << " "<< xm << " "<< xr << " )" << finl;
+              Process::exit("Point M should be between l and r radially!");
+            }
+          radial_dis = (xr + xm)/2;
+        }
+
       const double angle_bidim_axi = Maillage_FT_Disc::angle_bidim_axi();
       circum_dis = angle_bidim_axi*radial_dis;
       // Cerr << "[TCL: MESO:] FILLING LIST Qmeso [bidim_axi] circum_dis = " << circum_dis << finl;
     }
 
-  const double yl = in_out(0,1);
-  const double yr = in_out(1,1);
   double Twall = 0.;
   double flux = 0.;
   ref_eq_temp_->get_flux_and_Twall(num_wall_face, flux, Twall);
 
-  const double ytop = std::fmax(yr,yl);
-  const double ybot = std::fmin(yr,yl);
-  // Meso region is between ym_ and ymeso_:
 
-  double ln_y = log(std::fmin(ymeso_,std::fmax(ytop,ym_))/std::fmin(ymeso_,std::fmax(ybot,ym_)));
 
   assert(kl_cond_>0.);
 //  Cerr << "ln_y = " << ln_y << " time_total = " << temps << " Theta_app_local = " << theta_app_loc
@@ -823,10 +844,16 @@ double Triple_Line_Model_FT_Disc::compute_Qint(const DoubleTab& in_out, const do
           Q_meso = kl_cond_*Twall/( h_loc+ Ri()*kl_cond_)*s_meso;
         }
       else
-        Q_meso = kl_cond_*(Twall/theta_app_loc)*ln_y; // Twall here is (Wall temperature - saturation temperature)..unit of Q_meso is W/m
+        {
+          const double un_sur_theta_app_loc = (fabs(theta_app_loc)>DMINFLOAT) ? 1./theta_app_loc : DMAXFLOAT;
+          Q_meso = kl_cond_*(Twall*un_sur_theta_app_loc)*ln_y; // Twall here is (Wall temperature - saturation temperature)..unit of Q_meso is W/m
+        }
     }
   else
-    Q_meso = kl_cond_*(Twall/theta_app_loc)*ln_y; // Twall here is (Wall temperature - saturation temperature)..unit of Q_meso is W/m
+    {
+      const double un_sur_theta_app_loc = (fabs(theta_app_loc)>DMINFLOAT) ? 1./theta_app_loc : DMAXFLOAT;
+      Q_meso = kl_cond_*(Twall*un_sur_theta_app_loc)*ln_y; // Twall here is (Wall temperature - saturation temperature)..unit of Q_meso is W/m
+    }
 
   double Q_int = Q_meso*circum_dis; // unit of Q_int is W
 //  Cerr << "Q_meso = " << Q_meso << finl;
