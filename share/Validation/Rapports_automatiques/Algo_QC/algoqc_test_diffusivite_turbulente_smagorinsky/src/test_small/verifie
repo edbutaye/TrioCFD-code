@@ -1,0 +1,6 @@
+#!/bin/bash
+
+${TrioCFD_project_directory}/share/bin/verifie_lata_algoqc.sh $1
+
+exit $?
+
