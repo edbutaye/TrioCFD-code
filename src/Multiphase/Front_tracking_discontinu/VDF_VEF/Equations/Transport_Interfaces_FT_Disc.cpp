@@ -1865,9 +1865,10 @@ void Transport_Interfaces_FT_Disc::update_normale_distance_interface() const
   // Check if the call is useful
   if (tag == variables_internes_->distance_normale_cache_tag)
     {
-      Cerr << "ERROR : Unneeded call to Transport_Interfaces_FT_Disc::update_normale_distance_interface" << finl;
+      Cerr << "WARNING : Unneeded call to Transport_Interfaces_FT_Disc::update_normale_distance_interface" << finl;
       Cerr << "        mesh tag: " << tag << ", cache tag: "<< variables_internes_->distance_normale_cache_tag << finl;
-      Process::exit();
+      // Process::exit();
+      return;
     }
 
   DoubleTab& distance = variables_internes_->distance_interface->valeurs();
@@ -1893,9 +1894,10 @@ void Transport_Interfaces_FT_Disc::update_indicatrice()
   // can be bypassed by changing the tag before calling update_indicatrice (use this knowledge carefully)
   if (tag == variables_internes_->indicatrice_cache_tag)
     {
-      Cerr << "ERROR : Unneeded call to Transport_Interfaces_FT_Disc::update_indicatrice. tag = " << tag << finl;
+      Cerr << "WARNING : Unneeded call to Transport_Interfaces_FT_Disc::update_indicatrice. tag = " << tag << finl;
       Cerr << "        indicatrice is already up to date" << finl;
-      Process::exit();
+      // Process::exit();
+      return;
     }
 
   // Le calcul de l'indicatrice a besoin d'une distance qui soit bien a jour...
@@ -7598,6 +7600,7 @@ bool Transport_Interfaces_FT_Disc::test_suppression_interfaces_sous_domaine()
     return false;
 
   const Sous_Domaine& sous_domaine = domaine_dis().domaine().ss_domaine(suppression_interfaces_sous_domaine_);
+  update_indicatrice_normale_distance();
   const DoubleTab& indicatrice = get_indicatrice().valeurs();
   // Construction de la liste des elements de la sous-domaine contenant la phase a supprimer
   ArrOfInt liste_elems_sous_domaine;
