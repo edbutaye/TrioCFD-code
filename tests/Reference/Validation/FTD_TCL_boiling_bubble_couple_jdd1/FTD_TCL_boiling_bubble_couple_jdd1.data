@@ -250,7 +250,7 @@ Lire pb1
 
   postraitement
   {
-    champs dt_post 1.0e-4
+    champs dt_post 100
     {
       indicatrice_interf
       temperature_thermique
@@ -265,7 +265,7 @@ Lire pb1
     postraitement_ft_lata post1
     {
       format lml
-      champs dt_post 1.0e-4
+      champs dt_post 100
       {
 	VOLUME_MAILLE elem
 	indicatrice_interf elem
@@ -339,7 +339,7 @@ Read pb2
   Post_processing
   {
     Format lml
-    fields dt_post 1.0e-4
+    fields dt_post 100
     {
       temperature elem
     }

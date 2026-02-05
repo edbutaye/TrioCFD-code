@@ -15,13 +15,20 @@ d0=$(python3 -c 'from math import pi; v='$v0'; d=(6*v/pi)**(1./3.); print(d)')
 awk '{print $1*1000, '$d0'*($2/'$v0')^(1/3)}' vap_vol.txt > dia_full.txt ; awk 'NR % 100 == 0' dia_full.txt > dia.txt
 
 
-rm -rf lata/post-ascii.lata*
-[ -f lata/post.lata ] && sed "/dom/d" lata/post.lata > lata/post-interf.lata && lata_analyzer lata/post-interf.lata asciiout writelata_convert=lata/post-interf-ascii.lata && echo "Conversion to lata/post-interf-ascii.lata with success"
+rm -rf PAR_source-ascii.lata*
+
+LATAFILE=PAR_source_POST1.lata
+
+[ -f ${LATAFILE} ] || exit 1
+[ -f ${LATAFILE} ] && sed "/dom/d" ${LATAFILE} > PAR_source-interf.lata
+lata_analyzer PAR_source-interf.lata asciiout writelata_convert=PAR_source-interf-ascii.lata && echo "Conversion to PAR_source-interf-ascii.lata with success"
 #grep "time_sommet_tcl=" $err | awk '{print $6*1000, ($4/'$v0')^(1/3)}' > base_dia.txt 
-if [ -f lata/post-interf-ascii.lata ] ; then
+
+ASCII_LATA=PAR_source-interf-ascii_PAR_source_POST1.lata
+if [ -f "PAR_source-interf-ascii.lata" ] ; then
    echo "Generate interface-position.txt"
    echo "# t    rmin rmax xmax ymax ymin rcl" > interface-position.txt
-   for fic in `ls -n lata/post-interf-ascii_post.lata.INTERFACES.0.*[0-9] | awk '{print $NF}'`
+   for fic in `ls -n ${ASCII_LATA}.INTERFACES\.0\.*[0-9] | awk '{print $NF}'`
    do
       time=$(echo $fic | awk -FFACES. '{print $2}')
       sed '1d;$d' $fic | awk 'NR == 1 { xmax=$1; xcl=$1; ymax=$2; ymin=$2; rmin=sqrt($1*$1+$2*$2) ; rmax=sqrt($1*$1+$2*$2) }
@@ -31,4 +38,7 @@ if [ -f lata/post-interf-ascii.lata ] ; then
    done
    echo ""
    awk '{print $1*1000, $7}' interface-position.txt > base_dia.txt 
+else
+   >&2 echo "missing PAR_source-interf-ascii.lata"
+   exit 1
 fi
