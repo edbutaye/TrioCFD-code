@@ -1,10 +1,10 @@
 #!/bin/bash
-echo "Begin post_run with $1"
-[ -z "$1" ] && echo "Error, $0 requires 'jdd' as argument"
-err=$1.err
+# echo "Begin post_run with $1"
+# [ -z "$1" ] && echo "Error, $0 requires 'jdd' as argument"
+err=PAR_source.err
 cwd=$PWD
 
-[ ! -f $err ] && echo "Error in post_run. $err is missing" && exit -1
+[ ! -f $err ] && echo "Error in post_run. $err is missing" && exit 1
 
 grep -E "instant-Q|Volume_phase_0|vevap_int|v_cl_test=|instantaneous meso-evaporation =|Instantaneous tcl-evaporation =|theta_app_degree=" \
    $err > short_$err
