@@ -48,17 +48,11 @@ if [ -f lata/post-interf-ascii.lata ] ; then
 fi
 
 echo "Visit generating resultat*dat"
-[ -f /home/trust_trio-public/env_TrioCFD-1.9.2.sh ] && source \
-   /home/trust_trio-public/env_TrioCFD-1.9.2.sh > /dev/null && echo \
-   "Source TRUST network for issues with wisit on local"
-
-[ -f /ccc/work/cont002/triocfd/triou/irene-ccrt/TRUST/TRUST-1.9.2-amd-gpu/env_TRUST.sh ] && source \
-   /ccc/work/cont002/triocfd/triou/irene-ccrt/TRUST/TRUST-1.9.2-amd-gpu/env_TRUST.sh &> /dev/null && echo \
-   "Source TRUST network for issues with wisit on node otherwise"
 # Fonctionne pas sur le noeud:
 # [ -n "$(module avail visit)" ] && module load visit && echo "Visit Module Loaded"
 #
 [ -f lata/post.lata ] && sed -i "/^??/d" lata/post.lata # Delete weird lines if any.
+[ -f slata/post.lata ] && sed -i "/^??/d" slata/post.lata # Delete weird lines if any.
 visit -nowin -cli -s ./visit_Re_Nu2.py  -val ts_start=0 -val nb_ts=1 &> visit-resultats.log
 echo "Done."
 
