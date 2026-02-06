@@ -1,19 +1,18 @@
 Dimension 3
+# PARALLEL RUNS #
+# TODO set to parallel ok #
  
 Domaine dom_flu
 Domaine dom_so
-# BEGIN MESH #
 
+# BEGIN MESH #
 read_med { domain dom_flu mesh mesh_prod file mesh_prod_coupled.med convertAllToPoly } 
 read_med { domain dom_so mesh Mesh_PROD_SO file mesh_prod_coupled.med convertAllToPoly }
 Modif_bord_to_raccord dom_so heat
 Modif_bord_to_raccord dom_flu heat
 # END MESH #
 
-
-
-
- # BEGIN PARTITION 
+# BEGIN PARTITION 
 Partition_multi 
 {
  domaine dom_flu
@@ -31,13 +30,13 @@ Partition_multi
     zones_name DOM_SO
 }
 }
- END PARTITION 
- END #
+End
+END PARTITION #
  
- # BEGIN SCATTER 
+# BEGIN SCATTER 
 Scatter DOM_FLU.Zones dom_flu
 Scatter DOM_SO.Zones dom_so
-  END SCATTER # 
+END SCATTER # 
 
 PolyMAC_MPFA  dis Option_PolyMAC_family { traitement_axi } 
 
