@@ -350,7 +350,7 @@ Lire pb1
    }  
   }
 
-sauvegarde binaire source.sauv
+# sauvegarde binaire source.sauv #
 sauvegarde xyz source.xyz
 # resume_last_time binaire ../../STEADY/steady.sauv #
 # Reprise binaire ../R0/source.sauv #
@@ -408,7 +408,7 @@ Read pb2
     } 
   }
 
-sauvegarde binaire source_sod.sauv
+# sauvegarde binaire source_sod.sauv #
 sauvegarde xyz source_sod.xyz
 # resume_last_time binaire ../../STEADY/steady_sod.sauv #
 # Reprise binaire ../R0/source_sod.sauv #

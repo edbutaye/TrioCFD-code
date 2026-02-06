@@ -161,7 +161,7 @@ void Triple_Line_Model_FT_Disc::set_param(Param& p)
   p.ajouter("ymeso", &ymeso_); // XD_ADD_P floattant Meso region extension in wall-normal direction [m]
   p.ajouter("n_extend_meso", &n_ext_meso_); // XD_ADD_P entier Meso region extension in number of cells [-]
   p.ajouter("initial_CL_xcoord", &initial_CL_xcoord_); // XD_ADD_P floattant Initial interface position (unused)
-  p.ajouter("read_via_file", &read_via_file_);
+  p.ajouter("read_via_file", &read_via_file_); // XD_ADD_P entier not_set
   p.ajouter("Rc_tcl_GridN", &Rc_tcl_GridN_); // XD_ADD_P floattant Radius of nucleate site; [in number of grids]
   p.ajouter("Rc_inject", &Rc_inject_); // XD_ADD_P floattant Radius of bubble reinjected; [in m]
   p.ajouter("thetaC_tcl", &thetaC_tcl_); // XD_ADD_P floattant imposed contact angle [in degree] to force bubble pinching / necking once TCL entre nucleate site
@@ -170,9 +170,9 @@ void Triple_Line_Model_FT_Disc::set_param(Param& p)
   p.ajouter_flag("adjust_meso_ML", &adjust_meso_ML_); // XD_ADD_P flag This flag determines whether to correct of qmeso in Micro-layer
   p.ajouter_flag("lissage_tcl", &lissage_tcl_); // XD_ADD_P flag This flag determines whether to active lissage of Qmicro and theta_app
   p.ajouter("t_injection", &t_injection_);
-  p.ajouter("Ri_thermal", &Ri_);
+  p.ajouter("Ri_thermal", &Ri_); // XD_ADD_P floattant not_set
   p.ajouter("tempC_tcl", &tempC_tcl_); // see in _.h file
-  p.ajouter("file_name", &Nom_ficher_tcl_); // XD_ADD_P floattant Input file to set TCL model
+  p.ajouter("file_name", &Nom_ficher_tcl_); // XD_ADD_P chaine Input file to set TCL model
   p.ajouter("nb_columns", &nb_columns_tab_);
   p.ajouter("num_column_tem", &num_column_tem_);
   p.ajouter("num_column_app", &num_column_theta_);

@@ -218,6 +218,9 @@ convection_diffusion_temperature_ft_disc convection_diffusion_temperature convec
   attr prescribed_mpoint floattant prescribed_mpoint 1 User defined value of the phase-change rate (override the value computed based on the temperature field)
   attr correction_mpoint_diff_conv_energy list correction_mpoint_diff_conv_energy 1 not_set
   attr correction_gradt_ordre entier correction_gradt_ordre 1 not_set 
+  attr divergence_free_velocity_extension rien divergence_free_velocity_extension 1 not_set
+  attr solveur_pression_fictive solveur_sys_base solveur_pression_fictive 1 not_set
+  attr bc_opening_pressure listchaine bc_opening_pressure 1 not_set
 interpolation_champ_face_deriv objet_lecture interpolation_champ_face_deriv -1 not_set
 type_indic_faces_deriv objet_lecture type_indic_faces_deriv -1 not_set
 type_indic_faces_standard type_indic_faces_deriv standard 0 not_set
@@ -259,6 +262,7 @@ transport_interfaces_ft_disc eqn_base transport_interfaces_ft_disc -1 Interface 
   attr compute_particles_rms rien compute_particles_rms 1 not_set
   attr post_process_hydrodynamic_forces bloc_lecture post_process_hydrodynamic_forces 1 not_set
   attr collision_model_fpi collision_model_fpi_deriv collision_model_fpi 1 not_set
+  attr suppression_sous_domaine chaine suppression_sous_domaine 1 not_set
 collision_model_fpi_deriv objet_u collision_model_fpi_deriv -1 not_set
 Collision_Model_FT_sphere collision_model_fpi_deriv Collision_Model_FT_sphere -1 not_set
   attr collision_model chaine collision_model 1 not_set
