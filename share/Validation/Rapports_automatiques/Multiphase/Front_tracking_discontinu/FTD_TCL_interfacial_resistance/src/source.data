@@ -320,7 +320,7 @@ Lire pb1
   {
     postraitement_ft_lata post1 { 
     format lata
-    champs dt_post 100
+    champs dt_post 5.e-7
     { 
       VOLUME_MAILLE elem 
       indicatrice_interf elem 

@@ -28,7 +28,7 @@ Lire sch
 {
   nb_pas_dt_max 1000000000 # 12 HACK #
   tinit 0.0
-  tmax 30e-3
+  tmax 50e-3
   tcpumax 23.
   dt_min 1.e-18
   dt_max $timestep
@@ -245,6 +245,11 @@ Lire pb1
     inout_method approx # TCL #
     read_via_file 1  # TCL #
     file_name model.txt # TCL #
+    # A very low 2.6K reactivation temperature should follow directly from the first departure #
+    Rc_inject 200.e-6 # TCL #
+    thetac_tcl $theta # TCL #
+    reinjection_tcl # TCL #
+    tempC_tcl 6.72 # TCL #
   } # TCL #
 
 
@@ -265,7 +270,7 @@ Lire pb1
     postraitement_ft_lata post1
     {
       format lata
-      champs dt_post 0.003
+      champs dt_post 0.0015
       {
 	VOLUME_MAILLE elem
 	indicatrice_interf elem
@@ -339,7 +344,7 @@ Read pb2
   Post_processing
   {
     Format lata
-    fields dt_post 100
+    fields dt_post 0.0015
     {
       temperature elem
     }
