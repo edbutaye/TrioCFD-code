@@ -1868,7 +1868,6 @@ void Transport_Interfaces_FT_Disc::update_normale_distance_interface() const
       Cerr << "WARNING : Unneeded call to Transport_Interfaces_FT_Disc::update_normale_distance_interface" << finl;
       Cerr << "        mesh tag: " << tag << ", cache tag: "<< variables_internes_->distance_normale_cache_tag << finl;
       Process::exit();
-      return;
     }
 
   DoubleTab& distance = variables_internes_->distance_interface->valeurs();
@@ -1897,7 +1896,6 @@ void Transport_Interfaces_FT_Disc::update_indicatrice()
       Cerr << "WARNING : Unneeded call to Transport_Interfaces_FT_Disc::update_indicatrice. tag = " << tag << finl;
       Cerr << "        indicatrice is already up to date" << finl;
       Process::exit();
-      return;
     }
 
   // Le calcul de l'indicatrice a besoin d'une distance qui soit bien a jour...
@@ -2741,7 +2739,6 @@ void Transport_Interfaces_FT_Disc::assembler( Matrice_Morse& mat_morse, const Do
 {
   Cerr<<" On ne doit pas resoudre  Transport_Interfaces_FT_Disc en implicite "<<finl;
   abort();
-  return;
 }
 
 static void init_parser_v_impose(const Noms& expression_vitesse, Parser& parser_x, Parser& parser_y, Parser& parser_z, double temps)
