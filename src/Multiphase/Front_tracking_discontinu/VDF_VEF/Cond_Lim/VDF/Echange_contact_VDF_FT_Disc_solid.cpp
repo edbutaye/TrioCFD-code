@@ -61,7 +61,7 @@ Entree& Echange_contact_VDF_FT_Disc_solid::readOn( Entree& s )
   param.ajouter("autre_champ_temperature_indic1",&nom_champ,Param::REQUIRED); // XD_ADD_P chaine name of temperature indic 1
   param.ajouter("autre_champ_temperature_indic0",&nom_champ_T2_autre_pb_,Param::REQUIRED); // XD_ADD_P chaine name of temperature indic 0
   param.ajouter("autre_champ_indicatrice",&nom_champ_indicatrice_,Param::REQUIRED); // XD_ADD_P chaine name of indicatrice
-  param.ajouter("dt_impr_Tw",&dt_impr_Tw_); // XD_ADD_P double not_set 
+  param.ajouter("dt_impr_Tw",&dt_impr_Tw_); // XD_ADD_P double not_set
   param.ajouter("Ri_liq",&Ri_); // XD_ADD_P double interficial thermal resitence of liquid
   param.lire_avec_accolades(s);
 
