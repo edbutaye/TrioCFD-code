@@ -306,7 +306,7 @@ Lire pb1
 
   postraitement 
   { 
-    champs dt_post 100
+    champs dt_post 5.e-7
     {
     }
     
@@ -320,7 +320,7 @@ Lire pb1
   {
     postraitement_ft_lata post1 { 
     format lml
-    champs dt_post 100
+    champs dt_post 5.e-7
     { 
       VOLUME_MAILLE elem 
       indicatrice_interf elem 
@@ -397,7 +397,7 @@ Read pb2
   Post_processing
   {
     Format lml
-    fields dt_post 100
+    fields dt_post 5.e-7
     {
       temperature elem
     } 

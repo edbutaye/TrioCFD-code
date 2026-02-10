@@ -255,7 +255,7 @@ Lire pb1
 
   postraitement
   {
-    champs dt_post 100
+    champs dt_post 0.0015
     {
       indicatrice_interf
       temperature_thermique

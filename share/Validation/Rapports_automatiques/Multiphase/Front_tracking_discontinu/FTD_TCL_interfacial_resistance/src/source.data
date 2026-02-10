@@ -306,7 +306,7 @@ Lire pb1
 
   postraitement 
   { 
-    champs dt_post 100
+    champs dt_post 5.e-7
     {
     }
     
@@ -397,7 +397,7 @@ Read pb2
   Post_processing
   {
     Format lata
-    fields dt_post 100
+    fields dt_post 5.e-7
     {
       temperature elem
     } 
